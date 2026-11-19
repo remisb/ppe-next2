@@ -18,13 +18,17 @@ import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
+import { ExportSheet } from '@ppe/ui/components/export-sheet'
+import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
+import { useSelection } from '@ppe/ui/lib/use-selection'
 import { euroInput } from '@ppe/i18n'
-import { ChevronRight, GripVertical, Plus } from 'lucide-react'
+import { ChevronRight, Download, GripVertical, Plus } from 'lucide-react'
 import { type FormEvent, Fragment, useEffect, useMemo, useRef, useState } from 'react'
 
 import { InactiveItemBadge, IncompleteBadge } from '@/components/status-badges'
 import { ItemIcon, ItemTile, iconChoices } from '@/components/item-icon'
 import { t } from '@/i18n'
+import { catalogueExportColumns } from '@/lib/catalogue-export'
 import { guessIcon } from '@/lib/items'
 import { moveBefore, placeBefore } from '@/lib/list-order'
 import { type ItemStatus, itemStatus } from '@/lib/records'
@@ -112,6 +116,8 @@ export function Catalogue({
   const [sort, setSort] = useState<SortState<CatalogueSort> | null>(null)
   const sortProps = { sort, onSort: setSort, allowNone: true }
   const [status, setStatus] = useState<ItemStatus | 'all'>(initialStatus ?? 'all')
+  const [exporting, setExporting] = useState(false)
+  const tz = useLoad(() => client.settings()).data?.timezone
   const counts = useMemo(() => {
     const c: Record<ItemStatus | 'all', number> = { all: 0, active: 0, incomplete: 0, inactive: 0 }
     for (const i of items.data ?? []) {
@@ -173,6 +179,8 @@ export function Catalogue({
     })
   }
   const drag = useRowDrag(shownIds, move)
+  // The items ticked for Export: only those the tab shows count.
+  const selection = useSelection(shownIds)
   const rows = useMemo(() => {
     const byId = new Map(shown.map((i) => [i.id, i]))
     return (drag.order ?? shownIds).flatMap((id) => byId.get(id) ?? [])
@@ -188,6 +196,8 @@ export function Catalogue({
   const shownColumns = beside ? columns().filter((c) => besideColumns.includes(c.key)) : columns()
   // Its actions are in the pane beside the list.
   const rowActions = canManageItems && !beside
+  // Ticking rows is for the whole table; beside an open item the list only finds the next one.
+  const ticks = !beside
 
   const toggle = (i: CatalogueItem) =>
     action.run(
@@ -214,6 +224,8 @@ export function Catalogue({
         <PageHeader
           title={t.catalogue.title}
           description={t.catalogue.description}
+          // Export: in the header from md, in ⋯ below (a phone exports all shown: its list has no checkboxes).
+          secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: shown.length === 0 }]}
           primary={canManageItems ? { label: t.catalogue.addItem, short: t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
           // Set up once, so never a button: under ⋯ at every width.
           more={canManageItems ? <DropdownMenuItem onClick={() => setPicturesOpen(true)}>{t.catalogue.pictures}</DropdownMenuItem> : undefined}
@@ -236,6 +248,14 @@ export function Catalogue({
         <p aria-live="polite" className="sr-only">
           {moved}
         </p>
+        {ticks ? (
+          <SelectionBar selection={selection}>
+            <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
+              <Download aria-hidden />
+              {t.common.exportSelected}
+            </Button>
+          </SelectionBar>
+        ) : null}
         <Loaded load={items} empty={shown.length === 0} emptyState={statusChips().find((c) => c.status === status)!.empty}>
           {() => (
             /*
@@ -247,6 +267,12 @@ export function Catalogue({
             <Table stack="list" fixed stackBelow={beside ? 'sm' : 'lg'} stickyHead sortControl={<SortMenu columns={shownColumns} noneLabel={t.catalogue.displayOrder} {...sortProps} />}>
               <TableHeader>
                 <TableRow>
+                  {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
+                  {ticks ? (
+                    <TableHead className="w-10 stacked:hidden">
+                      <SelectAllCheckbox selection={selection} />
+                    </TableHead>
+                  ) : null}
                   {shownColumns.map((c) => (
                     <SortableHead key={c.key} column={c} align={c.key === 'price' ? 'right' : 'left'} className={catalogueWidths[c.key]} {...sortProps} />
                   ))}
@@ -260,7 +286,7 @@ export function Catalogue({
                   const newGroup = sort?.key === 'group' && list[n - 1]?.size_group !== i.size_group
                   return (
                     <Fragment key={i.id}>
-                      {newGroup ? <TableGroupRow colSpan={shownColumns.length + (rowActions ? 1 : 0)}>{sizeGroupLabel[i.size_group]}</TableGroupRow> : null}
+                      {newGroup ? <TableGroupRow colSpan={shownColumns.length + (rowActions ? 1 : 0) + (ticks ? 1 : 0)}>{sizeGroupLabel[i.size_group]}</TableGroupRow> : null}
                       <TableRow
                         data-row-id={i.id}
                         data-state={selected === i.id ? 'selected' : undefined}
@@ -270,14 +296,21 @@ export function Catalogue({
                           // The row being moved stands out where it will land.
                           drag.dragging === i.id && 'relative z-10 bg-accent shadow-md outline-2 -outline-offset-2 outline-primary hover:bg-accent',
                           !i.active && 'text-muted-foreground',
+                          // Ticked for Export.
+                          ticks && selection.has(i.id) && 'bg-primary/5',
                         )}
                         // The whole row opens the item; the name is the real link, for keyboards,
                         // screen readers and "open in new tab". The row's own buttons keep their action.
                         onClick={(ev) => {
-                          if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                          if ((ev.target as Element).closest('a, button, input, [data-slot=select-cell]') || window.getSelection()?.toString()) return
                           openItem(i.id)
                         }}
                       >
+                        {ticks ? (
+                          <TableCell data-slot="select-cell" className="stacked:hidden">
+                            <RowCheckbox selection={selection} id={i.id} name={i.name} />
+                          </TableCell>
+                        ) : null}
                         <TableCell className="font-medium whitespace-normal stacked:col-start-2 stacked:row-start-1 stacked:min-w-0">
                           <span className="flex items-center gap-3">
                             {canMove ? (
@@ -348,6 +381,14 @@ export function Catalogue({
           )}
         </Loaded>
       </ListDetail>
+      <ExportSheet
+        open={exporting}
+        onClose={() => setExporting(false)}
+        list={t.catalogue.title}
+        columns={catalogueExportColumns(tz)}
+        shown={rows}
+        selected={ticks ? rows.filter((i) => selection.has(i.id)) : []}
+      />
       <ItemForm
         item={editing}
         onClose={() => setEditing(null)}

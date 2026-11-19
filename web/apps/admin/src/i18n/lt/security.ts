@@ -4,6 +4,7 @@ import type { SecurityText } from '../en/security'
 
 export const security: SecurityText = {
   title: 'Sauga',
+  exportColumns: { email: 'El. paštas', signIn: 'Prisijungimas', ends: 'Baigiasi, jei nenaudojamas' },
   description: 'Kas ir iš kur prisijungė, kas bandė ir nepavyko, kur naudotojai prisijungę dabar ir kas ką gali daryti.',
   sections: 'Saugos skyriai',
   signIns: 'Prisijungimai',

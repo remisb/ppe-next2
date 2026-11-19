@@ -4,6 +4,7 @@ import type { SystemText } from '../en/system'
 
 export const system: SystemText = {
   title: 'Sistema',
+  exportColumns: { app: 'Programėlė', appVersion: 'Programėlės versija' },
   description: 'Kaip veikia API ir duomenų bazė, kokių klaidų pasitaikė, ir atsarginės kopijos.',
   sections: 'Sistemos skyriai',
   status: 'Būsena',

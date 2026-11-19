@@ -10,6 +10,8 @@ export const common: CommonText = {
   close: 'Uždaryti',
   moreActions: (name: string) => `Daugiau veiksmų: ${name}`,
   add: 'Pridėti',
+  export: 'Eksportuoti',
+  exportSelected: 'Eksportuoti…',
   active: 'Aktyvus',
   inactive: 'Neaktyvus',
 }

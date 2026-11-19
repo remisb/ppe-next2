@@ -117,10 +117,10 @@ export const assets = {
   statusNote: 'Select the current status confirmed by your provider. This records it; it does not activate or block the card.',
   activateNote: 'Email your provider to activate this SIM (Prepare Activation Email). Once activation is confirmed, change the status to Active.',
   statusChanged: (number: string, status: string) => `${number}: status changed to ${status}.`,
-  selectCard: (inventoryNo: string) => `Select ${inventoryNo}`,
   selectPage: 'Select every SIM on this page',
-  selectedCount: (n: number) => plural(n, { one: '# SIM selected', other: '# SIMs selected' }),
-  clearSelection: 'Clear selection',
+  selectPageItems: 'Select every item on this page',
+  // Export (lib/asset-export.ts): the file's columns beyond the register's own words.
+  exportColumns: { notReturnedOn: 'Not Returned On' },
   statusOfSelected: 'Change Status of the selected SIMs',
   bulkChanged: (n: number, status: string) => plural(n, { one: `# SIM: status changed to ${status}.`, other: `# SIMs: status changed to ${status}.` }),
   bulkStopped: (done: number, total: number) => `Changed ${done} of ${total}; the others were left as they were.`,

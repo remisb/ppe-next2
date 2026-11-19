@@ -10,6 +10,9 @@ export const common = {
   moreActions: (name: string) => `More actions for ${name}`,
   // A primary's shorter words on a phone (+ Add), where the screen's title needs the room.
   add: 'Add',
+  // Exporting a list (the ExportSheet from @ppe/ui): the screen's button, and the selection bar's.
+  export: 'Export',
+  exportSelected: 'Export…',
   active: 'Active',
   inactive: 'Inactive',
 }

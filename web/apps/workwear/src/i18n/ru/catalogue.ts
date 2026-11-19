@@ -99,6 +99,12 @@ export const catalogue: CatalogueText = {
   closeItem: 'Закрыть предмет',
   nextOrPreviousItem: 'следующий или предыдущий предмет',
   added: 'Добавлен',
+  exportColumns: {
+    itemSet: 'Набор',
+    setStatus: 'Статус набора',
+    defaultQuantity: 'Количество по умолчанию',
+    lineTotal: 'Сумма строки (€)',
+  },
   lastChanged: 'Последнее изменение',
   priceHistory: 'История цен',
   priceHistoryIntro: 'Изменения цены, закупочной цены и срока службы, новые сверху. В заказах остаются значения на момент оформления.',

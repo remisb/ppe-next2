@@ -15,10 +15,14 @@ import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { combineLoads, errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
-import { Plus } from 'lucide-react'
+import { ExportSheet } from '@ppe/ui/components/export-sheet'
+import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
+import { useSelection } from '@ppe/ui/lib/use-selection'
+import { Download, Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { t } from '@/i18n'
+import { userExportColumns } from '@/lib/list-export'
 import type { Route, UserStatus } from '@/lib/router'
 import { type UserDraft, type UserErrors, draftOf, ownAccountLocks, roleGrants, roleName, roleRank, rolesOf, validateNewPassword, validateUser } from '@/lib/users'
 
@@ -57,6 +61,8 @@ export function UsersPage({
 
   const [sort, setSort] = useState<SortState<UserSort> | null>({ key: 'name', dir: 'asc' })
   const sortProps = { sort, onSort: setSort }
+  const [exporting, setExporting] = useState(false)
+  const timeZone = useLoad(() => (allowed ? client.settings() : Promise.resolve(undefined))).data?.timezone
 
   // The status tabs and the role filter are in the address (a role's user count on Roles opens them); the search is not.
   const { status, role } = route
@@ -85,6 +91,8 @@ export function UsersPage({
       }
     })
   }, [matching, roleList.data, status, sort])
+  // The users ticked for Export: only those the tab, role and search show count.
+  const selection = useSelection(useMemo(() => shown.map((u) => u.id), [shown]))
 
   if (!allowed) {
     return (
@@ -100,6 +108,8 @@ export function UsersPage({
       <PageHeader
         title={t.users.title}
         description={t.users.description}
+        // Export: in the header from md, in ⋯ below (a phone exports all shown: its list has no checkboxes).
+        secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: shown.length === 0 }]}
         primary={{ label: t.users.addUser, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
       />
       <Segmented<UserStatus | 'all'>
@@ -137,12 +147,22 @@ export function UsersPage({
       <p role="status" className="mb-3 text-sm text-muted-foreground empty:hidden">
         {saved}
       </p>
+      <SelectionBar selection={selection}>
+        <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
+          <Download aria-hidden />
+          {t.common.exportSelected}
+        </Button>
+      </SelectionBar>
       <Loaded load={combineLoads(users, roleList)} empty={shown.length === 0} emptyState={status || role ? t.users.noneFiltered : filter ? t.users.noMatch(filter.trim()) : t.users.noUsers}>
         {() => (
           // Where the table is narrow the users are one list of rows: name, email, then roles, with Edit and ⋯ beside them.
           <Table stack="list" stickyHead sortControl={<SortMenu columns={columns()} {...sortProps} />}>
             <TableHeader>
               <TableRow>
+                {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
+                <TableHead className="w-10 stacked:hidden">
+                  <SelectAllCheckbox selection={selection} />
+                </TableHead>
                 {columns().map((c) => (
                   <SortableHead key={c.key} column={c} {...sortProps} />
                 ))}
@@ -151,7 +171,13 @@ export function UsersPage({
             </TableHeader>
             <TableBody>
               {shown.map((u) => (
-                <TableRow key={u.id} className={cn('stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3', !u.is_active && 'text-muted-foreground')}>
+                <TableRow
+                  key={u.id}
+                  className={cn('stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3', !u.is_active && 'text-muted-foreground', selection.has(u.id) && 'bg-primary/5')}
+                >
+                  <TableCell data-slot="select-cell" className="stacked:hidden">
+                    <RowCheckbox selection={selection} id={u.id} name={u.name} />
+                  </TableCell>
                   <TableCell className="font-medium stacked:col-start-1 stacked:row-start-1">
                     {u.name}
                     {u.id === session.userId ? (
@@ -208,6 +234,14 @@ export function UsersPage({
         }}
       />
       <ResetPassword user={resetting} onClose={() => setResetting(null)} />
+      <ExportSheet
+        open={exporting}
+        onClose={() => setExporting(false)}
+        list={t.users.title}
+        columns={userExportColumns(allRoles, timeZone)}
+        shown={shown}
+        selected={shown.filter((u) => selection.has(u.id))}
+      />
     </>
   )
 }

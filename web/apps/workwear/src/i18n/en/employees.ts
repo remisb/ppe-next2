@@ -61,6 +61,15 @@ export const employees = {
   notes: 'Notes',
   // Export (lib/employee-export.ts): the file's columns beyond the screen's own words.
   exportColumns: { birthDate: 'Date of birth', nationality: 'Nationality', sex: 'Sex', added: 'Added' },
+  // Export of an employee's Items given (lib/items-given-export.ts).
+  itemsExport: {
+    file: (name: string) => `Items given – ${name}`,
+    details: 'Details',
+    givenOn: 'Given',
+    usageMonths: 'Usage time (months)',
+    servicePeriodMonths: 'Service period (months)',
+    replacementDue: 'Replacement due',
+  },
   preferredLanguage: 'Preferred language',
   editLanguage: 'Edit preferred language',
   dueForReplacement: (n: number) => plural(n, { one: '# item is due for replacement', other: '# items are due for replacement' }),

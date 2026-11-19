@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { type ExportColumn, columnName, crc32, exportFile, exportFileName, exportTable, toCSV, toXLSX, unzipStored, zip } from './table-export.ts'
+import { type ExportColumn, columnName, crc32, exportEuros, exportMoment, exportFile, exportFileName, exportTable, toCSV, toXLSX, unzipStored, zip } from './table-export.ts'
 
 interface Person {
   name: string
@@ -95,5 +95,18 @@ describe('names', () => {
   it('gives each format its type', () => {
     expect(exportFile('csv', columns, people).type).toBe('text/csv;charset=utf-8')
     expect(exportFile('xlsx', columns, people).type).toContain('spreadsheetml')
+  })
+})
+
+describe('cells', () => {
+  it('writes a moment in the organisation’s timezone, with or without the time', () => {
+    expect(exportMoment('2026-11-19T22:30:00Z', 'Europe/Vilnius')).toBe('2026-11-20 00:30')
+    expect(exportMoment('2026-11-19T22:30:00Z', 'Europe/Vilnius', false)).toBe('2026-11-20')
+    expect(exportMoment(null)).toBeNull()
+  })
+
+  it('writes cents as euros', () => {
+    expect(exportEuros(12345)).toBe(123.45)
+    expect(exportEuros(null)).toBeNull()
   })
 })

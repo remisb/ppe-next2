@@ -93,6 +93,12 @@ export const catalogue: CatalogueText = {
   closeItem: 'Uždaryti prekę',
   nextOrPreviousItem: 'kita arba ankstesnė prekė',
   added: 'Pridėta',
+  exportColumns: {
+    itemSet: 'Prekių rinkinys',
+    setStatus: 'Rinkinio būsena',
+    defaultQuantity: 'Numatytasis kiekis',
+    lineTotal: 'Eilutės suma (€)',
+  },
   lastChanged: 'Paskutinį kartą keista',
   priceHistory: 'Kainų istorija',
   priceHistoryIntro: 'Kainos, pirkimo kainos ir naudojimo laikotarpio pakeitimai, naujausi viršuje. Užsakymuose lieka reikšmės, galiojusios juos pateikiant.',

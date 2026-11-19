@@ -2,6 +2,7 @@ import type { UsersText } from '../en/users'
 
 export const users: UsersText = {
   title: 'Naudotojai',
+  exportColumns: { language: 'Kalba', added: 'Pridėtas' },
   onlyAdmins: 'Naudotojus tvarkyti gali tik administratoriai.',
   description: 'Kas gali prisijungti ir ką gali daryti. Neaktyvūs naudotojai prisijungti negali; jų atliktas darbas lieka su jų vardu.',
   addUser: 'Pridėti naudotoją',

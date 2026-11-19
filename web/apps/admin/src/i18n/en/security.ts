@@ -4,6 +4,8 @@ import { plural } from '@ppe/i18n'
 /** Security: sign-ins, everyone's signed-in devices and the access review. */
 export const security = {
   title: 'Security',
+  // Export of Signed-in devices (lib/devices-export.ts): its columns beyond the screen's own words.
+  exportColumns: { email: 'Email', signIn: 'Sign-in', ends: 'Ends if not used' },
   description: 'Who signed in and from where, who tried and failed, where people are signed in now, and who may do what.',
   sections: 'Security sections',
   signIns: 'Sign-ins',

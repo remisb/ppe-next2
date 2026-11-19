@@ -31,10 +31,14 @@ import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
-import { SlidersHorizontal } from 'lucide-react'
+import { ExportSheet } from '@ppe/ui/components/export-sheet'
+import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
+import { useSelection } from '@ppe/ui/lib/use-selection'
+import { Download, SlidersHorizontal } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { t } from '@/i18n'
+import { deviceExportColumns } from '@/lib/list-export'
 import { type Route, type SecurityFilter, type SecurityTab, linkTo, securityTabs } from '@/lib/router'
 import { roleName } from '@/lib/users'
 import { UserForm } from '@/routes/users'
@@ -325,6 +329,16 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
     }
     return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name))
   }, [list.data])
+  // Each person's devices together, the person last seen first, their devices last used first (the list's own order).
+  const shown = useMemo(() => {
+    const all = list.data ?? []
+    const order = new Map<string, number>()
+    all.forEach((s, i) => order.set(s.user_id, Math.min(order.get(s.user_id) ?? i, i)))
+    return all.filter((s) => !person || s.user_id === person).sort((a, b) => order.get(a.user_id)! - order.get(b.user_id)!)
+  }, [list.data, person])
+  const [exporting, setExporting] = useState(false)
+  // The devices ticked for Export: only those the person filter shows count.
+  const selection = useSelection(useMemo(() => shown.map((s) => s.id), [shown]))
   const chosen = persons.find((p) => p.id === person)
   const mine = (list.data ?? []).some((s) => s.user_id === person && s.id === current)
   const endAll = async (p: { id: string; name: string; devices: number }) => {
@@ -346,7 +360,14 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
     <>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <p className="max-w-prose text-sm text-muted-foreground">{t.security.devicesHint}</p>
-        <RefreshButton loading={list.loading} onClick={list.reload} />
+        {/* The tab's Export beside Refresh: Security's header belongs to all three tabs. */}
+        <div className="flex gap-2">
+          <Button variant="outline" disabled={shown.length === 0} onClick={() => setExporting(true)}>
+            <Download aria-hidden />
+            {t.common.export}
+          </Button>
+          <RefreshButton loading={list.loading} onClick={list.reload} />
+        </div>
       </div>
       {message ? (
         <p role={message.ok ? 'status' : 'alert'} className={cn('mb-4 text-sm', message.ok ? 'text-muted-foreground' : 'text-destructive')}>
@@ -354,11 +375,8 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
         </p>
       ) : null}
       <Loaded load={list} emptyState={t.security.noDevices}>
-        {(all) => {
-          // Each person's devices together, the person last seen first, their devices last used first (the list's own order).
-          const order = new Map<string, number>()
-          all.forEach((s, i) => order.set(s.user_id, Math.min(order.get(s.user_id) ?? i, i)))
-          const data = all.filter((s) => !person || s.user_id === person).sort((a, b) => order.get(a.user_id)! - order.get(b.user_id)!)
+        {() => {
+          const data = shown
           return (
           <>
             <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -379,9 +397,19 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
             <p className="mb-2 text-sm text-muted-foreground">
               {t.security.deviceCount(data.length)} · {t.security.people(person ? 1 : people)}
             </p>
+            <SelectionBar selection={selection}>
+              <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
+                <Download aria-hidden />
+                {t.common.exportSelected}
+              </Button>
+            </SelectionBar>
             <Table stack="list">
               <TableHeader>
                 <TableRow>
+                  {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
+                  <TableHead className="w-10 stacked:hidden">
+                    <SelectAllCheckbox selection={selection} />
+                  </TableHead>
                   <TableHead>{t.security.name}</TableHead>
                   <TableHead>{t.security.device}</TableHead>
                   <TableHead>{t.security.lastUsed}</TableHead>
@@ -393,7 +421,10 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
                 {data.map((s) => {
                   const device = deviceText(s.user_agent)
                   return (
-                    <TableRow key={s.id} className="stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3">
+                    <TableRow key={s.id} className={cn('stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3', selection.has(s.id) && 'bg-primary/5')}>
+                      <TableCell data-slot="select-cell" className="stacked:hidden">
+                        <RowCheckbox selection={selection} id={s.id} name={`${s.user_name}, ${device}`} />
+                      </TableCell>
                       <TableCell className="whitespace-normal stacked:col-start-1 stacked:row-start-1">
                         <span className="font-medium">{s.user_name}</span>
                         {s.id === current ? (
@@ -443,6 +474,14 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
           )
         }}
       </Loaded>
+      <ExportSheet
+        open={exporting}
+        onClose={() => setExporting(false)}
+        list={t.security.devices}
+        columns={deviceExportColumns(timeZone)}
+        shown={shown}
+        selected={shown.filter((s) => selection.has(s.id))}
+      />
     </>
   )
 }

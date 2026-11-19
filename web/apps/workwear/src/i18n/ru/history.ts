@@ -42,6 +42,7 @@ export const history: HistoryText = {
   colDate: 'Дата',
   colStatus: 'Статус',
   colTotal: 'Общая сумма',
+  exportColumns: { orderedAt: 'Заказан', givenAt: 'Выдан', preparedBy: 'Подготовил', givenBy: 'Выдал', confirmation: 'Подтверждён', items: 'Предметов', usageMonths: 'Использование (мес.)' },
   pages: 'Страницы',
   pageOf: (page: number, pages: number) => `Страница ${page} из ${pages}`,
   previous: 'Предыдущая',

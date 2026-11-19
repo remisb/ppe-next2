@@ -139,6 +139,8 @@ export const dashboard = {
   forecastEmpty: (days: number) => `Nothing is due for replacement in the next ${days} days.`,
   item: 'Item',
   quantity: 'Quantity',
+  // Export of Replacements due (lib/replacement-export.ts).
+  exportColumns: { code: 'Employee code', size: 'Size', status: 'Status', dueOn: 'Due', givenOn: 'Given', receipt: 'Receipt' },
   accountingPrice: 'Price',
   estimated: 'Estimated',
   noPrice: 'No price',

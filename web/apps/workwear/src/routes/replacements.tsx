@@ -1,12 +1,13 @@
 import type { DashboardReplacement } from '@ppe/api-client'
-import { useApi } from '@ppe/app-shell'
+import { useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
+import { ExportSheet } from '@ppe/ui/components/export-sheet'
 import { EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { RuleList } from '@ppe/ui/components/rule-list'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { FileText, RotateCcw } from 'lucide-react'
+import { Download, FileText, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 
 import { inlineLink } from '@/components/dashboard'
@@ -14,6 +15,7 @@ import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { Segmented } from '@ppe/ui/components/segmented'
 import { t } from '@/i18n'
+import { replacementExportColumns } from '@/lib/replacement-export'
 import { type Route, linkTo } from '@/lib/router'
 import { formatSize } from '@/lib/utils'
 
@@ -31,6 +33,8 @@ export function Replacements({ navigate, onBack }: { navigate: (to: Route) => vo
   const list = useLoad(() => client.replacements())
   const settings = useLoad(() => client.settings())
   const [show, setShow] = useState<Show>('all')
+  const [exporting, setExporting] = useState(false)
+  const seesProfile = useSession().can('employee_profiles.read')
   const tz = settings.data?.timezone ?? 'UTC'
   const r = list.data
   const rows = (r?.next ?? []).filter((x) => show === 'all' || (show === 'overdue') === x.overdue)
@@ -48,6 +52,8 @@ export function Replacements({ navigate, onBack }: { navigate: (to: Route) => vo
         title={t.dashboard.replacementsDue}
         back={{ label: t.dashboard.title, onClick: onBack }}
         description={t.dashboard.replacementsDescription(r?.due_soon_days ?? 30, tz)}
+        // Export: what the tab shows, soonest first (grouped rows, so nothing to tick).
+        secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: rows.length === 0 }]}
       />
       <Loaded load={list}>
         {(r) => (
@@ -74,6 +80,14 @@ export function Replacements({ navigate, onBack }: { navigate: (to: Route) => vo
           </>
         )}
       </Loaded>
+      <ExportSheet
+        open={exporting}
+        onClose={() => setExporting(false)}
+        list={t.dashboard.replacementsDue}
+        columns={replacementExportColumns({ profile: seesProfile }, tz)}
+        // In the screen's order: each employee's together.
+        shown={byEmployee(rows).flat()}
+      />
     </>
   )
 }

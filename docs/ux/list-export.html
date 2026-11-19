@@ -216,7 +216,8 @@ table.plain td,table.plain th{white-space:normal; vertical-align:top}
   <li><code>pnpm typecheck</code>, the unit tests for the writers, the selection and the employee columns, and an e2e step that exports and reads the file back.</li>
 </ul>
 
-<h2>The same for every list (separate Baton task)</h2>
+<h2>The same for every list (WARE-44)</h2>
+<div class="callout"><strong>Decided in WARE-44.</strong> A list loaded page by page (Orders, SIM Cards, Equipment) offers <em>All matching the filters (n)</em>: every page matching its tab, filters and sort, fetched when exporting (<code>ExportSheet</code>'s <code>matching</code>); ticking works on the page shown. A log read page by page (System's Errors) exports what is loaded. SIM Cards' Change Status bar is the shared <code>SelectionBar</code>. Exports are still not recorded on the Audit log: a file holds only what the screens show, which is not recorded either; recording them stays a possible follow-up. Shared cells: <code>exportMoment</code> (organisation timezone) and <code>exportEuros</code>.</div>
 <p>With the shared parts in place, each list adds its columns and the checkbox column:</p>
 <ul>
   <li>Staff app: Orders, Item Catalogue, Item Sets, SIM Cards, Equipment, an employee's Items given, Replacements.</li>

@@ -103,6 +103,13 @@ export const catalogue = {
   closeItem: 'Close item',
   nextOrPreviousItem: 'next or previous item',
   added: 'Added',
+  // Export (lib/catalogue-export.ts, lib/item-set-export.ts): the file's columns beyond the screen's own words.
+  exportColumns: {
+    itemSet: 'Item set',
+    setStatus: 'Set status',
+    defaultQuantity: 'Default quantity',
+    lineTotal: 'Line total (€)',
+  },
   lastChanged: 'Last changed',
   priceHistory: 'Price history',
   priceHistoryIntro: 'Changes to the price, purchase price and service period, newest first. Orders keep the values they were placed with.',
