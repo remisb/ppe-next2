@@ -16,7 +16,10 @@ import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
-import { ChevronRight, Plus, Users } from 'lucide-react'
+import { ExportSheet } from '@ppe/ui/components/export-sheet'
+import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
+import { useSelection } from '@ppe/ui/lib/use-selection'
+import { ChevronRight, Download, Plus, Users } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { EmployeePage } from '@/routes/employee'
@@ -27,6 +30,7 @@ import { isMissingASize, missingSizes } from '@/lib/missing-sizes'
 import { cn } from '@ppe/ui/lib/utils'
 import { EmployeeAvatar } from '@/components/employee-photo'
 import { addPhotos, photoRefusal, useRowFileDrop } from '@/lib/photo-drop'
+import { employeeExportColumns } from '@/lib/employee-export'
 import { employeeFacts, missingLabel } from '@/lib/records'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import { clothingBandValue, clothingBands, clothingSizeLabel, formatSize } from '@/lib/utils'
@@ -78,6 +82,7 @@ export function Employees({
   const [sizing, setSizing] = useState<Employee | null>(null)
   const action = useAction()
   const [sort, setSort] = useState<SortState<EmployeeSort> | null>({ key: 'name', dir: 'asc' })
+  const [exporting, setExporting] = useState(false)
 
   const shown = useMemo(() => {
     const q = filter.trim().toLowerCase()
@@ -141,6 +146,8 @@ export function Employees({
   const close = () => navigate({ name: 'employees' }, { scroll: false })
   // J and K: the next or previous employee in the list as shown, while one is open; Escape closes her beside the list.
   const shownIds = useMemo(() => shown.map((e) => e.id), [shown])
+  // The employees ticked for Export: only those the tab and search show count.
+  const selection = useSelection(shownIds)
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: 'employee', id }, { scroll: false }), onClose: close })
 
   return (
@@ -158,6 +165,8 @@ export function Employees({
       <PageHeader
         title={t.employees.title}
         description={t.employees.description}
+        // Export: in the header from md, in ⋯ below (a phone exports all shown: its list has no checkboxes).
+        secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: shown.length === 0 }]}
         primary={managesProfile ? { label: t.employees.addNew, short: t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
       />
       {/* As on every list: the tabs first, then the search. */}
@@ -199,6 +208,12 @@ export function Employees({
           {notice}
         </p>
       ) : null}
+      <SelectionBar selection={selection}>
+        <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
+          <Download aria-hidden />
+          {t.common.exportSelected}
+        </Button>
+      </SelectionBar>
       <Loaded
         load={employees}
         empty={shown.length === 0}
@@ -215,6 +230,10 @@ export function Employees({
           <Table stack="list" fixed stickyHead sortControl={<SortMenu columns={columns} {...sortProps} />}>
             <TableHeader>
               <TableRow>
+                {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
+                <TableHead className="w-10 stacked:hidden">
+                  <SelectAllCheckbox selection={selection} />
+                </TableHead>
                 {columns.map((c) => (
                   <SortableHead key={c.key} column={c} className={employeeWidths[c.key]} {...sortProps} />
                 ))}
@@ -233,16 +252,21 @@ export function Employees({
                     {...(managesProfile ? photoDrop.rowProps(e.id) : {})}
                     className={cn(
                       'cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
+                      // Ticked for Export.
+                      selection.has(e.id) && 'bg-primary/5',
                       // Photos dragged over the row: dropping adds them to this employee.
                       photoDrop.overId === e.id && 'bg-accent outline-2 -outline-offset-2 outline-ring outline-dashed',
                     )}
                     // The whole row opens the employee; the name is the real link, for keyboards,
                     // screen readers and "open in new tab". The row's own buttons keep their action.
                     onClick={(ev) => {
-                      if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                      if ((ev.target as Element).closest('a, button, input, [data-slot=select-cell]') || window.getSelection()?.toString()) return
                       open(e.id)
                     }}
                   >
+                    <TableCell data-slot="select-cell" className="stacked:hidden">
+                      <RowCheckbox selection={selection} id={e.id} name={e.full_name} />
+                    </TableCell>
                     <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_3]">
                       <EmployeeAvatar employee={e} />
                     </TableCell>
@@ -346,6 +370,14 @@ export function Employees({
           navigate({ name: 'employee', id: kept.id }, { scroll: false })
           setPaneVersion((v) => v + 1)
         }}
+      />
+      <ExportSheet
+        open={exporting}
+        onClose={() => setExporting(false)}
+        list={t.employees.title}
+        columns={employeeExportColumns({ sizes: seesSizes, profile: seesProfile })}
+        shown={shown}
+        selected={shown.filter((e) => selection.has(e.id))}
       />
       <EditSizes
         employee={sizing}

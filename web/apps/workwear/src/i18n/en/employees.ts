@@ -59,6 +59,8 @@ export const employees = {
   codeIs: (code: string) => `Code ${code}`,
   newOrder: 'New order',
   notes: 'Notes',
+  // Export (lib/employee-export.ts): the file's columns beyond the screen's own words.
+  exportColumns: { birthDate: 'Date of birth', nationality: 'Nationality', sex: 'Sex', added: 'Added' },
   preferredLanguage: 'Preferred language',
   editLanguage: 'Edit preferred language',
   dueForReplacement: (n: number) => plural(n, { one: '# item is due for replacement', other: '# items are due for replacement' }),

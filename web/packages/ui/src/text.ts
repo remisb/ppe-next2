@@ -55,6 +55,24 @@ const en = {
   moreActions: (name: string) => `More actions for ${name}`,
   // A record row's back icon below lg (components/record-header.tsx), named by its list.
   backTo: (place: string) => `Back to ${place}`,
+  // Ticking rows of a list (components/selection-bar.tsx).
+  selectAllShown: 'Select every row shown',
+  selectRow: (name: string) => `Select ${name}`,
+  selectedRows: (n: number) => plural(n, { one: '# selected', other: '# selected' }),
+  clearSelection: 'Clear selection',
+  // Exporting a list (components/export-sheet.tsx).
+  exportTitle: (list: string) => `Export ${list}`,
+  exportDescription: 'A file of the rows and columns you choose.',
+  exportRows: 'Rows',
+  exportSelected: (n: number) => `Selected (${n})`,
+  exportAllShown: (n: number) => `All shown (${n})`,
+  exportColumns: 'Columns',
+  exportAll: 'All',
+  exportNone: 'None',
+  exportFormat: 'Format',
+  exportFormatHelp: 'Excel opens it as it is. CSV is plain text, for other programs.',
+  exportNoColumns: 'Choose at least one column.',
+  exportCount: (n: number) => `Export (${n})`,
 }
 
 export type UiText = typeof en
@@ -103,6 +121,22 @@ const lt: UiText = {
   aboutSection: (section: string) => `Apie skiltį „${section}“`,
   moreActions: (name: string) => `Daugiau veiksmų: ${name}`,
   backTo: (place: string) => `Atgal: ${place}`,
+  selectAllShown: 'Pažymėti visas rodomas eilutes',
+  selectRow: (name: string) => `Pažymėti: ${name}`,
+  selectedRows: (n: number) => plural(n, { one: 'Pažymėta #', few: 'Pažymėtos #', many: 'Pažymėta #', other: 'Pažymėta #' }),
+  clearSelection: 'Atžymėti visas',
+  exportTitle: (list: string) => `Eksportuoti: ${list}`,
+  exportDescription: 'Failas su jūsų pasirinktomis eilutėmis ir stulpeliais.',
+  exportRows: 'Eilutės',
+  exportSelected: (n: number) => `Pažymėtos (${n})`,
+  exportAllShown: (n: number) => `Visos rodomos (${n})`,
+  exportColumns: 'Stulpeliai',
+  exportAll: 'Visi',
+  exportNone: 'Nė vieno',
+  exportFormat: 'Formatas',
+  exportFormatHelp: 'Excel atveria jį tiesiogiai. CSV – paprastas tekstas kitoms programoms.',
+  exportNoColumns: 'Pasirinkite bent vieną stulpelį.',
+  exportCount: (n: number) => `Eksportuoti (${n})`,
 }
 
 const ru: UiText = {
@@ -149,6 +183,22 @@ const ru: UiText = {
   aboutSection: (section: string) => `О разделе «${section}»`,
   moreActions: (name: string) => `Другие действия: ${name}`,
   backTo: (place: string) => `Назад: ${place}`,
+  selectAllShown: 'Выбрать все показанные строки',
+  selectRow: (name: string) => `Выбрать: ${name}`,
+  selectedRows: (n: number) => plural(n, { one: 'Выбрана #', few: 'Выбрано #', many: 'Выбрано #', other: 'Выбрано #' }),
+  clearSelection: 'Снять выбор',
+  exportTitle: (list: string) => `Экспорт: ${list}`,
+  exportDescription: 'Файл с выбранными строками и столбцами.',
+  exportRows: 'Строки',
+  exportSelected: (n: number) => `Выбранные (${n})`,
+  exportAllShown: (n: number) => `Все показанные (${n})`,
+  exportColumns: 'Столбцы',
+  exportAll: 'Все',
+  exportNone: 'Ни одного',
+  exportFormat: 'Формат',
+  exportFormatHelp: 'Excel открывает его как есть. CSV — простой текст для других программ.',
+  exportNoColumns: 'Выберите хотя бы один столбец.',
+  exportCount: (n: number) => `Экспортировать (${n})`,
 }
 
 export const dictionaries = { en, lt, ru }

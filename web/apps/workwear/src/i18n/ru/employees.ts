@@ -57,6 +57,7 @@ export const employees: EmployeesText = {
   codeIs: (code: string) => `Код ${code}`,
   newOrder: 'Новый заказ',
   notes: 'Примечания',
+  exportColumns: { birthDate: 'Дата рождения', nationality: 'Гражданство', sex: 'Пол', added: 'Добавлен' },
   preferredLanguage: 'Предпочитаемый язык',
   editLanguage: 'Изменить предпочитаемый язык',
   dueForReplacement: (n: number) =>

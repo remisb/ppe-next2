@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>List Export</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* WARE-43: the plan and mockups for exporting a list (Employees first), drawn in the staff app's own neutrals. */
+:root{
+  --bg:#f6f6f9; --surface:#ffffff; --surface-2:#eff0f5; --fg:#15162a; --muted:#5b5e74; --line:#e1e2ea;
+  --brand:#1c2060; --accent:#3341a8; --accent-soft:#e8eafb;
+  --pri:#18181b; --pri-fg:#fafafa; --bad:#b42318; --bad-bg:#fdeceb; --ok:#23703f; --ok-bg:#e4f3ea;
+  --shadow:0 1px 2px rgb(20 22 50 / .06), 0 8px 24px rgb(20 22 50 / .08);
+  --font:'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --accent:#909cff; --accent-soft:#252a52; --pri:#f4f4f5; --pri-fg:#18181b;
+  --bad:#ff8f86; --bad-bg:#3a1816; --ok:#6fd49a; --ok-bg:#15301f;
+  --shadow:0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --accent:#909cff; --accent-soft:#252a52; --pri:#f4f4f5; --pri-fg:#18181b;
+  --bad:#ff8f86; --bad-bg:#3a1816; --ok:#6fd49a; --ok-bg:#15301f;
+  --shadow:0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); color-scheme:dark }
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--fg); font-family:var(--font); font-size:15px; line-height:1.55; padding:32px 16px 64px}
+.wrap{max-width:1120px; margin:0 auto}
+h1,h2,h3{margin:0; line-height:1.2; text-wrap:balance}
+h1{font-size:clamp(26px,3.4vw,34px); font-weight:700; letter-spacing:-.02em}
+h2{font-size:22px; font-weight:650; margin:44px 0 10px}
+h3{font-size:16px; font-weight:650; margin:20px 0 6px}
+p{margin:0 0 10px; max-width:76ch}
+ul,ol{margin:0 0 10px; padding-left:22px; max-width:76ch}
+li{margin:3px 0}
+.lede{color:var(--muted)}
+.muted{color:var(--muted)} .small{font-size:13px}
+code{font-family:var(--mono); font-size:.86em; background:var(--surface-2); padding:1px 5px; border-radius:5px}
+.tag{display:inline-block; font-size:12px; font-weight:600; padding:2px 8px; border-radius:99px; background:var(--accent-soft); color:var(--accent)}
+.grid{display:grid; gap:20px; grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); align-items:start}
+figure{margin:0} figcaption{font-size:13px; color:var(--muted); margin-top:8px}
+/* a mock screen */
+.screen{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); padding:16px; overflow:hidden}
+.hdr{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px}
+.hdr .t{font-size:20px; font-weight:700; margin-right:auto}
+.btn{display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface); font-size:13px; font-weight:500; white-space:nowrap}
+.btn.pri{background:var(--pri); color:var(--pri-fg); border-color:var(--pri)}
+.btn.ghost{border-color:transparent}
+.btn.sm{height:28px; padding:0 10px; font-size:12.5px}
+.btn.hl{outline:2px dashed #d6336c; outline-offset:2px}
+.seg{display:inline-flex; background:var(--surface-2); border-radius:8px; padding:3px; gap:2px; font-size:13px}
+.seg span{padding:4px 10px; border-radius:6px} .seg .on{background:var(--surface); box-shadow:0 1px 2px rgb(0 0 0 / .12); font-weight:550}
+.seg b{font-weight:500; color:var(--muted); margin-left:4px}
+.search{height:32px; border:1px solid var(--line); border-radius:8px; padding:0 10px; color:var(--muted); font-size:13px; display:flex; align-items:center; max-width:300px; margin-top:10px}
+.selbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:8px 0; margin:12px 0}
+.selbar strong{font-size:13px; font-weight:600}
+table{width:100%; border-collapse:collapse; font-size:13px}
+th{text-align:left; font-weight:500; color:var(--muted); padding:8px; border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:8px; border-bottom:1px solid var(--line); white-space:nowrap}
+tr.sel td{background:var(--accent-soft)}
+.cb{display:inline-block; width:15px; height:15px; border:1.5px solid var(--muted); border-radius:4px; vertical-align:middle; position:relative}
+.cb.on{background:var(--accent); border-color:var(--accent)}
+.cb.on::after{content:''; position:absolute; left:4px; top:1px; width:4px; height:8px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg)}
+.cb.some{background:var(--accent); border-color:var(--accent)} .cb.some::after{content:''; position:absolute; left:2px; right:2px; top:5.5px; height:2px; background:#fff}
+.av{display:inline-flex; width:24px; height:24px; border-radius:99px; background:var(--surface-2); font-size:10px; align-items:center; justify-content:center; margin-right:8px; vertical-align:middle; color:var(--muted)}
+.lnk{color:var(--fg); text-decoration:underline; text-decoration-color:var(--line); text-underline-offset:3px}
+.miss{display:inline-block; font-size:11px; font-weight:600; color:var(--bad); background:var(--bad-bg); padding:1px 7px; border-radius:99px}
+/* the sheet */
+.sheet{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); max-width:460px}
+.sheet .sh{padding:16px 18px 6px} .sheet .sh h4{margin:0; font-size:17px} .sheet .sh p{font-size:13px; color:var(--muted); margin:4px 0 0}
+.sheet .sb{padding:6px 18px 12px; display:grid; gap:16px}
+.sheet .sf{padding:12px 18px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:8px}
+.lbl{font-size:13px; font-weight:600; margin-bottom:6px; display:flex; justify-content:space-between; align-items:baseline}
+.lbl a{font-weight:500; font-size:12.5px; color:var(--accent); text-decoration:none; margin-left:10px}
+.radio{display:flex; gap:8px; align-items:center; font-size:13.5px; padding:3px 0}
+.rd{width:15px; height:15px; border-radius:99px; border:1.5px solid var(--muted); display:inline-block; position:relative}
+.rd.on{border-color:var(--accent)} .rd.on::after{content:''; position:absolute; inset:3px; border-radius:99px; background:var(--accent)}
+.cols{display:grid; grid-template-columns:1fr 1fr; gap:2px 14px; font-size:13.5px}
+.cols div{display:flex; gap:8px; align-items:center; padding:3px 0}
+.cols .grp{grid-column:1/-1; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-top:6px}
+.hint{font-size:12.5px; color:var(--muted)}
+/* phone */
+.phone{width:300px; border:1px solid var(--line); border-radius:28px; background:var(--surface); box-shadow:var(--shadow); padding:14px 12px; margin:0 auto}
+.phone .row{display:flex; gap:10px; align-items:center; padding:9px 2px; border-bottom:1px solid var(--line); font-size:13px}
+.phone .row small{display:block; color:var(--muted); font-size:11.5px}
+.menu{position:absolute; right:10px; top:46px; background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); padding:4px; font-size:13px; width:170px}
+.menu div{padding:7px 10px; border-radius:6px} .menu .on{background:var(--surface-2); font-weight:550}
+/* the spreadsheet */
+.xl{font-family:var(--mono); font-size:12px; border:1px solid var(--line); background:var(--surface)}
+.xl th{background:var(--surface-2); color:var(--muted); text-align:center; font-weight:500; border:1px solid var(--line); padding:3px 8px}
+.xl td{border:1px solid var(--line); padding:3px 8px}
+.xl tr:nth-child(2) td{font-weight:600}
+.xl td.n{text-align:right}
+.callout{border-left:3px solid var(--accent); background:var(--accent-soft); padding:10px 14px; border-radius:6px; margin:12px 0; max-width:80ch}
+table.plain td,table.plain th{white-space:normal; vertical-align:top}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="muted small">WARE-43 · plan and mockups · 2026-11-19</p>
+<h1>Exporting a list: Employees first</h1>
+<p class="lede">Employees gets <strong>Export</strong>: choose the employees (the ones ticked, or all the screen shows), the columns, and the format (Excel or CSV), then the file downloads. The parts are shared, in <code>@ppe/ui</code>, so every other list can get the same Export without new code of its own. That roll-out is a separate Baton task.</p>
+
+<h2>What you can do</h2>
+<ol>
+  <li><strong>Tick employees.</strong> Where Employees is a table (from tablet width), each row has a checkbox and the header has one that ticks every employee the screen shows (the tab and the search apply). Once one is ticked, a bar above the table says how many and offers <strong>Export…</strong> and <strong>Clear selection</strong>, the same bar SIM Cards already has for Change Status.</li>
+  <li><strong>Or don't tick any.</strong> <strong>Export</strong> in the screen's header (in ⋯ on a phone) exports every employee the screen shows.</li>
+  <li><strong>Choose in the Export sheet:</strong>
+    <ul>
+      <li><em>Employees:</em> Selected (n) or All shown (n). Selected is chosen when there is a selection.</li>
+      <li><em>Columns:</em> checkboxes, with All and None. They start as the columns the screen shows; the rest (first and last name, language, notes, birth date, nationality, sex, added on) can be ticked. You see only the columns your permissions let you read: sizes need See employee sizes; code, notes, language and identity details need See employee profiles.</li>
+      <li><em>Format:</em> Excel (.xlsx), the default, or CSV.</li>
+    </ul>
+  </li>
+  <li><strong>Export (n)</strong> downloads <code>Employees 2026-11-19.xlsx</code> (the screen's name in your language and today's date). Rows come in the screen's sort order; the header row is in your language.</li>
+</ol>
+
+<h2>Mockups</h2>
+<div class="grid">
+<figure>
+  <div class="screen">
+    <div class="hdr"><span class="t">Employees</span><span class="btn hl">⤓ Export</span><span class="btn pri">+ Add New Employee</span></div>
+    <div class="seg"><span class="on">All<b>42</b></span><span>Missing sizes<b>5</b></span></div>
+    <div class="search">Search by name or code</div>
+    <div class="selbar"><strong>3 selected</strong><span class="btn sm hl">Export…</span><span class="btn sm ghost">Clear selection</span></div>
+    <table>
+      <tr><th><span class="cb some"></span></th><th>Name</th><th>Code</th><th>Height</th><th>Clothing</th><th>Shoes</th></tr>
+      <tr class="sel"><td><span class="cb on"></span></td><td><span class="av">AK</span><span class="lnk">Kazlauskas Andrius</span></td><td>E-014</td><td>182 cm</td><td>L (50–52)</td><td>44</td></tr>
+      <tr class="sel"><td><span class="cb on"></span></td><td><span class="av">RP</span><span class="lnk">Petrauskienė Rūta</span></td><td>E-022</td><td>168 cm</td><td>S (44–46)</td><td>38</td></tr>
+      <tr><td><span class="cb"></span></td><td><span class="av">IS</span><span class="lnk">Smirnov Igor</span></td><td>E-031</td><td>–</td><td><span class="miss">Missing</span></td><td>43</td></tr>
+      <tr class="sel"><td><span class="cb on"></span></td><td><span class="av">TV</span><span class="lnk">Vaitkus Tomas</span></td><td>E-040</td><td>176 cm</td><td>M (48)</td><td>42</td></tr>
+    </table>
+  </div>
+  <figcaption>1 · Desktop and tablet. Ticking rows brings up the selection bar; Export in the header works with or without a selection. Row actions (Edit Sizes, ⋯) stay at the right, left out here.</figcaption>
+</figure>
+
+<figure>
+  <div class="sheet">
+    <div class="sh"><h4>Export Employees</h4><p>A file of the employees and columns you choose.</p></div>
+    <div class="sb">
+      <div><div class="lbl">Employees</div>
+        <div class="radio"><span class="rd on"></span>Selected (3)</div>
+        <div class="radio"><span class="rd"></span>All shown (42)</div>
+      </div>
+      <div><div class="lbl"><span>Columns</span><span><a>All</a><a>None</a></span></div>
+        <div class="cols">
+          <div><span class="cb on"></span>Name</div><div><span class="cb"></span>First name</div>
+          <div><span class="cb"></span>Last name</div><div><span class="cb on"></span>Code</div>
+          <div><span class="cb on"></span>Height (cm)</div><div><span class="cb on"></span>Clothing size</div>
+          <div><span class="cb on"></span>Shoe size</div><div><span class="cb"></span>Language</div>
+          <div><span class="cb"></span>Notes</div><div><span class="cb"></span>Birth date</div>
+          <div><span class="cb"></span>Nationality</div><div><span class="cb"></span>Sex</div>
+          <div><span class="cb"></span>Added</div>
+        </div>
+      </div>
+      <div><div class="lbl">Format</div>
+        <div class="seg"><span class="on">Excel (.xlsx)</span><span>CSV</span></div>
+        <p class="hint" style="margin-top:6px">Excel opens it as it is. CSV is plain text, for other programs.</p>
+      </div>
+    </div>
+    <div class="sf"><span class="btn">Cancel</span><span class="btn pri">⤓ Export (3)</span></div>
+  </div>
+  <figcaption>2 · The Export sheet (a form sheet, from the right on desktop, full height on a phone). Export is off while no column is ticked.</figcaption>
+</figure>
+
+<figure>
+  <div class="phone" style="position:relative">
+    <div class="hdr" style="margin-bottom:8px"><span class="t" style="font-size:18px">Employees</span><span class="btn sm">+ Add</span><span class="btn sm hl">⋯</span></div>
+    <div class="menu"><div class="on">⤓ Export…</div><div>Refresh</div></div>
+    <div class="search" style="margin:0 0 6px">Search</div>
+    <div class="row"><span class="av">AK</span><div>Kazlauskas Andrius<small>E-014 · 182 cm · L (50–52) · 44</small></div></div>
+    <div class="row"><span class="av">RP</span><div>Petrauskienė Rūta<small>E-022 · 168 cm · S (44–46) · 38</small></div></div>
+    <div class="row"><span class="av">IS</span><div>Smirnov Igor<small>E-031 · 43</small></div></div>
+    <div class="row"><span class="av">TV</span><div>Vaitkus Tomas<small>E-040 · 176 cm · M (48) · 42</small></div></div>
+  </div>
+  <figcaption>3 · Phone. The list has no checkboxes (a tap opens the employee), so ⋯ → Export… exports all shown; the sheet opens without the Employees choice.</figcaption>
+</figure>
+
+<figure>
+  <table class="xl">
+    <tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th></tr>
+    <tr><th>1</th><td>Name</td><td>Code</td><td>Height (cm)</td><td>Clothing size</td><td>Shoe size</td></tr>
+    <tr><th>2</th><td>Kazlauskas Andrius</td><td>E-014</td><td class="n">182</td><td class="n">52</td><td>44</td></tr>
+    <tr><th>3</th><td>Petrauskienė Rūta</td><td>E-022</td><td class="n">168</td><td class="n">46</td><td>38</td></tr>
+    <tr><th>4</th><td>Vaitkus Tomas</td><td>E-040</td><td class="n">176</td><td class="n">48</td><td>42</td></tr>
+  </table>
+  <figcaption>4 · The file. Numbers are numbers (Excel can sum and sort them), the clothing size is its EU number as saved, an empty value is an empty cell, dates are YYYY-MM-DD. The header row is frozen and bold in Excel. CSV has the same rows: UTF-8 with a BOM, so Excel shows ą, ė and Cyrillic, comma-separated, quoted where needed.</figcaption>
+</figure>
+</div>
+
+<h2>How it is built</h2>
+<table class="plain">
+<tr><th>Part</th><th>Where</th><th>What</th></tr>
+<tr><td>Writers</td><td><code>@ppe/ui/lib/table-export.ts</code></td><td>Pure functions: <code>toCSV</code> and <code>toXLSX</code> from columns (<code>key</code>, <code>label</code>, <code>value(row)</code>, <code>shown</code>) and rows. The .xlsx is a minimal Office Open XML workbook (one sheet, inline strings, numbers, a bold frozen header) in an uncompressed zip written by a small zip writer with its CRC-32: no new dependency. Unit tests read the zip back.</td></tr>
+<tr><td>Selection</td><td><code>@ppe/ui/lib/use-selection.ts</code>, <code>components/selection-bar.tsx</code></td><td>The ticked ids, kept only while those rows are shown; the header checkbox (all, some, none) and the bar. SIM Cards' own bar can move onto it in the roll-out.</td></tr>
+<tr><td>Export sheet</td><td><code>@ppe/ui/components/export-sheet.tsx</code></td><td>The sheet above, generic over the row type; its words in <code>@ppe/ui</code>'s own dictionary (EN, LT, RU). It saves the file with <code>saveFile</code>.</td></tr>
+<tr><td>Employees</td><td><code>apps/workwear/src/routes/employees.tsx</code>, <code>lib/employee-export.ts</code></td><td>The checkbox column, the bar, Export in the header, and the employee columns with the permission each needs (tested).</td></tr>
+</table>
+
+<h3>Decisions taken</h3>
+<ul>
+  <li><strong>Built in the browser, from what the screen already loaded.</strong> The API already leaves out what the reader may not see (<code>employee.Sight</code>), so the file can hold nothing the screen could not show. No new route, and every list can do the same.</li>
+  <li><strong>Not recorded on the Audit log.</strong> The file is what the screen shows; copying the table gives the same. If exports of personal data (birth date, nationality) should be recorded, that is a small route and an event (<code>employee.exported</code>, with the count and the columns); it is listed in the roll-out task as a question.</li>
+  <li><strong>Column order is fixed</strong> (the order in the sheet). Reordering and remembering the last choice per list are left out for now.</li>
+  <li><strong>Words:</strong> Export, Export…, Selected, All shown, Columns, Format, Clear selection. "Export" is already the Audit log's word; the glossary gets an "Export (of a list)" entry.</li>
+</ul>
+
+<h3>Proof of completion</h3>
+<ul>
+  <li>Screenshots from the running app: the table with ticked rows and the bar; the Export sheet; the phone's ⋯ with Export…; the downloaded .xlsx opened (rendered from the real file) and the CSV.</li>
+  <li><code>pnpm typecheck</code>, the unit tests for the writers, the selection and the employee columns, and an e2e step that exports and reads the file back.</li>
+</ul>
+
+<h2>The same for every list (separate Baton task)</h2>
+<p>With the shared parts in place, each list adds its columns and the checkbox column:</p>
+<ul>
+  <li>Staff app: Orders, Item Catalogue, Item Sets, SIM Cards, Equipment, an employee's Items given, Replacements.</li>
+  <li>Administration: Users, Roles &amp; permissions, Suppliers, Manage apps, Security's sessions, Errors. The Audit log keeps its own Export (a date range from the API, not the screen's page).</li>
+  <li>Lists that load page by page (Orders, Company Assets) export what is loaded, or ask the API for the rest: decided per list in that task.</li>
+</ul>
+
+</div>
+</body>
+</html>
