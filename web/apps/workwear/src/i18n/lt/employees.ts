@@ -57,6 +57,7 @@ export const employees: EmployeesText = {
   codeIs: (code: string) => `Kodas ${code}`,
   newOrder: 'Naujas užsakymas',
   notes: 'Pastabos',
+  exportColumns: { birthDate: 'Gimimo data', nationality: 'Pilietybė', sex: 'Lytis', added: 'Pridėta' },
   preferredLanguage: 'Pageidaujama kalba',
   editLanguage: 'Keisti pageidaujamą kalbą',
   dueForReplacement: (n: number) =>

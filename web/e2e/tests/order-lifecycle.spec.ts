@@ -8,6 +8,7 @@ import { type Browser, type BrowserContext, type Page, chromium, devices as devi
 import pg from 'pg'
 
 import { admin, apiEnv, caddyMode, dbDSN, openAIPort, publishBuild, repoRoot, runsApp, webURL } from '../env.ts'
+import { unzipStored } from '../../packages/ui/src/lib/table-export.ts'
 
 // One ordered story, run in sequence: each step builds on the data the
 // previous one created. It covers the manual's §7 validation rows and every
@@ -1821,6 +1822,38 @@ test('Employees: less frequent and destructive actions are under ⋯', async () 
   const note = row.getByText('Prefers Russian. Collects on Fridays.').filter({ visible: true })
   await expect(note).toBeVisible()
   await expect(note).toHaveAttribute('title', 'Prefers Russian. Collects on Fridays.')
+})
+
+test('Employees: Export the ticked employees, with the columns chosen, as an Excel file', async () => {
+  await openTab('Employees')
+  const row = page.getByRole('row', { name: /Ona Kazlauskienė/ })
+  // Ticking a row selects it; it does not open the employee.
+  await row.getByRole('checkbox', { name: 'Select Ona Kazlauskienė' }).check()
+  await expect(page).toHaveURL(/\/employees$/)
+  const bar = page.getByRole('group', { name: '1 selected' })
+  await bar.getByRole('button', { name: 'Export…' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Export Employees' })
+  await expect(sheet.getByRole('radio', { name: 'Selected (1)' })).toBeChecked()
+  // The screen's columns start ticked; the rest can be added.
+  await expect(sheet.getByRole('checkbox', { name: 'Code' })).toBeChecked()
+  await expect(sheet.getByRole('checkbox', { name: 'Notes' })).not.toBeChecked()
+  await sheet.getByRole('checkbox', { name: 'Notes' }).check()
+  await sheet.getByRole('checkbox', { name: 'Preferred language' }).check()
+  const downloading = page.waitForEvent('download')
+  await sheet.getByRole('button', { name: 'Export (1)' }).click()
+  const file = await downloading
+  expect(file.suggestedFilename()).toMatch(/^Employees \d{4}-\d{2}-\d{2}\.xlsx$/)
+  const bytes = new Uint8Array(await new Response((await file.createReadStream()) as unknown as ReadableStream).arrayBuffer())
+  const sheetXml = unzipStored(bytes).get('xl/worksheets/sheet1.xml') ?? ''
+  const cells = [...sheetXml.matchAll(/<t xml:space="preserve">([^<]*)<\/t>/g)].map((m) => m[1])
+  // The header row in the columns' order, then her row: numbers are <v> cells, text inline strings.
+  expect(cells.slice(0, 7)).toEqual(['Name', 'Code', 'Height (cm)', 'Clothing size', 'Shoe size', 'Preferred language', 'Notes'])
+  expect(cells).toContain('Ona Kazlauskienė')
+  expect(cells).toContain('Русский')
+  expect(cells).toContain('Prefers Russian. Collects on Fridays.')
+  await expect(sheet).toBeHidden()
+  await bar.getByRole('button', { name: 'Clear selection' }).click()
+  await expect(bar).toBeHidden()
 })
 
 test('Employees: a row opens the employee at its own address, with the items given and their receipts', async () => {

@@ -751,6 +751,17 @@ Rules for using it:
 - **Detail:** needs `audit.export`; each export is itself on the Audit log ("Audit log
   exported").
 
+### Export (of a list)
+- **Brief:** a file of a list's rows, the ticked ones or all the screen shows (its tab and search
+  apply), with the columns chosen, as Excel (.xlsx) or CSV. EN "Export", LT "Eksportuoti", RU
+  "Экспорт"; the rows ticked are "selected" (LT "pažymėta", RU "выбрано").
+- **Detail:** built in the browser from what the screen loaded, so it holds nothing the reader
+  could not see there; a column the reader may not read is not offered. Not on the Audit log.
+  Employees first (WARE-43); the plan and mockups are `docs/ux/list-export.html`.
+- **Code:** `@ppe/ui` `lib/table-export.ts`, `lib/use-selection.ts`, `components/export-sheet.tsx`,
+  `components/selection-bar.tsx`; Employees' columns `apps/workwear/src/lib/employee-export.ts`.
+  **UI:** Export (screen header, ⋯ on a phone), the selection bar's Export…, the Export sheet.
+
 ### Changes (of a record)
 - **Brief:** the section of an employee's, a catalogue item's or an order's page listing
   that record's changes, newest first; a user's are under ⋯ → Changes on Users.

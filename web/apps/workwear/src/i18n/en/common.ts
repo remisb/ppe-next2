@@ -10,6 +10,9 @@ export const common = {
   edit: 'Edit',
   delete: 'Delete',
   add: 'Add',
+  // Exporting a list (the ExportSheet from @ppe/ui): the screen's button, and the selection bar's.
+  export: 'Export',
+  exportSelected: 'Export…',
   search: 'Search',
   moreActions: (name: string) => `More actions for ${name}`,
   ordered: 'Ordered',

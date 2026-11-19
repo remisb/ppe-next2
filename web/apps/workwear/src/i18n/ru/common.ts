@@ -11,6 +11,8 @@ export const common: CommonText = {
   edit: 'Изменить',
   delete: 'Удалить',
   add: 'Добавить',
+  export: 'Экспорт',
+  exportSelected: 'Экспорт…',
   search: 'Поиск',
   moreActions: (name: string) => `Другие действия: ${name}`,
   ordered: 'Заказано',
