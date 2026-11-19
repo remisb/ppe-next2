@@ -7,16 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@ppe/ui/components/car
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
+import { ExportSheet } from '@ppe/ui/components/export-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { linkVariants } from '@ppe/ui/components/link'
 import { ActionError, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { combineLoads, errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { useAction } from '@ppe/ui/lib/use-action'
-import { ArrowDown, ArrowUp, ClipboardList, Plus, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, ClipboardList, Download, Plus, X } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { InactiveItemBadge, InactiveSetBadge, IncompleteBadge } from '@/components/status-badges'
 import { t } from '@/i18n'
+import { itemSetExportColumns, itemSetExportRows } from '@/lib/item-set-export'
 import { type SetTotal, setTotal } from '@/lib/records'
 import { type Route, linkTo } from '@/lib/router'
 import { formatEuro } from '@/lib/utils'
@@ -34,9 +36,12 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
   const catalogue = useLoad(() => client.catalogue.list())
   const [editing, setEditing] = useState<ItemSet | 'new' | null>(null)
   const [changes, setChanges] = useState<ItemSet | null>(null)
+  const [exporting, setExporting] = useState(false)
   const action = useAction()
 
   const itemsById = useMemo(() => new Map((catalogue.data ?? []).map((i) => [i.id, i])), [catalogue.data])
+  // Export: a row per item in each set, the sets in the screen's order (cards, so nothing to tick).
+  const exportRows = useMemo(() => itemSetExportRows(sets.data ?? [], itemsById), [sets.data, itemsById])
 
   const remove = (s: ItemSet) =>
     action.run(
@@ -52,6 +57,7 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
       <PageHeader
         title={t.catalogue.setsTitle}
         description={t.catalogue.setsDescription}
+        secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: exportRows.length === 0 }]}
         primary={canManageItems ? { label: t.catalogue.addItemSet, short: t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
       />
       <ActionError error={action.error} />
@@ -129,6 +135,7 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
       <FormSheet open={changes !== null} onClose={() => setChanges(null)} title={changes?.name ?? ''} description={auditText().changesIntro}>
         {changes ? <SetChanges id={changes.id} updatedAt={changes.updated_at} /> : null}
       </FormSheet>
+      <ExportSheet open={exporting} onClose={() => setExporting(false)} list={t.catalogue.setsTitle} columns={itemSetExportColumns()} shown={exportRows} />
       <SetForm
         set={editing}
         catalogue={catalogue.data ?? []}

@@ -1,6 +1,8 @@
 /** The Users screen (administrators only). Password rules come from account. */
 export const users = {
   title: 'Users',
+  // Export (lib/users-export.ts): the file's columns beyond the screen's own words.
+  exportColumns: { language: 'Language', added: 'Added' },
   onlyAdmins: 'Only administrators can manage users.',
   description: 'Who can sign in, and what they may do. Inactive users cannot sign in; their past work keeps their name.',
   addUser: 'Add User',

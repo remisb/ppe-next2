@@ -757,7 +757,11 @@ Rules for using it:
   "Экспорт"; the rows ticked are "selected" (LT "pažymėta", RU "выбрано").
 - **Detail:** built in the browser from what the screen loaded, so it holds nothing the reader
   could not see there; a column the reader may not read is not offered. Not on the Audit log.
-  Employees first (WARE-43); the plan and mockups are `docs/ux/list-export.html`.
+  A list loaded page by page (Orders, SIM Cards, Equipment) offers "All matching the filters (n)"
+  instead of All shown: every page matching its tab, filters and sort, fetched when exporting.
+  A log loaded page by page as it is read (System's Errors) exports what is shown.
+  Employees first (WARE-43), then every list (WARE-44); the plan and mockups are
+  `docs/ux/list-export.html`.
 - **Code:** `@ppe/ui` `lib/table-export.ts`, `lib/use-selection.ts`, `components/export-sheet.tsx`,
   `components/selection-bar.tsx`; Employees' columns `apps/workwear/src/lib/employee-export.ts`.
   **UI:** Export (screen header, ⋯ on a phone), the selection bar's Export…, the Export sheet.

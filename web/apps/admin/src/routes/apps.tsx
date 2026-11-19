@@ -19,11 +19,15 @@ import { useListKeys } from '@ppe/ui/lib/list-keys'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowDown, ArrowUp, Box, ExternalLink, Plus } from 'lucide-react'
+import { ExportSheet } from '@ppe/ui/components/export-sheet'
+import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
+import { useSelection } from '@ppe/ui/lib/use-selection'
+import { ArrowDown, ArrowUp, Box, Download, ExternalLink, Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { t } from '@/i18n'
 import { type AppDraft, type AppErrors, SWATCHES, draftOf, inputOf, moveTarget, newInputOf, slugFrom, validateApp } from '@/lib/apps'
+import { appExportColumns } from '@/lib/list-export'
 import { permissionLabel } from '@/lib/roles'
 import { type Route, linkTo } from '@/lib/router'
 
@@ -53,6 +57,9 @@ export function AppsPage({ route, navigate }: { route: Extract<Route, { name: 'a
   useListKeys({ ids: useMemo(() => list.map((a) => a.slug), [list]), selected, onOpen: open, onClose: close })
   const beside = selected !== undefined
   const current = list.find((a) => a.slug === selected)
+  const [exporting, setExporting] = useState(false)
+  // The tiles ticked for Export, by slug as the list names them.
+  const selection = useSelection(useMemo(() => list.map((a) => a.slug), [list]))
 
   return (
     <>
@@ -83,13 +90,25 @@ export function AppsPage({ route, navigate }: { route: Extract<Route, { name: 'a
         <PageHeader
           title={t.apps.title}
           description={t.apps.description}
+          // Export: in the header from md, in ⋯ below (a phone exports them all: its list has no checkboxes).
+          secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: list.length === 0 }]}
           primary={{ label: t.apps.register, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
         />
+        <SelectionBar selection={selection}>
+          <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
+            <Download aria-hidden />
+            {t.common.exportSelected}
+          </Button>
+        </SelectionBar>
         <Loaded load={apps}>
           {(all) => (
             <Table stack="list" stackBelow={beside ? 'sm' : 'md'}>
               <TableHeader>
                 <TableRow>
+                  {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
+                  <TableHead className="w-10 stacked:hidden">
+                    <SelectAllCheckbox selection={selection} />
+                  </TableHead>
                   <TableHead>{t.apps.tile}</TableHead>
                   {beside ? null : <TableHead>{t.apps.group}</TableHead>}
                   <TableHead>{t.apps.stage}</TableHead>
@@ -102,12 +121,20 @@ export function AppsPage({ route, navigate }: { route: Extract<Route, { name: 'a
                     key={a.slug}
                     data-state={selected === a.slug ? 'selected' : undefined}
                     aria-current={selected === a.slug ? 'true' : undefined}
-                    className={cn(stackedBreak, 'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted', a.stage === 'retired' && 'opacity-60')}
+                    className={cn(
+                      stackedBreak,
+                      'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
+                      a.stage === 'retired' && 'opacity-60',
+                      selection.has(a.slug) && 'bg-primary/5',
+                    )}
                     onClick={(ev) => {
-                      if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                      if ((ev.target as Element).closest('a, button, input, [data-slot=select-cell]') || window.getSelection()?.toString()) return
                       open(a.slug)
                     }}
                   >
+                    <TableCell data-slot="select-cell" className="stacked:hidden">
+                      <RowCheckbox selection={selection} id={a.slug} name={appName(a)} />
+                    </TableCell>
                     <TableCell className="whitespace-normal stacked:w-auto stacked:min-w-0 stacked:flex-1">
                       <span className="flex items-center gap-3">
                         <TileIcon app={a} className="size-9 rounded-lg p-1.5" />
@@ -148,6 +175,14 @@ export function AppsPage({ route, navigate }: { route: Extract<Route, { name: 'a
           apps.reload()
           open(saved.slug)
         }}
+      />
+      <ExportSheet
+        open={exporting}
+        onClose={() => setExporting(false)}
+        list={t.apps.title}
+        columns={appExportColumns(list)}
+        shown={list}
+        selected={list.filter((a) => selection.has(a.slug))}
       />
     </>
   )

@@ -44,6 +44,8 @@ export const history = {
   colDate: 'Date',
   colStatus: 'Status',
   colTotal: 'Total value',
+  // Export (lib/order-export.ts): the file's columns beyond the list's own.
+  exportColumns: { orderedAt: 'Ordered on', givenAt: 'Given on', preparedBy: 'Prepared by', givenBy: 'Given by', confirmation: 'Confirmed', items: 'Items', usageMonths: 'Usage (months)' },
   pages: 'Pages',
   pageOf: (page: number, pages: number) => `Page ${page} of ${pages}`,
   previous: 'Previous',

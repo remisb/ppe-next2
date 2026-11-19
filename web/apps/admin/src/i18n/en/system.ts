@@ -4,6 +4,8 @@ import { plural } from '@ppe/i18n'
 /** System: the API and its requests, the database, the error list and the backups. */
 export const system = {
   title: 'System',
+  // Export of the error list (lib/errors-export.ts): its columns beyond the screen's own words.
+  exportColumns: { app: 'App', appVersion: 'App version' },
   description: 'How the API and the database are doing, the errors they met, and the backups.',
   sections: 'System sections',
   status: 'Status',

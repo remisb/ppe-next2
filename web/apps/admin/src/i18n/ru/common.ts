@@ -10,6 +10,8 @@ export const common: CommonText = {
   close: 'Закрыть',
   moreActions: (name: string) => `Другие действия: ${name}`,
   add: 'Добавить',
+  export: 'Экспорт',
+  exportSelected: 'Экспорт…',
   active: 'Активен',
   inactive: 'Неактивен',
 }

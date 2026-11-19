@@ -162,6 +162,7 @@ export const dashboard: DashboardText = {
     }),
   item: 'Prekė',
   quantity: 'Kiekis',
+  exportColumns: { code: 'Darbuotojo kodas', size: 'Dydis', status: 'Būsena', dueOn: 'Pakeisti iki', givenOn: 'Išduota', receipt: 'Kvitas' },
   accountingPrice: 'Kaina',
   estimated: 'Numatoma suma',
   noPrice: 'Be kainos',

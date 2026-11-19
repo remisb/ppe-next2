@@ -4,6 +4,7 @@ import { RecordChanges } from '@ppe/audit'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
+import { ExportSheet } from '@ppe/ui/components/export-sheet'
 import { DropdownMenuItem, DropdownMenuSeparator } from '@ppe/ui/components/dropdown-menu'
 import { Field, Select, controlProps } from '@ppe/ui/components/field'
 import { MoreActions } from '@ppe/ui/components/more-actions'
@@ -14,7 +15,7 @@ import { InControl } from '@ppe/ui/components/tooltip'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { FileText, Pencil, Plus, RotateCcw } from 'lucide-react'
+import { Download, FileText, Pencil, Plus, RotateCcw } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 
 import { OrderStatusBadge } from '@/components/order-status'
@@ -35,6 +36,7 @@ import { PaneBar } from '@ppe/ui/components/list-detail'
 import { isLang, languages, t } from '@/i18n'
 import { type Due, type EmployeeItem, employeeItems, loadAllOrders, replacementsDue } from '@/lib/employee-items'
 import { formatUsage } from '@/lib/history'
+import { itemsGivenExportColumns } from '@/lib/items-given-export'
 import { missingSizes } from '@/lib/missing-sizes'
 import { useOpenKey } from '@/lib/open-sections'
 import { type Route, linkTo } from '@/lib/router'
@@ -393,7 +395,7 @@ export function EmployeePage({
             >
               <Loaded load={orders} empty={items.given.length === 0} emptyState={t.employees.noItemsGiven(e.first_name)}>
                 {() => (
-                  <ItemsTable items={items.given} kind="given" tz={tz} due={dueByLine} navigate={navigate} />
+                  <ItemsTable items={items.given} kind="given" tz={tz} due={dueByLine} navigate={navigate} exportAs={t.employees.itemsExport.file(e.full_name)} />
                 )}
               </Loaded>
             </DisclosureSection>
@@ -465,6 +467,7 @@ function ItemsTable({
   tz,
   due,
   navigate,
+  exportAs,
 }: {
   items: EmployeeItem[]
   /** Items given to the employee, or still on order. */
@@ -473,10 +476,13 @@ function ItemsTable({
   /** For given items: when each item's latest line is due for replacement. Older lines are replaced. */
   due?: Map<string, Due>
   navigate: (to: Route) => void
+  /** Offers Export above the table, the file named this ("Items given – Ona Kazlauskienė"). */
+  exportAs?: string | undefined
 }) {
   const given = kind === 'given'
   const dateLabel = given ? t.common.given : t.common.ordered
   const [sort, setSort] = useState<SortState<ItemSort> | null>(null)
+  const [exporting, setExporting] = useState(false)
   const sortProps = { sort, onSort: setSort, allowNone: true }
   const columns: SortColumn<ItemSort>[] = [
     { key: 'item', label: t.employees.item, kind: 'text' },
@@ -513,66 +519,78 @@ function ItemsTable({
     [items, sort, due],
   )
   return (
-    <Table stack stackBelow="lg" sortControl={<SortMenu columns={columns} noneLabel={t.employees.newestFirst} {...sortProps} />}>
-      <TableHeader>
-        <TableRow>
-          {columns.map((c) => (
-            <SortableHead key={c.key} column={c} align={c.key === 'quantity' ? 'right' : 'left'} {...sortProps} />
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {shown.map((i) => (
-          <TableRow key={i.key}>
-            <TableCell className="min-w-40 whitespace-normal stacked:order-1 stacked:mb-1">
-              <span className="font-medium">{i.itemName}</span>
-              {i.itemDetails ? <span className="block text-xs text-muted-foreground">{i.itemDetails}</span> : null}
-            </TableCell>
-            <TableCell label={t.employees.size} className="stacked:order-2">{i.size ?? '–'}</TableCell>
-            <TableCell label={t.employees.quantity} className="text-right tabular-nums stacked:order-2">{i.quantity}</TableCell>
-            <TableCell label={dateLabel} className="tabular-nums stacked:order-2">
-              <RelativeDate iso={i.at} timeZone={tz} time />
-            </TableCell>
-            {given ? (
-              <TableCell label={t.employees.usageTime} className="stacked:order-2">{formatUsage(i.usageMonths) || '–'}</TableCell>
-            ) : null}
-            <TableCell label={t.employees.servicePeriod} className="stacked:order-2">{formatMonths(i.servicePeriodMonths)}</TableCell>
-            {due ? (
-              <TableCell label={t.employees.replacement} className="stacked:order-2">
-                <DueCell due={due.get(i.key)} tz={tz} />
+    <>
+      {exportAs ? (
+        // Export the lines as the table shows them, in its sort: no checkboxes on a section's table.
+        <div className="mb-2 flex justify-end">
+          <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
+            <Download aria-hidden />
+            {t.common.export}
+          </Button>
+          <ExportSheet open={exporting} onClose={() => setExporting(false)} list={exportAs} columns={itemsGivenExportColumns(due, tz)} shown={shown} />
+        </div>
+      ) : null}
+      <Table stack stackBelow="lg" sortControl={<SortMenu columns={columns} noneLabel={t.employees.newestFirst} {...sortProps} />}>
+        <TableHeader>
+          <TableRow>
+            {columns.map((c) => (
+              <SortableHead key={c.key} column={c} align={c.key === 'quantity' ? 'right' : 'left'} {...sortProps} />
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {shown.map((i) => (
+            <TableRow key={i.key}>
+              <TableCell className="min-w-40 whitespace-normal stacked:order-1 stacked:mb-1">
+                <span className="font-medium">{i.itemName}</span>
+                {i.itemDetails ? <span className="block text-xs text-muted-foreground">{i.itemDetails}</span> : null}
               </TableCell>
-            ) : null}
-            <TableCell label={given ? t.employees.receipt : t.employees.record} className="stacked:order-3">
-              {/* A given order opens its receipt, one on order its page in History; either previews on hover. */}
+              <TableCell label={t.employees.size} className="stacked:order-2">{i.size ?? '–'}</TableCell>
+              <TableCell label={t.employees.quantity} className="text-right tabular-nums stacked:order-2">{i.quantity}</TableCell>
+              <TableCell label={dateLabel} className="tabular-nums stacked:order-2">
+                <RelativeDate iso={i.at} timeZone={tz} time />
+              </TableCell>
               {given ? (
-                <RecordPreview
-                  orderId={i.orderId}
-                  timeZone={tz}
-                  {...linkTo({ name: 'record', id: i.orderId }, navigate)}
-                  aria-label={t.employees.receiptNumber(i.recordNumber)}
-                  className={linkVariants({ underline: 'always', weight: 'medium', className: 'inline-flex min-h-11 items-center gap-1.5 md:min-h-0' })}
-                >
-                  <FileText aria-hidden className="size-4" />
-                  {i.recordNumber}
-                </RecordPreview>
-              ) : (
-                <span className="inline-flex items-center gap-2">
+                <TableCell label={t.employees.usageTime} className="stacked:order-2">{formatUsage(i.usageMonths) || '–'}</TableCell>
+              ) : null}
+              <TableCell label={t.employees.servicePeriod} className="stacked:order-2">{formatMonths(i.servicePeriodMonths)}</TableCell>
+              {due ? (
+                <TableCell label={t.employees.replacement} className="stacked:order-2">
+                  <DueCell due={due.get(i.key)} tz={tz} />
+                </TableCell>
+              ) : null}
+              <TableCell label={given ? t.employees.receipt : t.employees.record} className="stacked:order-3">
+                {/* A given order opens its receipt, one on order its page in History; either previews on hover. */}
+                {given ? (
                   <RecordPreview
                     orderId={i.orderId}
                     timeZone={tz}
-                    {...linkTo({ name: 'history', order: i.orderId }, navigate)}
-                    className={linkVariants({ className: 'inline-flex min-h-11 items-center md:min-h-0' })}
+                    {...linkTo({ name: 'record', id: i.orderId }, navigate)}
+                    aria-label={t.employees.receiptNumber(i.recordNumber)}
+                    className={linkVariants({ underline: 'always', weight: 'medium', className: 'inline-flex min-h-11 items-center gap-1.5 md:min-h-0' })}
                   >
+                    <FileText aria-hidden className="size-4" />
                     {i.recordNumber}
                   </RecordPreview>
-                  <OrderStatusBadge status="ORDERED" />
-                </span>
-              )}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+                ) : (
+                  <span className="inline-flex items-center gap-2">
+                    <RecordPreview
+                      orderId={i.orderId}
+                      timeZone={tz}
+                      {...linkTo({ name: 'history', order: i.orderId }, navigate)}
+                      className={linkVariants({ className: 'inline-flex min-h-11 items-center md:min-h-0' })}
+                    >
+                      {i.recordNumber}
+                    </RecordPreview>
+                    <OrderStatusBadge status="ORDERED" />
+                  </span>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </>
   )
 }
 

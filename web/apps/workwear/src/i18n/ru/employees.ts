@@ -58,6 +58,14 @@ export const employees: EmployeesText = {
   newOrder: 'Новый заказ',
   notes: 'Примечания',
   exportColumns: { birthDate: 'Дата рождения', nationality: 'Гражданство', sex: 'Пол', added: 'Добавлен' },
+  itemsExport: {
+    file: (name: string) => `Выданные вещи – ${name}`,
+    details: 'Описание',
+    givenOn: 'Выдано',
+    usageMonths: 'Время использования (мес.)',
+    servicePeriodMonths: 'Срок службы (мес.)',
+    replacementDue: 'Срок замены',
+  },
   preferredLanguage: 'Предпочитаемый язык',
   editLanguage: 'Изменить предпочитаемый язык',
   dueForReplacement: (n: number) =>

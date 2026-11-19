@@ -4,6 +4,7 @@ import type { SystemText } from '../en/system'
 
 export const system: SystemText = {
   title: 'Система',
+  exportColumns: { app: 'Приложение', appVersion: 'Версия приложения' },
   description: 'Как работают API и база данных, какие были ошибки, и резервные копии.',
   sections: 'Разделы системы',
   status: 'Состояние',

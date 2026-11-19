@@ -42,6 +42,7 @@ export const history: HistoryText = {
   colDate: 'Data',
   colStatus: 'Būsena',
   colTotal: 'Bendra vertė',
+  exportColumns: { orderedAt: 'Užsakyta', givenAt: 'Išduota', preparedBy: 'Paruošė', givenBy: 'Išdavė', confirmation: 'Patvirtinta', items: 'Prekių', usageMonths: 'Naudojimas (mėn.)' },
   pages: 'Puslapiai',
   pageOf: (page: number, pages: number) => `${page} psl. iš ${pages}`,
   previous: 'Ankstesnis',

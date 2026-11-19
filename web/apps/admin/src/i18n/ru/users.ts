@@ -2,6 +2,7 @@ import type { UsersText } from '../en/users'
 
 export const users: UsersText = {
   title: 'Пользователи',
+  exportColumns: { language: 'Язык', added: 'Добавлен' },
   onlyAdmins: 'Управлять пользователями могут только администраторы.',
   description: 'Кто может входить в систему и что им разрешено. Неактивные пользователи не могут войти; их прошлые действия остаются под их именем.',
   addUser: 'Добавить пользователя',

@@ -58,6 +58,14 @@ export const employees: EmployeesText = {
   newOrder: 'Naujas užsakymas',
   notes: 'Pastabos',
   exportColumns: { birthDate: 'Gimimo data', nationality: 'Pilietybė', sex: 'Lytis', added: 'Pridėta' },
+  itemsExport: {
+    file: (name: string) => `Išduotos prekės – ${name}`,
+    details: 'Aprašymas',
+    givenOn: 'Išduota',
+    usageMonths: 'Naudojimo laikas (mėn.)',
+    servicePeriodMonths: 'Naudojimo terminas (mėn.)',
+    replacementDue: 'Pakeisti iki',
+  },
   preferredLanguage: 'Pageidaujama kalba',
   editLanguage: 'Keisti pageidaujamą kalbą',
   dueForReplacement: (n: number) =>

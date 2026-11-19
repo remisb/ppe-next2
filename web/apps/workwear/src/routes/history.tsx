@@ -5,11 +5,14 @@ import { Field, Input, controlProps } from '@ppe/ui/components/field'
 import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, ErrorState, ListSkeleton, PageHeader } from '@ppe/ui/components/states'
 import type { Help } from '@ppe/ui/components/tooltip'
-import { Table, TableBody, TableCell, TableGroupRow, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
+import { Table, TableBody, TableCell, TableGroupRow, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
 import type { SortColumn, SortState } from '@ppe/ui/lib/sort'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ChevronRight, Plus } from 'lucide-react'
+import { ExportSheet } from '@ppe/ui/components/export-sheet'
+import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
+import { useSelection } from '@ppe/ui/lib/use-selection'
+import { ChevronRight, Download, Plus } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 
 import { OrderStatusBadge } from '@/components/order-status'
@@ -24,6 +27,8 @@ import { Segmented } from '@ppe/ui/components/segmented'
 import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { t } from '@/i18n'
+import { loadAllOrders } from '@/lib/employee-items'
+import { orderExportColumns } from '@/lib/order-export'
 import { type DatePeriod, LONG_WAIT_DAYS, activityAt, looksLikeRecord, monthOf, periodRange } from '@/lib/history'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import { formatEuro } from '@/lib/utils'
@@ -179,6 +184,9 @@ export function History({
 
   // J and K: the next or previous order on this page, while one is open; Escape closes it beside the list.
   const shownIds = useMemo(() => orders.data?.orders.map((o) => o.id), [orders.data])
+  // The orders ticked for Export: those on the page shown. Export's All takes every page matching the filters.
+  const selection = useSelection(useMemo(() => shownIds ?? [], [shownIds]))
+  const [exporting, setExporting] = useState(false)
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: 'history', order: id }, { scroll: false }), onClose: close })
 
   const tz = settings.data?.timezone
@@ -226,6 +234,8 @@ export function History({
         title={t.history.title}
         filters={{ label: t.history.filters, count: foldedFilters, controls: 'history-filters', open: showFilters, onToggle: () => setShowFilters((v) => !v) }}
         // A link, so it also opens in a new tab. Not on a phone, whose tab bar has New order.
+        // Export: in the header from md, in ⋯ below (a phone's list has no checkboxes, so it exports all matching).
+        secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: !orders.data?.total }]}
         primary={{ label: t.shell.createOrder, icon: Plus, link: linkTo({ name: 'createOrder' }, navigate), hiddenBelow: 'md' }}
       />
 
@@ -324,6 +334,12 @@ export function History({
             and the employee code, so it stays one line a row down to 30rem
             of room (a desktop from about 1200px).
           */}
+          <SelectionBar selection={selection}>
+            <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
+              <Download aria-hidden />
+              {t.common.exportSelected}
+            </Button>
+          </SelectionBar>
           <Table
             stack="list"
             // Beside an open order the short columns already fit one line a row; widths come from their content there.
@@ -335,6 +351,10 @@ export function History({
           >
             <TableHeader>
               <TableRow>
+                {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
+                <TableHead className="w-10 stacked:hidden">
+                  <SelectAllCheckbox selection={selection} />
+                </TableHead>
                 {columns.map((c) => (
                   <SortableHead key={c.key} column={c} align={c.key === 'total' ? 'right' : 'left'} className={selected ? undefined : historyWidths[c.key]} {...sortProps} />
                 ))}
@@ -347,21 +367,26 @@ export function History({
                 const newMonth = sort.key === 'date' && (!prev || monthOf(activityAt(prev), tz).key !== month.key)
                 return (
                   <Fragment key={o.id}>
-                  {newMonth ? <TableGroupRow colSpan={columns.length}>{month.label}</TableGroupRow> : null}
+                  {newMonth ? <TableGroupRow colSpan={columns.length + 1}>{month.label}</TableGroupRow> : null}
                   <TableRow
                     data-state={selected === o.id ? 'selected' : undefined}
                     aria-current={selected === o.id ? 'true' : undefined}
                     className={cn(
                       stackedBreak,
                       'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
+                      // Ticked for Export.
+                      selection.has(o.id) && 'bg-primary/5',
                     )}
                     // The whole row opens the order; the record number is the real link,
                     // for keyboards, screen readers and "open in new tab".
                     onClick={(ev) => {
-                      if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                      if ((ev.target as Element).closest('a, button, input, [data-slot=select-cell]') || window.getSelection()?.toString()) return
                       open(o.id)
                     }}
                   >
+                    <TableCell data-slot="select-cell" className="stacked:hidden">
+                      <RowCheckbox selection={selection} id={o.id} name={o.record_number} />
+                    </TableCell>
                     {/*
                       Second line in a row: the record number, still the link for keyboards and "open in new tab".
                       With no order open, hovering it previews the order; beside one, the row itself does that.
@@ -417,6 +442,16 @@ export function History({
           </nav>
         </>
       )}
+      <ExportSheet
+        open={exporting}
+        onClose={() => setExporting(false)}
+        list={t.history.title}
+        columns={orderExportColumns(tz)}
+        shown={orders.data?.orders ?? []}
+        selected={orders.data?.orders.filter((o) => selection.has(o.id)) ?? []}
+        // Every page matching the tab, filters and sort, fetched when exporting.
+        matching={{ count: orders.data?.total ?? 0, load: () => loadAllOrders(client, { ...scope, ...(filters.status ? { status: filters.status } : {}), sort: sort.key, dir: sort.dir }) }}
+      />
     </ListDetail>
   )
 }

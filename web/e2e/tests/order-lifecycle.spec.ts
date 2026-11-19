@@ -4,7 +4,7 @@ import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { type Browser, type BrowserContext, type Page, chromium, devices as deviceProfiles, expect, test } from '@playwright/test'
+import { type Browser, type BrowserContext, type Download, type Page, chromium, devices as deviceProfiles, expect, test } from '@playwright/test'
 import pg from 'pg'
 
 import { admin, apiEnv, caddyMode, dbDSN, openAIPort, publishBuild, repoRoot, runsApp, webURL } from '../env.ts'
@@ -1768,7 +1768,7 @@ test('columns sort: Orders on the server across pages, other lists in place', as
 
   // Item Catalogue has a natural order (display order) that a third click returns to.
   await openTab('Item Catalogue')
-  const names = async () => (await page.locator('tbody tr td:first-child').allTextContents()).map((t) => t.trim())
+  const names = async () => (await page.locator('tbody tr td:nth-child(1 of :not([data-slot=select-cell]))').allTextContents()).map((t) => t.trim())
   const byItem = page.getByRole('columnheader', { name: 'Item' })
   await expect(byItem).toHaveAttribute('aria-sort', 'none')
   const displayOrder = await names()
@@ -2172,7 +2172,8 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   // does not open the card.
   await card.getByRole('checkbox', { name: 'Select SIM-000001' }).check()
   await expect(page).toHaveURL(/\/assets\/sim-cards$/)
-  const chosen = page.getByRole('group', { name: '1 SIM selected' })
+  // The shared selection bar (as on every list): how many, then Change Status, Export… and Clear selection.
+  const chosen = page.getByRole('group', { name: '1 selected' })
   await chosen.getByRole('button', { name: 'Change Status of the selected SIMs' }).click()
   await page.getByRole('menuitem', { name: 'Blocked' }).click()
   await expect(page.getByText('1 SIM: status changed to Blocked.')).toBeVisible()
@@ -2524,11 +2525,11 @@ test('Equipment & Furniture is for the Equipment Assignments role alone, an admi
   await expect(assetsCard.getByRole('link', { name: /Total items/ })).toHaveCount(0)
   // Administrator does not have it, and cannot: it is the built-in role's.
   await openTab('Roles & permissions')
-  await page.getByRole('row', { name: /^Administrator/ }).getByRole('button', { name: 'View Administrator' }).click()
+  await page.getByRole('row', { name: /^Select Administrator\b/ }).getByRole('button', { name: 'View Administrator' }).click()
   let dialog = page.getByRole('dialog')
   await expect(dialog.getByRole('checkbox', { name: /^See Equipment & Furniture/ })).not.toBeChecked()
   await dialog.getByRole('button', { name: 'Close' }).last().click()
-  await expect(page.getByRole('row', { name: /^Equipment Assignments/ })).toContainText('See Equipment & Furniture')
+  await expect(page.getByRole('row', { name: /^Select Equipment Assignments\b/ })).toContainText('See Equipment & Furniture')
   // The administrator gives it to themselves on Users; the sign-in's next renewal carries it.
   await openTab('Users')
   await page.getByRole('button', { name: `Edit ${admin.name}` }).click()
@@ -3190,11 +3191,45 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
   await other.context().close()
 })
 
+test('Export: Orders exports every order matching the filters, Users the ticked users', async () => {
+  const csvOf = async (download: Download) => (await new Response((await download.createReadStream()) as unknown as ReadableStream).text()).replace(/^\uFEFF/, '')
+
+  // Orders loads a page at a time: with nothing ticked, Export takes every order matching the tab and filters.
+  await openTab('Orders')
+  const total = Number((await page.getByText(/^\d+ orders? · Page/).textContent())?.match(/^(\d+)/)?.[1])
+  expect(total).toBeGreaterThan(0)
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  let sheet = page.getByRole('dialog', { name: 'Export Orders' })
+  await sheet.getByRole('button', { name: 'CSV' }).click()
+  let downloading = page.waitForEvent('download')
+  await sheet.getByRole('button', { name: `Export (${total})` }).click()
+  let file = await downloading
+  expect(file.suggestedFilename()).toMatch(/^Orders \d{4}-\d{2}-\d{2}\.csv$/)
+  let lines = (await csvOf(file)).trimEnd().split('\r\n')
+  expect(lines[0]).toBe('Record,Employee,Status,Ordered on,Given on,Total value')
+  expect(lines).toHaveLength(total + 1)
+
+  // Administration's lists the same way: a ticked user, then Export… on the selection bar.
+  await openTab('Users')
+  await page.getByRole('checkbox', { name: `Select ${admin.name}` }).check()
+  await page.getByRole('group', { name: '1 selected' }).getByRole('button', { name: 'Export…' }).click()
+  sheet = page.getByRole('dialog', { name: 'Export Users' })
+  await expect(sheet.getByRole('radio', { name: 'Selected (1)' })).toBeChecked()
+  await sheet.getByRole('button', { name: 'CSV' }).click()
+  downloading = page.waitForEvent('download')
+  await sheet.getByRole('button', { name: 'Export (1)' }).click()
+  file = await downloading
+  lines = (await csvOf(file)).trimEnd().split('\r\n')
+  expect(lines).toHaveLength(2)
+  expect(lines[1]).toContain(admin.email)
+  await page.getByRole('button', { name: 'Clear selection' }).click()
+})
+
 test('Roles & permissions: a role made of permissions, given to a user, lets them do what it allows', async ({ browser }) => {
   await openTab('Roles & permissions')
   await expect(page.getByRole('heading', { name: 'Roles & permissions' })).toBeVisible()
   // Administrator is shown as it is: nothing in it can change, and it cannot be deleted.
-  const adminRow = page.getByRole('row', { name: /^Administrator/ })
+  const adminRow = page.getByRole('row', { name: /^Select Administrator\b/ })
   await expect(adminRow.getByRole('button', { name: /^More actions/ })).toHaveCount(0)
   await adminRow.getByRole('button', { name: 'View Administrator' }).click()
   let dialog = page.getByRole('dialog')
@@ -3225,7 +3260,7 @@ test('Roles & permissions: a role made of permissions, given to a user, lets the
   await dialog.getByRole('checkbox', { name: /^See users/ }).uncheck()
   await dialog.getByRole('checkbox', { name: /^Manage Item Catalogue/ }).check()
   await dialog.getByRole('button', { name: 'Add Role' }).click()
-  const storeRow = page.getByRole('row', { name: /^Storekeeper/ })
+  const storeRow = page.getByRole('row', { name: /^Select Storekeeper\b/ })
   await expect(storeRow).toContainText('Manage Item Catalogue')
   await expect(storeRow).toContainText('0 users')
   // A second role of the same name is refused on its field.
@@ -3266,12 +3301,12 @@ test('Roles & permissions: a role made of permissions, given to a user, lets the
 
   // A role someone holds is not deleted.
   await openTab('Roles & permissions')
-  await expect(page.getByRole('row', { name: /^Storekeeper/ })).toContainText('1 user')
-  await page.getByRole('row', { name: /^Storekeeper/ }).getByRole('button', { name: /^More actions/ }).click()
+  await expect(page.getByRole('row', { name: /^Select Storekeeper\b/ })).toContainText('1 user')
+  await page.getByRole('row', { name: /^Select Storekeeper\b/ }).getByRole('button', { name: /^More actions/ }).click()
   page.once('dialog', (d) => void d.accept())
   await page.getByRole('menuitem', { name: 'Delete role…' }).click()
   await expect(page.getByText('Users hold this role. Take it from them on Users first.')).toBeVisible()
-  await expect(page.getByRole('row', { name: /^Storekeeper/ })).toBeVisible()
+  await expect(page.getByRole('row', { name: /^Select Storekeeper\b/ })).toBeVisible()
 })
 
 test('Orders: only a manager deletes an order, after asking; it then leaves Orders', async ({ browser }) => {

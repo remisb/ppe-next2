@@ -4,6 +4,7 @@ import type { SecurityText } from '../en/security'
 
 export const security: SecurityText = {
   title: 'Безопасность',
+  exportColumns: { email: 'Эл. почта', signIn: 'Вход', ends: 'Истекает, если не используется' },
   description: 'Кто и откуда входил, у кого не получилось, где пользователи в системе сейчас и кому что разрешено.',
   sections: 'Разделы безопасности',
   signIns: 'Входы',

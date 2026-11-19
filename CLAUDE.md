@@ -106,7 +106,10 @@ size defaults are `employee_profiles.read`/`.manage` and `employee_sizes.read`/`
 sizes without manage; Create Order still resolves from them). Delete employee refuses an
 employee who holds assets. **Export** (WARE-43, `docs/ux/list-export.html`): Employees' rows, ticked or all shown, with chosen columns as
 Excel or CSV, built in the browser by `@ppe/ui`'s `table-export.ts` (no dependency: its own stored zip), `ExportSheet` and
-`SelectionBar`/`useSelection`, which every list is to reuse; columns offered by permission (`lib/employee-export.ts`). **Duplicates and merging** (migration 0052, spec "Duplicates and merging" in
+`SelectionBar`/`useSelection`; columns offered by permission (`lib/employee-export.ts`). WARE-44 gave every list the same
+(each list's columns in a `lib/*-export.ts`, Administration's in `apps/admin/src/lib/list-export.ts`): a list loaded page by page
+(Orders, SIM Cards, Equipment) exports "All matching the filters" through `ExportSheet`'s `matching` (every page fetched at export);
+SIM Cards' Change Status is on the shared `SelectionBar`. Exports are not on the Audit log. **Duplicates and merging** (migration 0052, spec "Duplicates and merging" in
 `employee-service.md`): Add New Employee warns of alike names (`employee.CompareNames`, `POST …/employees/similar`)
 with Use This Employee; Employees offers possible duplicates (Not the Same Person, `employee_distinct_pairs`) and
 **Merge Employees** (`employees.merge`, Administrator and Manager): one transaction moves the removed record's orders,

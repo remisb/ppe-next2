@@ -12,10 +12,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
-import { Plus } from 'lucide-react'
+import { ExportSheet } from '@ppe/ui/components/export-sheet'
+import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
+import { useSelection } from '@ppe/ui/lib/use-selection'
+import { cn } from '@ppe/ui/lib/utils'
+import { Download, Plus } from 'lucide-react'
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
 
 import { t } from '@/i18n'
+import { supplierExportColumns } from '@/lib/list-export'
 import type { Route } from '@/lib/router'
 import { type SupplierDraft, type SupplierErrors, draftOf, matches, placeOf, toInput, validateSupplier } from '@/lib/suppliers'
 
@@ -55,6 +60,9 @@ export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
       ),
     [list.data, filter, sort],
   )
+  const [exporting, setExporting] = useState(false)
+  // The suppliers ticked for Export: only those the search shows count.
+  const selection = useSelection(useMemo(() => shown.map((s) => s.id), [shown]))
 
   if (!allowed) {
     return (
@@ -78,6 +86,8 @@ export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
       <PageHeader
         title={t.suppliers.title}
         description={t.suppliers.description}
+        // Export: in the header from md, in ⋯ below (a phone exports all shown: its list has no checkboxes).
+        secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: shown.length === 0 }]}
         primary={{ label: t.suppliers.addSupplier, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
       />
       <div className="mb-4 flex flex-wrap gap-2">
@@ -96,12 +106,22 @@ export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
       <p role="status" className="mb-3 text-sm text-muted-foreground empty:hidden">
         {saved}
       </p>
+      <SelectionBar selection={selection}>
+        <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
+          <Download aria-hidden />
+          {t.common.exportSelected}
+        </Button>
+      </SelectionBar>
       <Loaded load={list} empty={shown.length === 0} emptyState={filter.trim() ? t.suppliers.noMatch(filter.trim()) : t.suppliers.noSuppliers}>
         {() => (
           // Where the table is narrow the suppliers are one list of rows: name, then code and place, with Edit and ⋯ beside them.
           <Table stack="list" stickyHead sortControl={<SortMenu columns={columns()} {...sortProps} />}>
             <TableHeader>
               <TableRow>
+                {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
+                <TableHead className="w-10 stacked:hidden">
+                  <SelectAllCheckbox selection={selection} />
+                </TableHead>
                 {columns().map((c) => (
                   <SortableHead key={c.key} column={c} {...sortProps} />
                 ))}
@@ -111,7 +131,10 @@ export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
             </TableHeader>
             <TableBody>
               {shown.map((s) => (
-                <TableRow key={s.id} className="stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3">
+                <TableRow key={s.id} className={cn('stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3', selection.has(s.id) && 'bg-primary/5')}>
+                  <TableCell data-slot="select-cell" className="stacked:hidden">
+                    <RowCheckbox selection={selection} id={s.id} name={s.name} />
+                  </TableCell>
                   <TableCell className="font-mono text-sm stacked:col-start-1 stacked:row-start-2 stacked:text-xs stacked:text-muted-foreground">{s.code}</TableCell>
                   <TableCell className="font-medium whitespace-normal stacked:col-start-1 stacked:row-start-1">{s.name}</TableCell>
                   <TableCell className="stacked:col-start-1 stacked:row-start-3 stacked:text-xs stacked:text-muted-foreground">{placeOf(s)}</TableCell>
@@ -151,6 +174,14 @@ export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
           setSaved(message)
           list.reload()
         }}
+      />
+      <ExportSheet
+        open={exporting}
+        onClose={() => setExporting(false)}
+        list={t.suppliers.title}
+        columns={supplierExportColumns()}
+        shown={shown}
+        selected={shown.filter((s) => selection.has(s.id))}
       />
     </>
   )

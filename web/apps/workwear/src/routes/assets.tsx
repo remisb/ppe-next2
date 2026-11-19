@@ -16,7 +16,10 @@ import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
-import { ChevronRight, FileText, FilterX, Plus } from 'lucide-react'
+import { ExportSheet } from '@ppe/ui/components/export-sheet'
+import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
+import { useSelection } from '@ppe/ui/lib/use-selection'
+import { ChevronRight, Download, FileText, FilterX, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { AssetDetail } from '@/components/asset-detail'
@@ -27,6 +30,7 @@ import { EquipmentForm } from '@/components/equipment-form'
 import { type PdfFile, PdfPreview } from '@/components/pdf-preview'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
+import { assetExportColumns, loadAllAssets } from '@/lib/asset-export'
 import {
   ASSET_PAGE_SIZE,
   type AssetFilters,
@@ -155,10 +159,8 @@ export function Assets({
     [kind, JSON.stringify(counted), reloads],
   )
   const reload = () => setReloads((n) => n + 1)
-  // SIMs chosen on this page for one Change Status (S18: a batch the provider confirmed); another page or filter starts afresh.
-  const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
-  useEffect(() => setChosen(new Set()), [JSON.stringify(query)])
+  const [exporting, setExporting] = useState(false)
   // SIM Cards' Preview PDF: the server draws every card the filters match, in the register's sort and the language
   // of the user's account; the preview shows it, to print, download or open in a tab.
   const [pdfLoading, setPdfLoading] = useState(false)
@@ -180,7 +182,7 @@ export function Assets({
 
   // One card after another, each its own change in the card's Changes; a failure stops there and says how far it got.
   const changeChosen = async (next: ConnectionStatus) => {
-    const cards = (list.data?.assets ?? []).filter((a) => chosen.has(a.id))
+    const cards = (list.data?.assets ?? []).filter((a) => selection.has(a.id))
     const pending = cards.filter((a) => a.connection_status !== next)
     let done = 0
     setBulkBusy(true)
@@ -191,7 +193,7 @@ export function Assets({
         done++
       }
       setMessage(t.assets.bulkChanged(cards.length, statusLabel(next)))
-      setChosen(new Set())
+      selection.clear()
     } catch (err) {
       action.fail(err)
       setMessage(t.assets.bulkStopped(done, pending.length))
@@ -235,21 +237,22 @@ export function Assets({
 
   // J and K: the next or previous SIM or item on this page, while one is open; Escape closes it beside the register.
   const shownIds = useMemo(() => list.data?.assets.map((a) => a.id), [list.data])
+  /*
+   * The rows ticked on this page: for Export, and on SIM Cards for one Change Status (S18: a batch the provider
+   * confirmed). Another page or filter starts afresh.
+   */
+  const pageIds = useMemo(() => shownIds ?? [], [shownIds])
+  const selection = useSelection(pageIds)
+  const queryKey = JSON.stringify(query)
+  const { clear: clearSelection } = selection
+  useEffect(() => clearSelection(), [queryKey, clearSelection])
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: register, ...at, asset: id }, { scroll: false }), onClose: close })
 
   // Beside an open SIM or item the register keeps the columns that find the next one: one line a row; the rest is in the pane.
   const beside = selected !== undefined
-  // Selecting SIMs, for one Change Status: the table's first column, where the register is a table (not beside a card).
-  const bulk = sim && canManage && !beside
-  const pageIds = list.data?.assets.map((a) => a.id) ?? []
-  const allChosen = pageIds.length > 0 && pageIds.every((id) => chosen.has(id))
-  const choose = (id: string, on: boolean) =>
-    setChosen((c) => {
-      const next = new Set(c)
-      if (on) next.add(id)
-      else next.delete(id)
-      return next
-    })
+  // Ticking rows (Export; on SIM Cards also Change Status): the table's first column, where the register is a table (not beside a card).
+  const ticking = !beside
+  const bulkStatus = sim && canManage
 
   const s = summary.data
   const places: { value: Place; label: string }[] = [
@@ -334,7 +337,11 @@ export function Assets({
           title={sim ? t.assets.simCards : t.assets.equipment}
           filters={{ label: t.assets.filters, count: extra, controls: 'asset-filters', open: showFilters, onToggle: () => setShowFilters((v) => !v) }}
           // Preview PDF is a button from md; on a phone it is under ⋯.
-          secondary={sim ? [{ label: t.assets.previewPdf, icon: FileText, disabled: pdfLoading, onClick: () => void previewPdf(), showFrom: 'md' }] : []}
+          // Export too: every card or item the filters match, or the ticked ones.
+          secondary={[
+            ...(sim ? [{ label: t.assets.previewPdf, icon: FileText, disabled: pdfLoading, onClick: () => void previewPdf(), showFrom: 'md' as const }] : []),
+            { label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: !list.data || list.data.total === 0 },
+          ]}
           primary={canManage ? { label: sim ? t.assets.addSimCard : t.assets.addAsset, short: sim ? undefined : t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
         />
         <div data-slot="filter-bar" className="mb-4 flex flex-col gap-3">
@@ -416,14 +423,14 @@ export function Assets({
           </EmptyState>
         ) : (
           <>
-            {bulk && chosen.size > 0 ? (
-              <div role="group" aria-label={t.assets.selectedCount(chosen.size)} className="mb-3 flex flex-wrap items-center gap-2 border-y border-border py-2">
-                <span className="text-sm font-medium">{t.assets.selectedCount(chosen.size)}</span>
-                <BulkStatusMenu disabled={bulkBusy} onChange={(next) => void changeChosen(next)} />
-                <Button size="sm" variant="ghost" disabled={bulkBusy} onClick={() => setChosen(new Set())}>
-                  {t.assets.clearSelection}
+            {ticking ? (
+              <SelectionBar selection={selection}>
+                {bulkStatus ? <BulkStatusMenu disabled={bulkBusy} onChange={(next) => void changeChosen(next)} /> : null}
+                <Button size="sm" variant="outline" disabled={bulkBusy} onClick={() => setExporting(true)}>
+                  <Download aria-hidden />
+                  {t.common.exportSelected}
                 </Button>
-              </div>
+              </SelectionBar>
             ) : null}
             <Table stack="list" fixed stackBelow={beside ? 'sm' : 'lg'} stickyHead busy={list.loading} sortControl={<SortMenu columns={columns(kind)} {...sortProps} />}>
               {/*
@@ -432,15 +439,9 @@ export function Assets({
               */}
               <TableHeader className="[&_th]:whitespace-normal">
                 <TableRow>
-                  {bulk ? (
-                    <TableHead className="w-8">
-                      <input
-                        type="checkbox"
-                        className="size-4 align-middle accent-primary"
-                        aria-label={t.assets.selectPage}
-                        checked={allChosen}
-                        onChange={(e) => setChosen(e.target.checked ? new Set(pageIds) : new Set())}
-                      />
+                  {ticking ? (
+                    <TableHead className="w-10 stacked:hidden">
+                      <SelectAllCheckbox selection={selection} label={sim ? t.assets.selectPage : t.assets.selectPageItems} />
                     </TableHead>
                   ) : null}
                   {sim ? (
@@ -479,22 +480,20 @@ export function Assets({
                       key={a.id}
                       data-state={selected === a.id ? 'selected' : undefined}
                       aria-current={selected === a.id ? 'true' : undefined}
-                      className="cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted"
+                      className={cn(
+                        'cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
+                        // Ticked for Export or Change Status.
+                        ticking && selection.has(a.id) && 'bg-primary/5',
+                      )}
                       // The whole row opens the card; its number is the real link, for keyboards and new tabs.
                       onClick={(ev) => {
-                        if ((ev.target as Element).closest('a, button, input') || window.getSelection()?.toString()) return
+                        if ((ev.target as Element).closest('a, button, input, [data-slot=select-cell]') || window.getSelection()?.toString()) return
                         openAsset(a.id)
                       }}
                     >
-                      {bulk ? (
-                        <TableCell className="w-8 stacked:hidden">
-                          <input
-                            type="checkbox"
-                            className="size-4 align-middle accent-primary"
-                            aria-label={t.assets.selectCard(a.inventory_no)}
-                            checked={chosen.has(a.id)}
-                            onChange={(e) => choose(a.id, e.target.checked)}
-                          />
+                      {ticking ? (
+                        <TableCell data-slot="select-cell" className="stacked:hidden">
+                          <RowCheckbox selection={selection} id={a.id} name={a.inventory_no} />
                         </TableCell>
                       ) : null}
                       {sim ? (
@@ -648,6 +647,16 @@ export function Assets({
 
       {printing}
       <PdfPreview file={pdf} label={t.assets.pdfPreviewLabel} onClose={() => setPdf(null)} />
+      {/* Every card or item the filters match (all pages, in the register's sort), or those ticked on this page. */}
+      <ExportSheet
+        open={exporting}
+        onClose={() => setExporting(false)}
+        list={sim ? t.assets.simCards : t.assets.equipment}
+        columns={assetExportColumns(kind, settings.data?.timezone)}
+        shown={list.data?.assets ?? []}
+        selected={(list.data?.assets ?? []).filter((a) => selection.has(a.id))}
+        matching={list.data ? { count: list.data.total, load: () => loadAllAssets(client.assets.list, query) } : undefined}
+      />
       <AssetSheets
         sheet={sheet}
         today={today}

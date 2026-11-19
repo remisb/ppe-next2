@@ -21,9 +21,15 @@ import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
 import { useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail, PaneBar } from '@ppe/ui/components/list-detail'
 import { formatNumber } from '@ppe/i18n'
+import { Button } from '@ppe/ui/components/button'
+import { ExportSheet } from '@ppe/ui/components/export-sheet'
+import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
+import { useSelection } from '@ppe/ui/lib/use-selection'
+import { Download } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { intlLocale, t } from '@/i18n'
+import { errorExportColumns } from '@/lib/list-export'
 import { type Route, type SystemTab, linkTo, systemTabPermission, systemTabs } from '@/lib/router'
 
 import { BackupsTab } from './backups'
@@ -332,6 +338,9 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
   const shownIds = useMemo(() => errors.map((e) => e.id), [errors])
   useListKeys({ ids: shownIds, selected, onOpen: open, onClose: close })
   const beside = selected !== undefined
+  const [exporting, setExporting] = useState(false)
+  // The errors ticked for Export, of those loaded (Older loads more).
+  const selection = useSelection(shownIds)
 
   return (
     <ListDetail
@@ -356,8 +365,21 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
             ...errorKinds.map((k) => ({ value: k, label: t.system.kinds[k], count: counts?.[k] })),
           ]}
         />
-        <RefreshButton loading={pages.loading} onClick={reload} />
+        {/* The tab's Export beside Refresh: System's header belongs to every tab. It exports the errors loaded. */}
+        <div className="flex gap-2">
+          <Button variant="outline" disabled={errors.length === 0} onClick={() => setExporting(true)}>
+            <Download aria-hidden />
+            {t.common.export}
+          </Button>
+          <RefreshButton loading={pages.loading} onClick={reload} />
+        </div>
       </div>
+      <SelectionBar selection={selection}>
+        <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
+          <Download aria-hidden />
+          {t.common.exportSelected}
+        </Button>
+      </SelectionBar>
       {pages.error ? (
         <ErrorState error={pages.error} onRetry={reload} />
       ) : !pages.data ? (
@@ -369,6 +391,10 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
           <Table stack="list" stackBelow={beside ? 'sm' : 'md'} busy={pages.loading}>
             <TableHeader>
               <TableRow>
+                {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
+                <TableHead className="w-10 stacked:hidden">
+                  <SelectAllCheckbox selection={selection} />
+                </TableHead>
                 <TableHead>{t.system.lastSeen}</TableHead>
                 <TableHead>{t.system.error}</TableHead>
                 {beside ? null : <TableHead>{t.system.kind}</TableHead>}
@@ -381,12 +407,15 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
                   key={e.id}
                   data-state={selected === e.id ? 'selected' : undefined}
                   aria-current={selected === e.id ? 'true' : undefined}
-                  className={cn(stackedBreak, 'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted')}
+                  className={cn(stackedBreak, 'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted', selection.has(e.id) && 'bg-primary/5')}
                   onClick={(ev) => {
-                    if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
+                    if ((ev.target as Element).closest('a, button, input, [data-slot=select-cell]') || window.getSelection()?.toString()) return
                     open(e.id)
                   }}
                 >
+                  <TableCell data-slot="select-cell" className="stacked:hidden">
+                    <RowCheckbox selection={selection} id={e.id} name={e.message} />
+                  </TableCell>
                   <TableCell className="whitespace-nowrap tabular-nums stacked:order-2 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">
                     <RelativeDate iso={e.last_seen} timeZone={timeZone} time />
                   </TableCell>
@@ -410,6 +439,14 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
           <OlderButton pages={pages} label={t.system.older} />
         </>
       )}
+      <ExportSheet
+        open={exporting}
+        onClose={() => setExporting(false)}
+        list={t.system.errors}
+        columns={errorExportColumns(timeZone)}
+        shown={errors}
+        selected={errors.filter((e) => selection.has(e.id))}
+      />
     </ListDetail>
   )
 }

@@ -98,6 +98,28 @@ export function toXLSX(table: readonly (readonly ExportValue[])[], sheetName = '
   ])
 }
 
+/**
+ * A moment as a file's cell, in the organisation's timezone (as the screens show it):
+ * "2026-11-19 14:05", or "2026-11-19" with `time` false. Null stays an empty cell.
+ */
+export function exportMoment(iso: string | null | undefined, timeZone?: string, time = true): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(d)
+      .map((p) => [p.type, p.value]),
+  )
+  const day = `${parts.year}-${parts.month}-${parts.day}`
+  return time ? `${day} ${parts.hour}:${parts.minute}` : day
+}
+
+/** Cents as euros, a number a spreadsheet sums: 12345 → 123.45. */
+export function exportEuros(cents: number | null | undefined): number | null {
+  return cents === null || cents === undefined ? null : Math.round(cents) / 100
+}
+
 /** A, B, … Z, AA, AB: a spreadsheet's name for the column at `index` (0-based). */
 export function columnName(index: number): string {
   let n = index + 1

@@ -176,6 +176,7 @@ export const dashboard: DashboardText = {
     }),
   item: 'Предмет',
   quantity: 'Количество',
+  exportColumns: { code: 'Код сотрудника', size: 'Размер', status: 'Статус', dueOn: 'Срок замены', givenOn: 'Выдано', receipt: 'Квитанция' },
   accountingPrice: 'Цена',
   estimated: 'Оценка',
   noPrice: 'Без цены',

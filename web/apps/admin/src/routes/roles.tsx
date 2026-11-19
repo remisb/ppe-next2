@@ -12,11 +12,15 @@ import { ActionError, EmptyState, Loaded, PageHeader } from '@ppe/ui/components/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { combineLoads, errorText, useLoad } from '@ppe/ui/lib/use-load'
+import { ExportSheet } from '@ppe/ui/components/export-sheet'
+import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
+import { useSelection } from '@ppe/ui/lib/use-selection'
 import { cn } from '@ppe/ui/lib/utils'
-import { Lock, Plus } from 'lucide-react'
-import { type FormEvent, useEffect, useState } from 'react'
+import { Download, Lock, Plus } from 'lucide-react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { t } from '@/i18n'
+import { roleExportColumns } from '@/lib/list-export'
 import { type RoleDraft, type RoleErrors, draftOf, grouped, neededBy, permissionLabel, togglePermission, validateRole } from '@/lib/roles'
 import { type Route, linkTo } from '@/lib/router'
 import { roleGrants, roleName } from '@/lib/users'
@@ -35,6 +39,10 @@ export function RolesPage({ navigate }: { navigate: (to: Route) => void }) {
   const catalogue = useLoad(() => (allowed ? client.permissions() : Promise.resolve([])))
   const [editing, setEditing] = useState<Role | 'new' | null>(null)
   const action = useAction()
+  const [exporting, setExporting] = useState(false)
+  const shown = useMemo(() => roles.data ?? [], [roles.data])
+  // The roles ticked for Export.
+  const selection = useSelection(useMemo(() => shown.map((r) => r.id), [shown]))
 
   if (!allowed) {
     return (
@@ -59,15 +67,27 @@ export function RolesPage({ navigate }: { navigate: (to: Route) => void }) {
       <PageHeader
         title={t.roles.title}
         description={t.roles.description}
+        // Export: in the header from md, in ⋯ below (a phone exports them all: its list has no checkboxes).
+        secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: shown.length === 0 }]}
         primary={{ label: t.roles.addRole, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
       />
       <ActionError error={action.error} className="mb-4" />
+      <SelectionBar selection={selection}>
+        <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
+          <Download aria-hidden />
+          {t.common.exportSelected}
+        </Button>
+      </SelectionBar>
       <Loaded load={combineLoads(roles, catalogue)}>
         {([list]) => (
           // Where the table is narrow the roles are one list of rows: name and what it is for, then its counts, with Edit and ⋯ beside them.
           <Table stack="list">
             <TableHeader>
               <TableRow>
+                {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
+                <TableHead className="w-10 stacked:hidden">
+                  <SelectAllCheckbox selection={selection} />
+                </TableHead>
                 <TableHead>{t.roles.name}</TableHead>
                 <TableHead>{t.roles.permissions}</TableHead>
                 <TableHead>{t.roles.users}</TableHead>
@@ -76,7 +96,10 @@ export function RolesPage({ navigate }: { navigate: (to: Route) => void }) {
             </TableHeader>
             <TableBody>
               {list.map((r) => (
-                <TableRow key={r.id} className="stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3">
+                <TableRow key={r.id} className={cn('stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3', selection.has(r.id) && 'bg-primary/5')}>
+                  <TableCell data-slot="select-cell" className="stacked:hidden">
+                    <RowCheckbox selection={selection} id={r.id} name={roleName(r)} />
+                  </TableCell>
                   <TableCell className="whitespace-normal stacked:col-start-1 stacked:row-start-1">
                     <span className="font-medium">{roleName(r)}</span>
                     {r.key ? (
@@ -135,6 +158,14 @@ export function RolesPage({ navigate }: { navigate: (to: Route) => void }) {
           setEditing(null)
           roles.reload()
         }}
+      />
+      <ExportSheet
+        open={exporting}
+        onClose={() => setExporting(false)}
+        list={t.roles.title}
+        columns={roleExportColumns()}
+        shown={shown}
+        selected={shown.filter((r) => selection.has(r.id))}
       />
     </>
   )
