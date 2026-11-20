@@ -345,14 +345,15 @@ export function Assets({
           title={sim ? t.assets.simCards : t.assets.equipment}
           filters={{ label: t.assets.filters, count: extra, controls: 'asset-filters', open: showFilters, onToggle: () => setShowFilters((v) => !v) }}
           // Preview PDF is a button from md; on a phone it is under ⋯.
-          // Export too: every card or item the filters match, or the ticked ones.
+          // Export too: every card or item the filters match, or the ticked ones. Beside an open card the
+          // register's header is narrow, so Change Status… and Export (which close the card first) go under ⋯.
           secondary={[
             ...(sim ? [{ label: t.assets.previewPdf, icon: FileText, disabled: pdfLoading, onClick: () => void previewPdf(), showFrom: 'md' as const }] : []),
             // Change Status of several SIM cards at once starts its own select mode.
             ...(bulkStatus
-              ? [{ label: t.assets.changeStatusMode.start, icon: ListChecks, onClick: () => startMode(STATUS_MODE), showFrom: 'md' as const, disabled: !list.data || list.data.total === 0 || ticking }]
+              ? [{ label: t.assets.changeStatusMode.start, icon: ListChecks, onClick: () => startMode(STATUS_MODE), showFrom: beside ? ('never' as const) : ('md' as const), disabled: !list.data || list.data.total === 0 || ticking }]
               : []),
-            { label: t.common.export, icon: Download, onClick: () => startMode(EXPORT_MODE), showFrom: 'md', disabled: !list.data || list.data.total === 0 || ticking },
+            { label: t.common.export, icon: Download, onClick: () => startMode(EXPORT_MODE), showFrom: beside ? 'never' : 'md', disabled: !list.data || list.data.total === 0 || ticking },
           ]}
           primary={canManage ? { label: sim ? t.assets.addSimCard : t.assets.addAsset, short: sim ? undefined : t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
         />
