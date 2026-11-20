@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Employee Page</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* A design review in the style of record-actions.html: where people reach an employee from, with the options drawn as flows and screens. */
+:root{
+  --bg:#f6f6f9; --surface:#ffffff; --surface-2:#eff0f5; --fg:#15162a; --muted:#5b5e74; --line:#e1e2ea;
+  --brand:#1c2060; --accent:#3341a8; --accent-soft:#e8eafb;
+  --ok:#23703f; --ok-bg:#e4f3ea; --warn:#9a5a08; --warn-bg:#fcf0de; --bad:#b42318; --bad-bg:#fdeceb; --mute-bg:#eceef3;
+  --mark:#d6336c;
+  /* the mock app's own neutrals (shadcn) */
+  --app-bg:#ffffff; --app-card:#ffffff; --app-fg:#0a0a0a; --app-muted:#737373; --app-line:#e5e5e5; --app-pri:#171717; --app-pri-fg:#fafafa; --app-soft:#f5f5f5; --app-wa:#16a34a;
+  --shadow:0 1px 2px rgb(20 22 50 / .06), 0 8px 24px rgb(20 22 50 / .08);
+  --font:'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --r:10px; --topbar:58px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --accent:#909cff; --accent-soft:#252a52;
+  --ok:#6fd49a; --ok-bg:#15301f; --warn:#f2b45e; --warn-bg:#382811; --bad:#ff8f86; --bad-bg:#3a1816; --mute-bg:#24273a;
+  --mark:#ff7aa8;
+  --app-bg:#0a0a0a; --app-card:#171717; --app-fg:#fafafa; --app-muted:#a3a3a3; --app-line:#2e2e2e; --app-pri:#e5e5e5; --app-pri-fg:#171717; --app-soft:#262626; --app-wa:#4ade80;
+  --shadow:0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --accent:#909cff; --accent-soft:#252a52;
+  --ok:#6fd49a; --ok-bg:#15301f; --warn:#f2b45e; --warn-bg:#382811; --bad:#ff8f86; --bad-bg:#3a1816; --mute-bg:#24273a;
+  --mark:#ff7aa8;
+  --app-bg:#0a0a0a; --app-card:#171717; --app-fg:#fafafa; --app-muted:#a3a3a3; --app-line:#2e2e2e; --app-pri:#e5e5e5; --app-pri-fg:#171717; --app-soft:#262626; --app-wa:#4ade80;
+  --shadow:0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); color-scheme:dark }
+
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(var(--topbar) + 12px)}
+body{margin:0; background:var(--bg); color:var(--fg); font-family:var(--font); font-size:15px; line-height:1.55; padding:0 16px 64px}
+.wrap{max-width:1180px; margin:0 auto}
+h1,h2,h3{text-wrap:balance; margin:0; line-height:1.2}
+h1{font-size:clamp(26px,3.4vw,36px); font-weight:700; letter-spacing:-.02em}
+h2{font-size:23px; font-weight:650; letter-spacing:-.01em; margin-bottom:12px}
+h3{font-size:16.5px; font-weight:650; margin-bottom:6px}
+p{margin:0 0 10px}
+ul,ol{margin:0 0 10px; padding-left:20px}
+li{margin:3px 0}
+.lede{color:var(--muted); max-width:76ch; font-size:16px}
+.small{font-size:13px} .muted{color:var(--muted)}
+code,.mono{font-family:var(--mono); font-size:.88em}
+code{background:var(--surface-2); padding:1px 5px; border-radius:5px}
+pre{background:var(--surface-2); padding:12px 14px; border-radius:var(--r); overflow-x:auto; font-family:var(--mono); font-size:12.5px; line-height:1.5; margin:0 0 12px}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+button,select{font:inherit; color:inherit}
+
+header.top{position:sticky; top:0; z-index:50; background:color-mix(in oklab, var(--bg) 90%, transparent); backdrop-filter:blur(10px); margin:0 -16px; padding:10px 16px; border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex; align-items:center; gap:16px; flex-wrap:wrap}
+header.top strong{font-size:16px}
+header.top nav{display:flex; gap:4px; flex-wrap:wrap; margin-left:auto}
+header.top nav a{text-decoration:none; color:var(--muted); font-size:13.5px; padding:6px 9px; border-radius:7px}
+header.top nav a:hover{background:var(--surface-2); color:var(--fg)}
+
+section{padding:40px 0 8px; border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+.hero{padding:36px 0 24px}
+.meta{font-size:13px; color:var(--muted); margin-top:10px}
+.pill{display:inline-block; font-size:12px; font-weight:600; padding:2px 9px; border-radius:99px; background:var(--accent-soft); color:var(--accent)}
+.pill.rec{background:var(--ok-bg); color:var(--ok)}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:18px; box-shadow:var(--shadow)}
+.grid2{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.grid3{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.callout{border-left:3px solid var(--accent); background:var(--accent-soft); padding:12px 14px; border-radius:0 var(--r) var(--r) 0; margin:12px 0}
+.pros li::marker{content:'+  '; color:var(--ok); font-weight:700}
+.cons li::marker{content:'−  '; color:var(--bad); font-weight:700}
+.schem{font-family:var(--mono); font-size:12px; background:var(--surface-2); border-radius:8px; padding:8px 10px; white-space:pre; overflow-x:auto; margin:8px 0 10px}
+
+table{border-collapse:collapse; width:100%; font-size:14px}
+.tbl{overflow-x:auto; margin:0 0 12px; border:1px solid var(--line); border-radius:var(--r); background:var(--surface)}
+th,td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+th{font-size:12.5px; color:var(--muted); font-weight:600; background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right; font-variant-numeric:tabular-nums}
+.yes{color:var(--ok); font-weight:600} .no{color:var(--bad); font-weight:600} .mid{color:var(--warn); font-weight:600}
+
+figure{margin:0}
+figure img{display:block; width:100%; height:auto; border-radius:8px; border:1px solid var(--line); background:#000}
+figcaption{font-size:13px; color:var(--muted); margin-top:6px}
+.shots{display:grid; gap:16px; grid-template-columns:2fr 1fr}
+.shots .col{display:grid; gap:16px; align-content:start}
+@media (max-width:760px){ .shots{grid-template-columns:1fr} }
+
+/* label widths against the room */
+.bars{display:grid; gap:6px; margin:8px 0 6px}
+.bar{display:grid; grid-template-columns:minmax(120px,190px) 1fr; gap:10px; align-items:center; font-size:13px}
+.bar .track{position:relative; height:40px}
+.bar .b{position:absolute; left:0; height:10px; border-radius:3px}
+.bar .b.en{top:2px; background:var(--accent)} .bar .b.lt{top:15px; background:var(--warn)} .bar .b.ru{top:28px; background:var(--mark)}
+.limit{position:absolute; top:-4px; bottom:-4px; width:0; border-left:2px dashed var(--muted)}
+.limit span{position:absolute; top:-16px; left:3px; font-size:11px; color:var(--muted); white-space:nowrap}
+.legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--muted)}
+.legend i{display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px}
+
+/* playground */
+.controls{display:flex; flex-wrap:wrap; gap:14px 22px; align-items:end; margin:6px 0 16px}
+.ctl label{display:block; font-size:12px; color:var(--muted); font-weight:600; margin-bottom:4px}
+.seg{display:inline-flex; background:var(--surface-2); border-radius:9px; padding:3px; flex-wrap:wrap}
+.seg button{border:0; background:none; padding:6px 11px; border-radius:7px; cursor:pointer; font-size:13.5px; min-height:34px}
+.seg button[aria-pressed="true"]{background:var(--surface); box-shadow:var(--shadow); font-weight:600}
+select{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:6px 10px; min-height:38px}
+.stage{display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start; padding:20px; background:var(--surface-2); border-radius:var(--r); overflow-x:auto}
+.lang-col{flex:none}
+.lang-col h4{margin:0 0 8px; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+.readout{font-size:12px; color:var(--muted); margin-top:8px; max-width:100%; font-family:var(--mono); line-height:1.45}
+.readout b{color:var(--fg); font-weight:600}
+
+/* the mock app */
+.flow{display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; font-size:13px; margin:8px 0 4px}
+.flow .n{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:4px 9px; white-space:nowrap}
+.flow .n.page{border-color:var(--ok); background:var(--ok-bg); color:var(--ok); font-weight:600}
+.flow .n.pane{border-color:var(--accent); background:var(--accent-soft); color:var(--accent); font-weight:600}
+.flow .n.list{border-style:dashed}
+.flow .a{color:var(--muted)}
+.flow .a small{font-size:11px}
+.flows{display:grid; gap:2px; margin-bottom:10px}
+
+/* mini screens: the shell, a list, a pane, a page */
+.scr{background:var(--app-bg); color:var(--app-fg); border:1px solid var(--app-line); border-radius:12px; overflow:hidden; display:grid; font-size:12px; line-height:16px; box-shadow:var(--shadow)}
+.scr.desk{width:min(100%,720px); grid-template-columns:44px 1fr; height:440px}
+.scr.phone{width:250px; grid-template-rows:1fr 40px; height:440px; border-radius:22px}
+.rail{background:var(--app-card); border-right:1px solid var(--app-line); display:grid; align-content:start; gap:10px; padding:12px 8px}
+.rail i{display:block; height:18px; border-radius:5px; background:var(--app-soft)}
+.rail i.on{background:color-mix(in oklab,var(--app-pri) 30%, var(--app-soft))}
+.tabbar{border-top:1px solid var(--app-line); display:grid; grid-template-columns:repeat(5,1fr); align-items:center; justify-items:center}
+.tabbar i{width:18px; height:18px; border-radius:5px; background:var(--app-soft)} .tabbar i.on{background:color-mix(in oklab,var(--app-pri) 30%, var(--app-soft))}
+.work{display:grid; min-width:0; min-height:0; overflow:hidden}
+.work.split{grid-template-columns:minmax(0,1fr) minmax(150px,40%); gap:10px; padding:10px}
+.work.full{padding:10px 14px}
+.hdr{display:flex; align-items:center; gap:6px; min-height:30px; font-weight:600; font-size:14px; border-bottom:1px solid var(--app-line); margin-bottom:8px; padding-bottom:4px}
+.hdr .sp{flex:1}
+.hdr b{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.chip{display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:6px; font-size:11px; font-weight:500; border:1px solid var(--app-line); white-space:nowrap}
+.chip.pri{background:var(--app-pri); color:var(--app-pri-fg); border-color:var(--app-pri)}
+.chip.ic{width:22px; padding:0; justify-content:center}
+.chip.hl{outline:2px solid var(--mark); outline-offset:1px}
+.back{color:var(--accent); font-weight:600; font-size:11.5px; display:inline-flex; align-items:center; gap:3px; white-space:nowrap}
+.rows{display:grid; gap:5px}
+.rows div{height:22px; border-radius:5px; background:var(--app-soft)}
+.rows div.sel{background:color-mix(in oklab,var(--accent) 22%, var(--app-soft)); outline:1px solid var(--accent)}
+.pane{background:var(--app-card); border:1px solid var(--app-line); border-radius:9px; padding:8px; display:grid; align-content:start; gap:6px; min-width:0; overflow:hidden}
+.bar{display:flex; gap:4px; align-items:center}
+.bar .sp{flex:1}
+.sec{border-top:1px solid var(--app-line); padding-top:5px; display:flex; justify-content:space-between; font-weight:600; font-size:11px; color:var(--app-fg)}
+.sec span{color:var(--app-muted); font-weight:500}
+.sk{height:8px; border-radius:4px; background:var(--app-soft)}
+.cols{display:grid; grid-template-columns:minmax(0,1fr) 34%; gap:12px; align-items:start}
+.tbl-mock{display:grid; gap:3px}
+.tbl-mock div{display:grid; grid-template-columns:2fr 1fr 1fr 1.2fr; gap:6px}
+.tbl-mock span{height:8px; border-radius:4px; background:var(--app-soft)}
+.tbl-mock div:first-child span{background:color-mix(in oklab,var(--app-muted) 40%, transparent); height:7px}
+.due{height:6px; border-radius:3px; background:linear-gradient(90deg,var(--warn) 70%, var(--app-soft) 70%)}
+.cap{font-size:12.5px; color:var(--muted); margin-top:8px; max-width:720px}
+.screens{display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start}
+.verdict{display:grid; gap:4px; font-size:13.5px; margin-top:10px; max-width:720px}
+.verdict div{display:grid; grid-template-columns:190px 1fr; gap:8px}
+.verdict dt,.verdict b{font-weight:600}
+@media (max-width:600px){ .verdict div{grid-template-columns:1fr; gap:0} .scr.desk{height:320px} }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <strong>Employee page</strong>
+  <nav aria-label="Sections">
+    <a href="#today">Today</a><a href="#options">Options</a><a href="#playground">Playground</a><a href="#compare">Compare</a><a href="#page">The page</a><a href="#rollout">Rollout</a>
+  </nav>
+</div></header>
+
+<main class="wrap">
+<div class="hero">
+  <span class="pill">Proposal</span>
+  <h1 style="margin-top:10px">The employee's page: where people reach it from</h1>
+  <p class="lede" style="margin-top:10px">An employee today is only ever a pane beside the Employees list, wherever the link was. Four ways to add a full page and decide which link opens what, drawn as flows and as screens, and a recommendation: <b>Option B with A</b>, the list keeps its pane, every other link opens the page, and the pane can open it too.</p>
+  <p class="meta">20 Nov 2026 · build <code>f247d36</code> · code review of the staff app · text and rules: <a href="employee-page.md">employee-page.md</a> · builds on <a href="record-actions.html">record-actions</a></p>
+</div>
+
+<section id="today">
+  <h2>1. How the app reaches an employee today</h2>
+  <p>One address, <code>/employees/&lt;id&gt;</code>, and it is always the Employees list with the employee beside it (22–30rem from <code>lg</code>, the whole screen below). Nine of the ten ways in are a person looking for <b>one employee</b>; only the list itself is someone looking <b>through</b> employees.</p>
+  <div class="flows">
+    <div class="flow"><span class="n list">Employees list</span><span class="a">— row, J / K →</span><span class="n pane">pane beside the list</span></div>
+    <div class="flow"><span class="n">An order's employee</span><span class="n">SIM card's Held by</span><span class="n">Replacements due</span><span class="n">Dashboards</span><span class="n">⌘K</span><span class="a">→</span><span class="n pane">pane beside the list</span><span class="a">— ← →</span><span class="n list">Employees list</span></div>
+  </div>
+  <div class="grid3" style="margin-top:14px">
+    <div class="card"><h3>F1 · Too narrow</h3><p class="small">The app's largest record (sizes, profile, photos, Replacements due, Items given, Ordered, SIM cards, Equipment, Identity, Changes) in a 30rem column. Items given stacks; a year of orders is 2–4 screens of one column.</p></div>
+    <div class="card"><h3>F2 · Lands on a list</h3><p class="small">From an order, the employee's name switches the section to Employees and draws a list nobody asked for. Her ← says <i>Back to Employees</i> and goes there, not to the order.</p></div>
+    <div class="card"><h3>F3 · Two rules</h3><p class="small">SIM cards and Equipment already open beside their register <i>and</i> as a page from elsewhere (<code>/assets/&lt;id&gt;</code>, one <code>AssetDetail</code> with <code>place</code>). Employees have only the pane.</p></div>
+  </div>
+</section>
+
+<section id="options">
+  <h2>2. Options</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>A · Open page from the pane</h3>
+      <div class="flows">
+        <div class="flow"><span class="n list">list</span><span class="a">→</span><span class="n pane">pane</span><span class="a">— ⤢ Open page →</span><span class="n page">page</span></div>
+        <div class="flow"><span class="n">order, SIM card, ⌘K</span><span class="a">→</span><span class="n pane">pane</span><span class="a">(as today)</span></div>
+      </div>
+      <ul class="pros small"><li>Smallest change; the person chooses when the pane is too small</li><li>Gmail's, Linear's "open in full"</li></ul>
+      <ul class="cons small"><li>F2 stays: links still land on the list, ← still goes to it</li><li>Two clicks to see someone in full from an order</li></ul>
+    </div>
+    <div class="card" style="border-color:var(--ok)">
+      <h3>B · The page from everywhere but the list <span class="pill rec">Recommended, with A</span></h3>
+      <div class="flows">
+        <div class="flow"><span class="n list">list</span><span class="a">→</span><span class="n pane">pane</span><span class="a">— ⤢ →</span><span class="n page">page</span></div>
+        <div class="flow"><span class="n">order, SIM card, Replacements, dashboards, ⌘K</span><span class="a">→</span><span class="n page">page</span></div>
+        <div class="flow"><span class="n page">page</span><span class="a">— ← Back to WE-000010 →</span><span class="n">where they came from</span></div>
+      </div>
+      <ul class="pros small"><li>Fixes F1 and F2; the way back returns the person</li><li>Same rule as SIM cards and Equipment: <i>a register opens beside itself, everything else opens the page</i></li><li>The list keeps J / K and merging</li></ul>
+      <ul class="cons small"><li>Two places draw the record: one component with <code>place</code> keeps them equal</li><li>A new address</li></ul>
+    </div>
+    <div class="card">
+      <h3>C · The page replaces the pane</h3>
+      <div class="flows">
+        <div class="flow"><span class="n list">list</span><span class="a">→</span><span class="n page">page</span><span class="a">— ← Employees →</span><span class="n list">list</span></div>
+      </div>
+      <ul class="pros small"><li>One place for the record</li></ul>
+      <ul class="cons small"><li>Loses J / K and the list beside the open one: checking ten people's sizes is ten round trips</li><li>Breaks list-and-detail for one list only</li></ul>
+    </div>
+    <div class="card">
+      <h3>D · Tabs on the page</h3>
+      <div class="flows">
+        <div class="flow"><span class="n">Overview</span><span class="n">Items</span><span class="n">Assets</span><span class="n">Documents</span><span class="n">Changes</span></div>
+      </div>
+      <p class="small muted">A way through the page, not a way in; goes with A, B or C.</p>
+      <ul class="pros small"><li>A short first screen</li></ul>
+      <ul class="cons small"><li>Hides parts; Ctrl+F misses closed tabs; a phone needs a scrolling tab row</li><li>Closed, counted sections already give the short first screen</li></ul>
+    </div>
+  </div>
+</section>
+
+<section id="playground">
+  <h2>3. Playground: where does the link land?</h2>
+  <p class="small muted">Pick an option, where the person starts and the device. The screen shows what opens, and the way back it offers.</p>
+  <div class="controls">
+    <div class="ctl"><label id="l-opt">Option</label><div class="seg" role="group" aria-labelledby="l-opt" data-k="opt">
+      <button type="button" data-v="today">Today</button><button type="button" data-v="A">A</button><button type="button" data-v="B" aria-pressed="true">B + A</button><button type="button" data-v="C">C</button>
+    </div></div>
+    <div class="ctl"><label id="l-from">Starts from</label><div class="seg" role="group" aria-labelledby="l-from" data-k="from">
+      <button type="button" data-v="list" aria-pressed="true">Employees list</button><button type="button" data-v="order">An order</button><button type="button" data-v="sim">A SIM card</button><button type="button" data-v="cmdk">⌘K</button>
+    </div></div>
+    <div class="ctl"><label id="l-dev">Device</label><div class="seg" role="group" aria-labelledby="l-dev" data-k="dev">
+      <button type="button" data-v="desk" aria-pressed="true">Desktop</button><button type="button" data-v="phone">Phone</button>
+    </div></div>
+  </div>
+  <div class="stage"><div id="screen"></div></div>
+  <dl class="verdict" id="verdict" aria-live="polite"></dl>
+</section>
+
+<section id="compare">
+  <h2>4. Comparison</h2>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>A Open page</th><th>B Page from elsewhere + A</th><th>C Page only</th><th>D Tabs</th></tr></thead>
+    <tbody>
+      <tr><td>A link to a person lands on the person</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td><td>–</td></tr>
+      <tr><td>The way back returns to the origin</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td><td>–</td></tr>
+      <tr><td>The list keeps J / K and its pane</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td><td>–</td></tr>
+      <tr><td>The record gets the width it needs</td><td class="mid">on request</td><td class="yes">✓ from links, on request from the list</td><td class="yes">✓</td><td>–</td></tr>
+      <tr><td>Same rule as SIM cards and Equipment</td><td class="no">✗</td><td class="yes">✓</td><td class="no">✗</td><td>–</td></tr>
+      <tr><td>Existing addresses keep working</td><td class="yes">✓</td><td class="yes">✓</td><td class="mid">open something else</td><td class="yes">✓</td></tr>
+      <tr><td>Effort</td><td>S</td><td>M</td><td>M</td><td>M</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout"><b>Recommendation: B with A.</b> The list keeps its pane; every other link opens the page at <code>/employees/&lt;id&gt;/page</code>, whose ← goes back to where the person came from (<i>Back to WE-000010</i>, else <i>Back to Employees</i>); the pane's action bar gets <b>⤢ Open page</b> (<code>actionIcons.page</code>, <code>Maximize2</code>). One <code>EmployeeDetail</code> with <code>place</code> draws both.</div>
+</section>
+
+<section id="page">
+  <h2>5. The page itself</h2>
+  <p>The record row and action bar of <a href="record-actions.html">record-actions</a>, an <code>h1</code> title, no ✕. From the page's <code>@4xl</code> (about 56rem) two columns: what was <b>given and held</b>, the reason people come, in the main one; the <b>person</b> (sizes, profile, photos, identity) in a 20rem side column; Changes across both. Narrower, one column in today's order: the pane is unchanged.</p>
+  <div class="screens">
+    <div>
+      <div class="scr desk" aria-label="The employee's page on a desktop: two columns">
+        <div class="rail"><i></i><i></i><i class="on"></i><i></i><i></i></div>
+        <div class="work full">
+          <div class="hdr"><span class="back">← Back to WE-000010</span><span class="sp"></span></div>
+          <div class="hdr" style="border:0;margin:0;font-size:16px"><b>Aleksandr Ivanov</b></div>
+          <div class="bar" style="margin-bottom:6px"><span class="chip pri">＋ New order</span><span class="chip ic">✎</span><span class="sp"></span><span class="chip ic">⋯</span></div>
+          <div class="sk" style="width:30%;margin-bottom:10px"></div>
+          <div class="cols">
+            <div style="display:grid;gap:8px">
+              <div class="sec">Replacements due <span>2 items · Order them</span></div>
+              <div class="sec">Items given <span>12</span></div>
+              <div class="tbl-mock"><div><span></span><span></span><span></span><span></span></div><div><span></span><span></span><span></span><div class="due"></div></div><div><span></span><span></span><span></span><div class="due"></div></div><div><span></span><span></span><span></span><div class="due"></div></div></div>
+              <div class="sec">Ordered, not given <span>1</span></div>
+              <div class="sec">SIM cards <span>1</span></div>
+              <div class="sec">Equipment <span>2</span></div>
+            </div>
+            <div style="display:grid;gap:8px">
+              <div class="sec">Sizes <span>✎ Edit</span></div>
+              <div class="sk"></div><div class="sk" style="width:70%"></div>
+              <div class="sec">Profile</div><div class="sk" style="width:80%"></div>
+              <div class="sec">Photos <span>2</span></div>
+              <div class="sec">Identity <span>valid until 2031</span></div>
+            </div>
+          </div>
+          <div class="sec" style="margin-top:10px">Changes <span>▾</span></div>
+        </div>
+      </div>
+      <p class="cap">Desktop, opened from an order: the order's number names the way back; Employees stays the current section in the rail.</p>
+    </div>
+    <div>
+      <div class="scr phone" aria-label="The employee's page on a phone: one column">
+        <div class="work full">
+          <div class="hdr"><span class="back">←</span><b>Aleksandr Ivanov</b></div>
+          <div class="bar" style="margin-bottom:8px"><span class="chip pri">＋ New order</span><span class="chip ic">✎</span><span class="sp"></span><span class="chip ic">⋯</span></div>
+          <div style="display:grid;gap:8px">
+            <div class="sec">Sizes <span>✎</span></div><div class="sk"></div>
+            <div class="sec">Replacements due <span>2</span></div>
+            <div class="sec">Items given <span>12</span></div>
+            <div class="sec">Ordered, not given <span>1</span></div>
+            <div class="sec">SIM cards <span>1</span></div>
+            <div class="sec">Equipment <span>2</span></div>
+            <div class="sec">Identity</div>
+            <div class="sec">Changes <span>▾</span></div>
+          </div>
+        </div>
+        <div class="tabbar"><i></i><i></i><i></i><i class="on"></i><i></i></div>
+      </div>
+      <p class="cap">Phone: the same as the pane, which is already the whole screen. Only the way back differs: ← returns to the order.</p>
+    </div>
+  </div>
+</section>
+
+<section id="rollout">
+  <h2>6. Rollout and open questions</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>Rollout</h3>
+      <ol class="small">
+        <li><code>EmployeeDetail</code> out of <code>routes/employee.tsx</code>, with <code>place</code>; the pane uses it unchanged.</li>
+        <li>The route <code>employeePage</code> at <code>/employees/&lt;id&gt;/page</code>; section Employees; ← through <code>back()</code> with a <code>from</code> label.</li>
+        <li>Every link but the list's own to the page; ⌘K's employees too.</li>
+        <li><b>⤢ Open page</b> in the pane: <code>actionIcons.page</code>, a tool in <code>employeeActions</code>.</li>
+        <li>The page's two columns.</li>
+        <li>e2e: from an order to the page and back; Open page; 375, 1024, 1440px in EN, LT, RU.</li>
+        <li>Then catalogue items, if it holds up.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Open questions</h3>
+      <ol class="small">
+        <li>The address: <code>/employees/&lt;id&gt;/page</code>, or another?</li>
+        <li>The list's names: <code>href</code> the page (a middle-click opens it in a new tab), a plain click the pane?</li>
+        <li>The Employee Dashboard's links: the page, as everywhere else?</li>
+        <li>Catalogue items next, or employees only?</li>
+        <li>Print the page as a one-person summary?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+// The playground: what opens, for an option, a starting place and a device.
+const state = { opt: 'B', from: 'list', dev: 'desk' }
+const origin = { list: 'Employees list', order: 'order WE-000010', sim: 'SIM card SIM-000001', cmdk: '⌘K' }
+const backTo = { order: 'Back to WE-000010', sim: 'Back to SIM-000001', cmdk: 'Back to Employees', list: 'Back to Employees' }
+
+function outcome({ opt, from }) {
+  // What the first click opens: the pane beside the list, or the page.
+  const page = opt === 'C' || (opt === 'B' && from !== 'list')
+  const openPage = opt === 'A' || opt === 'B'
+  let back
+  if (page) back = backTo[from]
+  else back = 'Back to Employees (the list)'
+  const toFull = page ? 1 : openPage ? 2 : null
+  return { page, openPage: !page && openPage, back, toFull }
+}
+
+function screen({ page, openPage }, { dev, from }) {
+  const bar = `<div class="bar"><span class="chip pri">＋ New order</span><span class="chip ic">✎</span>${openPage ? '<span class="chip ic hl" title="Open page">⤢</span>' : ''}<span class="sp"></span><span class="chip ic">⋯</span></div>`
+  const parts = ['Sizes', 'Replacements due', 'Items given · 12', 'Ordered · 1', 'SIM cards · 1', 'Equipment · 2', 'Identity', 'Changes'].map((p) => `<div class="sec">${p}</div>`).join('')
+  const main = ['Replacements due', 'Items given · 12', 'Ordered · 1', 'SIM cards · 1', 'Equipment · 2'].map((p) => `<div class="sec">${p}</div>`).join('')
+  const rows = Array.from({ length: 9 }, (_, i) => `<div class="${i === 2 ? 'sel' : ''}"></div>`).join('')
+  const backLabel = page ? backTo[from] : 'Back to Employees'
+  if (dev === 'phone') {
+    return `<div class="scr phone"><div class="work full">
+      <div class="hdr"><span class="back" title="${backLabel}">←</span><b>Aleksandr Ivanov</b></div>${bar}
+      <div style="display:grid;gap:8px;margin-top:8px">${parts}</div></div>
+      <div class="tabbar"><i></i><i></i><i></i><i class="on"></i><i></i></div></div>`
+  }
+  if (page) {
+    return `<div class="scr desk"><div class="rail"><i></i><i></i><i class="on"></i><i></i><i></i></div><div class="work full">
+      <div class="hdr"><span class="back">← ${backLabel}</span></div>
+      <div class="hdr" style="border:0;margin:0;font-size:16px"><b>Aleksandr Ivanov</b></div>${bar}
+      <div class="cols" style="margin-top:8px"><div style="display:grid;gap:8px">${main}</div>
+      <div style="display:grid;gap:8px"><div class="sec">Sizes</div><div class="sk"></div><div class="sec">Photos</div><div class="sec">Identity</div></div></div>
+      <div class="sec" style="margin-top:8px">Changes</div></div></div>`
+  }
+  return `<div class="scr desk"><div class="rail"><i></i><i></i><i class="on"></i><i></i><i></i></div><div class="work split">
+    <div><div class="hdr">Employees<span class="sp"></span><span class="chip">Export</span></div><div class="rows">${rows}</div></div>
+    <div class="pane"><div class="hdr" style="margin:0"><b>Aleksandr Ivanov</b><span class="sp"></span>✕</div>${bar}${parts}</div></div></div>`
+}
+
+function render() {
+  const o = outcome(state)
+  document.getElementById('screen').innerHTML = screen(o, state)
+  const lands = o.page ? 'the employee’s page' : 'the Employees list, the employee beside it' + (state.dev === 'phone' ? ' (the whole screen)' : '')
+  const rows = [
+    ['Starts from', origin[state.from]],
+    ['Lands on', lands],
+    ['The way back', !o.page && state.from !== 'list' ? `${o.back}, not ${origin[state.from]}` : o.back],
+    ['Clicks to the full record', o.toFull === null ? 'none: the pane is all there is' : String(o.toFull)],
+  ]
+  document.getElementById('verdict').innerHTML = rows.map(([k, v]) => `<div><dt>${k}</dt><dd style="margin:0">${v}</dd></div>`).join('')
+}
+
+document.querySelectorAll('.seg[data-k]').forEach((seg) => {
+  seg.addEventListener('click', (e) => {
+    const b = e.target.closest('button')
+    if (!b) return
+    state[seg.dataset.k] = b.dataset.v
+    seg.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)))
+    render()
+  })
+  seg.querySelectorAll('button').forEach((b) => b.hasAttribute('aria-pressed') || b.setAttribute('aria-pressed', 'false'))
+})
+render()
+</script>
+</body>
+</html>
