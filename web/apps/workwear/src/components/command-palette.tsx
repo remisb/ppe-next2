@@ -229,7 +229,8 @@ export function CommandPalette({
         label: e.full_name,
         ...(e.code ? { hint: e.code } : {}),
         icon: <UserRound aria-hidden className="size-4" />,
-        to: { name: 'employee', id: e.id },
+        // The employee's page; ⌘K names no place to go back to, so its way back is Employees.
+        to: { name: 'employeePage', id: e.id },
       })
     }
     if (term) {

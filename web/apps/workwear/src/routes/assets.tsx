@@ -542,7 +542,7 @@ export function Assets({
                           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                             {a.location === 'WITH_EMPLOYEE' && open ? (
                               <a
-                                {...linkTo({ name: 'employee', id: open.employee_id }, navigate)}
+                                {...linkTo({ name: 'employeePage', id: open.employee_id, from: sim ? t.assets.simCards : t.assets.equipment }, navigate)}
                                 className={linkVariants()}
                               >
                                 {open.employee_name}

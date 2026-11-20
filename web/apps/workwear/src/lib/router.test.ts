@@ -44,6 +44,10 @@ describe('router', () => {
     expect(parsePath(pathOf({ name: 'assetForm', id: 'a1', assignment: 's1' }))).toEqual({ name: 'assetForm', id: 'a1', assignment: 's1' })
     expect(parsePath('/assets/a1/form', '?employee=e1&date=9.10.2026')).toEqual({ name: 'assetForm', id: 'a1' })
     expect(parsePath(pathOf({ name: 'employee', id: 'a/b' }))).toEqual({ name: 'employee', id: 'a/b' })
+    // The employee's page: its own address; where the link was is not in it.
+    expect(pathOf({ name: 'employeePage', id: 'e1', from: 'WE-000010' })).toBe('/employees/e1/page')
+    expect(parsePath('/employees/e1/page')).toEqual({ name: 'employeePage', id: 'e1' })
+    expect(parsePath(pathOf({ name: 'employeePage', id: 'a/b' }))).toEqual({ name: 'employeePage', id: 'a/b' })
     // An item open beside the Item Catalogue, at the address its own page had.
     expect(pathOf({ name: 'catalogue', item: 'x/y' })).toBe('/catalogue/x%2Fy')
     expect(parsePath(pathOf({ name: 'catalogue', item: 'x/y' }))).toEqual({ name: 'catalogue', item: 'x/y' })

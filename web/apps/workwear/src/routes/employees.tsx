@@ -21,7 +21,7 @@ import { selectRowProps, useSelection } from '@ppe/ui/lib/use-selection'
 import { ChevronRight, Download, Plus, Users } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
-import { EmployeePage } from '@/routes/employee'
+import { EmployeeDetail } from '@/routes/employee'
 import { EmployeeForm } from '@/components/employee-form'
 import { MergeEmployeesSheet } from '@/components/merge-employees-sheet'
 import { t } from '@/i18n'
@@ -32,7 +32,7 @@ import { addPhotos, photoRefusal, useRowFileDrop } from '@/lib/photo-drop'
 import { employeeActions } from '@/lib/employee-actions'
 import { employeeExportColumns } from '@/lib/employee-export'
 import { employeeFacts, missingLabel } from '@/lib/records'
-import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
+import { type NavigateOptions, type Route, linkOpening } from '@/lib/router'
 import { clothingBandValue, clothingBands, clothingSizeLabel, formatSize } from '@/lib/utils'
 
 /** An employee's key in the selection; a module constant, so the hook's memos hold. */
@@ -159,7 +159,7 @@ export function Employees({
       pane={
         selected ? (
           <DetailPane label={t.employees.employee} next={t.employees.nextOrPrevious}>
-            <EmployeePage key={`${selected}.${paneVersion}`} id={selected} navigate={navigate} onClose={close} onChanged={employees.reload} />
+            <EmployeeDetail key={`${selected}.${paneVersion}`} id={selected} place={{ page: false, onClose: close, onChanged: employees.reload }} navigate={navigate} />
           </DetailPane>
         ) : null
       }
@@ -278,7 +278,8 @@ export function Employees({
                         {/* In the table the avatar leads the name; stacked, it has a cell of its own on the left. */}
                         <EmployeeAvatar employee={e} className="stacked:hidden" />
                         <div className="min-w-0 stacked:contents">
-                          <a {...linkTo({ name: 'employee', id: e.id }, navigate)} className={linkVariants()}>
+                          {/* A click opens her beside the list; a new tab (middle click, copy link) opens her page. */}
+                          <a {...linkOpening({ name: 'employeePage', id: e.id }, () => open(e.id))} className={linkVariants()}>
                             {e.full_name}
                           </a>
                           {/* The note on one line under the name, in full on hover and on the employee's page. */}

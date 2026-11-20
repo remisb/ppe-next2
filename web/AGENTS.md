@@ -247,7 +247,12 @@ The workwear app is the reference.
   way out once the record is loaded (`PaneBar` then hides; `styles.css`). The record's
   parts are siblings in its `<article>`, so the row sticks the length of the record: never
   wrap `RecordHeader` in a box of its own. The list and an open record are one element in
-  `app.tsx`, so the list keeps its state when a record opens. The row's actions live in the
+  `app.tsx`, so the list keeps its state when a record opens. A record that also has a page
+  (an asset, an employee: `docs/ux/employee-page.md`) is opened beside its list only from that
+  list; every other link opens its page, naming where it was in the route's `from` (kept with
+  the history entry by the router's `fromOf`, read back with `cameFrom`), and the page's way back
+  goes there. The list's names link to the page (`linkOpening`: a new tab gets the page, a click
+  the pane). One component, a `place` prop, both places. The row's actions live in the
   detail, not in an Actions column. A record's actions are data: one function per record kind
   returns its `RecordAction[]` (`lib/order-actions.ts`, `asset-actions.ts`,
   `employee-actions.ts`), which `RecordHeader`'s `actions` draws as its action bar (the main

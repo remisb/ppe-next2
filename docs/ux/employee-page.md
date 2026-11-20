@@ -10,7 +10,7 @@ phone's, a tablet's and a desktop's width.
 20 Nov 2026 · build `f247d36` · code review of the staff app (`ww` = `web/apps/workwear/src`,
 `ui` = `web/packages/ui/src/components`).
 
-Status: **proposal**. It builds on [record-actions.md](record-actions.md) (the record row and
+Status: **built** (WARE-47, see "As built" at the end). It builds on [record-actions.md](record-actions.md) (the record row and
 its action bar, built in WARE-46) and [ui-ux-guidelines.md](ui-ux-guidelines.md) §2 (the
 detail pane), and follows the pattern SIM cards and Equipment already use: a pane beside the
 register, a page from everywhere else.
@@ -288,3 +288,33 @@ screenshots will be out of date; they are updated separately.
 4. **Catalogue items next** (rollout 7), or employees only?
 5. **Print**: should the page print as a one-person summary (sizes, items given, assets held),
    a document of its own?
+
+---
+
+## As built (WARE-47)
+
+Option B with A, as §4, with the open questions decided as recommended:
+
+- **The address** is `/employees/<id>/page` (route `employeePage`); Employees stays the
+  current section.
+- **The list's names** link to the page (`linkOpening` in `ww/lib/router.ts`): a click opens
+  the employee beside the list, a new tab or a copied link gets the page.
+- **The Employee Dashboard's** links open the page, as everywhere else. Catalogue items and a
+  printed one-person summary are not done.
+- **Where the link was** travels as the route's `from` and is kept with the history entry
+  (`@ppe/app-shell`: `Addresses.fromOf`, `cameFrom()`), not in the address: it survives a
+  reload, Back and Forward. The page's way back says it and goes back in history; with no
+  label (opened directly, or from ⌘K, which names no place) it says and goes to Employees.
+  The labels: an order's record number, an asset's inventory number, SIM Cards or Equipment
+  from a register, Item Catalogue from an item's Orders, Replacements due, Employee Dashboard.
+- **One component**: the record stays in `ww/routes/employee.tsx`, renamed `EmployeeDetail`
+  with `place` (not moved to `components/`, to keep the change readable). Its parts sit in
+  two groups that are `display: contents` (one column in today's order, by `order-*`) until its
+  own container is `@4xl`, then a grid of the main column and a 20rem side column.
+- **Open page** is a tool in `employeeActions` with `actionIcons.page` (`Maximize2`).
+- `RecordHeader` no longer reaches up over a record page's Back link from `lg` (its mark is
+  `lg:mt-0` on a page too): the asset page's Back link was half hidden under it as well.
+- Items given still stacks in the main column below its table's 60rem (`stackBelow="lg"`),
+  which the main column reaches only in a window about 1610px wide; at 1280px it is about
+  40rem. Two cards a row there, or a lower threshold for this table, is a follow-up.
+

@@ -22,8 +22,15 @@ export type Route =
   | { name: 'history'; order?: string; status?: OrderStatus }
   /** Employees; missing opens it filtered to those missing a size (a dashboard's Missing sizes tile). */
   | { name: 'employees'; missing?: boolean }
-  /** One employee: details, sizes and the items issued to them. */
+  /** One employee beside the Employees list (or instead of it on a narrow screen): details, sizes and the items issued to them. */
   | { name: 'employee'; id: string }
+  /**
+   * The employee's page: the same record the width of the screen, opened from
+   * anywhere but the Employees list. from names where the link was (an order's
+   * record number), which its way back says; kept with the history entry, not
+   * in the address (cameFrom).
+   */
+  | { name: 'employeePage'; id: string; from?: string }
   /**
    * Company Assets' two screens: the SIM card register and the Equipment
    * one; tile opens it on a tile (a dashboard's Company Assets card). asset
@@ -136,6 +143,8 @@ export function parsePath(pathname: string, search = ''): Route {
   if (order?.[1]) return { name: 'history', order: decodeURIComponent(order[1]) }
   const employee = /^\/employees\/([^/]+)$/.exec(path)
   if (employee?.[1]) return { name: 'employee', id: decodeURIComponent(employee[1]) }
+  const employeePage = /^\/employees\/([^/]+)\/page$/.exec(path)
+  if (employeePage?.[1]) return { name: 'employeePage', id: decodeURIComponent(employeePage[1]) }
   const item = /^\/catalogue\/([^/]+)$/.exec(path)
   if (item?.[1]) return { name: 'catalogue', item: decodeURIComponent(item[1]) }
   const opened = /^\/assets\/(sim-cards|equipment)\/([^/]+)$/.exec(path)
@@ -204,6 +213,8 @@ export function pathOf(route: Route): string {
       return route.missing ? `${fixed.employees}?missing=1` : fixed.employees
     case 'employee':
       return `/employees/${encodeURIComponent(route.id)}`
+    case 'employeePage':
+      return `/employees/${encodeURIComponent(route.id)}/page`
     case 'catalogue':
       if (route.item) return `${fixed.catalogue}/${encodeURIComponent(route.item)}`
       return route.status ? `${fixed.catalogue}?status=${route.status}` : fixed.catalogue
@@ -239,9 +250,12 @@ export function pathOf(route: Route): string {
 }
 
 export type { NavigateOptions } from '@ppe/app-shell'
-export { canGoBack } from '@ppe/app-shell'
+export { cameFrom, canGoBack } from '@ppe/app-shell'
 
-const addresses = { parse: parsePath, pathOf }
+/** Where a link was followed from, kept with its history entry: the employee's page names its way back by it. */
+const fromOf = (route: Route) => (route.name === 'employeePage' ? route.from : undefined)
+
+const addresses = { parse: parsePath, pathOf, fromOf }
 
 export function useRouter(): Router<Route> {
   const router = useAddressRouter(addresses)
@@ -262,6 +276,22 @@ export function linkTo(to: Route, navigate: (to: Route) => void) {
   // Another app: a plain link, a full page load.
   if (to.name === 'administration') return { href: adminHref(to.path), onClick: (_: MouseEvent) => {} }
   return linkWith(pathOf, to, navigate)
+}
+
+/**
+ * A link whose address is to (for a new tab, a middle click, a copied link)
+ * while a plain click does something else in place: an employee's name in the
+ * Employees list opens her beside it, its address her page.
+ */
+export function linkOpening(to: Route, onClick: () => void) {
+  return {
+    href: basePath + pathOf(to),
+    onClick: (e: MouseEvent) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+      e.preventDefault()
+      onClick()
+    },
+  }
 }
 
 /**

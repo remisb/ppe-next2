@@ -32,6 +32,7 @@ import { Fact, FactGrid } from '@ppe/ui/components/facts'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
 import { PaneBar } from '@ppe/ui/components/list-detail'
+import { BackButton } from '@ppe/ui/components/back-button'
 import { isLang, languages, t } from '@/i18n'
 import { type Due, type EmployeeItem, employeeItems, loadAllOrders, replacementsDue } from '@/lib/employee-items'
 import { formatUsage } from '@/lib/history'
@@ -45,26 +46,38 @@ import { clothingBands, clothingSizeLabel, formatMonths, formatSize } from '@/li
 import { MissingBadge, type SizeField, SizeFields, useSizesDraft } from './employees'
 
 /**
- * One employee (/employees/<id>): details and size defaults, the items given
- * to them with a link to each receipt and when each is due for replacement,
- * and items ordered but not yet given. Items come from order snapshots, so
- * they show what was actually issued. New order and Reorder start Create
- * Order for them; Edit details and Delete are under ⋯. Changes lists who
- * changed their details and sizes, and when.
+ * Where the employee is shown (docs/ux/employee-page.md): beside the Employees
+ * list (/employees/<id>, from lg; instead of it on a narrow screen), whose
+ * way out is Close or Back to the list; or on the employee's page
+ * (/employees/<id>/page), opened from anywhere else, whose way out goes back
+ * where the person came from (back.label: "WE-000010"), else to Employees.
  */
-export function EmployeePage({
-  id,
-  navigate,
-  onClose,
-  onChanged,
-}: {
-  id: string
-  navigate: (to: Route) => void
-  /** Back to the list, or Close beside it. */
-  onClose: () => void
-  /** Her name, code or sizes changed, or she was deleted: the list shows them too. */
-  onChanged: () => void
-}) {
+export type EmployeePlace =
+  | {
+      page: false
+      /** Back to the list, or Close beside it. */
+      onClose: () => void
+      /** Her name, code or sizes changed, or she was deleted: the list shows them too. */
+      onChanged: () => void
+    }
+  | { page: true; back: { label: string; onBack: () => void } }
+
+/**
+ * One employee: details and size defaults, the items given to them with a
+ * link to each receipt and when each is due for replacement, and items
+ * ordered but not yet given. Items come from order snapshots, so they show
+ * what was actually issued. New order and Reorder start Create Order for
+ * them; Edit details is a tool, Merge and Delete are under ⋯. Changes lists
+ * who changed their details and sizes, and when. The same record beside the
+ * list and on its page; the page lays it out in two columns where it has the
+ * room (its own container, @4xl).
+ */
+export function EmployeeDetail({ id, place, navigate }: { id: string; place: EmployeePlace; navigate: (to: Route) => void }) {
+  const onChanged = place.page ? () => {} : place.onChanged
+  // Deleted: beside the list it closes; the page has nothing to go back to, so it opens the list.
+  const onGone = place.page ? () => navigate({ name: 'employees' }) : place.onClose
+  // The record's own address where it is shown: a merged record's link opens the kept one in the same place.
+  const here = (other: string): Route => (place.page ? { name: 'employeePage', id: other } : { name: 'employee', id: other })
   const { client } = useApi()
   const session = useSession()
   // The name is everyone's; sizes take See employee sizes, the language, notes and photos See employee profiles.
@@ -83,7 +96,8 @@ export function EmployeePage({
   // A record merged into another (Merge Employees): an old link opens the record kept.
   const mergedInto = employee.error instanceof ApiError && employee.error.isNotFound ? employee.error.existingId : undefined
   useEffect(() => {
-    if (mergedInto && mergedInto !== id) navigate({ name: 'employee', id: mergedInto })
+    if (mergedInto && mergedInto !== id) navigate(here(mergedInto))
+    // here changes with place only, which a mounted record keeps.
   }, [mergedInto, id, navigate])
   const givenKey = useOpenKey('employee.items-given')
   const orderedKey = useOpenKey('employee.items-ordered')
@@ -160,7 +174,7 @@ export function EmployeePage({
       async () => {
         await client.employees.remove(emp.id)
         onChanged()
-        onClose()
+        onGone()
       },
       {
         confirm: t.employees.confirmDelete(emp.full_name),
@@ -173,21 +187,37 @@ export function EmployeePage({
     )
 
   return (
-    <div {...drop.props} className="relative">
+    <div {...drop.props} className="relative @container">
       {drop.over && employee.data ? (
         // Over the whole employee while photos are dragged onto it; drops go to their Photos.
         <div aria-hidden className="pointer-events-none absolute -inset-2 z-20 flex items-start justify-center rounded-lg border-2 border-dashed border-ring bg-background/80 pt-24">
           <p className="rounded-md bg-background px-3 py-2 text-sm font-medium shadow-sm">{t.employees.photos.dropOn(employee.data.full_name)}</p>
         </div>
       ) : null}
-      <PaneBar backLabel={t.employees.title} closeLabel={t.employees.closeEmployee} onClose={onClose} className="mb-2" />
+      {place.page ? (
+        // From lg the way back is above the title, as on an asset's page; below it, the record row's ← (RecordHeader).
+        <BackButton data-slot="pane-bar" className="mb-2" onClick={place.back.onBack}>
+          {place.back.label}
+        </BackButton>
+      ) : (
+        <PaneBar backLabel={t.employees.title} closeLabel={t.employees.closeEmployee} onClose={place.onClose} className="mb-2" />
+      )}
       <Loaded load={employee}>
         {(e) => (
           <>
             <RecordHeader
               className="mb-5"
-              nav={{ backLabel: t.employees.title, onBack: onClose, closeLabel: t.employees.closeEmployee }}
-              title={<RecordTitle>{e.full_name}</RecordTitle>}
+              beside={!place.page}
+              nav={
+                place.page
+                  ? { backLabel: place.back.label, onBack: place.back.onBack }
+                  : { backLabel: t.employees.title, onBack: place.onClose, closeLabel: t.employees.closeEmployee }
+              }
+              title={
+                <RecordTitle as={place.page ? 'h1' : 'h2'} className={cn(place.page && 'md:text-2xl')}>
+                  {e.full_name}
+                </RecordTitle>
+              }
               actions={employeeActions(
                 { editDetails: managesProfile, merge: merges, remove: session.can('employees.delete') },
                 {
@@ -195,16 +225,26 @@ export function EmployeePage({
                   editDetails: () => setEditing(true),
                   merge: () => setMerging(true),
                   remove: () => void remove(e),
+                  // Beside the list only: the same record the width of the screen, its way back to the list.
+                  openPage: place.page ? undefined : () => navigate({ name: 'employeePage', id: e.id, from: t.employees.title }),
                 },
               )}
               moreLabel={t.common.moreActions(e.full_name)}
             >
               {e.code ? <p className="mt-1 text-sm text-muted-foreground">{t.employees.codeIs(e.code)}</p> : null}
             </RecordHeader>
+            {/*
+              One column in this order where the record is narrow (beside the list, a tablet's page): the two groups'
+              boxes step aside (contents) and each part takes its place by order-*. Where the page has the room (@4xl),
+              two columns: what was given and held, the reason people come, then the person beside it (record-actions'
+              page layout, employee-page.md §5).
+            */}
+            <div className="flex flex-col @4xl:grid @4xl:grid-cols-[minmax(0,1fr)_20rem] @4xl:items-start @4xl:gap-x-10">
+            <div className="contents @4xl:col-start-2 @4xl:row-start-1 @4xl:block">
             {/* Sizes are what Create Order resolves from, so they are edited here, in place: the values become their fields. */}
             {/* Flat, between two rules, as a pane's facts; while one part is edited in place, its rules are the focus colour. */}
             {seesSizes || seesProfile ? (
-              <div className={cn('mb-6 border-y border-border text-sm transition-colors sm:max-w-2xl', inPlace && 'border-ring')}>
+              <div className={cn('order-1 mb-6 border-y border-border text-sm transition-colors sm:max-w-2xl', inPlace && 'border-ring')}>
                 {seesSizes ? (
                   <section aria-labelledby="sizes-heading">
                     <div className="flex min-h-12 items-center justify-between gap-3 pt-2">
@@ -338,9 +378,20 @@ export function EmployeePage({
               </div>
             ) : null}
 
+            {seesProfile ? (
+              <div className="order-3">
+                <EmployeePhotos employee={e} state={photos} rememberAs={photosKey} />
+              </div>
+            ) : null}
+            <div className="order-8">
+              <IdentitySection employeeId={e.id} timeZone={tz} />
+            </div>
+            </div>
+
+            <div className="contents @4xl:col-start-1 @4xl:row-start-1 @4xl:block @4xl:min-w-0">
             {reorder.length > 0 ? (
               // A ruled callout, not a box: what is due, and Reorder beside it.
-              <section aria-labelledby="due-heading" className="mb-6 flex flex-wrap items-center justify-between gap-3 border-y border-border py-3 text-sm sm:max-w-2xl">
+              <section aria-labelledby="due-heading" className="order-2 mb-6 flex flex-wrap items-center justify-between gap-3 border-y border-border py-3 text-sm sm:max-w-2xl">
                 <div className="flex min-w-0 items-start gap-3">
                   <RotateCcw aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
                   <div className="min-w-0">
@@ -369,11 +420,12 @@ export function EmployeePage({
                 </Button>
               </section>
             ) : null}
-            <ActionError error={action.error} />
-
-            {seesProfile ? <EmployeePhotos employee={e} state={photos} rememberAs={photosKey} /> : null}
+            <div className="order-2 empty:hidden">
+              <ActionError error={action.error} />
+            </div>
 
             {/* Closed at first, as Changes are; the counts say what each holds, the title's tooltip what it is. */}
+            <div className="order-4">
             <DisclosureSection
               id="items-given"
               title={t.employees.itemsGiven}
@@ -387,13 +439,17 @@ export function EmployeePage({
                 )}
               </Loaded>
             </DisclosureSection>
+            </div>
 
             {items.ordered.length > 0 ? (
-              <DisclosureSection id="items-ordered" title={t.employees.orderedNotGiven} count={items.ordered.length} description={t.employees.waitingForReceipt} rememberAs={orderedKey}>
-                <ItemsTable items={items.ordered} kind="ordered" tz={tz} navigate={navigate} />
-              </DisclosureSection>
+              <div className="order-5">
+                <DisclosureSection id="items-ordered" title={t.employees.orderedNotGiven} count={items.ordered.length} description={t.employees.waitingForReceipt} rememberAs={orderedKey}>
+                  <ItemsTable items={items.ordered} kind="ordered" tz={tz} navigate={navigate} />
+                </DisclosureSection>
+              </div>
             ) : null}
 
+            <div className="order-6 empty:hidden">
             {session.can('sim_cards.read') ? (
               <HeldAssets
                 kind="SIM"
@@ -406,8 +462,9 @@ export function EmployeePage({
             {session.can('equipment.read') ? (
               <HeldAssets kind="EQUIPMENT" employee={{ id: e.id, full_name: e.full_name, code: e.code }} timeZone={tz} navigate={navigate} />
             ) : null}
-
-            <IdentitySection employeeId={e.id} timeZone={tz} />
+            </div>
+            </div>
+            </div>
 
             <RecordChanges load={() => client.audit.history('employees', id)} deps={[id, e.updated_at]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
 
@@ -432,7 +489,7 @@ export function EmployeePage({
                 if (kept.id === id) {
                   employee.reload()
                   orders.reload()
-                } else navigate({ name: 'employee', id: kept.id })
+                } else navigate(here(kept.id))
               }}
             />
           </>

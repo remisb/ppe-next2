@@ -200,7 +200,7 @@ function OrderBody({
     <>
       <RecordHeader className="mb-0" nav={nav} title={<RecordTitle>{o.record_number}</RecordTitle>} actions={actions} moreLabel={t.common.moreActions(o.record_number)}>
         <p className="mt-1 font-medium">
-          <a {...linkTo({ name: 'employee', id: o.employee_id }, navigate)} className={linkVariants()}>
+          <a {...linkTo({ name: 'employeePage', id: o.employee_id, from: o.record_number }, navigate)} className={linkVariants()}>
             {name}
           </a>
           {o.employee_code ? <span className="font-normal text-muted-foreground"> · {o.employee_code}</span> : null}

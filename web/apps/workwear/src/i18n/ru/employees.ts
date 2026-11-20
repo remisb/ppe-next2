@@ -40,6 +40,7 @@ export const employees: EmployeesText = {
   sizes: 'Размеры',
   editSizes: 'Изменить размеры',
   editDetails: 'Изменить данные',
+  openPage: 'Открыть страницу',
   deleteEmployee: 'Удалить сотрудника…',
   confirmDelete: (name: string) => `Удалить сотрудника ${name}? Прошлые заказы сохранятся.`,
   editSizesTitle: (name: string) => `Изменить размеры: ${name}`,

@@ -3079,6 +3079,68 @@ test('record actions: the record row is one line, its title level with the scree
   await page.setViewportSize(before)
 })
 
+test("the employee's page: the list opens her beside it, every other link her page, whose way back returns there", async () => {
+  // docs/ux/employee-page.md, Option B with A.
+  const before = page.viewportSize()!
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const employeesLink = page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Employees', exact: true })
+
+  // From an order: the employee's name opens her page, named by the order, in the Employees section.
+  await page.goto('/orders')
+  let order = await openOrder(recordNumber)
+  const name = order.locator('a[href$="/page"]')
+  const who = (await name.textContent())!.trim()
+  await name.click()
+  await expect(page).toHaveURL(/\/employees\/[0-9a-f-]{36}\/page$/)
+  const pageURL = page.url()
+  await expect(page.getByRole('heading', { level: 1, name: who })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Employees', exact: true })).toHaveCount(0)
+  await expect(employeesLink).toHaveAttribute('aria-current', /page|true/)
+  // No pane: no Close, no Open page.
+  await expect(page.getByRole('button', { name: 'Close employee' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Open page' })).toHaveCount(0)
+  // Two columns where it has the room: the person (Sizes) beside what was given.
+  const given = (await page.getByRole('button', { name: /^Items given/ }).boundingBox())!
+  const sizes = (await page.getByRole('heading', { name: 'Sizes', exact: true }).boundingBox())!
+  expect(sizes.x, 'Sizes beside Items given').toBeGreaterThan(given.x + given.width)
+  // Its way back says the order and returns to it.
+  await page.getByRole('button', { name: recordNumber, exact: true }).click()
+  await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/)
+  order = page.getByRole('complementary', { name: 'Order' })
+  await expect(order).toContainText(recordNumber)
+
+  // From the list: a click opens her beside it; her name's address is her page (a new tab, a copied link).
+  await openTab('Employees')
+  const listName = page.getByRole('main').getByRole('link', { name: who, exact: true })
+  await expect(listName).toHaveAttribute('href', new URL(pageURL).pathname)
+  await listName.click()
+  await expect(page).toHaveURL(/\/employees\/[0-9a-f-]{36}$/)
+  const pane = page.getByRole('complementary', { name: 'Employee' })
+  await expect(pane.getByRole('heading', { level: 2, name: who })).toBeVisible()
+  // Open page, a tool of the pane: the page, its way back Employees, to the list with her open.
+  await pane.getByRole('button', { name: 'Open page' }).click()
+  await expect(page).toHaveURL(pageURL)
+  await page.getByRole('button', { name: 'Employees', exact: true }).click()
+  await expect(page).toHaveURL(/\/employees\/[0-9a-f-]{36}$/)
+  await expect(pane.getByRole('heading', { level: 2, name: who })).toBeVisible()
+
+  // Opened directly (a bookmark, a new tab): its way back is Employees, the list.
+  await page.goto(pageURL)
+  await expect(page.getByRole('heading', { level: 1, name: who })).toBeVisible()
+  await page.getByRole('button', { name: 'Employees', exact: true }).click()
+  await expect(page).toHaveURL(/\/employees$/)
+
+  // A phone: the page is the whole screen, its ← in the record row says the order and returns to it.
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('/orders')
+  order = await openOrder(recordNumber)
+  await order.locator('a[href$="/page"]').click()
+  await expect(page).toHaveURL(pageURL)
+  await page.getByRole('button', { name: `Back to ${recordNumber}` }).click()
+  await expect(page).toHaveURL(/\/orders\/[0-9a-f-]{36}$/)
+  await page.setViewportSize(before)
+})
+
 /**
  * From App Launcher, where someone with several apps lands after signing in at
  * the staff app's start (ADR 0006), into Workwear by its tile, as people do.

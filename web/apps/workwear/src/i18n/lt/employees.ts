@@ -40,6 +40,7 @@ export const employees: EmployeesText = {
   sizes: 'Dydžiai',
   editSizes: 'Keisti dydžius',
   editDetails: 'Redaguoti duomenis',
+  openPage: 'Atidaryti puslapį',
   deleteEmployee: 'Ištrinti darbuotoją…',
   confirmDelete: (name: string) => `Ištrinti darbuotoją ${name}? Ankstesni užsakymai bus išsaugoti.`,
   editSizesTitle: (name: string) => `Keisti dydžius: ${name}`,

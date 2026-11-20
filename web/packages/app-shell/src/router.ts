@@ -15,10 +15,15 @@ export interface Router<R> {
   navigate: (to: R, options?: NavigateOptions) => void
 }
 
-/** An app's addresses: parse reads one (without the app's base path), pathOf writes one. */
+/**
+ * An app's addresses: parse reads one (without the app's base path), pathOf
+ * writes one. fromOf names where a link to route was followed from ("WE-000010"),
+ * kept with the history entry it pushes (cameFrom), not in the address.
+ */
 export interface Addresses<R> {
   parse: (pathname: string, search: string) => R
   pathOf: (route: R) => string
+  fromOf?: ((route: R) => string | undefined) | undefined
 }
 
 /** Marks history entries pushed by navigate, so Back can return within the app. */
@@ -30,11 +35,21 @@ export function canGoBack(): boolean {
 }
 
 /**
+ * Where the current screen was opened from, as its link named it (Addresses'
+ * fromOf): kept with the history entry, so it survives a reload, Back and
+ * Forward; none for an address opened directly.
+ */
+export function cameFrom(): string | undefined {
+  const state = window.history.state as { inApp?: boolean; from?: unknown } | null
+  return state?.inApp === true && typeof state.from === 'string' ? state.from : undefined
+}
+
+/**
  * The app's router over the History API: the route of the address it opened
  * at, kept in step with Back and Forward, and navigate to push or replace one.
  * Addresses are under the app's base path (@ppe/routing).
  */
-export function useAddressRouter<R>({ parse, pathOf }: Addresses<R>): Router<R> {
+export function useAddressRouter<R>({ parse, pathOf, fromOf }: Addresses<R>): Router<R> {
   const [route, setRoute] = useState<R>(() => parse(stripBase(window.location.pathname), window.location.search))
 
   useEffect(() => {
@@ -46,11 +61,14 @@ export function useAddressRouter<R>({ parse, pathOf }: Addresses<R>): Router<R> 
   const navigate = useCallback(
     (to: R, { replace = false, scroll = true }: NavigateOptions = {}) => {
       if (replace) window.history.replaceState(window.history.state, '', basePath + pathOf(to))
-      else window.history.pushState(inApp, '', basePath + pathOf(to))
+      else {
+        const from = fromOf?.(to)
+        window.history.pushState(from ? { ...inApp, from } : inApp, '', basePath + pathOf(to))
+      }
       setRoute(to)
       if (scroll) window.scrollTo(0, 0)
     },
-    [pathOf],
+    [pathOf, fromOf],
   )
 
   return { route, navigate }

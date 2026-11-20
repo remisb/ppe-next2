@@ -63,6 +63,12 @@ Administration's change and error panes) or on its own page below `lg` (`ListDet
 | **Sections** | History, related records and their counts (Price history, Orders, Item Sets, Assignments…). | `DisclosureSection`, closed at first (§4) |
 | **Changes** | Who changed what, last. | `RecordChanges` |
 
+A record a list opens beside itself may also have a **page** of its own, the width of the
+screen, which every link from elsewhere opens (an asset at `/assets/<id>`, an employee at
+`/employees/<id>/page`; `docs/ux/employee-page.md`). One component draws both, with a
+`place` prop, and lays its parts out by its own container: one column beside the list,
+two on a page that has the room (`@4xl`). The page's way back goes where its link was.
+
 The ✕ (Close) ends the record's row beside the list. Below `lg` the pane is the whole
 screen, and the back link is an icon at the start of that row ("Back to Orders"), so the way
 out and the actions stay in reach however far the record scrolls. There is no other row of
