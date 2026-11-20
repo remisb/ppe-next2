@@ -248,10 +248,14 @@ Rules:
   The details line and badges scroll under them. No other row of record-level buttons in the
   body: an action that belongs to one part stays with it (Change status ▾ in Connection,
   Edit beside Sizes, Upload Signed Form on an assignment). A record's ⋯ is on its page as well
-  as on its list row: on a phone the page is the only place that reaches it.
+  as on its list row: on a phone the page is the only place that reaches it. The list row's ⋯
+  reads the same model (`RowActions`): every action an item with its icon, the main one first,
+  then the menu's own, then what asks first or is destructive, after a separator; an action
+  the row shows as its button (an item's Edit, Give SIM, Return) is not in ⋯ again.
 - **Code:** `RecordHeader` (`nav`, `actions`, `moreLabel`), `RecordTitle`, `ActionBar`
-  (`@ppe/ui/components/action-bar`); `RecordAction`, `actionIcons`, `layoutActions`
-  (`@ppe/ui/lib/record-actions`); one action model per record kind (`orderActions`,
+  (`@ppe/ui/components/action-bar`), `RowActions` (a list row's ⋯,
+  `@ppe/ui/components/action-menu`); `RecordAction`, `actionIcons`, `layoutActions`,
+  `rowMenuGroups` (`@ppe/ui/lib/record-actions`); one action model per record kind (`orderActions`,
   `assetActions`, `employeeActions`, `itemActions` in the staff app's `lib/`).
 
 ### Facts
@@ -361,8 +365,9 @@ Everything that opens over a screen. Reader words in brackets.
   actions (Toolbar). The **Change Status** menu lists the states as radio items and saves on
   choosing. A **menu button** opens a menu of one kind of choice. A menu may open with a
   **menu note**, words that are not an action.
-- **Code:** `MoreActions`, `DropdownMenu*` (`DropdownMenuNote`, `DropdownMenuGroupLabel`,
-  `variant="destructive"`).
+- **Code:** `RowActions` for a record's list row (from its action model, Record header),
+  `MoreActions` for a ⋯ built by hand (Item Sets, Users), `DropdownMenu*` (`DropdownMenuNote`,
+  `DropdownMenuGroupLabel`, `variant="destructive"`).
   **UI:** ⋯, labelled "More actions for {name}"; reader word "⋯".
 
 ### Popover

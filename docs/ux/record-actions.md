@@ -482,7 +482,18 @@ Decided or left, against §5 and §8:
   labels. The short-words budget in the test is 16 characters, not 14, until the Lithuanian
   *Sukurti nuorodą* (15) is reworded.
 - **Screen headers** (question 5, rollout 7) keep `showFrom`.
-- **List rows' ⋯** still build their own items (Employees, Item Catalogue, SIM Cards'
-  register with its statuses); reading the record kinds' models there is a follow-up.
+- **List rows' ⋯** read the same models (rollout step 2's second half, built after #18):
+  `RowActions` (`@ppe/ui/components/action-menu`) draws a `RecordAction[]` through
+  `rowMenuGroups` (`lib/record-actions.ts`, unit tested), sharing its items and icons with
+  the bar's ⋯ (`ActionMenuItems`). Every action is an item, the main one first with the
+  tools, then the menu's own, then what asks first or is destructive. Where the row already
+  shows an action as its button, ⋯ leaves it out (`shown`): an item's Edit, a register row's
+  Give SIM, Give Asset or Return; Employees' Edit sizes is not in the model, so the row's ⋯
+  starts with New order. Employees (`employeeActions`), Item Catalogue (`itemActions`) and
+  the SIM Cards and Equipment register (`AssetMoreActions` → `assetActions`, its statuses
+  still first as radio items, which the model does not hold) are on it. Show PIN and PUK is
+  not in a row's ⋯: it opens the card's own window (`useSimCodes`), so it stays on the card.
+  Item Sets and Administration's lists keep a hand-built `MoreActions` until their records
+  have models.
 - The main action is filled on every record (F5), View Order and an item's Edit included.
 

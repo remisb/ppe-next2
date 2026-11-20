@@ -6,7 +6,7 @@ import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
-import { MoreActions } from '@ppe/ui/components/more-actions'
+import { RowActions } from '@ppe/ui/components/action-menu'
 import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { ActionError, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableGroupRow, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
@@ -29,6 +29,7 @@ import { InactiveItemBadge, IncompleteBadge } from '@/components/status-badges'
 import { ItemIcon, ItemTile, iconChoices } from '@/components/item-icon'
 import { t } from '@/i18n'
 import { catalogueExportColumns } from '@/lib/catalogue-export'
+import { itemActions } from '@/lib/employee-actions'
 import { guessIcon } from '@/lib/items'
 import { moveBefore, placeBefore } from '@/lib/list-order'
 import { type ItemStatus, itemStatus } from '@/lib/records'
@@ -375,11 +376,12 @@ export function Catalogue({
                                 <Button size="sm" variant="outline" onClick={() => setEditing(i)}>
                                   {t.common.edit}
                                 </Button>{' '}
-                                <MoreActions label={t.common.moreActions(i.name)}>
-                                  <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle(i)}>
-                                    {i.active ? t.catalogue.deactivateItem : t.catalogue.activateItem}
-                                  </DropdownMenuItem>
-                                </MoreActions>
+                                {/* The item's own actions (itemActions); Edit is the button beside it, so not in ⋯ again. */}
+                                <RowActions
+                                  label={t.common.moreActions(i.name)}
+                                  actions={itemActions(i, { edit: () => setEditing(i), toggle: () => void toggle(i) })}
+                                  shown={['edit']}
+                                />
                               </>
                             )}
                           </TableCell>

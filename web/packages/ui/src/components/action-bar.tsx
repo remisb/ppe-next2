@@ -1,10 +1,11 @@
 import { ChevronDown, Ellipsis } from 'lucide-react'
-import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 
-import { type BarLayout, type RecordAction, actionIcons, layoutActions, menuGroups, sortActions } from '../lib/record-actions.ts'
+import { type BarLayout, type RecordAction, layoutActions, menuGroups, sortActions } from '../lib/record-actions.ts'
+import { ActionIcon, ActionMenuItems } from './action-menu.tsx'
 import { cn } from '../lib/utils.ts'
 import { Button, buttonVariants } from './button.tsx'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './dropdown-menu.tsx'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from './dropdown-menu.tsx'
 import { HelpTooltip, Tooltip, TooltipContent, TooltipTrigger } from './tooltip.tsx'
 
 // The bar's fixed parts: 44px icon buttons (tools, ⋯, an icon-only main action) 8px apart (gap-2).
@@ -24,12 +25,6 @@ function useMedia(query: string): boolean {
     return () => mq.removeEventListener('change', on)
   }, [query])
   return matches
-}
-
-function ActionIcon({ action }: { action: RecordAction }) {
-  if (!action.icon) return null
-  const { icon: Icon, ...rest } = actionIcons[action.icon]
-  return <Icon aria-hidden className={'className' in rest ? rest.className : undefined} />
 }
 
 /** A disabled control takes no pointer, so its tooltip hangs on a wrapper; a screen reader hears why from the control. */
@@ -205,23 +200,7 @@ export function ActionBar({ actions, moreLabel, className }: { actions: readonly
             <Ellipsis aria-hidden />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {groups.map((group, i) => (
-              <Fragment key={group[0]!.id}>
-                {i > 0 ? <DropdownMenuSeparator /> : null}
-                {group.map((a) => (
-                  <DropdownMenuItem
-                    key={a.id}
-                    data-action={a.id}
-                    variant={a.destructive ? 'destructive' : 'default'}
-                    disabled={a.pending || a.disabledReason !== undefined}
-                    onClick={a.run}
-                  >
-                    <ActionIcon action={a} />
-                    {a.label}
-                  </DropdownMenuItem>
-                ))}
-              </Fragment>
-            ))}
+            <ActionMenuItems groups={groups} />
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}
