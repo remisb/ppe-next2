@@ -156,6 +156,20 @@ export function menuGroups(actions: readonly RecordAction[], toolsShown: number,
 }
 
 /**
+ * A list row's ⋯ (record-actions.md §5, "The action model"): the same model as
+ * the record's bar, every action an item. The main action and the tools come
+ * first, in the bar's order, then the menu's own actions, then those that ask
+ * first or are destructive, each group after a separator. `shown` names the
+ * actions the row already shows as buttons (an item's Edit, Give SIM), which
+ * ⋯ leaves out rather than offering twice.
+ */
+export function rowMenuGroups(actions: readonly RecordAction[], shown: readonly string[] = []): RecordAction[][] {
+  const sorted = sortActions(actions).filter((a) => !shown.includes(a.id))
+  const first = sorted.filter((a) => a.place !== 'menu')
+  return [first, ...menuGroups(sorted.filter((a) => a.place === 'menu'), 0, false)].filter((g) => g.length > 0)
+}
+
+/**
  * A record's actions in order: the main action first (only one), the tools in
  * the order given. A tool without an icon cannot be icon-only, so it is a
  * ⋯ item; so is any destructive tool.

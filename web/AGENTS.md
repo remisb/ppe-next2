@@ -352,7 +352,8 @@ The workwear app is the reference.
   carries `data-shortcut="search"` so `/` reaches it. Every shortcut has a visible way to do
   the same with a pointer; the ⌘K palette also opens from Search in the sidebar and More.
 - **Row actions**: one visible everyday action per row or card at most (Edit Sizes,
-  Edit), the rest in a `MoreActions` (⋯) menu, destructive ones last and asking first
+  Edit), the rest in a ⋯ menu (`RowActions` from the record's action model where it has
+  one, `docs/ux/record-actions.md`; else `MoreActions`), destructive ones last and asking first
   (Delete, Deactivate, and Reset password on Users; Delete order in Orders' order pane,
   for the manager role only). A record with its own page (an
   employee, a catalogue item) has the same ⋯ on that page, the only place a phone reaches it. The ⋯ button is always shown, never revealed on hover: touch

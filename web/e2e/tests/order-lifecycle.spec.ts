@@ -1806,7 +1806,9 @@ test('Employees: less frequent and destructive actions are under ⋯', async () 
   const row = page.getByRole('row', { name: /Ona Kazlauskienė/ })
   await expect(row.getByRole('button', { name: 'Delete' })).toHaveCount(0)
   await row.getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
-  await expect(page.getByRole('menuitem', { name: 'Delete employee…' })).toBeVisible()
+  // The row's ⋯ reads her page's actions (employeeActions): New order first, Delete employee… last.
+  await expect(page.getByRole('menuitem').first()).toHaveText('New order')
+  await expect(page.getByRole('menuitem').last()).toHaveText('Delete employee…')
   // A menu item acts; it does not also open the row's employee.
   await page.getByRole('menuitem', { name: 'Edit details' }).click()
   await expect(page.getByRole('dialog')).toBeVisible()

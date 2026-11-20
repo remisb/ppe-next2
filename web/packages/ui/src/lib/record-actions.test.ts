@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { type BarMeasure, type RecordAction, layoutActions, menuGroups, sortActions } from './record-actions.ts'
+import { type BarMeasure, type RecordAction, layoutActions, menuGroups, rowMenuGroups, sortActions } from './record-actions.ts'
 
 // The bar's fixed parts as the app draws them: 44px tools and ⋯, 8px apart.
 const base = { toolWidth: 44, moreWidth: 44, gap: 8, maxTools: 3, menu: true } satisfies Partial<BarMeasure>
@@ -94,5 +94,34 @@ describe('sortActions', () => {
 
   it('refuses two main actions', () => {
     expect(() => sortActions([act('a', 'main'), act('b', 'main')])).toThrow(/one main action/)
+  })
+})
+
+describe('rowMenuGroups', () => {
+  const ids = (groups: RecordAction[][]) => groups.map((g) => g.map((a) => a.id))
+  const employee = [
+    act('newOrder', 'main', { icon: 'add' }),
+    act('editDetails', 'tool', { icon: 'edit' }),
+    act('merge', 'menu', { asks: true }),
+    act('delete', 'menu', { destructive: true, asks: true }),
+  ]
+
+  it('lists every action, the main one first, what asks first last', () => {
+    expect(ids(rowMenuGroups(employee))).toEqual([['newOrder', 'editDetails'], ['merge', 'delete']])
+  })
+
+  it('puts the main action first wherever the model has it', () => {
+    expect(ids(rowMenuGroups([...employee.slice(1), employee[0]!]))).toEqual([['newOrder', 'editDetails'], ['merge', 'delete']])
+  })
+
+  it('separates the menu\'s own actions from what asks first', () => {
+    const asset = [act('give', 'main'), act('print', 'tool', { icon: 'print' }), act('edit', 'menu'), act('notReturned', 'menu', { asks: true })]
+    expect(ids(rowMenuGroups(asset))).toEqual([['give', 'print'], ['edit'], ['notReturned']])
+  })
+
+  it('leaves out what the row shows as a button, and a group left empty', () => {
+    const item = [act('edit', 'main', { icon: 'edit' }), act('deactivate', 'menu', { destructive: true, asks: true })]
+    expect(ids(rowMenuGroups(item, ['edit']))).toEqual([['deactivate']])
+    expect(rowMenuGroups(item, ['edit', 'deactivate'])).toEqual([])
   })
 })

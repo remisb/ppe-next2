@@ -2,10 +2,9 @@ import type { Employee, EmployeePair, Sizes } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { Button } from '@ppe/ui/components/button'
-import { DropdownMenuItem, DropdownMenuSeparator } from '@ppe/ui/components/dropdown-menu'
 import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
-import { MoreActions } from '@ppe/ui/components/more-actions'
+import { RowActions } from '@ppe/ui/components/action-menu'
 import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { ActionError, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
@@ -30,6 +29,7 @@ import { isMissingASize, missingSizes } from '@/lib/missing-sizes'
 import { cn } from '@ppe/ui/lib/utils'
 import { EmployeeAvatar } from '@/components/employee-photo'
 import { addPhotos, photoRefusal, useRowFileDrop } from '@/lib/photo-drop'
+import { employeeActions } from '@/lib/employee-actions'
 import { employeeExportColumns } from '@/lib/employee-export'
 import { employeeFacts, missingLabel } from '@/lib/records'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
@@ -323,20 +323,21 @@ export function Employees({
                           </Button>{' '}
                         </>
                       ) : null}
-                      {!selection.active && (managesProfile || merges || session.can('employees.delete')) ? (
-                        <MoreActions label={t.common.moreActions(e.full_name)}>
-                          {managesProfile ? <DropdownMenuItem onClick={() => setEditing(e)}>{t.employees.editDetails}</DropdownMenuItem> : null}
-                          {merges ? <DropdownMenuItem onClick={() => setMerging({ start: e })}>{t.employees.merge.action}</DropdownMenuItem> : null}
-                          {session.can('employees.delete') ? (
-                            <>
-                              {managesProfile || merges ? <DropdownMenuSeparator /> : null}
-                              <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
-                                {t.employees.deleteEmployee}
-                              </DropdownMenuItem>
-                            </>
-                          ) : null}
-                        </MoreActions>
-                      ) : null}
+                      {/* The employee's own actions, as the employee's page has them (employeeActions). */}
+                      {selection.active ? null : (
+                        <RowActions
+                          label={t.common.moreActions(e.full_name)}
+                          actions={employeeActions(
+                            { editDetails: managesProfile, merge: merges, remove: session.can('employees.delete') },
+                            {
+                              newOrder: () => navigate({ name: 'createOrder', prefill: { employeeId: e.id, items: [] } }),
+                              editDetails: () => setEditing(e),
+                              merge: () => setMerging({ start: e }),
+                              remove: () => void remove(e),
+                            },
+                          )}
+                        />
+                      )}
                     </TableCell>
                   </TableRow>
                 )

@@ -10,14 +10,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@ppe/ui/components/dropdown-menu'
-import { MoreActions } from '@ppe/ui/components/more-actions'
+import { RowActions } from '@ppe/ui/components/action-menu'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { HelpTooltip } from '@ppe/ui/components/tooltip'
 import { ChevronDown } from 'lucide-react'
 import type { ComponentProps } from 'react'
 
 import { t } from '@/i18n'
-import { canMarkNotReturned, statusLabel, statusVariant } from '@/lib/assets'
+import { type AssetRunners, assetActions } from '@/lib/asset-actions'
+import { statusLabel, statusVariant } from '@/lib/assets'
 
 const statuses: ConnectionStatus[] = ['NOT_ACTIVATED', 'ACTIVE', 'BLOCKED']
 
@@ -144,34 +145,26 @@ export function ReturnButton({
 }
 
 /**
- * A card's less frequent actions under ⋯ (web/AGENTS.md: one everyday action
- * visible, the rest here). With `status` the three statuses are here too, for
- * a row whose visible action is another one.
+ * A register row's ⋯: the card's actions from the same model as its action bar
+ * (assetActions), less Give or Return, which the row shows as its button. With
+ * `status` the three statuses come first, for a row whose visible action is
+ * another one; the model does not hold them (the card has Connection's Change
+ * status ▾). Show PIN and PUK stays on the card.
  */
 export function AssetMoreActions({
   asset,
   status = false,
   onStatus,
-  onEdit,
-  onNotReturned,
-  onActivationEmail,
-  onBlockingEmail,
-  onPrintForm,
+  run,
 }: {
   asset: Asset
   status?: boolean
   onStatus: (next: ConnectionStatus) => void
-  onEdit: () => void
-  onNotReturned: () => void
-  onActivationEmail: () => void
-  onBlockingEmail: () => void
-  /** Print Form: the holder's form, printed again; for a SIM held since the import, one built now. */
-  onPrintForm: () => void
+  run: AssetRunners
 }) {
   const current = asset.connection_status
-  const held = asset.open_assignment
   return (
-    <MoreActions label={t.common.moreActions(asset.inventory_no)}>
+    <RowActions label={t.common.moreActions(asset.inventory_no)} actions={assetActions(asset, { manage: true }, run)} shown={['give', 'return']}>
       {status && current ? (
         <>
           <DropdownMenuNote>{t.assets.changeStatus}</DropdownMenuNote>
@@ -184,14 +177,8 @@ export function AssetMoreActions({
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>
-          <DropdownMenuSeparator />
         </>
       ) : null}
-      <DropdownMenuItem onClick={onEdit}>{t.common.edit}</DropdownMenuItem>
-      {held && (held.paper_form_signed || asset.kind === 'SIM') ? <DropdownMenuItem onClick={onPrintForm}>{t.assets.printForm}</DropdownMenuItem> : null}
-      {canMarkNotReturned(asset) ? <DropdownMenuItem onClick={onNotReturned}>{t.assets.markNotReturned}</DropdownMenuItem> : null}
-      {current && current !== 'ACTIVE' ? <DropdownMenuItem onClick={onActivationEmail}>{t.assets.prepareActivationEmail}</DropdownMenuItem> : null}
-      {current && current !== 'BLOCKED' ? <DropdownMenuItem onClick={onBlockingEmail}>{t.assets.prepareBlockingEmail}</DropdownMenuItem> : null}
-    </MoreActions>
+    </RowActions>
   )
 }

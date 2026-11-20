@@ -630,16 +630,20 @@ export function Assets({
                             />
                           ) : null}{' '}
                           {ticking ? null : (
-                          <AssetMoreActions
-                            asset={a}
-                            status={action !== 'status'}
-                            onStatus={(next) => void changeStatus(a, next)}
-                            onEdit={() => setEditing(a)}
-                            onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
-                            onActivationEmail={() => setSheet({ kind: 'activationEmail', asset: a })}
-                            onBlockingEmail={() => setSheet({ kind: 'blockingEmail', asset: a })}
-                            onPrintForm={() => reprint(a)}
-                          />
+                            <AssetMoreActions
+                              asset={a}
+                              status={action !== 'status'}
+                              onStatus={(next) => void changeStatus(a, next)}
+                              run={{
+                                give: () => setSheet({ kind: 'give', asset: a }),
+                                return: () => setSheet({ kind: 'return', asset: a }),
+                                edit: () => setEditing(a),
+                                printForm: () => reprint(a),
+                                notReturned: () => setSheet({ kind: 'notReturned', asset: a }),
+                                activationEmail: () => setSheet({ kind: 'activationEmail', asset: a }),
+                                blockingEmail: () => setSheet({ kind: 'blockingEmail', asset: a }),
+                              }}
+                            />
                           )}
                         </TableCell>
                       ) : null}
