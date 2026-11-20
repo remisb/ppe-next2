@@ -5,9 +5,7 @@ import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { ExportSheet } from '@ppe/ui/components/export-sheet'
-import { DropdownMenuItem, DropdownMenuSeparator } from '@ppe/ui/components/dropdown-menu'
 import { Field, Select, controlProps } from '@ppe/ui/components/field'
-import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { ActionError, Loaded } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@ppe/ui/components/table'
@@ -15,7 +13,7 @@ import { InControl } from '@ppe/ui/components/tooltip'
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { Download, FileText, Pencil, Plus, RotateCcw } from 'lucide-react'
+import { Download, FileText, Pencil, RotateCcw } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 
 import { OrderStatusBadge } from '@/components/order-status'
@@ -23,6 +21,7 @@ import { formatDate } from '@/components/dashboard'
 import { EmployeePhotos, useEmployeePhotos } from '@/components/employee-photos'
 import { IdentitySection } from '@/components/identity-section'
 import { useFileDrop } from '@/lib/photo-drop'
+import { employeeActions } from '@/lib/employee-actions'
 import { EmployeeForm } from '@/components/employee-form'
 import { MergeEmployeesSheet } from '@/components/merge-employees-sheet'
 import { HeldAssets } from '@/components/held-assets'
@@ -189,27 +188,16 @@ export function EmployeePage({
               className="mb-5"
               nav={{ backLabel: t.employees.title, onBack: onClose, closeLabel: t.employees.closeEmployee }}
               title={<RecordTitle>{e.full_name}</RecordTitle>}
-              actions={
-                <>
-                  <Button onClick={() => navigate({ name: 'createOrder', prefill: { employeeId: e.id, items: [] } })}>
-                    <Plus aria-hidden /> {t.employees.newOrder}
-                  </Button>
-                  {managesProfile || merges || session.can('employees.delete') ? (
-                    <MoreActions label={t.common.moreActions(e.full_name)}>
-                      {managesProfile ? <DropdownMenuItem onClick={() => setEditing(true)}>{t.employees.editDetails}</DropdownMenuItem> : null}
-                      {merges ? <DropdownMenuItem onClick={() => setMerging(true)}>{t.employees.merge.action}</DropdownMenuItem> : null}
-                      {session.can('employees.delete') ? (
-                        <>
-                          {managesProfile || merges ? <DropdownMenuSeparator /> : null}
-                          <DropdownMenuItem variant="destructive" onClick={() => void remove(e)}>
-                            {t.employees.deleteEmployee}
-                          </DropdownMenuItem>
-                        </>
-                      ) : null}
-                    </MoreActions>
-                  ) : null}
-                </>
-              }
+              actions={employeeActions(
+                { editDetails: managesProfile, merge: merges, remove: session.can('employees.delete') },
+                {
+                  newOrder: () => navigate({ name: 'createOrder', prefill: { employeeId: e.id, items: [] } }),
+                  editDetails: () => setEditing(true),
+                  merge: () => setMerging(true),
+                  remove: () => void remove(e),
+                },
+              )}
+              moreLabel={t.common.moreActions(e.full_name)}
             >
               {e.code ? <p className="mt-1 text-sm text-muted-foreground">{t.employees.codeIs(e.code)}</p> : null}
             </RecordHeader>

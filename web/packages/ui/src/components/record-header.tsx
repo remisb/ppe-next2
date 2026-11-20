@@ -4,6 +4,8 @@ import { type ReactNode, useRef } from 'react'
 import { cn } from '../lib/utils.ts'
 import { uiText } from '../text.ts'
 import { useStuck } from '../lib/use-stuck.ts'
+import type { RecordAction } from '../lib/record-actions.ts'
+import { ActionBar } from './action-bar.tsx'
 import { Button } from './button.tsx'
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip.tsx'
 
@@ -17,22 +19,26 @@ export interface RecordNav {
 }
 
 /**
- * A record's header in a pane or on its page (guidelines, "The detail pane").
- * Its first row, the title with the main action and ⋯ in the corner, sticks:
- * inside the pane's own scroll beside a list, at the top of the screen on a
- * phone, a tablet and a record's page, where it covers the bar with the app's
- * name as a screen's PageHeader does. What is under the title (`children`: a
- * details line, the status badges) scrolls under it.
+ * A record's header in a pane or on its page (guidelines, "The detail pane";
+ * docs/ux/record-actions.md, Option B). Two rows that stick together: the
+ * record's identity, one line exactly as tall as a screen's PageHeader, so
+ * its title lines up with the screen's in every language; then its actions,
+ * the ActionBar (the main action with its words, the tools, ⋯), one line that
+ * never wraps. They stick inside the pane's own scroll beside a list, and at
+ * the top of the screen on a phone, a tablet and a record's page, where they
+ * cover the bar with the app's name as a screen's PageHeader does. What is
+ * under them (`children`: a details line, the status badges) scrolls under.
  *
- * With `nav`, the row also holds the way out: below lg back to the list as an
- * icon named "Back to Orders"; beside the list, Close
- * in the corner. PaneBar draws the same while the record loads, and hides
- * once this row is there (styles.css). Where the title and the actions do not
- * fit one row, the title moves under them, never the actions down.
+ * With `nav`, the identity row also holds the way out: below lg back to the
+ * list as an icon named "Back to Orders"; beside the list, Close in the
+ * corner. PaneBar draws the same while the record loads, and hides once this
+ * row is there (styles.css). Beside a list the title is cut short to one line
+ * (its full words its tooltip); on a record's page it may take two.
  */
 export function RecordHeader({
   title,
-  actions,
+  actions = [],
+  moreLabel,
   beside = true,
   nav,
   className,
@@ -40,7 +46,10 @@ export function RecordHeader({
 }: {
   /** The heading, usually a RecordTitle; the asset pane draws its numbers instead. */
   title: ReactNode
-  actions?: ReactNode
+  /** The record's actions, from its kind's action model; none, no action bar. */
+  actions?: readonly RecordAction[]
+  /** ⋯'s name: "More actions for WE-000010". */
+  moreLabel?: string | undefined
   /** In a pane beside a list (from lg), whose own scroll the row sticks in; false on a record's page. */
   beside?: boolean
   nav?: RecordNav | undefined
@@ -52,7 +61,7 @@ export function RecordHeader({
   const row = useRef<HTMLDivElement>(null)
   useStuck(mark, row)
   return (
-    // display: contents, no box of its own: the row sticks the length of the record, not of its header.
+    // display: contents, no box of its own: the rows stick the length of the record, not of its header.
     <header className="contents">
       {/* In a record that spaces its parts with gap-4 (Orders, the Audit log), the mark and the row take none between them. */}
       <div ref={mark} aria-hidden className={cn('-mt-3 h-px md:-mt-8 print:hidden [.gap-4>*>&]:-mb-4', beside && 'lg:mt-0')} />
@@ -60,26 +69,35 @@ export function RecordHeader({
         ref={row}
         data-slot="record-header"
         className={cn(
-          '-mt-px flex min-h-(--page-header) items-center gap-2 py-1.5',
+          '-mt-px flex flex-col',
           // A phone's and a tablet's screen: the top of the window, over the bar with the app's name.
           '-mx-4 sticky top-[env(safe-area-inset-top)] z-40 bg-background px-4 md:-mx-6 md:z-20 md:px-6',
           beside
             ? // Beside the list: the top of the pane's card, in its own scroll (-top-4: sticking keeps out of the card's padding otherwise).
-              // As tall as the screen's header beside it (less the card's border), so the titles and the rules line up.
-              'lg:-top-4 lg:-mx-4 lg:-mt-[calc(1rem+1px)] lg:min-h-[calc(var(--page-header)-1px)] lg:bg-card lg:px-4 lg:py-0'
+              'lg:-top-4 lg:-mx-4 lg:-mt-[calc(1rem+1px)] lg:bg-card lg:px-4'
             : undefined,
           'border-b border-transparent transition-[border-color,box-shadow] data-stuck:border-border data-stuck:shadow-sm',
           '[@media(height<30rem)]:static print:static print:mx-0 print:px-0',
           children ? undefined : cn('mb-4', className),
         )}
       >
-        <div className="flex min-w-0 flex-1 flex-wrap-reverse items-center justify-between gap-x-2 gap-y-1">
-          <div className="flex min-w-0 items-center gap-1">
+        <div
+          data-slot="record-row"
+          {...(beside ? { 'data-oneline': '' } : { 'data-page': '' })}
+          className={cn(
+            'group/record flex items-center gap-2',
+            beside
+              ? // As tall as the screen's header beside it (less the card's border), so the titles and the rules line up.
+                'h-(--page-header) lg:h-[calc(var(--page-header)-1px)] print:h-auto'
+              : 'min-h-(--page-header) py-1.5',
+          )}
+        >
+          <div className="flex min-w-0 flex-1 items-center gap-1">
             {nav ? (
               <Tooltip>
                 <TooltipTrigger
                   render={
-                    <Button variant="ghost" size="icon" className="-ml-2.5 lg:hidden print:hidden" aria-label={uiText().backTo(nav.backLabel)} onClick={nav.onBack}>
+                    <Button variant="ghost" size="icon" className="-ml-2.5 shrink-0 lg:hidden print:hidden" aria-label={uiText().backTo(nav.backLabel)} onClick={nav.onBack}>
                       <ArrowLeft aria-hidden />
                     </Button>
                   }
@@ -89,14 +107,13 @@ export function RecordHeader({
             ) : null}
             {title}
           </div>
-          {/* A phone's buttons a little narrower, so a record number and its main action share the row. */}
-          {actions ? <div className="ml-auto flex shrink-0 gap-2 print:hidden max-sm:[&>[data-slot=button]]:px-3">{actions}</div> : null}
+          {nav?.closeLabel ? (
+            <Button variant="ghost" size="icon" className="-mr-2 shrink-0 max-lg:hidden print:hidden" aria-label={nav.closeLabel} onClick={nav.onBack}>
+              <X aria-hidden />
+            </Button>
+          ) : null}
         </div>
-        {nav?.closeLabel ? (
-          <Button variant="ghost" size="icon" className="-mr-2 max-lg:hidden" aria-label={nav.closeLabel} onClick={nav.onBack}>
-            <X aria-hidden />
-          </Button>
-        ) : null}
+        {actions.length > 0 ? <ActionBar actions={actions} moreLabel={moreLabel ?? uiText().moreActions('')} className="pb-2" /> : null}
       </div>
       {children ? <div className={cn('mb-4 [.gap-4>*>&]:-mt-3', className)}>{children}</div> : null}
     </header>
@@ -116,9 +133,14 @@ export function RecordTitle({
   children: ReactNode
 }) {
   return (
-    <Heading className={cn('flex min-w-0 items-center gap-3 text-xl font-semibold tracking-tight [overflow-wrap:anywhere]', className)}>
+    <Heading
+      className={cn('flex min-w-0 items-center gap-3 text-xl font-semibold tracking-tight [overflow-wrap:anywhere]', className)}
+      // Cut short beside a list: the full title on hover.
+      title={typeof children === 'string' ? children : undefined}
+    >
       {icon}
-      {children}
+      {/* One line beside a list, two at most on a record's page (RecordHeader's row). */}
+      <span className="min-w-0 group-data-oneline/record:truncate group-data-page/record:line-clamp-2">{children}</span>
     </Heading>
   )
 }

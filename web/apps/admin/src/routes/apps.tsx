@@ -232,16 +232,13 @@ function AppPane({
         className="mb-0"
         nav={{ backLabel: t.apps.back, onBack: onClose, closeLabel: t.apps.close(appName(app)) }}
         title={
-          <span className="flex items-center gap-3">
-            <TileIcon app={app} className="size-11 rounded-xl p-2" />
+          <span className="flex min-w-0 items-center gap-3">
+            <TileIcon app={app} className="size-11 shrink-0 rounded-xl p-2" />
             <RecordTitle className="text-lg">{appName(app)}</RecordTitle>
           </span>
         }
-        actions={
-          <Button variant="outline" onClick={onEdit}>
-            {t.common.edit}
-          </Button>
-        }
+        actions={[{ id: 'edit', label: t.common.edit, icon: 'edit', place: 'main', run: onEdit }]}
+        moreLabel={t.common.moreActions(appName(app))}
       >
         <p className="text-sm text-muted-foreground">
           {t.apps.kinds[app.kind]} · {launcherText().stages[app.stage]}

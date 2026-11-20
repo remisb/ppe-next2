@@ -2,7 +2,6 @@ import type { AssetAssignment, AssetKind, ConnectionStatus } from '@ppe/api-clie
 import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
 import { CopyButton } from '@ppe/ui/components/copy-button'
-import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { ActionError, Loaded } from '@ppe/ui/components/states'
 import { RuleList } from '@ppe/ui/components/rule-list'
@@ -21,15 +20,16 @@ import { PaneBar } from '@ppe/ui/components/list-detail'
 import { FileDown, Printer } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 
-import { AssetMoreActions, NotReturnedBadge, ReturnButton, StatusBadge, StatusMenu, setStatus } from '@/components/asset-controls'
+import { NotReturnedBadge, StatusBadge, StatusMenu, setStatus } from '@/components/asset-controls'
 import { usePrintStoredForm } from '@/components/assignment-form'
 import { type AssetSheet, AssetSheets } from '@/components/asset-sheets'
 import { EquipmentForm } from '@/components/equipment-form'
 import { SignedCopies } from '@/components/signed-copies'
-import { SimCodesKey } from '@/components/sim-codes'
+import { useSimCodes } from '@/components/sim-codes'
 import { SimCardForm } from '@/components/sim-card-form'
 import { t } from '@/i18n'
-import { categoryLabel, formatDay, locationText, managePermission, primaryAction, simCopyText, todayIn } from '@/lib/assets'
+import { assetActions } from '@/lib/asset-actions'
+import { categoryLabel, formatDay, locationText, managePermission, simCopyText, todayIn } from '@/lib/assets'
 import { type Route, linkTo } from '@/lib/router'
 import { useOpenKey } from '@/lib/open-sections'
 
@@ -89,6 +89,16 @@ export function AssetDetail({
 
   const a = asset.data
   const sim = a?.kind !== 'EQUIPMENT'
+  const simCodes = useSimCodes({
+    asset: a,
+    timeZone: tz,
+    onShown: () => setCodesShown((n) => n + 1),
+    onMissing: (m) => {
+      setMessage(m)
+      changed()
+    },
+    onError: (err) => action.fail(err),
+  })
   // A SIM changes with Manage SIMs, an item with Manage Equipment & Furniture.
   const canManage = a ? can(managePermission(a.kind)) : false
   // Whoever sees SIM cards may show a card's PIN and PUK (WARE-37).
@@ -149,41 +159,20 @@ export function AssetDetail({
                   <p className="text-muted-foreground">{t.assets.noPhoneNo}</p>
                 )
               }
-              actions={
-                canManage || canShowCodes ? (
-                  <>
-                    {canManage && primaryAction(a) === 'give' ? (
-                      <Button onClick={() => setSheet({ kind: 'give', asset: a })}>{sim ? t.assets.giveSimCard : t.assets.giveAsset}</Button>
-                    ) : null}
-                    {canManage && primaryAction(a) === 'return' ? (
-                      <ReturnButton kind={a.kind} onClick={() => setSheet({ kind: 'return', asset: a })} />
-                    ) : null}
-                    {canShowCodes ? (
-                      <SimCodesKey
-                        asset={a}
-                        timeZone={tz}
-                        onShown={() => setCodesShown((n) => n + 1)}
-                        onMissing={(m) => {
-                          setMessage(m)
-                          changed()
-                        }}
-                        onError={action.fail}
-                      />
-                    ) : null}
-                    {canManage ? (
-                      <AssetMoreActions
-                        asset={a}
-                        onStatus={(next) => void changeStatus(next)}
-                        onEdit={() => setEditing(true)}
-                        onNotReturned={() => setSheet({ kind: 'notReturned', asset: a })}
-                        onActivationEmail={() => setSheet({ kind: 'activationEmail', asset: a })}
-                        onBlockingEmail={() => setSheet({ kind: 'blockingEmail', asset: a })}
-                        onPrintForm={() => void action.run(() => printHeldForm(a))}
-                      />
-                    ) : null}
-                  </>
-                ) : undefined
-              }
+              actions={assetActions(
+                a,
+                { manage: canManage, codes: canShowCodes ? simCodes.action : null, printing: action.pending },
+                {
+                  give: () => setSheet({ kind: 'give', asset: a }),
+                  return: () => setSheet({ kind: 'return', asset: a }),
+                  edit: () => setEditing(true),
+                  printForm: () => void action.run(() => printHeldForm(a)),
+                  notReturned: () => setSheet({ kind: 'notReturned', asset: a }),
+                  activationEmail: () => setSheet({ kind: 'activationEmail', asset: a }),
+                  blockingEmail: () => setSheet({ kind: 'blockingEmail', asset: a }),
+                },
+              )}
+              moreLabel={t.common.moreActions(a.inventory_no)}
             >
               {sim && a.sim_no ? (
                 // One button copying both numbers, beside the second of them; it takes no more height than the number,
@@ -315,6 +304,7 @@ export function AssetDetail({
             <RecordChanges load={() => client.audit.history('assets', id)} deps={[id, a.updated_at, a.assignments.length, a.open_assignment?.not_returned_at, codesShown]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
 
             {printing}
+            {simCodes.sheet}
             <AssetSheets
               sheet={sheet}
               today={today}

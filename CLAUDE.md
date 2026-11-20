@@ -564,6 +564,11 @@ in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TA
   `@ppe/mrz` (passports' and ID cards' MRZ, for docs-import; its Go twin is `internal/personnel/mrz`, both tested on `testdata/mrz/vectors.json`). A screen shows controls by `session.can(...)`, never by role.
   A package with components of its own is named with `@source` in each app's `index.css`:
   Tailwind scans only the app's files and `@ppe/ui`, so its classes would be missing.
+- A record's header is its identity row, then its **action bar** (WARE-46,
+  `docs/ux/record-actions.md`, Option B): `RecordHeader`'s `actions` is a `RecordAction[]`
+  from one model per record kind (`lib/order-actions.ts`, `asset-actions.ts`,
+  `employee-actions.ts`), drawn by `@ppe/ui`'s `ActionBar` (main action with words, icon tools
+  from `actionIcons`, ⋯), collapsing by measured words (`layoutActions`), never wrapping.
 - `apps/workwear/src/lib/working-order.ts` holds all Create Order rules as pure, tested
   functions (merge by item, manual-size conflicts on employee change, Save as Employee
   Default, validation, the draft kept per user in localStorage). Screens in `src/routes/` only wire events.

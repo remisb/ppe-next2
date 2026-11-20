@@ -2,11 +2,8 @@ import type { ListedOrder, PriceEntry } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
 import { Badge } from '@ppe/ui/components/badge'
-import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
-import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
 import { RuleList } from '@ppe/ui/components/rule-list'
-import { MoreActions } from '@ppe/ui/components/more-actions'
 import { ActionError, EmptyState, ErrorState, Loaded, Loading } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -19,6 +16,7 @@ import { ItemTile } from '@/components/item-icon'
 import { RecordPreview } from '@/components/record-preview'
 import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { t } from '@/i18n'
+import { itemActions } from '@/lib/employee-actions'
 import { percentChange } from '@/lib/dashboard'
 import { formatDateTime } from '@ppe/ui/lib/dates'
 import { linkVariants } from '@ppe/ui/components/link'
@@ -106,20 +104,8 @@ export function CatalogueItemDetail({
             <RecordHeader
               nav={{ backLabel: t.catalogue.title, onBack: onClose, closeLabel: t.catalogue.closeItem }}
               title={<RecordTitle icon={<ItemTile icon={i.icon} className="size-10 shrink-0" />}>{i.name}</RecordTitle>}
-              actions={
-                canManageItems ? (
-                  <>
-                    <Button variant="outline" onClick={() => setEditing(true)}>
-                      {t.common.edit}
-                    </Button>
-                    <MoreActions label={t.common.moreActions(i.name)}>
-                      <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle()}>
-                        {i.active ? t.catalogue.deactivateItem : t.catalogue.activateItem}
-                      </DropdownMenuItem>
-                    </MoreActions>
-                  </>
-                ) : undefined
-              }
+              actions={canManageItems ? itemActions(i, { edit: () => setEditing(true), toggle: () => void toggle() }) : []}
+              moreLabel={t.common.moreActions(i.name)}
             >
               {i.details ? <p className="mt-1 text-sm text-muted-foreground">{i.details}</p> : null}
             </RecordHeader>

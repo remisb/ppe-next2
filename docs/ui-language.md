@@ -208,32 +208,51 @@ Rules:
 ### Order pane
 - **Brief:** an order opened from Orders.
 - **Detail:** laid out as the item pane ([Record header](#record-header)): its heading is the
-  record number, with the main action and ⋯ in the corner; under it the employee, then the
+  record number, its action bar under it; then the employee, then the
   status badge (**Ordered**, or **Given** in green, done) and, while Ordered, the wait
   ("Waiting 4 days"; past 14 days a red badge that says what to do). Then its facts
-  (Ordered, Prepared by, Given, Confirmed), its other actions, and only then its lines.
-  Its actions by status:
+  (Ordered, Prepared by, Given, Confirmed), and only then its lines.
+  Its actions by status (`orderActions`):
   - **Ordered**: **Create confirmation link** is the main action; once pressed the link shows
     below the header and the button becomes **Confirmation link**, a disclosure with a
     chevron that hides and shows that link (Copy link, Open on this device, Share link via
-    WhatsApp). Then **Print Order** and **Mark as Signed & Given**. (**Hand over now** is
-    hidden for now.) No Open Employee Confirmation here: only Create Order's Send
+    WhatsApp). Then **Print Order** and **Mark as Signed & Given** as tools (it asks first);
+    ⋯ → **Copy for WhatsApp**. (**Hand over now** is hidden for now; it would be in ⋯.) No Open Employee Confirmation here: only Create Order's Send
     confirmation link opens it.
-  - **Given**: **View Order** is the main action, then **Print Order**, both the Items Given
-    Record.
+  - **Given**: **View Order** is the main action, then **Print Order** as a tool, both the
+    Items Given Record; ⋯ → **Copy for WhatsApp**.
   - Manager role: ⋯ → **Delete order…**.
   - Below the lines, the collapsible **Changes**.
 
 ### Record header
 - **Brief:** a record page's title (the record's name or number, with its picture or
-  avatar), its badges, and its actions: at most one primary, then ⋯.
-- **Detail:** its first row (back, title, main action, ⋯, ✕) sticks: inside the pane's own
-  scroll beside a list, at the top of the screen on a phone, a tablet and a record's page.
-  The details line and badges scroll under it. A record's ⋯ is on its page as well as on its
-  list row: on a phone the page is the only place that reaches it. The main action shows
-  shorter words on a phone where it has them (Create link, View). Where the title and the
-  actions still do not fit one row, the title moves under them, never the actions down.
-- **Code:** `RecordHeader` (`nav`), `RecordTitle`, `ShortWords` (`@ppe/ui`).
+  avatar), its badges, and its actions in the **action bar** under the title.
+- **Detail:** two rows that stick together (inside the pane's own scroll beside a list, at
+  the top of the screen on a phone, a tablet and a record's page;
+  `docs/ux/record-actions.md`, Option B):
+  - the **record row**, identity only: back (below `lg`), the title, ✕ (beside a list). One
+    line exactly as tall as a screen's header, so beside a list its title is level with the
+    screen's in every language; a long title is cut short there (its full words on hover),
+    and may take two lines on a record's page;
+  - the **action bar**: the **main action**, filled, with its words; the **tools**, icon-only
+    outline buttons for the actions whose icon is in the icon vocabulary (`actionIcons`), named
+    in a tooltip on hover and focus; ⋯ at the end with the rest, labelled: the tools that do
+    not fit, then the menu's own actions, then those that ask first or are destructive. One
+    line that never wraps. At most 3 tools, 2 on a phone. On a touch screen ⋯ lists every
+    tool by name too.
+  - When the bar is short of room it collapses in a fixed order, measured from the words in
+    the language in use (`layoutActions`): the main action's full words → its short words →
+    tools into ⋯, the last first → the main action as its icon alone. A main action without an
+    icon (Give SIM) keeps its words.
+
+  The details line and badges scroll under them. No other row of record-level buttons in the
+  body: an action that belongs to one part stays with it (Change status ▾ in Connection,
+  Edit beside Sizes, Upload Signed Form on an assignment). A record's ⋯ is on its page as well
+  as on its list row: on a phone the page is the only place that reaches it.
+- **Code:** `RecordHeader` (`nav`, `actions`, `moreLabel`), `RecordTitle`, `ActionBar`
+  (`@ppe/ui/components/action-bar`); `RecordAction`, `actionIcons`, `layoutActions`
+  (`@ppe/ui/lib/record-actions`); one action model per record kind (`orderActions`,
+  `assetActions`, `employeeActions`, `itemActions` in the staff app's `lib/`).
 
 ### Facts
 - **Brief:** label-and-value rows that describe a record ("Connection", "Where", "Held by"

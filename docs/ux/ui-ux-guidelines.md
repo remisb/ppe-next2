@@ -57,16 +57,17 @@ Administration's change and error panes) or on its own page below `lg` (`ListDet
 
 | Part | What it holds | Look |
 |---|---|---|
-| **Header** | The record's picture or icon, its name or number (the pane's heading), and its main action and ⋯ in the corner (**Edit**, **Create confirmation link**, **Give SIM**). Below them, one muted line of details (manufacturer and model, who an order is for). | `RecordHeader` with a `RecordTitle` (`h2` `text-xl font-semibold`) and its `nav`. Its first row (back below `lg`, title, main action, ⋯, ✕ beside the list) sticks in the pane's own scroll, at the top of the screen on a phone; the details line scrolls under it. On a phone the main action shows shorter words where it has them (`ShortWords`: Create link, View). Where the row still does not fit, the title moves under the actions |
+| **Header** | The record's picture or icon and its name or number (the pane's heading) on a row of their own; under it the **action bar**: the main action with its words (**Edit**, **Create confirmation link**, **Give SIM**), the tools (icon only: 🖨 Print Order, ✍ Mark as Signed & Given, 🔑 Show PIN and PUK), ⋯ at the end. Below them, one muted line of details (manufacturer and model, who an order is for). | `RecordHeader` with a `RecordTitle` (`h2` `text-xl font-semibold`), its `nav` and its `actions` (a `RecordAction[]` from the record kind's action model). The record row (back below `lg`, title, ✕ beside the list) is one line, `--page-header` tall, never wrapping; the action bar (`ActionBar`, 44px plus 8px) never wraps either and collapses by measuring its words (record-actions.md §5). Both stick in the pane's own scroll, at the top of the screen on a phone; the details line scrolls under them |
 | **Status badges** | The record's state: Active, Inactive, Incomplete (2)… Each badge with issues opens them (§5). | one row, `mb-3 flex flex-wrap gap-1` |
 | **Facts** | The record's current values as label/value pairs. | `<dl>` in a grid, 2 columns (3 from the pane's `@lg`), `gap-x-6 gap-y-3`, between two rules `border-y py-3`, `mb-4`; label muted, value `font-medium tabular-nums` |
-| **Other actions** | What the record allows beyond the main action, as outline buttons in one row (the order's Print Order, Mark as Signed & Given). Always above long content such as an order's lines, so a phone never scrolls to reach them. | `grid gap-2 sm:flex sm:flex-wrap` |
 | **Sections** | History, related records and their counts (Price history, Orders, Item Sets, Assignments…). | `DisclosureSection`, closed at first (§4) |
 | **Changes** | Who changed what, last. | `RecordChanges` |
 
 The ✕ (Close) ends the record's row beside the list. Below `lg` the pane is the whole
 screen, and the back link is an icon at the start of that row ("Back to Orders"), so the way
-out and the main action stay in reach however far the record scrolls.
+out and the actions stay in reach however far the record scrolls. There is no other row of
+record-level buttons in the body; an action that belongs to one part of the record stays with
+that part (Change status ▾ in Connection, Edit beside Sizes).
 
 ### Spacing and type
 
@@ -290,7 +291,8 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
 | An icon button | `buttonVariants({ variant: 'ghost', size: 'icon-sm' })` | `@ppe/ui/components/button` |
 | A text link, or a button that reads as one (with its focus ring) | `linkVariants({ underline, weight, className })` | `@ppe/ui/components/link` |
 | A list with its record beside it from `lg`, in its place below; the pane's card and J / K line; Back and Close; J / K and Esc | `ListDetail`, `DetailPane`, `PaneBar`, `useListKeys`, `besideList` | `@ppe/ui/components/list-detail`, `@ppe/ui/lib/list-keys` |
-| A record's header: its sticky row (back, title, main action, ⋯, ✕), details under it | `RecordHeader` (`nav`), `RecordTitle` | `@ppe/ui/components/record-header` |
+| A record's header: its sticky record row (back, title, ✕) and action bar, details under it | `RecordHeader` (`nav`, `actions`, `moreLabel`), `RecordTitle` | `@ppe/ui/components/record-header` |
+| A record's actions: the main action with its words, icon tools, ⋯; collapsing by measured words | `ActionBar`; `RecordAction`, `actionIcons` (the icon vocabulary), `layoutActions`, `menuGroups` | `@ppe/ui/components/action-bar`, `@ppe/ui/lib/record-actions` |
 | A screen's header: one sticky row, the title and its toolbar in a fixed order, the overflow under ⋯ | `PageHeader` (`filters`, `refresh`, `secondary`, `menu`, `primary`, `more`, `moreAsk`), `ToolbarAction` | `@ppe/ui/components/page-header` |
 | A menu of one kind of choice, the current one ticked (Dashboards, Guide language, Device) | `MenuButton` with `DropdownMenuRadioGroup` | `@ppe/ui/components/page-header` |
 | A stacked list's sort, in words | `SortMenu` (Sort ▾) as the `Table`'s `sortControl` | `@ppe/ui/components/sortable` |
@@ -321,8 +323,10 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
       between two rules.
 - [ ] Each list row is two lines at most: the title line and a muted detail line.
 - [ ] The record's `RecordHeader` gets `nav` and is not wrapped in a box of its own, so its
-      row sticks; its main action fits that row on a phone (375px, in Lithuanian and
-      Russian too), with `ShortWords` if it must.
+      rows stick. Its actions come from one action model for the record kind (a
+      `RecordAction[]`): one main action with its words (and `short` words over 24
+      characters, which the label-budget test checks), tools only with a vocabulary icon,
+      destructive and asking actions in ⋯, last. No row of record-level buttons in the body.
 - [ ] A new screen action goes in its `PageHeader` slot: a rare one under `more`, one that
       asks first under `moreAsk` with "…", never a free button.
 - [ ] Secondary sections are `DisclosureSection`s, closed at first, with a count and
