@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Record Actions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* A design review in the style of screen-header-toolbar.html: a report, with a live playground of each option drawn at the app's real sizes. */
+:root{
+  --bg:#f6f6f9; --surface:#ffffff; --surface-2:#eff0f5; --fg:#15162a; --muted:#5b5e74; --line:#e1e2ea;
+  --brand:#1c2060; --accent:#3341a8; --accent-soft:#e8eafb;
+  --ok:#23703f; --ok-bg:#e4f3ea; --warn:#9a5a08; --warn-bg:#fcf0de; --bad:#b42318; --bad-bg:#fdeceb; --mute-bg:#eceef3;
+  --mark:#d6336c;
+  /* the mock app's own neutrals (shadcn) */
+  --app-bg:#ffffff; --app-card:#ffffff; --app-fg:#0a0a0a; --app-muted:#737373; --app-line:#e5e5e5; --app-pri:#171717; --app-pri-fg:#fafafa; --app-soft:#f5f5f5; --app-wa:#16a34a;
+  --shadow:0 1px 2px rgb(20 22 50 / .06), 0 8px 24px rgb(20 22 50 / .08);
+  --font:'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --r:10px; --topbar:58px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --accent:#909cff; --accent-soft:#252a52;
+  --ok:#6fd49a; --ok-bg:#15301f; --warn:#f2b45e; --warn-bg:#382811; --bad:#ff8f86; --bad-bg:#3a1816; --mute-bg:#24273a;
+  --mark:#ff7aa8;
+  --app-bg:#0a0a0a; --app-card:#171717; --app-fg:#fafafa; --app-muted:#a3a3a3; --app-line:#2e2e2e; --app-pri:#e5e5e5; --app-pri-fg:#171717; --app-soft:#262626; --app-wa:#4ade80;
+  --shadow:0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --brand:#c9cdf6; --accent:#909cff; --accent-soft:#252a52;
+  --ok:#6fd49a; --ok-bg:#15301f; --warn:#f2b45e; --warn-bg:#382811; --bad:#ff8f86; --bad-bg:#3a1816; --mute-bg:#24273a;
+  --mark:#ff7aa8;
+  --app-bg:#0a0a0a; --app-card:#171717; --app-fg:#fafafa; --app-muted:#a3a3a3; --app-line:#2e2e2e; --app-pri:#e5e5e5; --app-pri-fg:#171717; --app-soft:#262626; --app-wa:#4ade80;
+  --shadow:0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); color-scheme:dark }
+
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(var(--topbar) + 12px)}
+body{margin:0; background:var(--bg); color:var(--fg); font-family:var(--font); font-size:15px; line-height:1.55; padding:0 16px 64px}
+.wrap{max-width:1180px; margin:0 auto}
+h1,h2,h3{text-wrap:balance; margin:0; line-height:1.2}
+h1{font-size:clamp(26px,3.4vw,36px); font-weight:700; letter-spacing:-.02em}
+h2{font-size:23px; font-weight:650; letter-spacing:-.01em; margin-bottom:12px}
+h3{font-size:16.5px; font-weight:650; margin-bottom:6px}
+p{margin:0 0 10px}
+ul,ol{margin:0 0 10px; padding-left:20px}
+li{margin:3px 0}
+.lede{color:var(--muted); max-width:76ch; font-size:16px}
+.small{font-size:13px} .muted{color:var(--muted)}
+code,.mono{font-family:var(--mono); font-size:.88em}
+code{background:var(--surface-2); padding:1px 5px; border-radius:5px}
+pre{background:var(--surface-2); padding:12px 14px; border-radius:var(--r); overflow-x:auto; font-family:var(--mono); font-size:12.5px; line-height:1.5; margin:0 0 12px}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:6px}
+button,select{font:inherit; color:inherit}
+
+header.top{position:sticky; top:0; z-index:50; background:color-mix(in oklab, var(--bg) 90%, transparent); backdrop-filter:blur(10px); margin:0 -16px; padding:10px 16px; border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex; align-items:center; gap:16px; flex-wrap:wrap}
+header.top strong{font-size:16px}
+header.top nav{display:flex; gap:4px; flex-wrap:wrap; margin-left:auto}
+header.top nav a{text-decoration:none; color:var(--muted); font-size:13.5px; padding:6px 9px; border-radius:7px}
+header.top nav a:hover{background:var(--surface-2); color:var(--fg)}
+
+section{padding:40px 0 8px; border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:0}
+.hero{padding:36px 0 24px}
+.meta{font-size:13px; color:var(--muted); margin-top:10px}
+.pill{display:inline-block; font-size:12px; font-weight:600; padding:2px 9px; border-radius:99px; background:var(--accent-soft); color:var(--accent)}
+.pill.rec{background:var(--ok-bg); color:var(--ok)}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:18px; box-shadow:var(--shadow)}
+.grid2{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.grid3{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.callout{border-left:3px solid var(--accent); background:var(--accent-soft); padding:12px 14px; border-radius:0 var(--r) var(--r) 0; margin:12px 0}
+.pros li::marker{content:'+  '; color:var(--ok); font-weight:700}
+.cons li::marker{content:'−  '; color:var(--bad); font-weight:700}
+.schem{font-family:var(--mono); font-size:12px; background:var(--surface-2); border-radius:8px; padding:8px 10px; white-space:pre; overflow-x:auto; margin:8px 0 10px}
+
+table{border-collapse:collapse; width:100%; font-size:14px}
+.tbl{overflow-x:auto; margin:0 0 12px; border:1px solid var(--line); border-radius:var(--r); background:var(--surface)}
+th,td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+th{font-size:12.5px; color:var(--muted); font-weight:600; background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right; font-variant-numeric:tabular-nums}
+.yes{color:var(--ok); font-weight:600} .no{color:var(--bad); font-weight:600} .mid{color:var(--warn); font-weight:600}
+
+figure{margin:0}
+figure img{display:block; width:100%; height:auto; border-radius:8px; border:1px solid var(--line); background:#000}
+figcaption{font-size:13px; color:var(--muted); margin-top:6px}
+.shots{display:grid; gap:16px; grid-template-columns:2fr 1fr}
+.shots .col{display:grid; gap:16px; align-content:start}
+@media (max-width:760px){ .shots{grid-template-columns:1fr} }
+
+/* label widths against the room */
+.bars{display:grid; gap:6px; margin:8px 0 6px}
+.bar{display:grid; grid-template-columns:minmax(120px,190px) 1fr; gap:10px; align-items:center; font-size:13px}
+.bar .track{position:relative; height:40px}
+.bar .b{position:absolute; left:0; height:10px; border-radius:3px}
+.bar .b.en{top:2px; background:var(--accent)} .bar .b.lt{top:15px; background:var(--warn)} .bar .b.ru{top:28px; background:var(--mark)}
+.limit{position:absolute; top:-4px; bottom:-4px; width:0; border-left:2px dashed var(--muted)}
+.limit span{position:absolute; top:-16px; left:3px; font-size:11px; color:var(--muted); white-space:nowrap}
+.legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--muted)}
+.legend i{display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px}
+
+/* playground */
+.controls{display:flex; flex-wrap:wrap; gap:14px 22px; align-items:end; margin:6px 0 16px}
+.ctl label{display:block; font-size:12px; color:var(--muted); font-weight:600; margin-bottom:4px}
+.seg{display:inline-flex; background:var(--surface-2); border-radius:9px; padding:3px; flex-wrap:wrap}
+.seg button{border:0; background:none; padding:6px 11px; border-radius:7px; cursor:pointer; font-size:13.5px; min-height:34px}
+.seg button[aria-pressed="true"]{background:var(--surface); box-shadow:var(--shadow); font-weight:600}
+select{background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:6px 10px; min-height:38px}
+.stage{display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start; padding:20px; background:var(--surface-2); border-radius:var(--r); overflow-x:auto}
+.lang-col{flex:none}
+.lang-col h4{margin:0 0 8px; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+.readout{font-size:12px; color:var(--muted); margin-top:8px; max-width:100%; font-family:var(--mono); line-height:1.45}
+.readout b{color:var(--fg); font-weight:600}
+
+/* the mock app */
+.mock{font-family:var(--font); color:var(--app-fg); background:var(--app-card); border:1px solid var(--app-line); border-radius:12px; padding:0 16px 16px; position:relative; font-size:14px; line-height:20px}
+.mock.phone{border-radius:22px; background:var(--app-bg)}
+.m-row{display:flex; align-items:center; gap:8px; min-height:56px; border-bottom:1px solid var(--app-line); margin:0 -16px 12px; padding:0 16px}
+/* today's RecordHeader: title and actions wrap in reverse, ✕ outside them */
+.m-wrapbox{display:flex; flex:1; min-width:0; flex-wrap:wrap-reverse; align-items:center; justify-content:space-between; gap:4px 8px; padding:6px 0}
+.m-wrapbox .m-title{flex:0 1 auto}
+.m-wrapbox .m-title h5{white-space:normal; overflow-wrap:anywhere}
+.m-wrapbox .m-acts{margin-left:auto}
+.m-row.two{flex-direction:column; align-items:stretch; gap:0; padding:0 16px}
+.m-row.two .r1{display:flex; align-items:center; gap:8px; min-height:56px}
+.m-row.two .r2{display:flex; align-items:center; gap:8px; padding:0 0 10px}
+.m-title{display:flex; align-items:center; gap:4px; min-width:0; flex:1}
+.m-title h5{margin:0; font-size:20px; line-height:28px; font-weight:600; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0}
+.m-title h5.mono{font-family:var(--mono); font-size:19px}
+.m-acts{display:flex; gap:8px; align-items:center; flex:none}
+.m-btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; height:44px; min-width:44px; padding:0 16px; border-radius:10px; border:1px solid var(--app-line); background:var(--app-card); color:var(--app-fg); font-weight:500; font-size:14px; white-space:nowrap; cursor:pointer; position:relative; flex:none}
+.m-btn.pri{background:var(--app-pri); color:var(--app-pri-fg); border-color:var(--app-pri)}
+.m-btn.ghost{border-color:transparent; background:transparent}
+.m-btn.icon{padding:0; width:44px}
+.m-btn.sm36{width:36px; min-width:36px; height:36px}
+.m-btn svg{width:16px; height:16px; flex:none}
+.m-btn.wrapwords{white-space:normal; height:auto; min-height:44px; padding:6px 10px; line-height:18px; text-align:center; flex:1 1 0}
+.m-details{color:var(--app-muted); margin:0 0 8px}
+.m-badges{display:flex; gap:4px; margin-bottom:12px}
+.m-badge{font-size:12px; padding:0 8px; border-radius:6px; background:var(--app-soft); color:var(--app-fg); line-height:22px; font-weight:500}
+.m-facts{display:grid; grid-template-columns:1fr 1fr; gap:12px 24px; border-top:1px solid var(--app-line); border-bottom:1px solid var(--app-line); padding:12px 0; margin-bottom:12px}
+.m-sk{height:9px; border-radius:4px; background:var(--app-soft)}
+.m-sk.l{width:55%; margin-bottom:7px} .m-sk.v{width:80%; height:12px; background:color-mix(in oklab,var(--app-muted) 35%, transparent)}
+.m-body{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px}
+.m-body.stack{display:grid}
+.m-body.stack .m-btn{width:100%}
+.m-lines .m-sk{margin:10px 0}
+.m-foot{display:flex; gap:8px; align-items:stretch; border-top:1px solid var(--app-line); margin:12px -16px -16px; padding:10px 16px; background:var(--app-card); border-radius:0 0 12px 12px}
+.m-menu{position:absolute; right:0; top:48px; z-index:30; min-width:220px; max-width:min(300px, 80vw); background:var(--app-card); border:1px solid var(--app-line); border-radius:10px; box-shadow:var(--shadow); padding:4px; text-align:left; white-space:normal}
+.m-menu div{display:flex; gap:8px; align-items:center; padding:7px 8px; border-radius:6px; font-size:14px}
+.m-menu div:hover{background:var(--app-soft)}
+.m-menu div svg{width:16px; height:16px; flex:none; color:var(--app-muted)}
+.m-menu div.danger{color:#dc2626} .m-menu div.danger svg{color:#dc2626}
+.m-menu hr{border:0; border-top:1px solid var(--app-line); margin:4px -4px}
+.m-menu .tag{margin-left:auto; font-size:11px; color:var(--app-muted)}
+.wa{color:var(--app-wa) !important}
+[data-tip]:hover::after,[data-tip]:focus-visible::after{content:attr(data-tip); position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); background:var(--app-fg); color:var(--app-bg); font-size:12px; line-height:16px; padding:4px 8px; border-radius:6px; white-space:nowrap; z-index:40; pointer-events:none; font-weight:500}
+.m-row .over{outline:2px dashed var(--mark); outline-offset:2px; border-radius:8px}
+.flag{display:inline-block; font-size:11px; font-weight:600; padding:1px 7px; border-radius:99px; margin-left:6px; vertical-align:1px}
+.flag.bad{background:var(--bad-bg); color:var(--bad)} .flag.ok{background:var(--ok-bg); color:var(--ok)} .flag.mid{background:var(--warn-bg); color:var(--warn)}
+
+.vocab{display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px}
+.vocab div{display:flex; gap:10px; align-items:center; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:13.5px}
+.vocab svg{width:18px; height:18px; flex:none}
+.vocab small{display:block; color:var(--muted); font-size:12px}
+.ladder{counter-reset:s; list-style:none; padding:0; display:grid; gap:8px}
+.ladder li{counter-increment:s; display:grid; grid-template-columns:28px 1fr; gap:10px; align-items:start; margin:0}
+.ladder li::before{content:counter(s); display:grid; place-items:center; width:26px; height:26px; border-radius:99px; background:var(--accent-soft); color:var(--accent); font-weight:700; font-size:13px}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <strong>Record actions</strong>
+  <nav aria-label="Sections">
+    <a href="#findings">Findings</a><a href="#options">Options</a><a href="#playground">Playground</a><a href="#compare">Compare</a><a href="#system">System</a><a href="#records">Per record</a><a href="#rollout">Rollout</a>
+  </nav>
+</div></header>
+
+<main class="wrap">
+<div class="hero">
+  <span class="pill">Proposal</span>
+  <h1 style="margin-top:10px">List, detail pane and the action bar</h1>
+  <p class="lede" style="margin-top:10px">One system-level pattern for a record opened beside its list: its title never moves, and its actions (the main action, icon tools and ⋯ More actions) fit on one line in English, Lithuanian and Russian. Four options, drawn live below at the app's real sizes and measured, and a recommendation: <b>Option B</b>, the title on its own row and an action bar under it.</p>
+  <p class="meta">18 Nov 2026 · build <code>7070a52</code> · the running app in EN and RU at 1280 and 375px, every action label measured in Geist 500 14px · text and rules: <a href="record-actions.md">record-actions.md</a></p>
+</div>
+
+<section id="findings">
+  <h2>1. What goes wrong today</h2>
+  <div class="shots">
+    <div class="col">
+      <figure><img src="img/record-actions/order-en-1280.jpg" alt="English: Create confirmation link and the more-actions button on the first line of the order pane; WE-000010 is pushed to a second line below the screen title Orders." loading="lazy"><figcaption><b>English, 1280px.</b> <i>Create confirmation link</i> takes the first line; WE-000010 drops under it, 20px below <i>Orders</i>.</figcaption></figure>
+      <figure><img src="img/record-actions/order-ru-1280.jpg" alt="Russian: the same, and the long Mark as signed and given button takes a row of its own." loading="lazy"><figcaption><b>Russian, 1280px.</b> The same, and <i>Отметить как подписанный и выданный</i> takes a row of its own.</figcaption></figure>
+      <figure><img src="img/record-actions/sim-ru-1280.jpg" alt="Russian SIM card pane: a labelled Return button beside an icon-only key button." loading="lazy"><figcaption><b>SIM card, Russian.</b> Labelled <i>Принять</i> beside an icon-only 🔑: two kinds of action side by side.</figcaption></figure>
+    </div>
+    <div class="col">
+      <figure><img src="img/record-actions/order-ru-375.jpg" alt="Russian phone: the action and more-actions button alone on the first line, the back arrow and number on the second, two full-width buttons in the body." loading="lazy"><figcaption><b>Russian phone.</b> Even the short words push ← and the number to a second line.</figcaption></figure>
+      <figure><img src="img/record-actions/sim-ru-375.jpg" alt="Russian phone SIM card: the actions on their own line above the back arrow and phone number." loading="lazy"><figcaption><b>SIM card on a phone.</b> ← leaves its corner.</figcaption></figure>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:20px">
+    <div class="card"><h3>F1 · The title gives way</h3><p class="small">The record row is <code>flex-wrap-reverse</code> (<code>record-header.tsx:84</code>): when title and actions do not fit, the actions stay on top and the title drops. The pane's alignment with the screen header (<code>-mt-8</code>, <code>lg:-top-4</code>) assumes one line.</p></div>
+    <div class="card"><h3>F2 · Words are not sized for the room</h3><p class="small">Labels differ by up to 1.6× between languages, and nothing checks a label against its room. Breakpoint overflow (<code>showFrom</code>) is tuned in English.</p></div>
+    <div class="card"><h3>F3 · Three places, three looks</h3><p class="small">An order's actions are in the row, in a body row of outline buttons (stacked full width on a phone) and in ⋯. The SIM card mixes labelled and icon-only. ⋯ is 36px in a record, 44px in a screen header.</p></div>
+    <div class="card"><h3>F4 · Built separately</h3><p class="small">Only orders build the row and the list row's ⋯ from one function (<code>historyActions</code>); every other record builds them twice.</p></div>
+  </div>
+
+  <h3 style="margin-top:24px">Label widths against the room the row has</h3>
+  <p class="small muted">Each button's width with its icon (Geist 500 14px, 16px padding, 22px icon). Dashed lines: what the order pane's row leaves for its main action.</p>
+  <div class="legend"><span><i style="background:var(--accent)"></i>English</span><span><i style="background:var(--warn)"></i>Lithuanian</span><span><i style="background:var(--mark)"></i>Russian</span></div>
+  <div class="bars" id="bars"></div>
+</section>
+
+<section id="options">
+  <h2>2. Four options</h2>
+  <p class="lede">All four keep the title in place and use one action model; they differ in where the actions sit and how much they say. Try each one in the <a href="#playground">playground</a>.</p>
+  <div class="grid2" style="margin-top:14px">
+    <div class="card">
+      <h3>A · Icon toolbar in the title row</h3>
+      <p class="small muted">As suggested: every action an icon, its name on hover, all on one line.</p>
+      <div class="schem">[←] WE-000010          [🔗][🖨][✍] [⋯] [✕]</div>
+      <ul class="pros small"><li>Identical in every language; fewest pixels; no measuring with fixed caps.</li><li>Already the SIM card's 🔑, GitHub's and Gmail's toolbars.</li></ul>
+      <ul class="cons small"><li>The main action becomes a symbol; <i>Create confirmation link</i>, <i>Give SIM</i> have no icon people know.</li><li>No hover on touch: names need a long-press or ⋯.</li></ul>
+    </div>
+    <div class="card" style="outline:2px solid var(--ok); outline-offset:-1px">
+      <h3>B · Title row, then an action bar <span class="pill rec">Recommended</span></h3>
+      <p class="small muted">Identity alone on row 1; row 2 is the action bar: the main action with its words, the others as icon tools (your suggestion), ⋯ at the end.</p>
+      <div class="schem">[←] WE-000010                        [✕]
+[🔗 Create confirmation link][🖨][✍]    [⋯]</div>
+      <ul class="pros small"><li>The title row is the screen header's twin in every language: alignment is fixed by construction.</li><li>Measured: the main action keeps its words (full or short) in all 45 cases, every tool visible.</li><li>Icon tools look the same in every language.</li></ul>
+      <ul class="cons small"><li>A second sticky row: ~52px more of a phone's screen.</li><li>Needs measuring (one <code>ResizeObserver</code> per bar).</li></ul>
+    </div>
+    <div class="card">
+      <h3>C · One row: labelled main, icon tools, ⋯</h3>
+      <p class="small muted">B's bar squeezed into the title row; it never wraps, collapsing to short words, fewer tools, then an icon main action.</p>
+      <div class="schem">[←] WE-000010 [🔗 Create link][🖨][✍][⋯][✕]</div>
+      <ul class="pros small"><li>One row; title never moves.</li><li>Words in English on a wide pane.</li></ul>
+      <ul class="cons small"><li>Measured: the main action is an icon in 32 of 45 cases (most LT/RU, every phone): it becomes A, but only in some languages.</li><li>The same record looks different per language.</li></ul>
+    </div>
+    <div class="card">
+      <h3>D · Sticky action footer</h3>
+      <p class="small muted">Identity at the top, labelled actions in a bar at the pane's (or phone screen's) bottom.</p>
+      <div class="schem">[←] WE-000010                        [✕]
+  …
+[ 🔗 Create confirmation link ][ 🖨 Print ][⋯]</div>
+      <ul class="pros small"><li>Thumb reach; most room for words.</li></ul>
+      <ul class="cons small"><li>Stacks on the phone's tab bar; far from the title beside a list.</li><li>Breaks the top-right corner every header uses.</li></ul>
+    </div>
+  </div>
+</section>
+
+<section id="playground">
+  <h2>3. Playground</h2>
+  <p class="lede">The same record in English, Lithuanian and Russian. Fitting is computed from the words' real width; a dashed outline marks a row that wraps. Hover an icon for its name; ⋯ opens.</p>
+  <div class="controls">
+    <div class="ctl"><label id="l-opt">Option</label><div class="seg" role="group" aria-labelledby="l-opt" id="c-opt"></div></div>
+    <div class="ctl"><label for="c-rec">Record</label><select id="c-rec"></select></div>
+    <div class="ctl"><label id="l-w">Width</label><div class="seg" role="group" aria-labelledby="l-w" id="c-w"></div></div>
+  </div>
+  <div class="stage" id="stage" aria-live="polite"></div>
+
+  <h3 style="margin-top:24px">What the main action shows, measured</h3>
+  <p class="small muted">For every record, width and language: <b>full</b> words, <b>short</b> words, or <b>icon</b> only, with how many tools stay out of ⋯. Option A is always icons; D always has words.</p>
+  <div class="tbl" id="matrix"></div>
+  <div class="callout small"><b>What this shows.</b> Kept on one row with its title (C), the main action loses its words in most Lithuanian and Russian cases and on every phone: the title and ✕ leave it too little room. Given a row of its own (B), it keeps at least its short words everywhere.</div>
+</section>
+
+<section id="compare">
+  <h2>4. Comparison</h2>
+  <div class="tbl"><table>
+    <thead><tr><th></th><th>A Icon toolbar</th><th>B Title row + action bar <span class="pill rec">rec.</span></th><th>C One row, label + tools</th><th>D Footer</th></tr></thead>
+    <tbody>
+      <tr><td>Title never moves</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Looks the same in EN, LT, RU</td><td class="yes">✓ identical</td><td class="yes">✓ <span class="small muted">main may use short words</span></td><td class="no">✗ <span class="small muted">words in EN, icon in RU</span></td><td class="mid">~ <span class="small muted">2-line words in RU</span></td></tr>
+      <tr><td>Main action keeps its words (of 45)</td><td class="no">0</td><td class="yes">45</td><td class="no">13</td><td class="yes">45</td></tr>
+      <tr><td>Works without hover</td><td class="mid">weak</td><td class="yes">✓ <span class="small muted">main has words; tools in ⋯ on touch</span></td><td class="mid">weak</td><td class="yes">✓</td></tr>
+      <tr><td>Sticky header height</td><td>1 row</td><td class="mid">2 rows (+52px)</td><td>1 row</td><td>1 row + footer</td></tr>
+      <tr><td>Measuring</td><td>no (fixed caps)</td><td>yes</td><td>yes</td><td>no</td></tr>
+      <tr><td>Change to today's look</td><td>large</td><td>medium</td><td>small</td><td>large</td></tr>
+      <tr><td>Effort</td><td>S</td><td>M</td><td>M</td><td>L</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="system">
+  <h2>5. The system (Option B)</h2>
+  <div class="grid2">
+    <div>
+      <h3>Rules</h3>
+      <ol class="small">
+        <li><b>Identity never moves.</b> The record row holds only ←, the title and ✕, is exactly <code>--page-header</code> tall and one line: the title is level with the screen title, in every language. Beside a list the title truncates (full title in its tooltip); on a record's page it may take two lines.</li>
+        <li><b>The action bar is the next row</b>, one line, never wrapping: the main action (filled, with words), the tools (icon only), ⋯ at the end. Both rows stick; details and badges scroll under them.</li>
+        <li><b>Fit by real words</b>, in the language in use, not by breakpoints.</li>
+        <li><b>One action model per record kind</b>, read by the row, the list row's ⋯ and later ⌘K.</li>
+        <li><b>No body row of record buttons.</b> Part-level actions stay with their part (Give SIM in Assignments, Upload Signed Form, Change status ▾, Edit beside Sizes).</li>
+        <li><b>Icon-only needs a vocabulary icon</b>; its name is its accessible name and tooltip (hover, focus, long-press), and ⋯ lists tools by name on touch screens.</li>
+        <li><b>Destructive and asking actions</b>: labelled, in ⋯, last after a separator, "…".</li>
+        <li>⋯ is 44px in every header and shows only when it holds something.</li>
+      </ol>
+    </div>
+    <div>
+      <h3>The collapse ladder</h3>
+      <ol class="ladder small">
+        <li><div><b>Full words</b> for the main action, every tool (at most 3, 2 on a phone).</div></li>
+        <li><div><b>Short words</b> for the main action (<code>ShortWords</code>, required when the full words exceed 200px).</div></li>
+        <li><div><b>Tools into ⋯</b>, the last first, down to none; they head the menu in the bar's order.</div></li>
+        <li><div><b>Icon-only main action</b>, still filled and first, its words in the tooltip and as its name.</div></li>
+      </ol>
+      <p class="small muted">A pure <code>layoutActions(widths, room)</code> picks the step; the bar measures its room with one <code>ResizeObserver</code> and its words once per language.</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:18px">The action model</h3>
+<pre>export interface RecordAction {
+  id: string
+  label: string                     // full words: accessible name, tooltip, ⋯ item
+  short?: string                    // words for the bar when label is over budget
+  icon?: LucideIcon                 // from the vocabulary; none → never icon-only
+  place: 'main' | 'tool' | 'menu'
+  destructive?: boolean
+  asks?: boolean                    // "…", last in ⋯ after a separator
+  disabledReason?: string           // shown in its tooltip; the control stays
+  run: () => void
+  href?: string
+}
+// ww/lib/order-actions.ts — read by RecordHeader and the list row's ⋯
+export function orderActions(o: Order, can: Can, run: OrderRunners): RecordAction[]</pre>
+
+  <h3>Icon vocabulary <span class="small muted">— one meaning per icon, both apps</span></h3>
+  <div class="vocab" id="vocab"></div>
+
+  <h3 style="margin-top:18px">Label budgets, tested</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Kind</th><th class="num">Budget</th><th class="num">≈ chars</th><th>When over</th></tr></thead>
+    <tbody>
+      <tr><td>Main action, full words</td><td class="num">200px</td><td class="num">24</td><td>needs <code>short</code></td></tr>
+      <tr><td>Main action, short words</td><td class="num">120px</td><td class="num">14</td><td>reword</td></tr>
+      <tr><td>A list row's ⋯ item</td><td class="num">280px</td><td class="num">36</td><td>reword</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small">Rewording to propose (glossary first): <i>Создать ссылку для подтверждения</i> → <b>Ссылка на подпись</b> (short <b>Ссылка</b>) · <i>Отметить как подписанный и выданный</i> → <b>Подписан и выдан</b> · <i>Подготовить письмо об активации</i> → <b>Письмо об активации</b> · <i>Pažymėti kaip pasirašytą ir išduotą</i> → <b>Pasirašyta ir išduota</b>.</p>
+  <p class="small">Checks: a Vitest test over the dictionaries (main-action budgets); an e2e step in EN, LT and RU at 375, 1024 and 1280px: each record row is one line and its title's top equals the screen title's.</p>
+</section>
+
+<section id="records">
+  <h2>6. Per record (Option B)</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Record</th><th>Main (short)</th><th>Tools</th><th>⋯</th></tr></thead>
+    <tbody>
+      <tr><td>Order, ordered</td><td>🔗 Create confirmation link (Create link)</td><td>🖨 Print Order · ✍ Mark as Signed &amp; Given</td><td>Copy for WhatsApp · — · Delete order…</td></tr>
+      <tr><td>Order, given</td><td>📄 View Order (View)</td><td>🖨 Print Order</td><td>Copy for WhatsApp · — · Delete order…</td></tr>
+      <tr><td>Item</td><td>✎ Edit</td><td>–</td><td>Deactivate item…</td></tr>
+      <tr><td>Employee</td><td>+ New order</td><td>✎ Edit details</td><td>Merge with… · — · Delete employee…</td></tr>
+      <tr><td>SIM card, in the office</td><td>Give SIM</td><td>🔑 Show PIN and PUK</td><td>Edit · Print Form · Prepare … Email</td></tr>
+      <tr><td>SIM card, held</td><td>↶ Return</td><td>🔑 Show PIN and PUK · 🖨 Print Form</td><td>Edit · Prepare Blocking Email · — · Mark as Not Returned…</td></tr>
+      <tr><td>Equipment</td><td>Give Asset / ↶ Return</td><td>🖨 Print Form</td><td>Edit · — · Mark as Not Returned…</td></tr>
+      <tr><td>Audit change, error</td><td>–</td><td>–</td><td>–</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="rollout">
+  <h2>7. Rollout and open questions</h2>
+  <div class="grid2">
+    <div>
+      <ol class="small">
+        <li><code>layoutActions</code> with tests; <code>RecordAction</code> and the vocabulary in <code>@ppe/ui</code>.</li>
+        <li><code>RecordHeader</code>'s row holds identity only and renders an <code>ActionBar</code> under it;<code>MoreActions</code> reads the same array; ⋯ at 44px.</li>
+        <li>Orders: <code>orderActions</code> from <code>historyActions</code>; the body's button row goes.</li>
+        <li>SIM cards and Equipment, then item, employee, Administration's records.</li>
+        <li>Label budgets test, then the LT/RU rewording via the glossary.</li>
+        <li>The e2e step in three languages.</li>
+        <li>Optional: <code>PageHeader</code>'s <code>showFrom</code> replaced by the same ladder.</li>
+      </ol>
+      <p class="small muted">The Help text and screenshots of the order pane and the SIM card go out of date; they are updated separately.</p>
+    </div>
+    <div>
+      <ol class="small">
+        <li><b>B or A?</b> B keeps the main action's words for a second row; A is one row of icons. Test both with two managers on a Russian phone: "send a confirmation link".</li>
+        <li><b>Long-press</b> on touch, or only ⋯ listing the tools by name?</li>
+        <li><b>Mark as Signed &amp; Given</b> as a tool (✍, asks first) or labelled in ⋯?</li>
+        <li><b>Rewording</b> in RU and LT, or rely on <code>short</code>?</li>
+        <li><b>Screen headers too</b>, or records only?</li>
+      </ol>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+// ---------- icons (lucide, 24-grid, stroke) ----------
+const P = {
+  link:'<path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 1 1 0 10h-2"/><line x1="8" x2="16" y1="12" y2="12"/>',
+  file:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  printer:'<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/>',
+  // lucide `signature`, not `pen-line`: a pen reads as Pencil (Edit) at 16px.
+  pen:'<path d="m21 17-2.16-1.87a.5.5 0 0 0-.84.37v.5a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1c0-2.55-4-3.97-8.5-4a1 1 0 0 0 0 5c4.15 0 4.75-11.3 5.7-13.5a2.5 2.5 0 1 1 3.31 3.28"/><path d="M3 21h18"/>',
+  pencil:'<path d="M21.2 6.8a2.8 2.8 0 0 0-4-4L3.8 16.2a2 2 0 0 0-.5.8l-1.3 4.4a.5.5 0 0 0 .6.6l4.4-1.3a2 2 0 0 0 .8-.5z"/><path d="m15 5 4 4"/>',
+  message:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  key:'<path d="M2.6 17.4A2 2 0 0 0 2 18.8V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.2a2 2 0 0 0 1.4-.6l.8-.8a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>',
+  mail:'<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-9 5.7a2 2 0 0 1-2 0L2 7"/>',
+  undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  merge:'<circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/>',
+  power:'<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/>',
+  copy:'<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  back:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  more:'<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+}
+const svg = (n, cls='') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
+
+// ---------- words, from the app's dictionaries ----------
+const W = {
+  createLink:['Create confirmation link','Sukurti patvirtinimo nuorodą','Создать ссылку для подтверждения'],
+  createLinkShort:['Create link','Sukurti nuorodą','Создать ссылку'],
+  viewOrder:['View Order','Peržiūrėti užsakymą','Открыть заказ'],
+  viewOrderShort:['View','Peržiūrėti','Открыть'],
+  printOrder:['Print Order','Spausdinti užsakymą','Печать заказа'],
+  sign:['Mark as Signed & Given','Pažymėti kaip pasirašytą ir išduotą','Отметить как подписанный и выданный'],
+  copyForWhatsApp:['Copy for WhatsApp','Kopijuoti į WhatsApp','Копировать для WhatsApp'],
+  deleteOrder:['Delete order…','Ištrinti užsakymą…','Удалить заказ…'],
+  edit:['Edit','Redaguoti','Изменить'],
+  deactivateItem:['Deactivate item…','Deaktyvuoti prekę…','Деактивировать предмет…'],
+  newOrder:['New order','Naujas užsakymas','Новый заказ'],
+  editDetails:['Edit details','Redaguoti duomenis','Изменить данные'],
+  merge:['Merge with…','Sujungti su…','Объединить с…'],
+  deleteEmployee:['Delete employee…','Ištrinti darbuotoją…','Удалить сотрудника…'],
+  takeBack:['Return','Priimti','Принять'],
+  showCodes:['Show PIN and PUK','Rodyti PIN ir PUK','Показать PIN и PUK'],
+  printForm:['Print Form','Spausdinti aktą','Печать акта'],
+  markNotReturned:['Mark as Not Returned','Pažymėti kaip negrąžintą','Отметить как не возвращённую'],
+  prepareBlockingEmail:['Prepare Blocking Email','Paruošti blokavimo laišką','Подготовить письмо о блокировке'],
+  ordered:['Ordered','Užsakyta','Заказано'],
+  given:['Given','Išduota','Выдано'],
+  active:['Active','Aktyvi','Активна'],
+}
+const LANGS = ['en','lt','ru']
+const w = (k, li) => W[k][li]
+
+// today: where each action is now ('row' labelled, 'rowIcon', 'body', 'menu'); place: proposed
+const RECORDS = {
+  orderOrdered:{ name:'Order, ordered', title:'WE-000010', details:'Ona Kazlauskienė · W-002', badges:['ordered'], actions:[
+    {k:'createLink', short:'createLinkShort', icon:'link', place:'main', today:'row', variant:'pri'},
+    {k:'printOrder', icon:'printer', place:'tool', today:'body'},
+    {k:'sign', icon:'pen', place:'tool', today:'body'},
+    {k:'copyForWhatsApp', icon:'message', place:'menu', today:'menu', wa:true},
+    {k:'deleteOrder', icon:'trash', place:'menu', today:'menu', destructive:true, asks:true},
+  ]},
+  orderGiven:{ name:'Order, given', title:'WE-000007', details:'Ona Kazlauskienė · W-002', badges:['given'], actions:[
+    {k:'viewOrder', short:'viewOrderShort', icon:'file', place:'main', today:'row', variant:'outline'},
+    {k:'printOrder', icon:'printer', place:'tool', today:'body'},
+    {k:'copyForWhatsApp', icon:'message', place:'menu', today:'menu', wa:true},
+    {k:'deleteOrder', icon:'trash', place:'menu', today:'menu', destructive:true, asks:true},
+  ]},
+  sim:{ name:'SIM card, held', title:'+370 612 40118', mono:true, details:'SIM 0089370011 · Telia · Biz 10 GB', badges:['active'], actions:[
+    {k:'takeBack', icon:'undo', place:'main', today:'row', variant:'pri'},
+    {k:'showCodes', icon:'key', place:'tool', today:'rowIcon'},
+    {k:'printForm', icon:'printer', place:'tool', today:'menu'},
+    {k:'edit', icon:'pencil', place:'menu', today:'menu'},
+    {k:'prepareBlockingEmail', icon:'mail', place:'menu', today:'menu'},
+    {k:'markNotReturned', place:'menu', today:'menu', asks:true},
+  ]},
+  employee:{ name:'Employee', title:'Aleksandr Ivanov', details:'W-005', badges:[], actions:[
+    {k:'newOrder', icon:'plus', place:'main', today:'row', variant:'pri'},
+    {k:'editDetails', icon:'pencil', place:'tool', today:'menu'},
+    {k:'merge', icon:'merge', place:'menu', today:'menu'},
+    {k:'deleteEmployee', icon:'trash', place:'menu', today:'menu', destructive:true, asks:true},
+  ]},
+  item:{ name:'Item', title:'Ear defenders', details:'SNR 30 dB', badges:['active'], actions:[
+    {k:'edit', icon:'pencil', place:'main', today:'row', variant:'outline', todayNoIcon:true},
+    {k:'deactivateItem', icon:'power', place:'menu', today:'menu', destructive:true, asks:true},
+  ]},
+}
+const WIDTHS = {
+  phone:{ label:'Phone 375', row:343, back:true, close:false, phone:true },
+  p22:{ label:'Pane 22rem', row:320, back:false, close:true },
+  p26:{ label:'Pane 26rem', row:384, back:false, close:true },
+  page:{ label:'Record page', row:672, back:true, close:false },
+}
+const OPTIONS = { today:'Today', A:'A · Icons', B:'B · Action bar', C:'C · Label + tools', D:'D · Footer' }
+
+// ---------- measuring ----------
+const ctx = document.createElement('canvas').getContext('2d')
+function textW(s, font){ ctx.font = font; return ctx.measureText(s).width }
+const BTN = '500 14px Geist', TITLE = '600 20px Geist', MONO_T = '600 19px "Geist Mono"'
+const GAP = 8, ICON = 44
+const btnW = (label, icon) => Math.ceil(textW(label, BTN) + 32 + (icon ? 22 : 0))
+const titleW = (r) => Math.ceil(textW(r.title, r.mono ? MONO_T : TITLE))
+const sum = (xs) => xs.reduce((a, b) => a + b, 0)
+const barW = (items) => items.length ? sum(items) + GAP * (items.length - 1) : 0
+
+// identity takes: back, close, and gaps around the title
+function fixedW(wd){ return (wd.back ? 44 + 4 : 0) + (wd.close ? 44 + GAP : 0) }
+
+// ---------- layouts ----------
+function layoutToday(r, wd, li){
+  const main = r.actions.find(a => a.today === 'row')
+  const icons = r.actions.filter(a => a.today === 'rowIcon')
+  const menu = r.actions.filter(a => a.today === 'menu')
+  const words = wd.phone && main.short ? w(main.short, li) : w(main.k, li)
+  const items = [btnW(words, main.icon && !main.todayNoIcon), ...icons.map(() => ICON), ...(menu.length ? [36] : [])]
+  const need = fixedW(wd) + titleW(r) + GAP + barW(items)
+  return { kind:'today', main, words, icons, menu, body:r.actions.filter(a => a.today === 'body'), wraps: need > wd.row, need }
+}
+
+function layoutA(r, wd, li){
+  const main = r.actions.find(a => a.place === 'main')
+  const tools = r.actions.filter(a => a.place === 'tool')
+  const menu = r.actions.filter(a => a.place === 'menu')
+  const cap = 3
+  for (let n = Math.min(cap - 1, tools.length); n >= 0; n--){
+    const shown = tools.slice(0, n), moved = tools.slice(n)
+    const more = menu.length || moved.length
+    const items = [ICON, ...shown.map(() => ICON), ...(more ? [ICON] : [])]
+    const need = fixedW(wd) + titleW(r) + GAP + barW(items)
+    if (need <= wd.row || n === 0) return { kind:'A', main, shown, moved, menu, need, truncated: need > wd.row, step: `${1 + n} icon${n ? 's' : ''}${moved.length ? ` · ${moved.length} tool${moved.length > 1 ? 's' : ''} in ⋯` : ''}` }
+  }
+}
+
+// The collapse ladder shared by B and C: the main action's full words → its short words →
+// tools into ⋯ (the last first) → the main action as an icon. `fixed` is what the row holds
+// besides the bar: nothing for B (the bar has its own row), ←, the title and ✕ for C.
+function ladder(r, wd, li, fixed, kind){
+  const main = r.actions.find(a => a.place === 'main')
+  const all = r.actions.filter(a => a.place === 'tool')
+  const tools = all.slice(0, wd.phone ? 2 : 3), extra = all.slice(wd.phone ? 2 : 3)
+  const menu = r.actions.filter(a => a.place === 'menu')
+  const full = w(main.k, li), short = main.short ? w(main.short, li) : null
+  const steps = [{ mode:'full', words:full, n:tools.length, rank:1, name:'1 · full words' }]
+  if (short) steps.push({ mode:'short', words:short, n:tools.length, rank:2, name:'2 · short words' })
+  for (let n = tools.length - 1; n >= 0; n--) steps.push({ mode: short ? 'short' : 'full', words: short || full, n, rank:3, name:`3 · ${tools.length - n} tool${tools.length - n > 1 ? 's' : ''} into ⋯` })
+  if (main.icon) for (let n = tools.length; n >= 0; n--) steps.push({ mode:'icon', words:full, n, rank:4, name:`4 · icon-only main${n < tools.length ? `, ${tools.length - n} tool${tools.length - n > 1 ? 's' : ''} in ⋯` : ''}` })
+  let last
+  for (const s of steps){
+    const moved = [...tools.slice(s.n), ...extra]
+    const more = menu.length || moved.length
+    const items = [s.mode === 'icon' ? ICON : btnW(s.words, main.icon), ...tools.slice(0, s.n).map(() => ICON), ...(more ? [ICON] : [])]
+    const need = fixed + barW(items)
+    last = { kind, main, s, shown: tools.slice(0, s.n), moved, menu, need, truncated: need > wd.row, step: s.name }
+    if (need <= wd.row) return last
+  }
+  return last
+}
+const layoutC = (r, wd, li) => ladder(r, wd, li, fixedW(wd) + titleW(r) + GAP, 'C')
+const layoutB = (r, wd, li) => ladder(r, wd, li, 0, 'B')
+
+function layoutD(r, wd, li){
+  const main = r.actions.find(a => a.place === 'main')
+  const tools = r.actions.filter(a => a.place === 'tool')
+  const menu = r.actions.filter(a => a.place === 'menu')
+  return { kind:'D', main, shown: tools.slice(0, 1), moved: tools.slice(1), menu, step:'main + first tool, words may wrap' }
+}
+
+// ---------- rendering ----------
+function btnHTML(a, li, { mode = 'full', variant = 'outline', words } = {}){
+  const label = w(a.k, li)
+  if (mode === 'icon') return `<button class="m-btn icon ${variant === 'pri' ? 'pri' : ''}" aria-label="${esc(label)}" data-tip="${esc(label)}">${svg(a.icon)}</button>`
+  const iconPart = a.icon && !a.todayNoIcon ? svg(a.icon, a.wa ? 'wa' : '') : ''
+  return `<button class="m-btn ${variant === 'pri' ? 'pri' : ''}" aria-label="${esc(label)}">${iconPart}<span aria-hidden="true">${esc(words || label)}</span></button>`
+}
+function menuHTML(li, groups){
+  const parts = []
+  for (const g of groups){
+    if (!g.length) continue
+    if (parts.length) parts.push('<hr>')
+    for (const a of g) parts.push(`<div class="${a.destructive ? 'danger' : ''}">${a.icon ? svg(a.icon, a.wa ? 'wa' : '') : '<svg></svg>'}<span>${esc(w(a.k, li))}</span></div>`)
+  }
+  return parts.join('')
+}
+function moreHTML(li, groups, size = ''){
+  if (!groups.some(g => g.length)) return ''
+  return `<span style="position:relative; display:inline-flex"><button class="m-btn ghost icon ${size}" aria-label="More actions" aria-expanded="false" data-more>${svg('more')}</button><div class="m-menu" hidden>${menuHTML(li, groups)}</div></span>`
+}
+const backHTML = (wd) => wd.back ? `<button class="m-btn ghost icon" style="margin-left:-10px" aria-label="Back" data-tip="Back to the list">${svg('back')}</button>` : ''
+const closeHTML = (wd) => wd.close ? `<button class="m-btn ghost icon" style="margin-right:-8px" aria-label="Close">${svg('x')}</button>` : ''
+const titleHTML = (r) => `<h5 class="${r.mono ? 'mono' : ''}" title="${esc(r.title)}">${esc(r.title)}</h5>`
+const bodyHTML = (r, li, extra = '') => `
+  <p class="m-details">${esc(r.details)}</p>
+  ${r.badges.length ? `<div class="m-badges">${r.badges.map(b => `<span class="m-badge">${esc(w(b, li))}</span>`).join('')}</div>` : ''}
+  ${extra}
+  <div class="m-facts">${'<div><div class="m-sk l"></div><div class="m-sk v"></div></div>'.repeat(4)}</div>
+  <div class="m-lines"><div class="m-sk" style="width:70%"></div><div class="m-sk" style="width:45%"></div><div class="m-sk" style="width:60%"></div></div>`
+
+function render(r, wd, li, opt){
+  const outer = wd.row + 32
+  let head = '', extra = '', foot = '', info = ''
+  if (opt === 'today'){
+    const L = layoutToday(r, wd, li)
+    const acts = `<div class="m-acts">${btnHTML(L.main, li, { variant: L.main.variant, words: L.words })}${L.icons.map(a => btnHTML(a, li, { mode:'icon' })).join('')}${moreHTML(li, [L.menu.filter(a => !a.asks), L.menu.filter(a => a.asks)], 'sm36')}</div>`
+    // As RecordHeader: a wrapping box (title, actions; wrap-reverse) and ✕ beside it.
+    head = `<div class="m-row"><div class="m-wrapbox"><div class="m-title ${L.wraps ? 'over' : ''}">${backHTML(wd)}${titleHTML(r)}</div>${acts}</div>${closeHTML(wd)}</div>`
+    if (L.body.length) extra = `<div class="m-body ${wd.phone ? 'stack' : ''}">${L.body.map(a => btnHTML(a, li)).join('')}</div>`
+    info = L.wraps ? `<span class="flag bad">wraps</span> needs <b>${L.need}px</b> of ${wd.row}` : `<span class="flag ok">one line</span> ${L.need}px of ${wd.row}`
+  } else if (opt === 'A' || opt === 'C'){
+    const L = opt === 'A' ? layoutA(r, wd, li) : layoutC(r, wd, li)
+    const mainMode = opt === 'A' ? 'icon' : (L.s.mode === 'icon' ? 'icon' : 'full')
+    const words = opt === 'C' && L.s.mode !== 'icon' ? L.s.words : undefined
+    const touchNames = [] // tools listed by name at the top of ⋯ on touch: shown as the moved ones here
+    const acts = `<div class="m-acts">${btnHTML(L.main, li, { mode: mainMode, variant:'pri', words })}${L.shown.map(a => btnHTML(a, li, { mode:'icon' })).join('')}${moreHTML(li, [L.moved, L.menu.filter(a => !a.asks), L.menu.filter(a => a.asks)])}</div>`
+    head = `<div class="m-row"><div class="m-title">${backHTML(wd)}${titleHTML(r)}</div>${acts}${closeHTML(wd)}</div>`
+    const iconMain = opt === 'A' || L.s.rank === 4
+    info = `<span class="flag ${L.truncated ? 'bad' : 'ok'}">${L.truncated ? 'title truncates' : 'one line'}</span>${opt === 'C' ? `<span class="flag ${iconMain ? 'mid' : 'ok'}">${iconMain ? 'main is an icon' : 'main keeps words'}</span>` : ''} step <b>${esc(L.step)}</b> · ${L.need}px of ${wd.row}`
+  } else if (opt === 'B'){
+    const L = layoutB(r, wd, li)
+    const tools = L.shown.map(a => btnHTML(a, li, { mode:'icon' })).join('')
+    head = `<div class="m-row two"><div class="r1"><div class="m-title">${backHTML(wd)}${titleHTML(r)}</div>${closeHTML(wd)}</div>
+      <div class="r2">${btnHTML(L.main, li, { mode: L.s.mode === 'icon' ? 'icon' : 'full', variant:'pri', words: L.s.words })}${tools}<span style="margin-left:auto"></span>${moreHTML(li, [L.moved, L.menu.filter(a => !a.asks), L.menu.filter(a => a.asks)])}</div></div>`
+    info = `<span class="flag ${L.s.rank === 4 ? 'mid' : 'ok'}">${L.s.rank === 4 ? 'main is an icon' : 'main keeps words'}</span> step <b>${esc(L.step)}</b> · ${L.need}px of ${wd.row}`
+  } else {
+    const L = layoutD(r, wd, li)
+    head = `<div class="m-row"><div class="m-title">${backHTML(wd)}${titleHTML(r)}</div>${closeHTML(wd)}</div>`
+    const more = moreHTML(li, [L.moved, L.menu.filter(a => !a.asks), L.menu.filter(a => a.asks)])
+    foot = `<div class="m-foot">${[L.main, ...L.shown].map((a, i) => `<button class="m-btn wrapwords ${i === 0 ? 'pri' : ''}">${a.icon ? svg(a.icon) : ''}<span>${esc(w(a.k, li))}</span></button>`).join('')}${more}</div>`
+    info = `<span class="flag ok">header one line</span> footer: ${esc(L.step)}`
+  }
+  return `<div class="lang-col"><h4>${li === 0 ? 'English' : li === 1 ? 'Lithuanian' : 'Russian'}</h4>
+    <div class="mock ${wd.phone ? 'phone' : ''}" style="width:${outer}px">${head}${bodyHTML(r, li, extra)}${foot}</div>
+    <div class="readout" style="width:${outer}px">${info}</div></div>`
+}
+
+// ---------- controls ----------
+const state = { opt:'today', rec:'orderOrdered', w:'p26' }
+try { Object.assign(state, JSON.parse(localStorage.getItem('record-actions.playground') || '{}')) } catch {}
+function seg(el, entries, key){
+  el.innerHTML = entries.map(([k, label]) => `<button type="button" data-k="${k}" aria-pressed="${state[key] === k}">${esc(label)}</button>`).join('')
+  el.onclick = (e) => { const b = e.target.closest('button'); if (!b) return; state[key] = b.dataset.k; draw() }
+}
+function draw(){
+  try { localStorage.setItem('record-actions.playground', JSON.stringify(state)) } catch {}
+  seg(document.getElementById('c-opt'), Object.entries(OPTIONS), 'opt')
+  seg(document.getElementById('c-w'), Object.entries(WIDTHS).map(([k, v]) => [k, v.label]), 'w')
+  const r = RECORDS[state.rec], wd = WIDTHS[state.w]
+  document.getElementById('stage').innerHTML = LANGS.map((_, li) => render(r, wd, li, state.opt)).join('')
+}
+const sel = document.getElementById('c-rec')
+sel.innerHTML = Object.entries(RECORDS).map(([k, v]) => `<option value="${k}">${esc(v.name)}</option>`).join('')
+sel.onchange = () => { state.rec = sel.value; draw() }
+document.getElementById('stage').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-more]')
+  document.querySelectorAll('.m-menu').forEach(m => { if (!b || m !== b.nextElementSibling) { m.hidden = true; m.previousElementSibling?.setAttribute('aria-expanded', 'false') } })
+  if (b){ const m = b.nextElementSibling; m.hidden = !m.hidden; b.setAttribute('aria-expanded', String(!m.hidden)) }
+})
+document.addEventListener('click', (e) => { if (!e.target.closest('#stage')) document.querySelectorAll('.m-menu').forEach(m => m.hidden = true) })
+
+// ---------- label bars ----------
+function bars(){
+  const rows = [['createLink', true], ['createLinkShort', true], ['sign', true], ['printOrder', true], ['copyForWhatsApp', true], ['markNotReturned', false], ['newOrder', true], ['takeBack', true]]
+  const scale = 1
+  const limits = [[99, 'pane 22rem'], [122, 'phone'], [163, 'pane 26rem']]
+  document.getElementById('bars').innerHTML = rows.map(([k, icon]) => {
+    const ws = LANGS.map((_, li) => btnW(w(k, li), icon))
+    return `<div class="bar"><div>${esc(W[k][0])}<div class="small muted">${ws.join(' · ')} px</div></div><div class="track">
+      ${ws.map((x, li) => `<div class="b ${LANGS[li]}" style="width:${x * scale}px"></div>`).join('')}
+      ${limits.map(([x, l], i) => `<div class="limit" style="left:${x * scale}px">${k === 'createLink' ? `<span style="top:${-16 - (i % 2) * 0}px; ${i === 0 ? 'transform:translateX(-100%) translateX(-6px)' : ''}">${l}</span>` : ''}</div>`).join('')}
+    </div></div>`
+  }).join('')
+}
+
+function matrix(){
+  const cell = (L) => {
+    const m = L.s.mode, cls = m === 'icon' ? 'no' : m === 'short' ? 'mid' : 'yes'
+    return `<td class="${cls}">${m}<span class="small muted"> · ${L.shown.length}🛠</span></td>`
+  }
+  const head = `<thead><tr><th>Record</th><th>Width</th>${['B','C'].map(o => LANGS.map(l => `<th>${o} ${l.toUpperCase()}</th>`).join('')).join('')}</tr></thead>`
+  const rows = []
+  for (const [rk, r] of Object.entries(RECORDS)) for (const wk of ['phone','p22','p26']){
+    const wd = WIDTHS[wk]
+    rows.push(`<tr><td>${esc(r.name)}</td><td>${esc(wd.label)}</td>${LANGS.map((_, li) => cell(layoutB(r, wd, li))).join('')}${LANGS.map((_, li) => cell(layoutC(r, wd, li))).join('')}</tr>`)
+  }
+  document.getElementById('matrix').innerHTML = `<table>${head}<tbody>${rows.join('')}</tbody></table>`
+}
+
+function vocab(){
+  const v = [['pencil','Edit','item, details, asset'],['printer','Print','Print Order, Print Form'],['link','Confirmation link','Create confirmation link'],['file','Open the document','View Order'],['pen','Mark as signed (Signature)','Mark as Signed & Given'],['key','Show PIN and PUK','SIM card'],['mail','Prepare an email','activation, blocking'],['message','WhatsApp','Copy for WhatsApp'],['copy','Copy','numbers'],['plus','New / Add','New order, Add …'],['undo','Take back','Return'],['trash','Delete','⋯ only, never a tool']]
+  document.getElementById('vocab').innerHTML = v.map(([i, m, u]) => `<div>${svg(i, i === 'message' ? 'wa' : '')}<span><b>${esc(m)}</b><small>${esc(u)}</small></span></div>`).join('')
+}
+
+Promise.all([document.fonts.load(BTN), document.fonts.load(TITLE), document.fonts.load(MONO_T)]).catch(() => {}).finally(() => {
+  sel.value = state.rec
+  draw(); bars(); vocab(); matrix()
+})
+</script>
+</body>
+</html>
