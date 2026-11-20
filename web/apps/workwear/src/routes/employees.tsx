@@ -16,9 +16,9 @@ import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
-import { ExportSheet } from '@ppe/ui/components/export-sheet'
-import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
-import { useSelection } from '@ppe/ui/lib/use-selection'
+import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
+import { RowCheckbox, SelectAllCheckbox, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
+import { selectRowProps, useSelection } from '@ppe/ui/lib/use-selection'
 import { ChevronRight, Download, Plus, Users } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
@@ -34,6 +34,9 @@ import { employeeExportColumns } from '@/lib/employee-export'
 import { employeeFacts, missingLabel } from '@/lib/records'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import { clothingBandValue, clothingBands, clothingSizeLabel, formatSize } from '@/lib/utils'
+
+/** An employee's key in the selection; a module constant, so the hook's memos hold. */
+const employeeId = (e: Employee) => e.id
 
 type EmployeeSort = 'name' | 'code' | 'height' | 'clothing' | 'shoes'
 
@@ -82,7 +85,6 @@ export function Employees({
   const [sizing, setSizing] = useState<Employee | null>(null)
   const action = useAction()
   const [sort, setSort] = useState<SortState<EmployeeSort> | null>({ key: 'name', dir: 'asc' })
-  const [exporting, setExporting] = useState(false)
 
   const shown = useMemo(() => {
     const q = filter.trim().toLowerCase()
@@ -147,7 +149,7 @@ export function Employees({
   // J and K: the next or previous employee in the list as shown, while one is open; Escape closes her beside the list.
   const shownIds = useMemo(() => shown.map((e) => e.id), [shown])
   // The employees ticked for Export: only those the tab and search show count.
-  const selection = useSelection(shownIds)
+  const selection = useSelection(shown, employeeId)
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: 'employee', id }, { scroll: false }), onClose: close })
 
   return (
@@ -166,7 +168,7 @@ export function Employees({
         title={t.employees.title}
         description={t.employees.description}
         // Export: in the header from md, in ⋯ below (a phone exports all shown: its list has no checkboxes).
-        secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: shown.length === 0 }]}
+        secondary={[{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: shown.length === 0 || selection.active }]}
         primary={managesProfile ? { label: t.employees.addNew, short: t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
       />
       {/* As on every list: the tabs first, then the search. */}
@@ -208,12 +210,8 @@ export function Employees({
           {notice}
         </p>
       ) : null}
-      <SelectionBar selection={selection}>
-        <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
-          <Download aria-hidden />
-          {t.common.exportSelected}
-        </Button>
-      </SelectionBar>
+      {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
+      <ExportMode selection={selection} list={t.employees.title} columns={employeeExportColumns({ sizes: seesSizes, profile: seesProfile })} shown={shown} />
       <Loaded
         load={employees}
         empty={shown.length === 0}
@@ -230,14 +228,16 @@ export function Employees({
           <Table stack="list" fixed stickyHead sortControl={<SortMenu columns={columns} {...sortProps} />}>
             <TableHeader>
               <TableRow>
-                {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
-                <TableHead className="w-10 stacked:hidden">
-                  <SelectAllCheckbox selection={selection} />
-                </TableHead>
+                {/* The checkboxes are there only in select mode (WARE-45). */}
+                {selection.active ? (
+                  <TableHead className={selectCellClass}>
+                    <SelectAllCheckbox selection={selection} />
+                  </TableHead>
+                ) : null}
                 {columns.map((c) => (
                   <SortableHead key={c.key} column={c} className={employeeWidths[c.key]} {...sortProps} />
                 ))}
-                <TableHead className="w-44 text-right">{t.employees.actions}</TableHead>
+                <TableHead className="w-44 text-right">{selection.active ? null : t.employees.actions}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -250,10 +250,11 @@ export function Employees({
                     data-state={selected === e.id ? 'selected' : undefined}
                     aria-current={selected === e.id ? 'true' : undefined}
                     {...(managesProfile ? photoDrop.rowProps(e.id) : {})}
+                    // In select mode a click anywhere on the row ticks it instead.
+                    {...selectRowProps(selection, e.id)}
                     className={cn(
                       'cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
-                      // Ticked for Export.
-                      selection.has(e.id) && 'bg-primary/5',
+                      selectRowClass(selection, e.id),
                       // Photos dragged over the row: dropping adds them to this employee.
                       photoDrop.overId === e.id && 'bg-accent outline-2 -outline-offset-2 outline-ring outline-dashed',
                     )}
@@ -264,9 +265,11 @@ export function Employees({
                       open(e.id)
                     }}
                   >
-                    <TableCell data-slot="select-cell" className="stacked:hidden">
-                      <RowCheckbox selection={selection} id={e.id} name={e.full_name} />
-                    </TableCell>
+                    {selection.active ? (
+                      <TableCell className={selectCellClass}>
+                        <RowCheckbox selection={selection} id={e.id} name={e.full_name} />
+                      </TableCell>
+                    ) : null}
                     <TableCell aria-hidden className="hidden stacked:col-start-1 stacked:flex stacked:[grid-row:1/span_3]">
                       <EmployeeAvatar employee={e} />
                     </TableCell>
@@ -312,14 +315,15 @@ export function Employees({
                       <ChevronRight className="size-4 text-muted-foreground" />
                     </TableCell>
                     <TableCell className="text-right whitespace-nowrap stacked:hidden">
-                      {managesSizes ? (
+                      {/* In select mode the row's own actions step aside: a click ticks the row. */}
+                      {selection.active ? null : managesSizes ? (
                         <>
                           <Button size="sm" variant="outline" onClick={() => setSizing(e)}>
                             {t.employees.editSizes}
                           </Button>{' '}
                         </>
                       ) : null}
-                      {managesProfile || merges || session.can('employees.delete') ? (
+                      {!selection.active && (managesProfile || merges || session.can('employees.delete')) ? (
                         <MoreActions label={t.common.moreActions(e.full_name)}>
                           {managesProfile ? <DropdownMenuItem onClick={() => setEditing(e)}>{t.employees.editDetails}</DropdownMenuItem> : null}
                           {merges ? <DropdownMenuItem onClick={() => setMerging({ start: e })}>{t.employees.merge.action}</DropdownMenuItem> : null}
@@ -370,14 +374,6 @@ export function Employees({
           navigate({ name: 'employee', id: kept.id }, { scroll: false })
           setPaneVersion((v) => v + 1)
         }}
-      />
-      <ExportSheet
-        open={exporting}
-        onClose={() => setExporting(false)}
-        list={t.employees.title}
-        columns={employeeExportColumns({ sizes: seesSizes, profile: seesProfile })}
-        shown={shown}
-        selected={shown.filter((e) => selection.has(e.id))}
       />
       <EditSizes
         employee={sizing}

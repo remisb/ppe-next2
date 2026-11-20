@@ -276,6 +276,16 @@
   }
 
   /*
+   * Select mode's bar (components/selection-bar.tsx) is pinned above the tab
+   * bar on a phone: the page gets room under its last row so none hides behind it.
+   */
+  @media (width < 48rem) {
+    body:has([data-slot='select-mode-bar']) {
+      padding-bottom: 8rem;
+    }
+  }
+
+  /*
    * --page-header is the height of a screen's header row (PageHeader), which
    * sticks at the top; --header-offset is where what sticks below it goes (a
    * stuck filter bar, StickyFilters). --list-offset is below that bar too,

@@ -16,10 +16,10 @@ import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
-import { ExportSheet } from '@ppe/ui/components/export-sheet'
-import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
-import { useSelection } from '@ppe/ui/lib/use-selection'
-import { ChevronRight, Download, FileText, FilterX, Plus } from 'lucide-react'
+import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
+import { RowCheckbox, SelectAllCheckbox, SelectModeBar, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
+import { selectRowProps, useSelection } from '@ppe/ui/lib/use-selection'
+import { ChevronRight, Download, FileText, FilterX, ListChecks, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { AssetDetail } from '@/components/asset-detail'
@@ -81,6 +81,12 @@ const columns = (kind: AssetKind): SortColumn<AssetSort>[] =>
         { key: 'holder', label: t.assets.colHeldBy },
         { key: 'given', label: t.assets.colGiven, firstDir: 'desc' },
       ]
+/** An asset's key in the selection; a module constant, so the hook's memos hold. */
+const assetId = (a: Asset) => a.id
+
+/** The select mode in which SIM Cards' Change Status ticks the cards (WARE-45). */
+const STATUS_MODE = 'status'
+
 const byNumber: SortState<AssetSort> = { key: 'inventory', dir: 'asc' }
 
 
@@ -160,7 +166,6 @@ export function Assets({
   )
   const reload = () => setReloads((n) => n + 1)
   const [bulkBusy, setBulkBusy] = useState(false)
-  const [exporting, setExporting] = useState(false)
   // SIM Cards' Preview PDF: the server draws every card the filters match, in the register's sort and the language
   // of the user's account; the preview shows it, to print, download or open in a tab.
   const [pdfLoading, setPdfLoading] = useState(false)
@@ -182,7 +187,8 @@ export function Assets({
 
   // One card after another, each its own change in the card's Changes; a failure stops there and says how far it got.
   const changeChosen = async (next: ConnectionStatus) => {
-    const cards = (list.data?.assets ?? []).filter((a) => selection.has(a.id))
+    // Those ticked on every page, as they were when ticked.
+    const cards = selection.rows
     const pending = cards.filter((a) => a.connection_status !== next)
     let done = 0
     setBulkBusy(true)
@@ -193,7 +199,7 @@ export function Assets({
         done++
       }
       setMessage(t.assets.bulkChanged(cards.length, statusLabel(next)))
-      selection.clear()
+      selection.end()
     } catch (err) {
       action.fail(err)
       setMessage(t.assets.bulkStopped(done, pending.length))
@@ -238,21 +244,23 @@ export function Assets({
   // J and K: the next or previous SIM or item on this page, while one is open; Escape closes it beside the register.
   const shownIds = useMemo(() => list.data?.assets.map((a) => a.id), [list.data])
   /*
-   * The rows ticked on this page: for Export, and on SIM Cards for one Change Status (S18: a batch the provider
-   * confirmed). Another page or filter starts afresh.
+   * Select mode (WARE-45): the rows ticked for Export, or on SIM Cards for one Change Status (S18: a batch the
+   * provider confirmed). The register is read a page at a time, so ticks are kept across pages and filters.
    */
-  const pageIds = useMemo(() => shownIds ?? [], [shownIds])
-  const selection = useSelection(pageIds)
-  const queryKey = JSON.stringify(query)
-  const { clear: clearSelection } = selection
-  useEffect(() => clearSelection(), [queryKey, clearSelection])
+  const pageRows = useMemo(() => list.data?.assets ?? [], [list.data])
+  const selection = useSelection(pageRows, assetId, { acrossPages: true })
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: register, ...at, asset: id }, { scroll: false }), onClose: close })
 
   // Beside an open SIM or item the register keeps the columns that find the next one: one line a row; the rest is in the pane.
   const beside = selected !== undefined
-  // Ticking rows (Export; on SIM Cards also Change Status): the table's first column, where the register is a table (not beside a card).
-  const ticking = !beside
+  // Ticking rows, in select mode only: Export, or on SIM Cards Change Status.
+  const ticking = selection.active
   const bulkStatus = sim && canManage
+  // Select mode is for the whole register: a card open beside it closes first.
+  const startMode = (mode: string) => {
+    if (beside) close()
+    selection.start(mode)
+  }
 
   const s = summary.data
   const places: { value: Place; label: string }[] = [
@@ -340,7 +348,11 @@ export function Assets({
           // Export too: every card or item the filters match, or the ticked ones.
           secondary={[
             ...(sim ? [{ label: t.assets.previewPdf, icon: FileText, disabled: pdfLoading, onClick: () => void previewPdf(), showFrom: 'md' as const }] : []),
-            { label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: !list.data || list.data.total === 0 },
+            // Change Status of several SIM cards at once starts its own select mode.
+            ...(bulkStatus
+              ? [{ label: t.assets.changeStatusMode.start, icon: ListChecks, onClick: () => startMode(STATUS_MODE), showFrom: 'md' as const, disabled: !list.data || list.data.total === 0 || ticking }]
+              : []),
+            { label: t.common.export, icon: Download, onClick: () => startMode(EXPORT_MODE), showFrom: 'md', disabled: !list.data || list.data.total === 0 || ticking },
           ]}
           primary={canManage ? { label: sim ? t.assets.addSimCard : t.assets.addAsset, short: sim ? undefined : t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
         />
@@ -408,6 +420,19 @@ export function Assets({
           {message}
         </p>
         <ActionError error={action.error} />
+        {/* Export's select mode, with its sheet: every card or item the filters match (all pages, in the register's sort), or those ticked. */}
+        <ExportMode
+          selection={selection}
+          list={sim ? t.assets.simCards : t.assets.equipment}
+          columns={assetExportColumns(kind, settings.data?.timezone)}
+          shown={pageRows}
+          matching={list.data ? { count: list.data.total, load: () => loadAllAssets(client.assets.list, query) } : undefined}
+        />
+        {selection.mode === STATUS_MODE ? (
+          <SelectModeBar selection={selection} title={t.assets.changeStatusMode.title} hint={t.assets.changeStatusMode.hint}>
+            <BulkStatusMenu disabled={bulkBusy || selection.count === 0} onChange={(next) => void changeChosen(next)} />
+          </SelectModeBar>
+        ) : null}
         {list.error ? (
           <ErrorState error={list.error} onRetry={reload} />
         ) : list.loading && !list.data ? (
@@ -423,15 +448,6 @@ export function Assets({
           </EmptyState>
         ) : (
           <>
-            {ticking ? (
-              <SelectionBar selection={selection}>
-                {bulkStatus ? <BulkStatusMenu disabled={bulkBusy} onChange={(next) => void changeChosen(next)} /> : null}
-                <Button size="sm" variant="outline" disabled={bulkBusy} onClick={() => setExporting(true)}>
-                  <Download aria-hidden />
-                  {t.common.exportSelected}
-                </Button>
-              </SelectionBar>
-            ) : null}
             <Table stack="list" fixed stackBelow={beside ? 'sm' : 'lg'} stickyHead busy={list.loading} sortControl={<SortMenu columns={columns(kind)} {...sortProps} />}>
               {/*
                 Two-word headers wrap, and so do the cells of words (names, the plan, where, when, the documents): the
@@ -440,7 +456,7 @@ export function Assets({
               <TableHeader className="[&_th]:whitespace-normal">
                 <TableRow>
                   {ticking ? (
-                    <TableHead className="w-10 stacked:hidden">
+                    <TableHead className={selectCellClass}>
                       <SelectAllCheckbox selection={selection} label={sim ? t.assets.selectPage : t.assets.selectPageItems} />
                     </TableHead>
                   ) : null}
@@ -465,7 +481,7 @@ export function Assets({
                       <TableHead className="w-28">{t.assets.colDocuments}</TableHead>
                       {/* SIM Cards has two more columns: its comment shows from 2xl, and on the card's page. */}
                       <TableHead className={cn(sim && 'w-56 hidden 2xl:table-cell')}>{t.assets.colComment}</TableHead>
-                      {canManage ? <TableHead className="w-36 text-right">{t.assets.actions}</TableHead> : null}
+                      {canManage ? <TableHead className="w-36 text-right">{ticking ? null : t.assets.actions}</TableHead> : null}
                     </>
                   )}
                 </TableRow>
@@ -480,10 +496,11 @@ export function Assets({
                       key={a.id}
                       data-state={selected === a.id ? 'selected' : undefined}
                       aria-current={selected === a.id ? 'true' : undefined}
+                      // In select mode a click anywhere on the row ticks it instead.
+                      {...selectRowProps(selection, a.id)}
                       className={cn(
                         'cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
-                        // Ticked for Export or Change Status.
-                        ticking && selection.has(a.id) && 'bg-primary/5',
+                        selectRowClass(selection, a.id),
                       )}
                       // The whole row opens the card; its number is the real link, for keyboards and new tabs.
                       onClick={(ev) => {
@@ -492,7 +509,7 @@ export function Assets({
                       }}
                     >
                       {ticking ? (
-                        <TableCell data-slot="select-cell" className="stacked:hidden">
+                        <TableCell className={selectCellClass}>
                           <RowCheckbox selection={selection} id={a.id} name={a.inventory_no} />
                         </TableCell>
                       ) : null}
@@ -595,7 +612,8 @@ export function Assets({
                       </TableCell>
                       {canManage && !beside ? (
                         <TableCell className="text-right whitespace-nowrap stacked:hidden">
-                          {action === 'give' ? (
+                          {/* In select mode the row's own actions step aside: a click ticks the row. */}
+                          {ticking ? null : action === 'give' ? (
                             <Button size="sm" variant="outline" onClick={() => setSheet({ kind: 'give', asset: a })}>
                               {sim ? t.assets.giveSimCard : t.assets.giveAsset}
                             </Button>
@@ -610,6 +628,7 @@ export function Assets({
                               onActivationEmail={() => setSheet({ kind: 'activationEmail', asset: a })}
                             />
                           ) : null}{' '}
+                          {ticking ? null : (
                           <AssetMoreActions
                             asset={a}
                             status={action !== 'status'}
@@ -620,6 +639,7 @@ export function Assets({
                             onBlockingEmail={() => setSheet({ kind: 'blockingEmail', asset: a })}
                             onPrintForm={() => reprint(a)}
                           />
+                          )}
                         </TableCell>
                       ) : null}
                     </TableRow>
@@ -647,16 +667,6 @@ export function Assets({
 
       {printing}
       <PdfPreview file={pdf} label={t.assets.pdfPreviewLabel} onClose={() => setPdf(null)} />
-      {/* Every card or item the filters match (all pages, in the register's sort), or those ticked on this page. */}
-      <ExportSheet
-        open={exporting}
-        onClose={() => setExporting(false)}
-        list={sim ? t.assets.simCards : t.assets.equipment}
-        columns={assetExportColumns(kind, settings.data?.timezone)}
-        shown={list.data?.assets ?? []}
-        selected={(list.data?.assets ?? []).filter((a) => selection.has(a.id))}
-        matching={list.data ? { count: list.data.total, load: () => loadAllAssets(client.assets.list, query) } : undefined}
-      />
       <AssetSheets
         sheet={sheet}
         today={today}

@@ -18,9 +18,9 @@ import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
-import { ExportSheet } from '@ppe/ui/components/export-sheet'
-import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
-import { useSelection } from '@ppe/ui/lib/use-selection'
+import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
+import { RowCheckbox, SelectAllCheckbox, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
+import { selectRowProps, useSelection } from '@ppe/ui/lib/use-selection'
 import { euroInput } from '@ppe/i18n'
 import { ChevronRight, Download, GripVertical, Plus } from 'lucide-react'
 import { type FormEvent, Fragment, useEffect, useMemo, useRef, useState } from 'react'
@@ -54,6 +54,9 @@ export const sizeGroupLabel: Record<SizeGroup, string> = {
 type CatalogueSort = 'name' | 'details' | 'group' | 'price' | 'period' | 'status'
 
 /** Beside an open item the list keeps the columns that find the next one; the rest is in the pane. */
+/** An item's key in the selection; a module constant, so the hook's memos hold. */
+const catalogueItemId = (i: CatalogueItem) => i.id
+
 const besideColumns: CatalogueSort[] = ['name', 'price', 'status']
 
 /** Fixed column widths; the details take the rest. */
@@ -116,7 +119,6 @@ export function Catalogue({
   const [sort, setSort] = useState<SortState<CatalogueSort> | null>(null)
   const sortProps = { sort, onSort: setSort, allowNone: true }
   const [status, setStatus] = useState<ItemStatus | 'all'>(initialStatus ?? 'all')
-  const [exporting, setExporting] = useState(false)
   const tz = useLoad(() => client.settings()).data?.timezone
   const counts = useMemo(() => {
     const c: Record<ItemStatus | 'all', number> = { all: 0, active: 0, incomplete: 0, inactive: 0 }
@@ -179,12 +181,12 @@ export function Catalogue({
     })
   }
   const drag = useRowDrag(shownIds, move)
-  // The items ticked for Export: only those the tab shows count.
-  const selection = useSelection(shownIds)
   const rows = useMemo(() => {
     const byId = new Map(shown.map((i) => [i.id, i]))
     return (drag.order ?? shownIds).flatMap((id) => byId.get(id) ?? [])
   }, [shown, drag.order, shownIds])
+  // The items ticked in select mode (WARE-45): only those the tab shows count.
+  const selection = useSelection(rows, catalogueItemId)
 
   const openItem = (id: string) => navigate({ name: 'catalogue', item: id }, { scroll: !besideList() })
   const close = () => navigate({ name: 'catalogue' }, { scroll: false })
@@ -196,8 +198,9 @@ export function Catalogue({
   const shownColumns = beside ? columns().filter((c) => besideColumns.includes(c.key)) : columns()
   // Its actions are in the pane beside the list.
   const rowActions = canManageItems && !beside
-  // Ticking rows is for the whole table; beside an open item the list only finds the next one.
-  const ticks = !beside
+  // In select mode the list is for ticking: no moving, and the rows' own actions step aside.
+  const ticks = selection.active
+  const movable = canMove && !ticks
 
   const toggle = (i: CatalogueItem) =>
     action.run(
@@ -224,8 +227,19 @@ export function Catalogue({
         <PageHeader
           title={t.catalogue.title}
           description={t.catalogue.description}
-          // Export: in the header from md, in ⋯ below (a phone exports all shown: its list has no checkboxes).
-          secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: shown.length === 0 }]}
+          // Export starts select mode (WARE-45), on the whole table: an item open beside the list closes first.
+          secondary={[
+            {
+              label: t.common.export,
+              icon: Download,
+              onClick: () => {
+                if (beside) close()
+                selection.start(EXPORT_MODE)
+              },
+              showFrom: 'md',
+              disabled: shown.length === 0 || ticks,
+            },
+          ]}
           primary={canManageItems ? { label: t.catalogue.addItem, short: t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
           // Set up once, so never a button: under ⋯ at every width.
           more={canManageItems ? <DropdownMenuItem onClick={() => setPicturesOpen(true)}>{t.catalogue.pictures}</DropdownMenuItem> : undefined}
@@ -248,14 +262,7 @@ export function Catalogue({
         <p aria-live="polite" className="sr-only">
           {moved}
         </p>
-        {ticks ? (
-          <SelectionBar selection={selection}>
-            <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
-              <Download aria-hidden />
-              {t.common.exportSelected}
-            </Button>
-          </SelectionBar>
-        ) : null}
+        <ExportMode selection={selection} list={t.catalogue.title} columns={catalogueExportColumns(tz)} shown={rows} />
         <Loaded load={items} empty={shown.length === 0} emptyState={statusChips().find((c) => c.status === status)!.empty}>
           {() => (
             /*
@@ -267,16 +274,16 @@ export function Catalogue({
             <Table stack="list" fixed stackBelow={beside ? 'sm' : 'lg'} stickyHead sortControl={<SortMenu columns={shownColumns} noneLabel={t.catalogue.displayOrder} {...sortProps} />}>
               <TableHeader>
                 <TableRow>
-                  {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
+                  {/* The checkboxes are there only in select mode (WARE-45). */}
                   {ticks ? (
-                    <TableHead className="w-10 stacked:hidden">
+                    <TableHead className={selectCellClass}>
                       <SelectAllCheckbox selection={selection} />
                     </TableHead>
                   ) : null}
                   {shownColumns.map((c) => (
                     <SortableHead key={c.key} column={c} align={c.key === 'price' ? 'right' : 'left'} className={catalogueWidths[c.key]} {...sortProps} />
                   ))}
-                  {rowActions ? <TableHead className="w-32 text-right">{t.catalogue.actions}</TableHead> : null}
+                  {rowActions ? <TableHead className="w-32 text-right">{ticks ? null : t.catalogue.actions}</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -291,13 +298,14 @@ export function Catalogue({
                         data-row-id={i.id}
                         data-state={selected === i.id ? 'selected' : undefined}
                         aria-current={selected === i.id ? 'true' : undefined}
+                        // In select mode a click anywhere on the row ticks it instead.
+                        {...selectRowProps(selection, i.id)}
                         className={cn(
                           'cursor-pointer hover:bg-muted/50 stacked:grid stacked:grid-cols-[auto_minmax(0,1fr)_auto_auto] stacked:gap-x-3 stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
                           // The row being moved stands out where it will land.
                           drag.dragging === i.id && 'relative z-10 bg-accent shadow-md outline-2 -outline-offset-2 outline-primary hover:bg-accent',
                           !i.active && 'text-muted-foreground',
-                          // Ticked for Export.
-                          ticks && selection.has(i.id) && 'bg-primary/5',
+                          selectRowClass(selection, i.id),
                         )}
                         // The whole row opens the item; the name is the real link, for keyboards,
                         // screen readers and "open in new tab". The row's own buttons keep their action.
@@ -307,13 +315,13 @@ export function Catalogue({
                         }}
                       >
                         {ticks ? (
-                          <TableCell data-slot="select-cell" className="stacked:hidden">
+                          <TableCell className={selectCellClass}>
                             <RowCheckbox selection={selection} id={i.id} name={i.name} />
                           </TableCell>
                         ) : null}
                         <TableCell className="font-medium whitespace-normal stacked:col-start-2 stacked:row-start-1 stacked:min-w-0">
                           <span className="flex items-center gap-3">
-                            {canMove ? (
+                            {movable ? (
                               // The handle: press and move, or the arrow keys. Not on a stacked row, which only opens the item.
                               <button
                                 type="button"
@@ -362,14 +370,18 @@ export function Catalogue({
                         </TableCell>
                         {rowActions ? (
                           <TableCell className="text-right whitespace-nowrap stacked:hidden">
-                            <Button size="sm" variant="outline" onClick={() => setEditing(i)}>
-                              {t.common.edit}
-                            </Button>{' '}
-                            <MoreActions label={t.common.moreActions(i.name)}>
-                              <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle(i)}>
-                                {i.active ? t.catalogue.deactivateItem : t.catalogue.activateItem}
-                              </DropdownMenuItem>
-                            </MoreActions>
+                            {ticks ? null : (
+                              <>
+                                <Button size="sm" variant="outline" onClick={() => setEditing(i)}>
+                                  {t.common.edit}
+                                </Button>{' '}
+                                <MoreActions label={t.common.moreActions(i.name)}>
+                                  <DropdownMenuItem variant={i.active ? 'destructive' : 'default'} onClick={() => void toggle(i)}>
+                                    {i.active ? t.catalogue.deactivateItem : t.catalogue.activateItem}
+                                  </DropdownMenuItem>
+                                </MoreActions>
+                              </>
+                            )}
                           </TableCell>
                         ) : null}
                       </TableRow>
@@ -381,14 +393,6 @@ export function Catalogue({
           )}
         </Loaded>
       </ListDetail>
-      <ExportSheet
-        open={exporting}
-        onClose={() => setExporting(false)}
-        list={t.catalogue.title}
-        columns={catalogueExportColumns(tz)}
-        shown={rows}
-        selected={ticks ? rows.filter((i) => selection.has(i.id)) : []}
-      />
       <ItemForm
         item={editing}
         onClose={() => setEditing(null)}

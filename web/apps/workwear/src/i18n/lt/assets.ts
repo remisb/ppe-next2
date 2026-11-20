@@ -106,6 +106,11 @@ export const assets: AssetsText = {
   next: 'Kitas',
   shown: (n: number) => plural(n, { one: '# SIM', few: '# SIM', many: '# SIM', other: '# SIM' }),
   changeStatus: 'Keisti būseną',
+  changeStatusMode: {
+    start: 'Keisti būseną…',
+    title: 'Keisti būseną',
+    hint: 'Pažymėkite SIM korteles, kurias keisite, tada pasirinkite jų būseną. Spustelėkite eilutę, kad ją pažymėtumėte; Esc – išeiti.',
+  },
   changeStatusOf: (number: string) => `Keisti ${number} būseną`,
   statusNote: 'Pasirinkite dabartinę būseną, kurią patvirtino tiekėjas. Tai tik įrašas: kortelė nuo to neaktyvuojama ir neužblokuojama.',
   activateNote: 'Parašykite tiekėjui, kad aktyvuotų šią SIM. Kai aktyvavimas patvirtintas, pakeiskite būseną į „Aktyvi“.',

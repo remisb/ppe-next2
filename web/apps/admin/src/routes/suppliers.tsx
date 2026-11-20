@@ -12,9 +12,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
-import { ExportSheet } from '@ppe/ui/components/export-sheet'
-import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
-import { useSelection } from '@ppe/ui/lib/use-selection'
+import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
+import { RowCheckbox, SelectAllCheckbox, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
+import { selectRowProps, useSelection } from '@ppe/ui/lib/use-selection'
 import { cn } from '@ppe/ui/lib/utils'
 import { Download, Plus } from 'lucide-react'
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
@@ -23,6 +23,9 @@ import { t } from '@/i18n'
 import { supplierExportColumns } from '@/lib/list-export'
 import type { Route } from '@/lib/router'
 import { type SupplierDraft, type SupplierErrors, draftOf, matches, placeOf, toInput, validateSupplier } from '@/lib/suppliers'
+
+/** A row's key in the selection; a module constant, so the hook's memos hold. */
+const supplierId = (s: Supplier) => s.id
 
 type SupplierSort = 'code' | 'name' | 'place' | 'items'
 
@@ -60,9 +63,8 @@ export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
       ),
     [list.data, filter, sort],
   )
-  const [exporting, setExporting] = useState(false)
   // The suppliers ticked for Export: only those the search shows count.
-  const selection = useSelection(useMemo(() => shown.map((s) => s.id), [shown]))
+  const selection = useSelection(shown, supplierId)
 
   if (!allowed) {
     return (
@@ -86,8 +88,8 @@ export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
       <PageHeader
         title={t.suppliers.title}
         description={t.suppliers.description}
-        // Export: in the header from md, in ⋯ below (a phone exports all shown: its list has no checkboxes).
-        secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: shown.length === 0 }]}
+        // Export: in the header from md, in ⋯ below; it starts select mode (WARE-45), on a phone too.
+        secondary={[{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: shown.length === 0 || selection.active }]}
         primary={{ label: t.suppliers.addSupplier, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
       />
       <div className="mb-4 flex flex-wrap gap-2">
@@ -106,22 +108,20 @@ export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
       <p role="status" className="mb-3 text-sm text-muted-foreground empty:hidden">
         {saved}
       </p>
-      <SelectionBar selection={selection}>
-        <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
-          <Download aria-hidden />
-          {t.common.exportSelected}
-        </Button>
-      </SelectionBar>
+      {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
+      <ExportMode selection={selection} list={t.suppliers.title} columns={supplierExportColumns()} shown={shown} />
       <Loaded load={list} empty={shown.length === 0} emptyState={filter.trim() ? t.suppliers.noMatch(filter.trim()) : t.suppliers.noSuppliers}>
         {() => (
           // Where the table is narrow the suppliers are one list of rows: name, then code and place, with Edit and ⋯ beside them.
           <Table stack="list" stickyHead sortControl={<SortMenu columns={columns()} {...sortProps} />}>
             <TableHeader>
               <TableRow>
-                {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
-                <TableHead className="w-10 stacked:hidden">
-                  <SelectAllCheckbox selection={selection} />
-                </TableHead>
+                {/* The checkboxes are there only in select mode (WARE-45). */}
+                {selection.active ? (
+                  <TableHead className={selectCellClass}>
+                    <SelectAllCheckbox selection={selection} />
+                  </TableHead>
+                ) : null}
                 {columns().map((c) => (
                   <SortableHead key={c.key} column={c} {...sortProps} />
                 ))}
@@ -131,10 +131,12 @@ export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
             </TableHeader>
             <TableBody>
               {shown.map((s) => (
-                <TableRow key={s.id} className={cn('stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3', selection.has(s.id) && 'bg-primary/5')}>
-                  <TableCell data-slot="select-cell" className="stacked:hidden">
-                    <RowCheckbox selection={selection} id={s.id} name={s.name} />
-                  </TableCell>
+                <TableRow key={s.id} {...selectRowProps(selection, s.id)} className={cn('stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3', selectRowClass(selection, s.id))}>
+                  {selection.active ? (
+                    <TableCell className={selectCellClass}>
+                      <RowCheckbox selection={selection} id={s.id} name={s.name} />
+                    </TableCell>
+                  ) : null}
                   <TableCell className="font-mono text-sm stacked:col-start-1 stacked:row-start-2 stacked:text-xs stacked:text-muted-foreground">{s.code}</TableCell>
                   <TableCell className="font-medium whitespace-normal stacked:col-start-1 stacked:row-start-1">{s.name}</TableCell>
                   <TableCell className="stacked:col-start-1 stacked:row-start-3 stacked:text-xs stacked:text-muted-foreground">{placeOf(s)}</TableCell>
@@ -145,19 +147,24 @@ export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
                     {s.phone ? <span className="block text-muted-foreground">{s.phone}</span> : null}
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap stacked:col-start-2 stacked:flex stacked:[grid-row:1/span_3] stacked:items-center stacked:gap-1">
-                    <Button size="sm" variant="outline" onClick={() => setEditing(s)} aria-label={t.suppliers.editLabel(s.name)}>
-                      {t.common.edit}
-                    </Button>{' '}
-                    <MoreActions label={t.common.moreActions(s.name)}>
-                      {session.can('audit.read') ? (
-                        <DropdownMenuItem onClick={() => navigate({ name: 'audit', filter: { entity_type: 'supplier', entity_id: s.id } })}>
-                          {t.suppliers.changes}
-                        </DropdownMenuItem>
-                      ) : null}
-                      <DropdownMenuItem variant="destructive" onClick={() => void remove(s)}>
-                        {t.suppliers.deleteSupplier}
-                      </DropdownMenuItem>
-                    </MoreActions>
+                    {/* In select mode the row's own actions step aside: a click ticks the row. */}
+                    {selection.active ? null : (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => setEditing(s)} aria-label={t.suppliers.editLabel(s.name)}>
+                          {t.common.edit}
+                        </Button>{' '}
+                        <MoreActions label={t.common.moreActions(s.name)}>
+                          {session.can('audit.read') ? (
+                            <DropdownMenuItem onClick={() => navigate({ name: 'audit', filter: { entity_type: 'supplier', entity_id: s.id } })}>
+                              {t.suppliers.changes}
+                            </DropdownMenuItem>
+                          ) : null}
+                          <DropdownMenuItem variant="destructive" onClick={() => void remove(s)}>
+                            {t.suppliers.deleteSupplier}
+                          </DropdownMenuItem>
+                        </MoreActions>
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -174,14 +181,6 @@ export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
           setSaved(message)
           list.reload()
         }}
-      />
-      <ExportSheet
-        open={exporting}
-        onClose={() => setExporting(false)}
-        list={t.suppliers.title}
-        columns={supplierExportColumns()}
-        shown={shown}
-        selected={shown.filter((s) => selection.has(s.id))}
       />
     </>
   )

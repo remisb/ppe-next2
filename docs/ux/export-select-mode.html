@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Export Select Mode</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Proposal after WARE-43/44: a list's checkboxes appear only once an action that needs them (Export, Change Status) starts. */
+:root{
+  --bg:#f6f6f9; --surface:#ffffff; --surface-2:#eff0f5; --fg:#15162a; --muted:#5b5e74; --line:#e1e2ea;
+  --accent:#3341a8; --accent-soft:#e8eafb; --pri:#18181b; --pri-fg:#fafafa;
+  --bad:#b42318; --bad-bg:#fdeceb; --ok:#23703f; --ok-bg:#e4f3ea; --tint:#eef0fb;
+  --shadow:0 1px 2px rgb(20 22 50 / .06), 0 8px 24px rgb(20 22 50 / .08);
+  --font:'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono:'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --accent:#909cff; --accent-soft:#252a52; --pri:#f4f4f5; --pri-fg:#18181b; --tint:#1d2140;
+  --bad:#ff8f86; --bad-bg:#3a1816; --ok:#6fd49a; --ok-bg:#15301f;
+  --shadow:0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e0f16; --surface:#161824; --surface-2:#1e2130; --fg:#eceef7; --muted:#9b9eb5; --line:#2a2d3f;
+  --accent:#909cff; --accent-soft:#252a52; --pri:#f4f4f5; --pri-fg:#18181b; --tint:#1d2140;
+  --bad:#ff8f86; --bad-bg:#3a1816; --ok:#6fd49a; --ok-bg:#15301f;
+  --shadow:0 1px 2px rgb(0 0 0 / .4), 0 8px 24px rgb(0 0 0 / .35); color-scheme:dark }
+*{box-sizing:border-box}
+body{margin:0; background:var(--bg); color:var(--fg); font-family:var(--font); font-size:15px; line-height:1.55; padding:32px 16px 64px}
+.wrap{max-width:1120px; margin:0 auto}
+h1,h2,h3{margin:0; line-height:1.2; text-wrap:balance}
+h1{font-size:clamp(26px,3.4vw,34px); font-weight:700; letter-spacing:-.02em}
+h2{font-size:22px; font-weight:650; margin:44px 0 10px}
+h3{font-size:16px; font-weight:650; margin:20px 0 6px}
+p{margin:0 0 10px; max-width:76ch}
+ul,ol{margin:0 0 10px; padding-left:22px; max-width:78ch} li{margin:3px 0}
+.lede{color:var(--muted)} .muted{color:var(--muted)} .small{font-size:13px}
+code{font-family:var(--mono); font-size:.86em; background:var(--surface-2); padding:1px 5px; border-radius:5px}
+.callout{border-left:3px solid var(--accent); background:var(--accent-soft); padding:10px 14px; border-radius:6px; margin:14px 0; max-width:82ch}
+button{font:inherit; color:inherit; cursor:pointer}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+/* demo controls */
+.controls{display:flex; flex-wrap:wrap; gap:12px 20px; align-items:center; margin:14px 0}
+.controls label{font-size:13px; color:var(--muted); margin-right:6px}
+.seg{display:inline-flex; background:var(--surface-2); border-radius:8px; padding:3px; gap:2px; font-size:13px}
+.seg button{border:0; background:transparent; padding:5px 11px; border-radius:6px; color:var(--muted); font-weight:500}
+.seg button[aria-pressed=true]{background:var(--surface); color:var(--fg); box-shadow:0 1px 2px rgb(0 0 0 / .12)}
+.seg button b{font-weight:500; color:var(--muted); margin-left:4px}
+.stage{display:flex; justify-content:center; padding:20px; background:repeating-linear-gradient(45deg, transparent 0 10px, color-mix(in oklab, var(--line) 35%, transparent) 10px 11px); border:1px solid var(--line); border-radius:14px}
+.log{font-size:13px; color:var(--muted); margin-top:8px; min-height:20px}
+
+/* the mock app */
+.app{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); position:relative; overflow:hidden; width:100%; max-width:900px}
+.app.phone{max-width:360px; border-radius:28px; min-height:640px; display:flex; flex-direction:column}
+.screen{padding:16px; flex:1}
+.hdr{display:flex; align-items:center; gap:8px; margin-bottom:12px; min-height:36px}
+.hdr .t{font-size:20px; font-weight:700; margin-right:auto}
+.btn{display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 12px; border-radius:8px; border:1px solid var(--line); background:var(--surface); font-size:13px; font-weight:500; white-space:nowrap}
+.btn.pri{background:var(--pri); color:var(--pri-fg); border-color:var(--pri)}
+.btn.ghost{border-color:transparent; background:transparent}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.btn.sm{height:30px; padding:0 10px; font-size:12.5px}
+.icon{width:15px; height:15px; flex:none}
+.search{height:34px; border:1px solid var(--line); border-radius:8px; padding:0 10px; font-size:13px; width:100%; max-width:300px; background:var(--surface); color:var(--fg)}
+.filters{display:flex; flex-direction:column; gap:10px; margin-bottom:12px}
+table{width:100%; border-collapse:collapse; font-size:13px}
+th{text-align:left; font-weight:500; color:var(--muted); padding:8px; border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:9px 8px; border-bottom:1px solid var(--line); white-space:nowrap}
+tr.row{cursor:pointer} tr.row:hover td{background:color-mix(in oklab, var(--surface-2) 60%, transparent)}
+tr.row.ticked td{background:var(--tint)}
+.cbcell{width:36px}
+input[type=checkbox]{width:16px; height:16px; accent-color:var(--accent); vertical-align:middle; margin:0}
+.av{display:inline-flex; width:24px; height:24px; border-radius:99px; background:var(--surface-2); font-size:10px; align-items:center; justify-content:center; margin-right:8px; vertical-align:middle; color:var(--muted)}
+.lnk{text-decoration:underline; text-decoration-color:var(--line); text-underline-offset:3px}
+.badge{display:inline-block; font-size:11px; font-weight:600; padding:1px 8px; border-radius:99px; background:var(--surface-2); color:var(--muted)}
+.badge.ok{background:var(--ok-bg); color:var(--ok)} .badge.bad{background:var(--bad-bg); color:var(--bad)}
+.mono{font-family:var(--mono); font-size:12px}
+/* entering the mode: the column slides in */
+.cbcell{transition:opacity .15s}
+@media (prefers-reduced-motion: reduce){.cbcell, .modebar{transition:none!important; animation:none!important}}
+
+/* the mode bar */
+.modebar{display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px 12px; margin:0 -16px 12px; background:var(--accent-soft); border-top:1px solid color-mix(in oklab, var(--accent) 25%, transparent); border-bottom:1px solid color-mix(in oklab, var(--accent) 25%, transparent); position:sticky; top:0; z-index:2}
+.modebar.enter, .pbar.enter{animation:drop .16s ease-out}
+@keyframes drop{from{transform:translateY(-6px); opacity:0}}
+.modebar .what{font-weight:600; font-size:13.5px}
+.modebar .hint{font-size:12.5px; color:var(--muted); flex-basis:100%}
+.modebar .count{font-size:13px; font-weight:600; color:var(--accent); margin-right:auto}
+.modebar .spacer{margin-right:auto}
+.kbd{font-family:var(--mono); font-size:11px; border:1px solid var(--line); border-bottom-width:2px; border-radius:4px; padding:0 4px; background:var(--surface)}
+/* phone: list rows, the bar at the bottom above the tab bar */
+.plist .prow{display:flex; gap:10px; align-items:center; padding:10px 2px; border-bottom:1px solid var(--line); font-size:13.5px; cursor:pointer}
+.plist .prow small{display:block; color:var(--muted); font-size:11.5px}
+.plist .prow.ticked{background:var(--tint)}
+.plist .prow .chev{margin-left:auto; color:var(--muted)}
+.pbar{position:sticky; bottom:0; background:var(--surface); border-top:1px solid var(--line); padding:10px 12px 12px; display:grid; gap:8px; box-shadow:0 -6px 14px -8px rgb(0 0 0 / .2)}
+.pbar .row1{display:flex; align-items:center; gap:8px; font-size:13px}
+.pbar .row1 strong{margin-right:auto}
+.pbar .row2{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.pbar .btn{height:44px; justify-content:center}
+.tabbar{display:flex; justify-content:space-around; border-top:1px solid var(--line); padding:8px 0 12px; font-size:11px; color:var(--muted)}
+.more{position:absolute; right:14px; top:58px; background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); padding:4px; font-size:13px; width:190px; z-index:5}
+.more button{display:flex; gap:8px; align-items:center; width:100%; border:0; background:transparent; text-align:left; padding:9px 10px; border-radius:6px}
+.more button:hover{background:var(--surface-2)}
+
+/* the sheet */
+.scrim{position:absolute; inset:0; background:rgb(10 10 20 / .35); display:flex; align-items:center; justify-content:center; z-index:10; padding:16px}
+.phone .scrim{align-items:flex-end; padding:0}
+.sheet{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); width:100%; max-width:440px}
+.phone .sheet{border-radius:16px 16px 0 0; max-width:none}
+.sheet .sh{padding:16px 18px 6px} .sheet h4{margin:0; font-size:17px}
+.sheet .sh p{font-size:13px; color:var(--muted); margin:4px 0 0}
+.sheet .sb{padding:6px 18px 12px; display:grid; gap:14px}
+.sheet .sf{padding:12px 18px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:8px}
+.summary{display:flex; align-items:center; gap:8px; font-size:13.5px; background:var(--surface-2); border-radius:8px; padding:8px 10px}
+.summary a{margin-left:auto; color:var(--accent); font-size:12.5px; cursor:pointer}
+.cols{columns:2; column-gap:14px; font-size:13.5px} .cols label{display:flex; gap:8px; align-items:center; padding:3px 0; break-inside:avoid}
+.lbl{font-size:13px; font-weight:600; margin-bottom:6px}
+.toast{position:absolute; left:50%; bottom:16px; transform:translateX(-50%); background:var(--pri); color:var(--pri-fg); font-size:13px; padding:9px 14px; border-radius:8px; box-shadow:var(--shadow); z-index:20; white-space:nowrap}
+.phone .toast{bottom:84px}
+
+/* comparison */
+table.cmp{font-size:14px; max-width:100%; background:var(--surface); border:1px solid var(--line); border-radius:10px; overflow:hidden}
+table.cmp th, table.cmp td{white-space:normal; vertical-align:top; padding:10px 12px}
+table.cmp tr.rec td{background:var(--accent-soft)}
+.tag{display:inline-block; font-size:11.5px; font-weight:600; padding:1px 8px; border-radius:99px; background:var(--accent); color:var(--surface)}
+.shots{display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="muted small">Improvement after WARE-43 and WARE-44 · proposal and interactive mockup · 2026-11-20</p>
+<h1>Checkboxes only while exporting</h1>
+<p class="lede">Today every list has a checkbox column that is always on, so a row has two jobs (open it, or tick it), and phones can't tick at all. The proposal: a list shows no checkboxes until you start an action that needs them. <strong>Export</strong> (and, on SIM Cards, <strong>Change Status</strong>) puts the list into a <em>select mode</em>: the checkboxes appear, a bar names the action and counts the rows, and leaving the mode puts the list back as it was.</p>
+
+<div class="callout"><strong>Recommendation: start with the action, then pick the rows.</strong> The checkboxes only appear when an action needs them, the bar always says what the selection is for, a row tap in the mode ticks it instead of opening it, and phones can finally pick rows. On a list without selection, Export works as it does now.</div>
+
+<h2>Try it</h2>
+<p class="small muted">Click <strong>Export</strong>, tick rows (click anywhere on a row), then <strong>Export n…</strong> or <strong>Export all…</strong>. <span class="kbd">Esc</span> or Cancel leaves the mode. On SIM Cards, Change Status uses the same mode. Switch to Phone to see the bottom bar.</p>
+<div class="controls">
+  <span><label>List</label><span class="seg" id="listSeg"><button data-v="employees" aria-pressed="true">Employees</button><button data-v="sims" aria-pressed="false">SIM Cards</button><button data-v="orders" aria-pressed="false">Orders (paged)</button></span></span>
+  <span><label>Device</label><span class="seg" id="devSeg"><button data-v="desktop" aria-pressed="true">Desktop</button><button data-v="phone" aria-pressed="false">Phone</button></span></span>
+  <button class="btn sm" id="reset">Start over</button>
+</div>
+<div class="stage"><div class="app" id="app"></div></div>
+<p class="log" id="log" aria-live="polite"></p>
+
+<h2>How it behaves</h2>
+<ol>
+  <li><strong>Browsing</strong> (the default): no checkbox column. A row opens its record, as before WARE-43. The header keeps <strong>Export</strong>; on a phone it's in ⋯.</li>
+  <li><strong>Export</strong> enters select mode, with nothing ticked:
+    <ul>
+      <li>The checkbox column appears, with the header checkbox for all shown.</li>
+      <li>Above the list, the bar reads "Export Employees · Tick the rows to export, or export them all" with <em>Export n…</em> (primary, off at 0), <em>Export all n…</em> and <em>Cancel</em>.</li>
+      <li>On a phone the bar sits at the bottom, above the tab bar, with 44&nbsp;px buttons in thumb reach.</li>
+      <li>Focus moves to the bar and a screen reader hears its words.</li>
+    </ul>
+  </li>
+  <li><strong>In the mode:</strong>
+    <ul>
+      <li>Tapping or clicking a row ticks it, and the record doesn't open. The name stays a link: ⌘/Ctrl-click opens it in a new tab.</li>
+      <li>The tabs, search and sort still work, and the selection is kept for the rows still shown.</li>
+      <li>The row actions (Edit Sizes, ⋯) are hidden, so nothing else competes with picking.</li>
+      <li><span class="kbd">Space</span> ticks the focused row and <span class="kbd">Esc</span> leaves the mode.</li>
+    </ul>
+  </li>
+  <li><strong>Export n…</strong> or <strong>Export all…</strong> opens the Export sheet. The rows are already decided, so the sheet shows them as a summary with a <em>Change</em> link back to the list, then the columns and the format. The Rows radio goes away.</li>
+  <li><strong>After the file downloads</strong>, the mode ends and the selection clears. <em>Cancel</em> or <span class="kbd">Esc</span> ends it at any time.</li>
+  <li><strong>Lists loaded page by page</strong> (Orders, SIM Cards, Equipment):
+    <ul>
+      <li><em>Export all…</em> reads "Export all 70 matching…" and exports every page.</li>
+      <li>Ticking works on the page shown and is kept when you move to another page, so you can tick across pages.</li>
+    </ul>
+  </li>
+  <li><strong>SIM Cards' Change Status</strong> becomes a header action (for <code>sim_cards.manage</code>) that enters the same mode. Its bar reads "Change Status · n selected" with a status menu instead of Export. One list is only ever in one mode at a time.</li>
+</ol>
+
+<h2>Options considered</h2>
+<table class="cmp">
+<tr><th>Option</th><th>How it works</th><th>For</th><th>Against</th></tr>
+<tr><td>A · Always on <span class="muted small">(today, WARE-43/44)</span></td><td>A checkbox column on every table; the bar appears when one is ticked.</td><td>One click to tick; known from mail apps.</td><td>Noise on every list for a rare action. A row both opens and ticks. Phones have no selection. A ticked row says nothing about what it's for.</td></tr>
+<tr class="rec"><td>B · Action first <span class="tag">Recommended</span></td><td>Export (or Change Status) enters the select mode; the bar names the action.</td><td>The list is calm while browsing. The action is clear. Rows are easy to tap. Works on phones. Each action has its own mode.</td><td>One more click to begin. The rule "row ticks in the mode" must be visible (the bar says so).</td></tr>
+<tr><td>C · A generic "Select" button</td><td>A Select toggle enters the mode; the bar lists every bulk action (Export, Change Status, …).</td><td>One mode for all actions; scales to future bulk actions.</td><td>The user picks rows before knowing what for. A menu of actions in the bar. Most lists have only Export, so a Select button there is indirection.</td></tr>
+</table>
+<p class="small muted">If more bulk actions arrive later, B grows into C naturally: the bar's main action becomes a menu.</p>
+
+<h2>What changes in the code</h2>
+<ul>
+  <li><code>@ppe/ui</code>:
+    <ul>
+      <li><code>useSelection</code> gains <code>mode</code> (null or the action's key) with <code>start(action)</code> and <code>end()</code>; ending clears the selection.</li>
+      <li><code>SelectionBar</code> becomes <code>SelectModeBar</code>: the action's title and hint, the count, the action's buttons, Cancel; sticky on top from md and a bottom bar below.</li>
+      <li><code>RowCheckbox</code> and <code>SelectAllCheckbox</code> render only in the mode.</li>
+      <li>A <code>useSelectModeRow(id)</code> helper turns a row's click into a toggle while the mode is on (links still open on ⌘/Ctrl-click).</li>
+    </ul>
+  </li>
+  <li><code>ExportSheet</code>: <code>rows</code> becomes fixed ("3 employees", "all 70 matching"), shown as a summary with <em>Change</em> (back to the mode). <code>onExported</code> ends the mode.</li>
+  <li><strong>Every list from WARE-43/44:</strong>
+    <ul>
+      <li>The header's Export starts the mode instead of opening the sheet.</li>
+      <li>Lists without a table (Item Sets, Replacements, Items given) keep Export opening the sheet straight away.</li>
+      <li>The stacked phone list shows checkboxes in the mode too, so the mode bar replaces the phone's "exports all shown" rule.</li>
+    </ul>
+  </li>
+  <li><strong>SIM Cards:</strong> Change Status in the header (manage only) starts its own mode; the bulk status menu moves into that bar.</li>
+  <li><strong>Tests:</strong>
+    <ul>
+      <li>Unit tests for the mode in <code>use-selection</code>.</li>
+      <li>e2e:
+        <ul>
+          <li>the Employees, Orders/Users and SIM Cards steps go through the mode;</li>
+          <li>the steps that adjusted for the checkbox cell (the Catalogue sort, the Roles rows) go back to their first forms.</li>
+        </ul>
+      </li>
+      <li>"No screen scrolls sideways" covers a list in the mode at phone width.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>Done when</h3>
+<ul>
+  <li>No list shows checkboxes while browsing. Export and Change Status start the mode; Cancel, <span class="kbd">Esc</span> and a finished export end it.</li>
+  <li>In the mode a row tap ticks and never opens the record. The count, Export n… and Export all… are right after filtering and paging.</li>
+  <li>Phones can tick rows, with the bar at the bottom and 44 px targets.</li>
+  <li>The words are in EN, LT and RU: "Export Employees", "Tick the rows to export, or export them all", "Export 3…", "Export all 142…", "Cancel". "Select mode" is added to the glossary and <code>ui-language.md</code>.</li>
+  <li>Screenshots on desktop and phone, and e2e green.</li>
+</ul>
+</div>
+
+<script>
+(() => {
+  const data = {
+    employees: { title: 'Employees', noun: ['employee', 'employees'], cols: ['Name', 'Code', 'Height', 'Clothing', 'Shoes'], paged: false,
+      rows: [
+        ['AA','ABDULLOEV ALIASKAR','167','170 cm','M (48–50)','39'], ['AR','AHAMED RONY','059','160 cm','M (48–50)','40'],
+        ['AI','Aleksandr Ivanov','W-006','189 cm','2XL (60–62)','46'], ['AA','ANIYAN ANEESH','200','172 cm','XL (56–58)','42'],
+        ['AA','ANOPKO ANTON','162','180 cm','L (52–54)','43'], ['AA','ANTONY ALAN','105','170 cm','M (48–50)','40'],
+        ['AV','ARNST VIKTOR','007','176 cm','L (52–54)','43'], ['OK','Ona Kazlauskienė','W-002','165 cm','S (44–46)','39'] ] },
+    sims: { title: 'SIM Cards', noun: ['SIM card', 'SIM cards'], cols: ['Phone / SIM', 'Employee', 'Provider', 'Status'], paged: true, total: 6, changeStatus: true,
+      rows: [
+        ['','+370 612 40118','Ona Kazlauskienė','Telia','Active'], ['','656 12345','Office','Bitė','Not Activated'],
+        ['','(657) 11223','Office','Bitė','Active'], ['','No phone number yet','Office','Bitė','Not Activated'],
+        ['','No phone number yet','Office','Bitė','Not Activated'], ['','No phone number yet','Office','Bitė','Not Activated'] ] },
+    orders: { title: 'Orders', noun: ['order', 'orders'], cols: ['Record', 'Employee', 'Date', 'Status', 'Total value'], paged: true, total: 70,
+      rows: [
+        ['','WE-000078','NEELIVEEDU JOSEPH REJIMON','Today 12:29','Given','€292.50'], ['','WE-000076','ISLAM MD ASHRAFUL','Today 11:31','Ordered','€150.00'],
+        ['','WE-000075','PALANJIL SAJEEVAN ABHIJITH','5 days ago','Ordered','€25.00'], ['','WE-000074','THOMAS BINU','5 days ago','Ordered','€150.00'],
+        ['','WE-000073','SAJI SADANAM SAJI KUMAR','5 days ago','Ordered','€175.00'], ['','WE-000072','ANIYAN ANEESH','5 days ago','Ordered','€150.00'] ] },
+  }
+  const state = { list: 'employees', device: 'desktop', mode: null, picked: new Set(), q: '', sheet: null, menu: false, toast: '' }
+  const app = document.getElementById('app'), log = document.getElementById('log')
+  const say = (s) => { log.textContent = s }
+  const cfg = () => data[state.list]
+  const shown = () => cfg().rows.map((r, i) => ({ r, i })).filter(({ r }) => !state.q || r.join(' ').toLowerCase().includes(state.q.toLowerCase()))
+  const picked = () => shown().filter(({ i }) => state.picked.has(i))
+  const allCount = () => (cfg().paged ? cfg().total : shown().length)
+  const plural = (n) => `${n} ${n === 1 ? cfg().noun[0] : cfg().noun[1]}`
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+  const dl = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>'
+
+  function startMode(action) {
+    state.mode = action; state.picked = new Set(); state.menu = false; state.entering = true
+    say(action === 'export' ? `Select mode: Export ${cfg().title}. Tick rows, or export them all.` : 'Select mode: Change Status. Tick the SIM cards to change.')
+    render(); app.querySelector('.modebar, .pbar')?.focus()
+  }
+  function endMode(msg) { state.mode = null; state.picked = new Set(); state.sheet = null; if (msg) say(msg); render() }
+  function toggle(i) { state.picked.has(i) ? state.picked.delete(i) : state.picked.add(i); render() }
+  function setAll(on) { for (const { i } of shown()) on ? state.picked.add(i) : state.picked.delete(i); render() }
+  function openSheet(which) { state.sheet = which; render() }
+  function finish() {
+    const n = state.sheet === 'picked' ? picked().length : allCount()
+    const name = `${cfg().title} 2026-11-20.xlsx`
+    state.toast = `${name} downloaded · ${plural(n)}`
+    endMode(`Exported ${plural(n)}; the list is back to browsing.`)
+    setTimeout(() => { state.toast = ''; render() }, 2600)
+  }
+  function changeStatus(to) {
+    const n = picked().length
+    for (const { i } of picked()) cfg().rows[i][4] = to
+    endMode(`${n} SIM ${n === 1 ? 'card' : 'cards'}: status changed to ${to}.`)
+  }
+
+  const statusBadge = (s) => `<span class="badge ${s === 'Given' || s === 'Active' ? 'ok' : ''}">${esc(s)}</span>`
+  function cells(r) {
+    if (state.list === 'employees') return `<td><span class="av">${r[0]}</span><span class="lnk">${esc(r[1])}</span></td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td>`
+    if (state.list === 'sims') return `<td class="mono"><span class="lnk">${esc(r[1])}</span></td><td>${esc(r[2])}</td><td>${r[3]}</td><td>${statusBadge(r[4])}</td>`
+    return `<td><span class="lnk">${r[1]}</span></td><td>${esc(r[2])}</td><td>${r[3]}</td><td>${statusBadge(r[4])}</td><td style="text-align:right">${r[5]}</td>`
+  }
+  function phoneRow(r) {
+    if (state.list === 'employees') return `<span class="av">${r[0]}</span><div>${esc(r[1])}<small>${r[2]} · ${r[3]} · ${r[4]} · ${r[5]}</small></div>`
+    if (state.list === 'sims') return `<div class="mono">${esc(r[1])}<small style="font-family:var(--font)">${esc(r[2])} · ${r[3]} · ${r[4]}</small></div>`
+    return `<div>${esc(r[2])}<small>${r[1]} · ${r[3]} · ${r[5]}</small></div>`
+  }
+
+  function modeBar() {
+    const n = picked().length, all = allCount()
+    if (state.mode === 'status') return `<div class="modebar${state.entering ? ' enter' : ''}" tabindex="-1" role="region" aria-label="Change Status">
+      <span class="what">Change Status</span><span class="count">${n} selected</span>
+      <select class="btn sm" id="statusSel" ${n ? '' : 'disabled'}><option value="">Change to…</option><option>Active</option><option>Blocked</option><option>Not Activated</option></select>
+      <button class="btn sm ghost" data-act="cancel">Cancel</button>
+      <span class="hint">Tick the SIM cards to change. <span class="kbd">Esc</span> leaves.</span></div>`
+    return `<div class="modebar${state.entering ? ' enter' : ''}" tabindex="-1" role="region" aria-label="Export ${cfg().title}">
+      <span class="what">Export ${cfg().title}</span><span class="count">${n} selected</span>
+      <button class="btn sm pri" data-act="export-picked" ${n ? '' : 'disabled'}>${dl}Export ${n || ''}…</button>
+      <button class="btn sm" data-act="export-all">Export all ${all}${cfg().paged ? ' matching' : ''}…</button>
+      <button class="btn sm ghost" data-act="cancel">Cancel</button>
+      <span class="hint">Tick the rows to export, or export them all. Clicking a row ticks it; <span class="kbd">Esc</span> leaves.</span></div>`
+  }
+  function phoneBar() {
+    const n = picked().length, all = allCount()
+    if (state.mode === 'status') return `<div class="pbar${state.entering ? ' enter' : ''}" tabindex="-1" role="region" aria-label="Change Status">
+      <div class="row1"><strong>Change Status · ${n} selected</strong><button class="btn sm ghost" data-act="cancel">Cancel</button></div>
+      <div class="row2"><select class="btn" id="statusSel" ${n ? '' : 'disabled'} style="grid-column:1/-1"><option value="">Change to…</option><option>Active</option><option>Blocked</option><option>Not Activated</option></select></div></div>`
+    return `<div class="pbar${state.entering ? ' enter' : ''}" tabindex="-1" role="region" aria-label="Export ${cfg().title}">
+      <div class="row1"><strong>Export · ${n} selected</strong><button class="btn sm ghost" data-act="cancel">Cancel</button></div>
+      <div class="row2"><button class="btn" data-act="export-all">All ${all}…</button><button class="btn pri" data-act="export-picked" ${n ? '' : 'disabled'}>${dl}Export ${n || ''}…</button></div></div>`
+  }
+  function sheet() {
+    if (!state.sheet) return ''
+    const n = state.sheet === 'picked' ? picked().length : allCount()
+    const which = state.sheet === 'picked' ? `${plural(n)} selected` : `All ${plural(n)}${cfg().paged ? ' matching the filters' : ' shown'}`
+    const cols = cfg().cols.map((c) => `<label><input type="checkbox" checked> ${c}</label>`).join('') + '<label><input type="checkbox"> Added</label><label><input type="checkbox"> Notes</label>'
+    return `<div class="scrim"><div class="sheet" role="dialog" aria-label="Export ${cfg().title}">
+      <div class="sh"><h4>Export ${cfg().title}</h4><p>A file of the rows and columns you chose.</p></div>
+      <div class="sb">
+        <div class="summary">${dl}<span><strong>${which}</strong></span><a data-act="back">Change</a></div>
+        <div><div class="lbl">Columns</div><div class="cols">${cols}</div></div>
+        <div><div class="lbl">Format</div><span class="seg"><button aria-pressed="true">Excel (.xlsx)</button><button aria-pressed="false">CSV</button></span></div>
+      </div>
+      <div class="sf"><button class="btn" data-act="back">Back</button><button class="btn pri" data-act="finish">${dl}Export (${n})</button></div></div></div>`
+  }
+
+  function render() {
+    const phone = state.device === 'phone', c = cfg(), inMode = !!state.mode, rows = shown()
+    const sel = picked().length, allState = sel === 0 ? '' : sel === rows.length ? 'checked' : 'data-some'
+    app.className = 'app' + (phone ? ' phone' : '')
+    const headerBtns = phone
+      ? `<button class="btn sm pri">+ Add</button><button class="btn sm" data-act="menu" aria-label="More actions" aria-expanded="${state.menu}">⋯</button>`
+      : `${c.changeStatus ? `<button class="btn" data-act="start-status" ${inMode ? 'disabled' : ''}>Change Status…</button>` : ''}<button class="btn" data-act="start-export" ${inMode ? 'disabled' : ''}>${dl}Export</button><button class="btn pri">+ Add</button>`
+    const menu = phone && state.menu ? `<div class="more"><button data-act="start-export">${dl}Export…</button>${c.changeStatus ? '<button data-act="start-status">Change Status…</button>' : ''}<button>Refresh</button></div>` : ''
+    const list = phone
+      ? `<div class="plist">${rows.map(({ r, i }) => `<div class="prow ${state.picked.has(i) ? 'ticked' : ''}" data-row="${i}">${inMode ? `<input type="checkbox" ${state.picked.has(i) ? 'checked' : ''} aria-label="Select ${esc(r[1])}" tabindex="-1">` : ''}${phoneRow(r)}${inMode ? '' : '<span class="chev">›</span>'}</div>`).join('')}</div>`
+      : `<table><thead><tr>${inMode ? `<th class="cbcell"><input type="checkbox" data-act="all" ${allState === 'checked' ? 'checked' : ''} aria-label="Select every row shown"></th>` : ''}${c.cols.map((h) => `<th>${h}</th>`).join('')}${inMode ? '' : '<th style="text-align:right">Actions</th>'}</tr></thead>
+         <tbody>${rows.map(({ r, i }) => `<tr class="row ${state.picked.has(i) ? 'ticked' : ''}" data-row="${i}">${inMode ? `<td class="cbcell"><input type="checkbox" ${state.picked.has(i) ? 'checked' : ''} aria-label="Select ${esc(r[1])}" tabindex="-1"></td>` : ''}${cells(r)}${inMode ? '' : '<td style="text-align:right"><button class="btn sm">Edit</button> ⋯</td>'}</tr>`).join('')}</tbody></table>`
+    app.innerHTML = `<div class="screen">
+      <div class="hdr"><span class="t">${c.title}</span>${headerBtns}</div>${menu}
+      ${inMode && !phone ? modeBar() : ''}
+      <div class="filters"><input class="search" placeholder="Search" value="${esc(state.q)}" id="q"></div>
+      ${list}
+      ${c.paged ? `<p class="small muted" style="margin-top:10px">${c.total} ${c.noun[1]} · Page 1 of ${Math.ceil(c.total / 20)}</p>` : ''}
+    </div>${inMode && phone ? phoneBar() : ''}${phone ? '<div class="tabbar"><span>Home</span><span>Orders</span><span>New order</span><span>Employees</span><span>More</span></div>' : ''}
+    ${sheet()}${state.toast ? `<div class="toast" role="status">${esc(state.toast)}</div>` : ''}`
+    const all = app.querySelector('[data-act=all]'); if (all) all.indeterminate = allState === 'data-some'
+    state.entering = false
+  }
+
+  app.addEventListener('click', (e) => {
+    const act = e.target.closest('[data-act]')?.dataset.act
+    if (act === 'menu') { state.menu = !state.menu; return render() }
+    if (act === 'start-export') return startMode('export')
+    if (act === 'start-status') return startMode('status')
+    if (act === 'cancel') return endMode('Left select mode; nothing was exported.')
+    if (act === 'export-picked') return openSheet('picked')
+    if (act === 'export-all') return openSheet('all')
+    if (act === 'back') { state.sheet = null; return render() }
+    if (act === 'finish') return finish()
+    if (act === 'all') return setAll(e.target.checked)
+    const row = e.target.closest('[data-row]')
+    if (!row) return
+    if (state.mode) return toggle(Number(row.dataset.row))
+    say(`Browsing: a row opens its record (${cfg().rows[row.dataset.row][1]}).`)
+  })
+  app.addEventListener('change', (e) => { if (e.target.id === 'statusSel' && e.target.value) changeStatus(e.target.value) })
+  app.addEventListener('input', (e) => { if (e.target.id === 'q') { state.q = e.target.value; render(); const q = app.querySelector('#q'); q.focus(); q.setSelectionRange(q.value.length, q.value.length) } })
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && state.mode) { if (state.sheet) { state.sheet = null; render() } else endMode('Left select mode; nothing was exported.') } })
+  const seg = (id, key) => document.getElementById(id).addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return
+    state[key] = b.dataset.v; state.mode = null; state.picked = new Set(); state.sheet = null; state.menu = false; state.q = ''; state.toast = ''
+    for (const x of e.currentTarget.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b))
+    say(''); render()
+  })
+  seg('listSeg', 'list'); seg('devSeg', 'device')
+  document.getElementById('reset').addEventListener('click', () => { state.mode = null; state.picked = new Set(); state.sheet = null; state.q = ''; state.menu = false; say(''); render() })
+  render()
+})()
+</script>
+</body>
+</html>

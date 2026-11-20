@@ -760,11 +760,23 @@ Rules for using it:
   A list loaded page by page (Orders, SIM Cards, Equipment) offers "All matching the filters (n)"
   instead of All shown: every page matching its tab, filters and sort, fetched when exporting.
   A log loaded page by page as it is read (System's Errors) exports what is shown.
+  Since WARE-45 Export starts select mode: the rows are ticked on the list, then the sheet shows
+  them ("3 selected", Change) instead of asking.
   Employees first (WARE-43), then every list (WARE-44); the plan and mockups are
   `docs/ux/list-export.html`.
 - **Code:** `@ppe/ui` `lib/table-export.ts`, `lib/use-selection.ts`, `components/export-sheet.tsx`,
   `components/selection-bar.tsx`; Employees' columns `apps/workwear/src/lib/employee-export.ts`.
   **UI:** Export (screen header, ⋯ on a phone), the selection bar's Export…, the Export sheet.
+
+### Select mode
+- **Brief:** the state of a list while an action picks its rows: the action's button (Export,
+  Change Status…) starts it, and checkboxes and a bar naming the action appear. EN "select
+  mode" (builders' word; readers see "3 selected", "Tick the rows…"), LT "žymėjimo režimas",
+  RU "режим выбора".
+- **Detail:** a click on a row ticks it instead of opening it. Cancel, Escape or the finished
+  action ends the mode. No list shows checkboxes outside it (WARE-45, `docs/ux/export-select-mode.html`).
+- **Code:** `@ppe/ui` `lib/use-selection.ts`, `components/selection-bar.tsx` (`SelectModeBar`),
+  `components/export-mode.tsx`.
 
 ### Changes (of a record)
 - **Brief:** the section of an employee's, a catalogue item's or an order's page listing
