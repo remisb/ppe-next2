@@ -3,10 +3,9 @@ import { useApi } from '@ppe/app-shell'
 import { Button } from '@ppe/ui/components/button'
 import { CopyButton } from '@ppe/ui/components/copy-button'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@ppe/ui/components/tooltip'
 import { formatTime } from '@ppe/ui/lib/dates'
-import { KeyRound } from 'lucide-react'
-import { useCallback, useEffect, useId, useState } from 'react'
+import type { RecordAction } from '@ppe/ui/lib/record-actions'
+import { type ReactNode, useCallback, useEffect, useState } from 'react'
 
 import { t } from '@/i18n'
 import { minutesSeconds } from '@/lib/assets'
@@ -15,30 +14,31 @@ import { minutesSeconds } from '@/lib/assets'
 export const CODES_SHOWN_SECONDS = 60
 
 /**
- * Show PIN and PUK (WARE-37): a key among a SIM card's actions, for whoever
+ * Show PIN and PUK (WARE-37): a key among a SIM card's tools, for whoever
  * sees SIM cards, and the window it opens. The codes are asked for only on
  * the click, which the API records (asset.sim_codes_shown, the card's
  * Changes), and are dropped from the page when the window closes: Done, ✕,
  * Escape, CODES_SHOWN_SECONDS, or the tab going to the background. A card
- * with none has the key greyed out, its tooltip saying so.
+ * with none has the key greyed out, its tooltip saying so. Returns the key as
+ * the card's action bar draws it, and the window, drawn wherever the card is.
  */
-export function SimCodesKey({
+export function useSimCodes({
   asset,
   timeZone,
   onShown,
   onMissing,
   onError,
 }: {
-  asset: Asset
+  /** The card; none while it loads. */
+  asset: Asset | undefined
   timeZone: string | undefined
   /** The codes were shown, so recorded: the card's Changes load again. */
   onShown: () => void
   /** The card has no codes after all (someone removed them meanwhile): say so and load it again. */
   onMissing: (message: string) => void
   onError: (err: unknown) => void
-}) {
+}): { action: RecordAction; sheet: ReactNode } {
   const { client } = useApi()
-  const reasonId = useId()
   const [codes, setCodes] = useState<SimCodes | null>(null)
   const [shownAt, setShownAt] = useState('')
   const [busy, setBusy] = useState(false)
@@ -46,6 +46,7 @@ export function SimCodesKey({
   const close = useCallback(() => setCodes(null), [])
 
   const show = async () => {
+    if (!asset) return
     setBusy(true)
     try {
       const c = await client.assets.showSimCodes(asset.id)
@@ -60,37 +61,18 @@ export function SimCodesKey({
     }
   }
 
-  const key = <KeyRound aria-hidden />
-  return (
-    <>
-      {asset.has_sim_codes ? (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button variant="outline" size="icon" aria-label={t.assets.showCodes} disabled={busy} onClick={() => void show()}>
-                {key}
-              </Button>
-            }
-          />
-          <TooltipContent aria-hidden>{busy ? t.assets.showingCodes : t.assets.showCodes}</TooltipContent>
-        </Tooltip>
-      ) : (
-        // A disabled button takes no pointer, so its tooltip hangs on a wrapper; a screen reader hears why from the button.
-        <Tooltip>
-          <TooltipTrigger render={<span className="inline-flex" />}>
-            <Button variant="outline" size="icon" disabled aria-label={t.assets.showCodes} aria-describedby={reasonId}>
-              {key}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent aria-hidden>{t.assets.noCodes}</TooltipContent>
-          <span id={reasonId} hidden>
-            {t.assets.noCodes}
-          </span>
-        </Tooltip>
-      )}
-      <SimCodesSheet asset={asset} codes={codes} shownAt={shownAt} timeZone={timeZone} onClose={close} />
-    </>
-  )
+  return {
+    action: {
+      id: 'showCodes',
+      label: t.assets.showCodes,
+      icon: 'codes',
+      place: 'tool',
+      pending: busy,
+      disabledReason: asset?.has_sim_codes ? undefined : t.assets.noCodes,
+      run: () => void show(),
+    },
+    sheet: asset ? <SimCodesSheet asset={asset} codes={codes} shownAt={shownAt} timeZone={timeZone} onClose={close} /> : null,
+  }
 }
 
 /**

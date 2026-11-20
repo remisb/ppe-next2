@@ -1,16 +1,10 @@
 import type { ConfirmationLink, Order, SupplierChat, WaitingLink } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
-import { Button } from '@ppe/ui/components/button'
-import { DropdownMenuItem } from '@ppe/ui/components/dropdown-menu'
-import { MoreActions } from '@ppe/ui/components/more-actions'
 import { Fact, FactGrid } from '@ppe/ui/components/facts'
-import { ShortWords } from '@ppe/ui/components/page-header'
 import { RecordHeader, RecordTitle, type RecordNav } from '@ppe/ui/components/record-header'
 import { ActionError, Loaded } from '@ppe/ui/components/states'
 import { useLoad } from '@ppe/ui/lib/use-load'
-import { cn } from '@ppe/ui/lib/utils'
-import { ChevronDown, FileText, Handshake, Link2, MessageCircle, PenLine, Printer } from 'lucide-react'
 import { useId, useState } from 'react'
 
 import { ConfirmationLinkView } from '@/components/confirmation-sheet'
@@ -23,7 +17,8 @@ import { linkVariants } from '@ppe/ui/components/link'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { PaneBar } from '@ppe/ui/components/list-detail'
 import { OrderStatusBadge, OrderWait } from '@/components/order-status'
-import { deleteQuestion, historyActions, waitingDays } from '@/lib/history'
+import { deleteQuestion, waitingDays } from '@/lib/history'
+import { orderActions } from '@/lib/order-actions'
 import { type Route, linkTo } from '@/lib/router'
 import { useOpenKey } from '@/lib/open-sections'
 import { formatWhatsApp, messageFromOrder } from '@/lib/whatsapp'
@@ -119,19 +114,15 @@ export function OrderDetail({
 
 /**
  * The order as the item pane shows an item (guidelines, "The detail pane"): its
- * record number with the main action and ⋯ in the corner, who it is for, its
- * status, its facts between rules, then the rest of its actions, all above
- * the lines, so a long order never pushes them off a phone's screen.
+ * record number on a row of its own, its actions in the bar under it
+ * (orderActions: the main action with its words, the tools, ⋯), who it is
+ * for, its status and its facts between rules, all above the lines, so a
+ * long order never pushes them off a phone's screen.
  *
- * ORDERED: Create confirmation link is the main action (electronic; the link
- * then shows right below the header, and the button becomes Confirmation
- * link, which collapses and expands it), then Hand over now (the employee
- * confirms on this device, at the counter), Print Order (prints the record)
- * and Mark as Signed & Given (records the signed paper copy). GIVEN: View
- * Order is the main action, then Print Order (both the record). In either
- * state ⋯ holds Copy for WhatsApp (the supplier message again), which says
- * nothing once copied (only when copying is blocked does the text show below
- * the header), and Delete order, a manager's, last.
+ * Create confirmation link (electronic) shows the link right below the
+ * header, and becomes Confirmation link, which collapses and expands it. Copy
+ * for WhatsApp says nothing once copied; only when copying is blocked does
+ * the text show below the header.
  */
 function OrderBody({
   order: o,
@@ -161,12 +152,10 @@ function OrderBody({
   const [linkOpen, setLinkOpen] = useState(false)
   const linkId = useId()
   const action = useAction()
-  const actions = historyActions(o.status)
   const name = `${o.employee_first_name} ${o.employee_last_name}`
   const days = o.status === 'ORDERED' ? waitingDays(o.ordered_at, new Date(), timeZone) : 0
   const whatsappText = formatWhatsApp(messageFromOrder(o))
   const whatsapp = useWhatsAppCopy(whatsappText)
-  const copyWhatsApp = actions.includes('copyWhatsApp')
   // The link the order waits on: the one just made here, else the one the API knows of.
   const waiting = link ? { created_at: link.made_at, expires_at: link.expires_at, opened_at: null } : o.link
 
@@ -179,65 +168,37 @@ function OrderBody({
       { confirm: t.history.recordPaperQuestion(name, o.record_number) },
     )
 
-  // Create confirmation link makes the link and opens it below the header; the button then becomes
+  const createLink = () =>
+    void action.run(
+      async () => {
+        setLink({ ...(await client.orders.createConfirmationLink(o.id)), made_at: new Date().toISOString() })
+        setLinkOpen(true)
+      },
+      // A link made earlier (on another visit or device) would stop working without a word: ask first (S11).
+      o.link ? { confirm: t.history.replaceLinkQuestion(formatDateTime(o.link.created_at, timeZone)) } : {},
+    )
+
+  // Create confirmation link makes the link and opens it below the header; the main action then becomes
   // Confirmation link, a disclosure (chevron, aria-expanded) that hides and shows that same link,
   // never making another, which would replace it.
-  const main = actions.includes('createLink') ? (
-    link ? (
-      <Button variant="outline" aria-expanded={linkOpen} aria-controls={linkId} onClick={() => setLinkOpen((v) => !v)}>
-        <Link2 aria-hidden /> <ShortWords label={t.history.confirmationLink} short={t.history.confirmationLinkShort} />
-        <ChevronDown aria-hidden className={cn('transition-transform motion-reduce:transition-none', linkOpen && 'rotate-180')} />
-      </Button>
-    ) : (
-      <Button
-        disabled={action.pending}
-        onClick={() =>
-          void action.run(
-            async () => {
-              setLink({ ...(await client.orders.createConfirmationLink(o.id)), made_at: new Date().toISOString() })
-              setLinkOpen(true)
-            },
-            // A link made earlier (on another visit or device) would stop working without a word: ask first (S11).
-            o.link ? { confirm: t.history.replaceLinkQuestion(formatDateTime(o.link.created_at, timeZone)) } : {},
-          )
-        }
-      >
-        <Link2 aria-hidden /> <ShortWords label={t.history.createLink} short={t.history.createLinkShort} />
-      </Button>
-    )
-  ) : actions.includes('viewRecord') ? (
-    <Button variant="outline" onClick={() => onOpenRecord(false)}>
-      <FileText aria-hidden /> <ShortWords label={t.history.viewOrder} short={t.history.viewOrderShort} />
-    </Button>
-  ) : null
+  const actions = orderActions(
+    o,
+    { link: link ? { open: linkOpen, id: linkId } : null, pending: action.pending },
+    {
+      createLink,
+      toggleLink: () => setLinkOpen((v) => !v),
+      viewRecord: () => onOpenRecord(false),
+      printRecord: () => onOpenRecord(true),
+      sign,
+      handOver: onHandOver,
+      copyWhatsApp: () => void whatsapp.copy(),
+      remove: onDelete,
+    },
+  )
 
   return (
     <>
-      <RecordHeader
-        className="mb-0"
-        nav={nav}
-        title={<RecordTitle>{o.record_number}</RecordTitle>}
-        actions={
-          <>
-            {main}
-            {copyWhatsApp || onDelete ? (
-              <MoreActions label={t.common.moreActions(o.record_number)}>
-                {copyWhatsApp ? (
-                  <DropdownMenuItem onClick={() => void whatsapp.copy()}>
-                    {/* WhatsApp's green, as on Create Order's button. */}
-                    <MessageCircle aria-hidden className="text-whatsapp" /> {t.order.copyForWhatsApp}
-                  </DropdownMenuItem>
-                ) : null}
-                {onDelete ? (
-                  <DropdownMenuItem variant="destructive" onClick={onDelete}>
-                    {t.history.deleteOrder}
-                  </DropdownMenuItem>
-                ) : null}
-              </MoreActions>
-            ) : null}
-          </>
-        }
-      >
+      <RecordHeader className="mb-0" nav={nav} title={<RecordTitle>{o.record_number}</RecordTitle>} actions={actions} moreLabel={t.common.moreActions(o.record_number)}>
         <p className="mt-1 font-medium">
           <a {...linkTo({ name: 'employee', id: o.employee_id }, navigate)} className={linkVariants()}>
             {name}
@@ -257,7 +218,7 @@ function OrderBody({
           </section>
         ) : null}
       </div>
-      {copyWhatsApp && whatsapp.state === 'manual' ? (
+      {whatsapp.state === 'manual' ? (
         <section aria-label={t.order.copyForWhatsApp} className="flex flex-col gap-1.5">
           <WhatsAppCopyStatus state={whatsapp.state} text={whatsappText} chat={supplierChat} />
         </section>
@@ -270,25 +231,6 @@ function OrderBody({
         {o.confirmation_method ? <Fact label={t.history.confirmedLabel}>{t.history.confirmedHow[o.confirmation_method]}</Fact> : null}
         {waiting ? <Fact label={t.history.confirmationLink} wide>{linkState(waiting, timeZone)}</Fact> : null}
       </FactGrid>
-      {actions.some((a) => a === 'handOver' || a === 'printRecord' || a === 'sign') ? (
-        <div className="grid gap-2 sm:flex sm:flex-wrap">
-          {actions.includes('handOver') ? (
-            <Button variant="outline" onClick={onHandOver}>
-              <Handshake aria-hidden /> {t.history.handOverNow}
-            </Button>
-          ) : null}
-          {actions.includes('printRecord') ? (
-            <Button variant="outline" onClick={() => onOpenRecord(true)}>
-              <Printer aria-hidden /> {t.history.printOrder}
-            </Button>
-          ) : null}
-          {actions.includes('sign') ? (
-            <Button variant="outline" disabled={action.pending} onClick={sign}>
-              <PenLine aria-hidden className="text-warning" /> {t.history.sign}
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
     </>
   )
 }

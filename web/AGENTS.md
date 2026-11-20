@@ -248,7 +248,12 @@ The workwear app is the reference.
   parts are siblings in its `<article>`, so the row sticks the length of the record: never
   wrap `RecordHeader` in a box of its own. The list and an open record are one element in
   `app.tsx`, so the list keeps its state when a record opens. The row's actions live in the
-  detail, not in an Actions column. Beside a detail the list drops to the columns that
+  detail, not in an Actions column. A record's actions are data: one function per record kind
+  returns its `RecordAction[]` (`lib/order-actions.ts`, `asset-actions.ts`,
+  `employee-actions.ts`), which `RecordHeader`'s `actions` draws as its action bar (the main
+  action with its words, icon tools from `actionIcons`, ⋯), never free buttons in the row or
+  the body (docs/ux/record-actions.md). A new icon meaning goes into `actionIcons` first; a
+  main action over 24 characters needs `short` words (`record-actions-budget.test.ts`). Beside a detail the list drops to the columns that
   find the next record (Orders: no Usage time, no time of day, the wait as the status;
   SIM Cards: Numbers, Employee, Status, Location; Equipment: Inventory No., Item, Held By;
   Item Catalogue: Item, Price, Status)

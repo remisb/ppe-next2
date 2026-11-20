@@ -2019,17 +2019,15 @@ test('Employees: a possible duplicate is caught on Add and merged', async () => 
   await expect(page.getByRole('row', { name: /Kazlausk/i })).toHaveCount(1)
   await expect(notice).toHaveCount(0)
 
-  // Edit details on the employee open beside the list saves her, not the list's own (closed) form.
-  await page.getByRole('complementary', { name: 'Employee' }).getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
-  await page.getByRole('menuitem', { name: 'Edit details' }).click()
+  // Edit details on the employee open beside the list (a tool in its action bar) saves her, not the list's own (closed) form.
+  await page.getByRole('complementary', { name: 'Employee' }).getByRole('button', { name: 'Edit details' }).click()
   const edit = page.getByRole('dialog', { name: 'Edit Employee' })
   await edit.getByLabel('Notes').fill('Prefers Russian. Collects on Fridays. One record since November.')
   await edit.getByRole('button', { name: 'Save' }).click()
   await expect(edit).toBeHidden()
   await expect(page.getByRole('complementary', { name: 'Employee' }).getByRole('definition').filter({ hasText: 'One record since November.' })).toBeVisible()
   // Her note as it was, for the later steps.
-  await page.getByRole('complementary', { name: 'Employee' }).getByRole('button', { name: 'More actions for Ona Kazlauskienė' }).click()
-  await page.getByRole('menuitem', { name: 'Edit details' }).click()
+  await page.getByRole('complementary', { name: 'Employee' }).getByRole('button', { name: 'Edit details' }).click()
   await edit.getByLabel('Notes').fill('Prefers Russian. Collects on Fridays.')
   await edit.getByRole('button', { name: 'Save' }).click()
   await expect(edit).toBeHidden()
@@ -2249,8 +2247,9 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(pane.getByText('No one')).toBeVisible()
   // Edit adds the phone number (a card without one could be given all the same).
   await pane.getByRole('button', { name: 'More actions for SIM-000001' }).click()
-  // Not given yet: no form to print again.
+  // Not given yet: no form to print again, in ⋯ or as a tool.
   await expect(page.getByRole('menuitem', { name: 'Print Form' })).toHaveCount(0)
+  await expect(pane.getByRole('button', { name: 'Print Form', exact: true })).toHaveCount(0)
   await page.getByRole('menuitem', { name: 'Edit' }).click()
   const edit = page.getByRole('dialog')
   await edit.getByLabel('Phone No.').fill('+370 612 40118')
@@ -2329,11 +2328,10 @@ test('Company Assets: give a SIM against its printed form, mark it not returned,
   await expect(assignments.getByRole('button', { name: 'Print form again' })).toBeVisible()
   await expect(assignments.getByRole('button', { name: 'Download PDF' })).toBeVisible()
   await expect(pane.getByRole('button', { name: 'Give SIM' })).toHaveCount(0)
-  // Held, the signed form prints again from ⋯ as often as asked, without opening Assignments.
+  // Held, the signed form prints again from its tool as often as asked, without opening Assignments.
   for (let i = 0; i < 2; i++) {
     const was = await printed()
-    await pane.getByRole('button', { name: 'More actions for SIM-000001' }).click()
-    await page.getByRole('menuitem', { name: 'Print Form' }).click()
+    await pane.getByRole('button', { name: 'Print Form', exact: true }).click()
     await expect.poll(printed).toBe(was + 1)
     await expect(page.locator('#print-in-place').getByText('Ona Kazlauskienė')).toBeAttached()
     await page.evaluate(() => window.dispatchEvent(new Event('afterprint')))
@@ -2494,9 +2492,9 @@ test('Company Assets: a SIM card held since the import prints a form built now, 
   await page.getByRole('row', { name: /\+370 600 00099/ }).click()
   const card = page.getByRole('article').filter({ hasText: '+370 600 00099' })
   const more = card.getByRole('button', { name: /^More actions for SIM-/ })
-  // The import leaves the Non-return Value empty, and the form needs it: Print Form says so.
-  await more.click()
-  await page.getByRole('menuitem', { name: 'Print Form' }).click()
+  // The import leaves the Non-return Value empty, and the form needs it: Print Form (a tool) says so.
+  const printForm = card.getByRole('button', { name: 'Print Form', exact: true })
+  await printForm.click()
   await expect(card.getByText('Fill in the Non-return Value with Edit: the form needs it.')).toBeVisible()
   await more.click()
   await page.getByRole('menuitem', { name: 'Edit' }).click()
@@ -2508,8 +2506,7 @@ test('Company Assets: a SIM card held since the import prints a form built now, 
   const printed = () => page.evaluate(() => (window as unknown as { __printed?: number }).__printed ?? 0)
   for (let i = 0; i < 2; i++) {
     const was = await printed()
-    await more.click()
-    await page.getByRole('menuitem', { name: 'Print Form' }).click()
+    await printForm.click()
     await expect.poll(printed).toBe(was + 1)
     const paper = page.locator('#print-in-place')
     await expect(paper.getByText('Ona Kazlauskienė')).toBeAttached()
@@ -3030,6 +3027,54 @@ test('phone and tablet: no screen scrolls sideways', async () => {
   expect(filtersBox.height, 'the filters are one row').toBeLessThan(110)
   expect((await page.locator('thead').boundingBox())!.y, 'the column heads under the filters').toBeCloseTo(filtersBox.y + filtersBox.height, 0)
   await unscrolled()
+})
+
+test('record actions: the record row is one line, its title level with the screen title, in every language', async () => {
+  // Every record kind at three widths in three languages (docs/ux/record-actions.md, Option B).
+  test.setTimeout(180_000)
+  const before = page.viewportSize()!
+  const language = async (name: 'English' | 'Lietuvių' | 'Русский', lang: string) => {
+    await page.goto('/account')
+    await page.getByRole('group', { name: /^(Language|Kalba|Язык)$/ }).getByRole('button', { name }).click()
+    await expect(page.locator('html')).toHaveAttribute('lang', lang)
+  }
+  // The record row, its title and its action bar, measured in the page.
+  const measure = () =>
+    page.evaluate(() => {
+      const row = document.querySelector('[data-slot=record-row]')!.getBoundingClientRect()
+      const title = document.querySelector('[data-slot=record-row] :is(h1, h2)')!.getBoundingClientRect()
+      const bar = document.querySelector('[data-slot=action-bar]')!.getBoundingClientRect()
+      const screen = document.querySelector('[data-slot=page-header]')?.getBoundingClientRect()
+      return { row: row.height, rowBottom: row.bottom, title: title.height, bar: bar.height, screenBottom: screen?.bottom ?? null }
+    })
+  // How each record opens from its list: the list's address, then the row's link.
+  const records: [string, string, RegExp | string][] = [
+    ['an order', '/orders', recordNumber],
+    ['an employee', '/employees', 'Ona Kazlauskienė'],
+    ['an item', '/catalogue', 'Safety shoes'],
+    ['a SIM card', '/assets/sim-cards', /^\+370 612 40118/],
+  ]
+  for (const [name, lang] of [['English', 'en'], ['Lietuvių', 'lt'], ['Русский', 'ru']] as const) {
+    await language(name, lang)
+    for (const width of [375, 1024, 1280]) {
+      await page.setViewportSize({ width, height: 800 })
+      for (const [what, list, link] of records) {
+        await page.goto(list)
+        await page.getByRole('main').getByRole('link', { name: link, exact: typeof link === 'string' }).first().click()
+        await expect(page.locator('[data-slot=action-bar]')).toBeVisible()
+        const m = await measure()
+        const at = `${what} in ${lang} at ${width}px`
+        // One line of text-xl is 28px, two 56; an item's 40px picture is in its heading too.
+        expect(m.title, `${at}: the title is one line`).toBeLessThanOrEqual(44)
+        expect(m.bar, `${at}: the actions are one line`).toBeLessThanOrEqual(53)
+        // Beside its list (from lg) the record row ends where the screen's header does, so the titles line up.
+        if (width >= 1024) expect(Math.abs(m.rowBottom - m.screenBottom!), `${at}: the row lines up with the screen's header`).toBeLessThanOrEqual(1)
+        else expect(m.row, `${at}: the row is a header's height`).toBeLessThanOrEqual(57)
+      }
+    }
+  }
+  await language('English', 'en')
+  await page.setViewportSize(before)
 })
 
 /**

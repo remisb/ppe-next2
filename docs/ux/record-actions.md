@@ -12,7 +12,7 @@ Russian at 1280px and 375px, and every action label measured in the app's font (
 14px) · paths are under `web/`, `ui` = `packages/ui/src/components`, `ww` =
 `apps/workwear/src`.
 
-Status: **proposal**. It builds on [screen-header-toolbar.md](screen-header-toolbar.md) §6
+Status: **Option B built** (WARE-46, see "As built" at the end). It builds on [screen-header-toolbar.md](screen-header-toolbar.md) §6
 (the record row) and [ui-ux-guidelines.md](ui-ux-guidelines.md) §2 (the detail pane), and
 changes three of their decisions: the record row holds only the record's identity and never
 wraps, the actions move to a bar of their own under it (with the body's row of buttons), and
@@ -458,3 +458,31 @@ will be out of date for the order pane and the SIM card; they are updated separa
 4. **Rewording in Russian and Lithuanian**: accept the shorter terms in §3, or keep the long
    ones and rely on `short`?
 5. **Screen headers too** (rollout 7), or records only?
+
+---
+
+## As built (WARE-46)
+
+Option B, in `@ppe/ui`: `RecordAction`, the icon vocabulary `actionIcons`, `layoutActions`,
+`menuGroups` and `sortActions` (`lib/record-actions.ts`, unit tested), `ActionBar`
+(`components/action-bar.tsx`) and `RecordHeader`, whose `actions` is now a `RecordAction[]`
+drawn under an identity-only record row. Records on it: Orders (`orderActions`; the body's
+button row is gone), SIM cards and Equipment (`assetActions`; Show PIN and PUK is
+`useSimCodes`' tool), employees and catalogue items (`employeeActions`, `itemActions`), and
+Administration's Manage apps (Edit). The label budget is a Vitest test over EN, LT and RU
+(`record-actions-budget.test.ts`) and the e2e step *record actions: the record row is one
+line…* checks four record kinds at 375, 1024 and 1280px in all three languages.
+
+Decided or left, against §5 and §8:
+
+- **Touch** (question 2): ⋯ lists every tool by name at the top on a touch screen; no
+  long-press.
+- ***Mark as Signed & Given*** (question 3) is a tool (✍), asking first as before.
+- **Rewording** (question 4) is not done: `short` words carry the long Russian and Lithuanian
+  labels. The short-words budget in the test is 16 characters, not 14, until the Lithuanian
+  *Sukurti nuorodą* (15) is reworded.
+- **Screen headers** (question 5, rollout 7) keep `showFrom`.
+- **List rows' ⋯** still build their own items (Employees, Item Catalogue, SIM Cards'
+  register with its statuses); reading the record kinds' models there is a follow-up.
+- The main action is filled on every record (F5), View Order and an item's Edit included.
+
