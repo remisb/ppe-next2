@@ -269,6 +269,35 @@ export const en: Guide = {
       ],
     },
     {
+      id: 'export',
+      title: 'Export a list',
+      blocks: [
+        {
+          p: '**Export** saves a list as a file for a spreadsheet: **Excel (.xlsx)** or **CSV**. It is at the top of **Orders**, **Employees**, **Item Catalogue**, **SIM Cards** and **Equipment**. On **Item Sets**, **Replacements due** and an employee\'s **Items given** it opens the **Export** window straight away, with every row.',
+        },
+        {
+          p: 'Choose **Export** at the top of the list. Checkboxes appear beside the rows, and a bar above the list says what you are doing and how many rows are ticked, such as **Export Employees · 3 selected**. While it is there, clicking a row ticks it instead of opening it, and the row\'s own buttons are hidden. The box at the top of the column ticks every row shown.',
+          devices: ['tablet', 'desktop'],
+        },
+        {
+          p: 'Open **⋯** at the top and choose **Export**. Each row gets a checkbox on its left, and a bar at the bottom says how many are ticked. While it is there, tapping a row ticks it instead of opening it.',
+          devices: ['phone'],
+        },
+        {
+          ul: [
+            '**Export 3…** exports the rows you ticked.',
+            '**Export all 142…** exports every row the tab and search show. On **Orders**, **SIM Cards** and **Equipment**, which show a page at a time, it is **Export all 70 matching…**: every page that matches the filters.',
+            '**Cancel** leaves without exporting, and the checkboxes go away.',
+          ],
+        },
+        { p: '`Esc` leaves too.', devices: ['desktop'] },
+        {
+          p: 'The **Export** window names the rows you picked, such as **3 selected**; **Change** takes you back to the list to pick again. Tick the columns you want (those the screen shows are ticked already), choose **Excel (.xlsx)** or **CSV**, then **Export (3)**. The file, such as `Employees 2026-11-20.xlsx`, downloads with the rows in the list\'s order and the column names in your language. It holds only what you can see on the screen.',
+        },
+        { p: 'In **Administration** the same **Export** is on **Users**, **Roles & permissions**, **Suppliers**, **Manage apps**, and on **Security**\'s **Signed-in devices** and **System**\'s **Errors**.', roles: ['admin'] },
+      ],
+    },
+    {
       id: 'assets',
       title: 'Company Assets',
       blocks: [
@@ -299,6 +328,7 @@ export const en: Guide = {
           roles: ['admin', 'manager'],
         },
         { p: "**Change Status** records the status the provider confirmed. It does not activate or block the card: email the provider for that.", roles: ['admin', 'manager'] },
+        { p: 'To change several cards at once, choose **Change Status…** at the top (under **⋯** on a phone, or while a card is open), tick the cards, then choose their status in the bar. **Cancel** leaves without changing any.', roles: ['admin', 'manager'] },
         { p: 'To give a SIM or an item, follow the three steps on **Give SIM** or **Give Asset**:', roles: ['admin', 'manager'] },
         {
           ol: [
@@ -696,7 +726,7 @@ export const en: Guide = {
             ['`⌘K` / `Ctrl K`', 'Search record numbers, employees, items, company assets and screens. For example, type a name, then choose **New order for …**.'],
             ['`/`', 'Go to the search or Add Item field.'],
             ['`G` then `D` `O` `H` `E` `A` `C` `S` `U`', 'Go to Dashboard, Create Order, Orders, Employees, Company Assets, Catalogue, Item Sets or Users (in Administration).'],
-            ['`J` / `K`, `Esc`', 'Move through Orders, SIM Cards, Equipment or the Item Catalogue, or close the one open.'],
+            ['`J` / `K`, `Esc`', 'Move through Orders, SIM Cards, Equipment or the Item Catalogue, or close the one open. `Esc` also leaves Export and Change Status… without doing anything.'],
             ['`⌘/Ctrl` `Enter`', 'On Create Order, review the order.'],
             ['`?`', 'Show all shortcuts.'],
           ],

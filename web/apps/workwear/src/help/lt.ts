@@ -272,6 +272,35 @@ export const lt: Guide = {
       ],
     },
     {
+      id: 'export',
+      title: 'Sąrašo eksportas',
+      blocks: [
+        {
+          p: '**Eksportuoti** išsaugo sąrašą kaip failą skaičiuoklei: **Excel (.xlsx)** arba **CSV**. Šis mygtukas yra ekranų **Užsakymai**, **Darbuotojai**, **Prekių katalogas**, **SIM kortelės** ir **Įranga** viršuje. Ekranuose **Prekių rinkiniai**, **Reikia pakeisti** ir darbuotojo **Išduotos prekės** jis iš karto atveria langą **Eksportuoti** su visomis eilutėmis.',
+        },
+        {
+          p: 'Sąrašo viršuje pasirinkite **Eksportuoti**. Šalia eilučių atsiranda žymimieji langeliai, o juosta virš sąrašo nurodo, ką darote ir kiek eilučių pažymėta, pavyzdžiui, **Eksportuoti: Darbuotojai · Pažymėta 3**. Kol ji rodoma, spustelėjus eilutę ji pažymima, o ne atidaroma, o pačios eilutės mygtukai paslepiami. Langelis stulpelio viršuje pažymi visas rodomas eilutes.',
+          devices: ['tablet', 'desktop'],
+        },
+        {
+          p: 'Viršuje atidarykite **⋯** ir pasirinkite **Eksportuoti**. Kiekviena eilutė kairėje gauna žymimąjį langelį, o juosta apačioje nurodo, kiek pažymėta. Kol ji rodoma, palietus eilutę ji pažymima, o ne atidaroma.',
+          devices: ['phone'],
+        },
+        {
+          ul: [
+            '**Eksportuoti 3…** eksportuoja jūsų pažymėtas eilutes.',
+            '**Eksportuoti visas 142…** eksportuoja visas eilutes, kurias palieka skirtukas ir paieška. Ekranuose **Užsakymai**, **SIM kortelės** ir **Įranga**, kurie rodo po puslapį, tai **Eksportuoti visas 70 atitinkančias…**: visi puslapiai, atitinkantys filtrus.',
+            '**Atšaukti** išeina nieko neeksportavus, ir žymimieji langeliai dingsta.',
+          ],
+        },
+        { p: 'Išeiti galima ir `Esc`.', devices: ['desktop'] },
+        {
+          p: 'Lange **Eksportuoti** nurodytos jūsų pasirinktos eilutės, pavyzdžiui, **Pažymėta: 3**; **Keisti** grąžina į sąrašą pasirinkti iš naujo. Pažymėkite norimus stulpelius (ekrane rodomi jau pažymėti), pasirinkite **Excel (.xlsx)** arba **CSV**, tada **Eksportuoti (3)**. Failas, pavyzdžiui, `Darbuotojai 2026-11-20.xlsx`, atsisiunčiamas su eilutėmis sąrašo tvarka ir stulpelių pavadinimais jūsų kalba. Jame tik tai, ką matote ekrane.',
+        },
+        { p: '**Administravime** tas pats **Eksportuoti** yra ekranuose **Naudotojai**, **Rolės ir teisės**, **Tiekėjai**, **Programų tvarkymas**, taip pat **Saugos** skirtuke **Prisijungę įrenginiai** ir **Sistemos** skirtuke **Klaidos**.', roles: ['admin'] },
+      ],
+    },
+    {
       id: 'assets',
       title: 'Įmonės turtas',
       blocks: [
@@ -302,6 +331,7 @@ export const lt: Guide = {
           roles: ['admin', 'manager'],
         },
         { p: '**Keisti būseną** įrašo tiekėjo patvirtintą būseną. Kortelės ji neaktyvuoja ir neužblokuoja: dėl to rašykite tiekėjui.', roles: ['admin', 'manager'] },
+        { p: 'Norėdami pakeisti kelias korteles iš karto, viršuje pasirinkite **Keisti būseną…** (telefone ar kai kortelė atidaryta – po **⋯**), pažymėkite korteles, tada juostoje pasirinkite jų būseną. **Atšaukti** išeina nieko nepakeitus.', roles: ['admin', 'manager'] },
         { p: 'SIM ar daiktas išduodamas trimis žingsniais lange **Išduoti SIM** arba **Išduoti turtą**:', roles: ['admin', 'manager'] },
         {
           ol: [
@@ -663,7 +693,7 @@ export const lt: Guide = {
             ['`⌘K` / `Ctrl K`', 'Ieško įrašų numerių, darbuotojų, prekių, įmonės turto ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.'],
             ['`/`', 'Pereina į paieškos arba „Pridėti prekę“ lauką.'],
             ['`G`, tada `D` `O` `H` `E` `A` `C` `S` `U`', 'Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Įmonės turtą, Katalogą, Prekių rinkinius arba Naudotojus (Administravime).'],
-            ['`J` / `K`, `Esc`', 'Pereina per Užsakymus, SIM korteles, Įrangą ar Prekių katalogą arba uždaro atidarytą įrašą.'],
+            ['`J` / `K`, `Esc`', 'Pereina per Užsakymus, SIM korteles, Įrangą ar Prekių katalogą arba uždaro atidarytą įrašą. `Esc` taip pat išeina iš Eksportuoti ir Keisti būseną… nieko nepadarius.'],
             ['`⌘/Ctrl` `Enter`', 'Ekrane „Kurti užsakymą“ atidaro užsakymo peržiūrą.'],
             ['`?`', 'Rodo visus sparčiuosius klavišus.'],
           ],
