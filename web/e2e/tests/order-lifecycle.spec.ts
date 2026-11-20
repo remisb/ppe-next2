@@ -1768,7 +1768,7 @@ test('columns sort: Orders on the server across pages, other lists in place', as
 
   // Item Catalogue has a natural order (display order) that a third click returns to.
   await openTab('Item Catalogue')
-  const names = async () => (await page.locator('tbody tr td:nth-child(1 of :not([data-slot=select-cell]))').allTextContents()).map((t) => t.trim())
+  const names = async () => (await page.locator('tbody tr td:first-child').allTextContents()).map((t) => t.trim())
   const byItem = page.getByRole('columnheader', { name: 'Item' })
   await expect(byItem).toHaveAttribute('aria-sort', 'none')
   const displayOrder = await names()
@@ -1824,16 +1824,25 @@ test('Employees: less frequent and destructive actions are under ⋯', async () 
   await expect(note).toHaveAttribute('title', 'Prefers Russian. Collects on Fridays.')
 })
 
-test('Employees: Export the ticked employees, with the columns chosen, as an Excel file', async () => {
+test('Employees: Export starts select mode; the ticked employees, with the columns chosen, as an Excel file', async () => {
   await openTab('Employees')
   const row = page.getByRole('row', { name: /Ona Kazlauskienė/ })
-  // Ticking a row selects it; it does not open the employee.
-  await row.getByRole('checkbox', { name: 'Select Ona Kazlauskienė' }).check()
+  // Browsing: no checkboxes; a row opens its employee as ever.
+  await expect(page.getByRole('checkbox', { name: 'Select Ona Kazlauskienė' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const bar = page.getByRole('region', { name: 'Export Employees' })
+  await expect(bar).toContainText('0 selected')
+  await expect(bar.getByRole('button', { name: 'Export…' })).toBeDisabled()
+  // In select mode a click on the row ticks it; it does not open the employee.
+  await row.getByRole('cell').nth(3).click()
   await expect(page).toHaveURL(/\/employees$/)
-  const bar = page.getByRole('group', { name: '1 selected' })
-  await bar.getByRole('button', { name: 'Export…' }).click()
+  await expect(row.getByRole('checkbox', { name: 'Select Ona Kazlauskienė' })).toBeChecked()
+  await expect(bar).toContainText('1 selected')
+  await bar.getByRole('button', { name: 'Export 1…' }).click()
   const sheet = page.getByRole('dialog', { name: 'Export Employees' })
-  await expect(sheet.getByRole('radio', { name: 'Selected (1)' })).toBeChecked()
+  // The rows were picked on the list: said, not asked again.
+  await expect(sheet.getByText('1 selected', { exact: true })).toBeVisible()
+  await expect(sheet.getByRole('radio')).toHaveCount(0)
   // The screen's columns start ticked; the rest can be added.
   await expect(sheet.getByRole('checkbox', { name: 'Code' })).toBeChecked()
   await expect(sheet.getByRole('checkbox', { name: 'Notes' })).not.toBeChecked()
@@ -1851,8 +1860,14 @@ test('Employees: Export the ticked employees, with the columns chosen, as an Exc
   expect(cells).toContain('Ona Kazlauskienė')
   expect(cells).toContain('Русский')
   expect(cells).toContain('Prefers Russian. Collects on Fridays.')
+  // A finished export ends select mode: the checkboxes go, and a row opens again.
   await expect(sheet).toBeHidden()
-  await bar.getByRole('button', { name: 'Clear selection' }).click()
+  await expect(bar).toBeHidden()
+  await expect(page.getByRole('checkbox', { name: 'Select Ona Kazlauskienė' })).toHaveCount(0)
+  // Escape leaves select mode too.
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await expect(bar).toBeVisible()
+  await page.keyboard.press('Escape')
   await expect(bar).toBeHidden()
 })
 
@@ -2143,10 +2158,10 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(card.getByRole('button', { name: /^Copy/ })).toHaveCount(0)
   // A SIM is known by its numbers: the phone number (none yet) over the SIM No. first, then who holds it or where
   // it is (Office, Unknown) in one Employee column, with no Location column.
-  // (The first column selects cards, for one Change Status of several.)
-  await expect(page.getByRole('columnheader').nth(0).getByRole('checkbox', { name: 'Select every SIM on this page' })).toBeVisible()
-  await expect(page.getByRole('columnheader').nth(1)).toHaveText(/^Phone \/ SIM/)
-  await expect(page.getByRole('columnheader').nth(2)).toHaveText(/^Employee/)
+  // (No column selects cards while browsing: Change Status… and Export start select mode, WARE-45.)
+  await expect(page.getByRole('checkbox', { name: 'Select every SIM on this page' })).toHaveCount(0)
+  await expect(page.getByRole('columnheader').nth(0)).toHaveText(/^Phone \/ SIM/)
+  await expect(page.getByRole('columnheader').nth(1)).toHaveText(/^Employee/)
   await expect(page.getByRole('columnheader', { name: 'Location', exact: true })).toHaveCount(0)
   await expect(page.getByRole('columnheader', { name: /Inventory No\./ })).toHaveCount(0)
   await expect(card.getByRole('link', { name: 'No phone number yet 0089370011' })).toBeVisible()
@@ -2168,17 +2183,21 @@ test('Company Assets: Add SIM, Change Status saved at once, a duplicate names th
   await expect(page.getByText('SIM-000001: status changed to Active.')).toBeVisible()
   await expect(card.getByText('Active', { exact: true })).toBeVisible()
   await expect(card).toContainText('Office')
-  // Several at once (a batch the provider confirmed): select, then one Change Status for them all; ticking a box
-  // does not open the card.
-  await card.getByRole('checkbox', { name: 'Select SIM-000001' }).check()
+  // Several at once (a batch the provider confirmed): Change Status… starts select mode, whose checkboxes are there
+  // only then; a click on a row ticks it and does not open the card.
+  await expect(card.getByRole('checkbox')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Change Status…' }).click()
+  const chosen = page.getByRole('region', { name: 'Change Status' })
+  await card.getByRole('checkbox', { name: 'Select SIM-000001' }).click()
   await expect(page).toHaveURL(/\/assets\/sim-cards$/)
-  // The shared selection bar (as on every list): how many, then Change Status, Export… and Clear selection.
-  const chosen = page.getByRole('group', { name: '1 selected' })
+  await expect(chosen).toContainText('1 selected')
   await chosen.getByRole('button', { name: 'Change Status of the selected SIMs' }).click()
   await page.getByRole('menuitem', { name: 'Blocked' }).click()
   await expect(page.getByText('1 SIM: status changed to Blocked.')).toBeVisible()
-  await expect(card.getByText('Blocked', { exact: true })).toBeVisible()
+  // Done, the mode ends: the bar and the checkboxes go.
   await expect(chosen).toHaveCount(0)
+  await expect(card.getByText('Blocked', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Change Status…' }).click()
   await page.getByRole('checkbox', { name: 'Select every SIM on this page' }).check()
   await chosen.getByRole('button', { name: 'Change Status of the selected SIMs' }).click()
   await page.getByRole('menuitem', { name: 'Active' }).click()
@@ -2525,11 +2544,11 @@ test('Equipment & Furniture is for the Equipment Assignments role alone, an admi
   await expect(assetsCard.getByRole('link', { name: /Total items/ })).toHaveCount(0)
   // Administrator does not have it, and cannot: it is the built-in role's.
   await openTab('Roles & permissions')
-  await page.getByRole('row', { name: /^Select Administrator\b/ }).getByRole('button', { name: 'View Administrator' }).click()
+  await page.getByRole('row', { name: /^Administrator/ }).getByRole('button', { name: 'View Administrator' }).click()
   let dialog = page.getByRole('dialog')
   await expect(dialog.getByRole('checkbox', { name: /^See Equipment & Furniture/ })).not.toBeChecked()
   await dialog.getByRole('button', { name: 'Close' }).last().click()
-  await expect(page.getByRole('row', { name: /^Select Equipment Assignments\b/ })).toContainText('See Equipment & Furniture')
+  await expect(page.getByRole('row', { name: /^Equipment Assignments/ })).toContainText('See Equipment & Furniture')
   // The administrator gives it to themselves on Users; the sign-in's next renewal carries it.
   await openTab('Users')
   await page.getByRole('button', { name: `Edit ${admin.name}` }).click()
@@ -3194,12 +3213,14 @@ test('Users: an administrator adds, edits, deactivates and resets a user', async
 test('Export: Orders exports every order matching the filters, Users the ticked users', async () => {
   const csvOf = async (download: Download) => (await new Response((await download.createReadStream()) as unknown as ReadableStream).text()).replace(/^\uFEFF/, '')
 
-  // Orders loads a page at a time: with nothing ticked, Export takes every order matching the tab and filters.
+  // Orders loads a page at a time: Export all takes every order matching the tab and filters.
   await openTab('Orders')
   const total = Number((await page.getByText(/^\d+ orders? · Page/).textContent())?.match(/^(\d+)/)?.[1])
   expect(total).toBeGreaterThan(0)
   await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await page.getByRole('region', { name: 'Export Orders' }).getByRole('button', { name: `Export all ${total} matching…` }).click()
   let sheet = page.getByRole('dialog', { name: 'Export Orders' })
+  await expect(sheet.getByText(`All matching the filters (${total})`)).toBeVisible()
   await sheet.getByRole('button', { name: 'CSV' }).click()
   let downloading = page.waitForEvent('download')
   await sheet.getByRole('button', { name: `Export (${total})` }).click()
@@ -3209,12 +3230,14 @@ test('Export: Orders exports every order matching the filters, Users the ticked 
   expect(lines[0]).toBe('Record,Employee,Status,Ordered on,Given on,Total value')
   expect(lines).toHaveLength(total + 1)
 
-  // Administration's lists the same way: a ticked user, then Export… on the selection bar.
+  // Administration's lists the same way: Export, a ticked user, Export 1….
   await openTab('Users')
-  await page.getByRole('checkbox', { name: `Select ${admin.name}` }).check()
-  await page.getByRole('group', { name: '1 selected' }).getByRole('button', { name: 'Export…' }).click()
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const bar = page.getByRole('region', { name: 'Export Users' })
+  await page.getByRole('checkbox', { name: `Select ${admin.name}` }).click()
+  await bar.getByRole('button', { name: 'Export 1…' }).click()
   sheet = page.getByRole('dialog', { name: 'Export Users' })
-  await expect(sheet.getByRole('radio', { name: 'Selected (1)' })).toBeChecked()
+  await expect(sheet.getByText('1 selected', { exact: true })).toBeVisible()
   await sheet.getByRole('button', { name: 'CSV' }).click()
   downloading = page.waitForEvent('download')
   await sheet.getByRole('button', { name: 'Export (1)' }).click()
@@ -3222,14 +3245,14 @@ test('Export: Orders exports every order matching the filters, Users the ticked 
   lines = (await csvOf(file)).trimEnd().split('\r\n')
   expect(lines).toHaveLength(2)
   expect(lines[1]).toContain(admin.email)
-  await page.getByRole('button', { name: 'Clear selection' }).click()
+  await expect(bar).toBeHidden()
 })
 
 test('Roles & permissions: a role made of permissions, given to a user, lets them do what it allows', async ({ browser }) => {
   await openTab('Roles & permissions')
   await expect(page.getByRole('heading', { name: 'Roles & permissions' })).toBeVisible()
   // Administrator is shown as it is: nothing in it can change, and it cannot be deleted.
-  const adminRow = page.getByRole('row', { name: /^Select Administrator\b/ })
+  const adminRow = page.getByRole('row', { name: /^Administrator/ })
   await expect(adminRow.getByRole('button', { name: /^More actions/ })).toHaveCount(0)
   await adminRow.getByRole('button', { name: 'View Administrator' }).click()
   let dialog = page.getByRole('dialog')
@@ -3260,7 +3283,7 @@ test('Roles & permissions: a role made of permissions, given to a user, lets the
   await dialog.getByRole('checkbox', { name: /^See users/ }).uncheck()
   await dialog.getByRole('checkbox', { name: /^Manage Item Catalogue/ }).check()
   await dialog.getByRole('button', { name: 'Add Role' }).click()
-  const storeRow = page.getByRole('row', { name: /^Select Storekeeper\b/ })
+  const storeRow = page.getByRole('row', { name: /^Storekeeper/ })
   await expect(storeRow).toContainText('Manage Item Catalogue')
   await expect(storeRow).toContainText('0 users')
   // A second role of the same name is refused on its field.
@@ -3301,12 +3324,12 @@ test('Roles & permissions: a role made of permissions, given to a user, lets the
 
   // A role someone holds is not deleted.
   await openTab('Roles & permissions')
-  await expect(page.getByRole('row', { name: /^Select Storekeeper\b/ })).toContainText('1 user')
-  await page.getByRole('row', { name: /^Select Storekeeper\b/ }).getByRole('button', { name: /^More actions/ }).click()
+  await expect(page.getByRole('row', { name: /^Storekeeper/ })).toContainText('1 user')
+  await page.getByRole('row', { name: /^Storekeeper/ }).getByRole('button', { name: /^More actions/ }).click()
   page.once('dialog', (d) => void d.accept())
   await page.getByRole('menuitem', { name: 'Delete role…' }).click()
   await expect(page.getByText('Users hold this role. Take it from them on Users first.')).toBeVisible()
-  await expect(page.getByRole('row', { name: /^Select Storekeeper\b/ })).toBeVisible()
+  await expect(page.getByRole('row', { name: /^Storekeeper/ })).toBeVisible()
 })
 
 test('Orders: only a manager deletes an order, after asking; it then leaves Orders', async ({ browser }) => {

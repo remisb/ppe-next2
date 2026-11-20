@@ -15,9 +15,9 @@ import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
 import { combineLoads, errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
-import { ExportSheet } from '@ppe/ui/components/export-sheet'
-import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
-import { useSelection } from '@ppe/ui/lib/use-selection'
+import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
+import { RowCheckbox, SelectAllCheckbox, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
+import { selectRowProps, useSelection } from '@ppe/ui/lib/use-selection'
 import { Download, Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
@@ -25,6 +25,9 @@ import { t } from '@/i18n'
 import { userExportColumns } from '@/lib/list-export'
 import type { Route, UserStatus } from '@/lib/router'
 import { type UserDraft, type UserErrors, draftOf, ownAccountLocks, roleGrants, roleName, roleRank, rolesOf, validateNewPassword, validateUser } from '@/lib/users'
+
+/** A row's key in the selection; a module constant, so the hook's memos hold. */
+const userId = (u: User) => u.id
 
 type UserSort = 'name' | 'email' | 'roles' | 'status'
 
@@ -61,7 +64,6 @@ export function UsersPage({
 
   const [sort, setSort] = useState<SortState<UserSort> | null>({ key: 'name', dir: 'asc' })
   const sortProps = { sort, onSort: setSort }
-  const [exporting, setExporting] = useState(false)
   const timeZone = useLoad(() => (allowed ? client.settings() : Promise.resolve(undefined))).data?.timezone
 
   // The status tabs and the role filter are in the address (a role's user count on Roles opens them); the search is not.
@@ -92,7 +94,7 @@ export function UsersPage({
     })
   }, [matching, roleList.data, status, sort])
   // The users ticked for Export: only those the tab, role and search show count.
-  const selection = useSelection(useMemo(() => shown.map((u) => u.id), [shown]))
+  const selection = useSelection(shown, userId)
 
   if (!allowed) {
     return (
@@ -108,8 +110,8 @@ export function UsersPage({
       <PageHeader
         title={t.users.title}
         description={t.users.description}
-        // Export: in the header from md, in ⋯ below (a phone exports all shown: its list has no checkboxes).
-        secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: shown.length === 0 }]}
+        // Export: in the header from md, in ⋯ below; it starts select mode (WARE-45), on a phone too.
+        secondary={[{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: shown.length === 0 || selection.active }]}
         primary={{ label: t.users.addUser, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
       />
       <Segmented<UserStatus | 'all'>
@@ -147,22 +149,20 @@ export function UsersPage({
       <p role="status" className="mb-3 text-sm text-muted-foreground empty:hidden">
         {saved}
       </p>
-      <SelectionBar selection={selection}>
-        <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
-          <Download aria-hidden />
-          {t.common.exportSelected}
-        </Button>
-      </SelectionBar>
+      {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
+      <ExportMode selection={selection} list={t.users.title} columns={userExportColumns(allRoles, timeZone)} shown={shown} />
       <Loaded load={combineLoads(users, roleList)} empty={shown.length === 0} emptyState={status || role ? t.users.noneFiltered : filter ? t.users.noMatch(filter.trim()) : t.users.noUsers}>
         {() => (
           // Where the table is narrow the users are one list of rows: name, email, then roles, with Edit and ⋯ beside them.
           <Table stack="list" stickyHead sortControl={<SortMenu columns={columns()} {...sortProps} />}>
             <TableHeader>
               <TableRow>
-                {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
-                <TableHead className="w-10 stacked:hidden">
-                  <SelectAllCheckbox selection={selection} />
-                </TableHead>
+                {/* The checkboxes are there only in select mode (WARE-45). */}
+                {selection.active ? (
+                  <TableHead className={selectCellClass}>
+                    <SelectAllCheckbox selection={selection} />
+                  </TableHead>
+                ) : null}
                 {columns().map((c) => (
                   <SortableHead key={c.key} column={c} {...sortProps} />
                 ))}
@@ -172,12 +172,14 @@ export function UsersPage({
             <TableBody>
               {shown.map((u) => (
                 <TableRow
-                  key={u.id}
-                  className={cn('stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3', !u.is_active && 'text-muted-foreground', selection.has(u.id) && 'bg-primary/5')}
+                  key={u.id} {...selectRowProps(selection, u.id)}
+                  className={cn('stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3', !u.is_active && 'text-muted-foreground', selectRowClass(selection, u.id))}
                 >
-                  <TableCell data-slot="select-cell" className="stacked:hidden">
-                    <RowCheckbox selection={selection} id={u.id} name={u.name} />
-                  </TableCell>
+                  {selection.active ? (
+                    <TableCell className={selectCellClass}>
+                      <RowCheckbox selection={selection} id={u.id} name={u.name} />
+                    </TableCell>
+                  ) : null}
                   <TableCell className="font-medium stacked:col-start-1 stacked:row-start-1">
                     {u.name}
                     {u.id === session.userId ? (
@@ -204,17 +206,22 @@ export function UsersPage({
                     {u.is_active ? <Badge variant="secondary">{t.common.active}</Badge> : <IssueBadge label={t.common.inactive} variant="outline" issues={[t.users.inactiveIssue]} />}
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap stacked:col-start-2 stacked:flex stacked:[grid-row:1/span_3] stacked:items-center stacked:gap-1">
-                    <Button size="sm" variant="outline" onClick={() => setEditing(u)} aria-label={t.users.editUserLabel(u.name)}>
-                      {t.common.edit}
-                    </Button>{' '}
-                    <MoreActions label={t.common.moreActions(u.name)}>
-                      <DropdownMenuItem onClick={() => setResetting(u)}>{t.users.resetPassword}</DropdownMenuItem>
-                      {session.can('audit.read') ? (
-                        <DropdownMenuItem onClick={() => navigate({ name: 'audit', filter: { entity_type: 'user', entity_id: u.id } })}>
-                          {t.users.changes}
-                        </DropdownMenuItem>
-                      ) : null}
-                    </MoreActions>
+                    {/* In select mode the row's own actions step aside: a click ticks the row. */}
+                    {selection.active ? null : (
+                      <>
+                        <Button size="sm" variant="outline" onClick={() => setEditing(u)} aria-label={t.users.editUserLabel(u.name)}>
+                          {t.common.edit}
+                        </Button>{' '}
+                        <MoreActions label={t.common.moreActions(u.name)}>
+                          <DropdownMenuItem onClick={() => setResetting(u)}>{t.users.resetPassword}</DropdownMenuItem>
+                          {session.can('audit.read') ? (
+                            <DropdownMenuItem onClick={() => navigate({ name: 'audit', filter: { entity_type: 'user', entity_id: u.id } })}>
+                              {t.users.changes}
+                            </DropdownMenuItem>
+                          ) : null}
+                        </MoreActions>
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -234,14 +241,6 @@ export function UsersPage({
         }}
       />
       <ResetPassword user={resetting} onClose={() => setResetting(null)} />
-      <ExportSheet
-        open={exporting}
-        onClose={() => setExporting(false)}
-        list={t.users.title}
-        columns={userExportColumns(allRoles, timeZone)}
-        shown={shown}
-        selected={shown.filter((u) => selection.has(u.id))}
-      />
     </>
   )
 }

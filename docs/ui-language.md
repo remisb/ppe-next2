@@ -554,6 +554,24 @@ Lithuanian or Russian label wraps rather than overflow.
 - **Detail:** a stacked row that opens something shows a chevron. J / K step through the
   rows beside an open detail; Escape closes it.
 
+### Select mode
+- **Brief:** a list's rows are ticked only while an action that needs several of them is under
+  way (WARE-45). The action's button starts the mode: **Export** (every list), **Change
+  Status…** (SIM Cards). There are no checkboxes while browsing.
+- **Detail:**
+  - The **mode bar** names the action and counts the ticked rows ("Export Employees · 3 selected"),
+    then shows the action's buttons (**Export 3…**, **Export all 142…** or "…matching…" on a list loaded
+    page by page; the status menu) and **Cancel**. It sits above the list from md, under the stuck
+    header; on a phone it is pinned above the tab bar, with 44px buttons.
+  - In the mode a click or tap anywhere on a row ticks it, and never opens it. ⌘/Ctrl-click on its
+    link still opens it in a new tab. The row's own buttons are hidden, and a stacked row (a phone)
+    shows its checkbox on the left.
+  - The header checkbox ticks every row shown. Ticks are kept for rows a search or tab hides, and
+    across pages on a paged list.
+  - **Cancel**, **Escape** or the finished action ends the mode and clears the ticks.
+- **Code:** `useSelection` (`mode`, `start`, `end`), `selectRowProps`, `selectRowClass`, `selectCellClass`,
+  `SelectModeBar`, `ExportMode`. Reader word: "tick", "selected"; the builder word is **select mode**.
+
 ### Density
 - **Brief:** **Comfortable** (default) or **Compact** table rows, chosen per user on this
   device, with a mouse or trackpad only.

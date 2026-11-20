@@ -31,9 +31,9 @@ import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
-import { ExportSheet } from '@ppe/ui/components/export-sheet'
-import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
-import { useSelection } from '@ppe/ui/lib/use-selection'
+import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
+import { RowCheckbox, SelectAllCheckbox, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
+import { selectRowProps, useSelection } from '@ppe/ui/lib/use-selection'
 import { Download, SlidersHorizontal } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -42,6 +42,9 @@ import { deviceExportColumns } from '@/lib/list-export'
 import { type Route, type SecurityFilter, type SecurityTab, linkTo, securityTabs } from '@/lib/router'
 import { roleName } from '@/lib/users'
 import { UserForm } from '@/routes/users'
+
+/** A row's key in the selection; a module constant, so the hook's memos hold. */
+const sessionId = (s: LiveSession) => s.id
 
 type SecurityRoute = Extract<Route, { name: 'security' }>
 type Navigate = (to: Route, options?: { replace?: boolean; scroll?: boolean }) => void
@@ -336,9 +339,8 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
     all.forEach((s, i) => order.set(s.user_id, Math.min(order.get(s.user_id) ?? i, i)))
     return all.filter((s) => !person || s.user_id === person).sort((a, b) => order.get(a.user_id)! - order.get(b.user_id)!)
   }, [list.data, person])
-  const [exporting, setExporting] = useState(false)
   // The devices ticked for Export: only those the person filter shows count.
-  const selection = useSelection(useMemo(() => shown.map((s) => s.id), [shown]))
+  const selection = useSelection(shown, sessionId)
   const chosen = persons.find((p) => p.id === person)
   const mine = (list.data ?? []).some((s) => s.user_id === person && s.id === current)
   const endAll = async (p: { id: string; name: string; devices: number }) => {
@@ -362,7 +364,7 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
         <p className="max-w-prose text-sm text-muted-foreground">{t.security.devicesHint}</p>
         {/* The tab's Export beside Refresh: Security's header belongs to all three tabs. */}
         <div className="flex gap-2">
-          <Button variant="outline" disabled={shown.length === 0} onClick={() => setExporting(true)}>
+          <Button variant="outline" disabled={shown.length === 0 || selection.active} onClick={() => selection.start(EXPORT_MODE)}>
             <Download aria-hidden />
             {t.common.export}
           </Button>
@@ -397,19 +399,17 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
             <p className="mb-2 text-sm text-muted-foreground">
               {t.security.deviceCount(data.length)} · {t.security.people(person ? 1 : people)}
             </p>
-            <SelectionBar selection={selection}>
-              <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
-                <Download aria-hidden />
-                {t.common.exportSelected}
-              </Button>
-            </SelectionBar>
+            {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
+            <ExportMode selection={selection} list={t.security.devices} columns={deviceExportColumns(timeZone)} shown={shown} />
             <Table stack="list">
               <TableHeader>
                 <TableRow>
-                  {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
-                  <TableHead className="w-10 stacked:hidden">
-                    <SelectAllCheckbox selection={selection} />
-                  </TableHead>
+                  {/* The checkboxes are there only in select mode (WARE-45). */}
+                  {selection.active ? (
+                    <TableHead className={selectCellClass}>
+                      <SelectAllCheckbox selection={selection} />
+                    </TableHead>
+                  ) : null}
                   <TableHead>{t.security.name}</TableHead>
                   <TableHead>{t.security.device}</TableHead>
                   <TableHead>{t.security.lastUsed}</TableHead>
@@ -421,10 +421,12 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
                 {data.map((s) => {
                   const device = deviceText(s.user_agent)
                   return (
-                    <TableRow key={s.id} className={cn('stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3', selection.has(s.id) && 'bg-primary/5')}>
-                      <TableCell data-slot="select-cell" className="stacked:hidden">
-                        <RowCheckbox selection={selection} id={s.id} name={`${s.user_name}, ${device}`} />
-                      </TableCell>
+                    <TableRow key={s.id} {...selectRowProps(selection, s.id)} className={cn('stacked:grid stacked:grid-cols-[minmax(0,1fr)_auto] stacked:gap-x-3', selectRowClass(selection, s.id))}>
+                      {selection.active ? (
+                        <TableCell className={selectCellClass}>
+                          <RowCheckbox selection={selection} id={s.id} name={`${s.user_name}, ${device}`} />
+                        </TableCell>
+                      ) : null}
                       <TableCell className="whitespace-normal stacked:col-start-1 stacked:row-start-1">
                         <span className="font-medium">{s.user_name}</span>
                         {s.id === current ? (
@@ -451,17 +453,22 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
                       </TableCell>
                       {mayEnd ? (
                         <TableCell className="text-right stacked:col-start-2 stacked:[grid-row:1/span_3] stacked:flex stacked:items-center">
-                          {s.id === current ? null : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="pointer-coarse:h-11"
-                              aria-label={t.security.signOutDevice(device, s.user_name)}
-                              disabled={busy !== null}
-                              onClick={() => void end(s)}
-                            >
-                              {t.security.signOut}
-                            </Button>
+                          {/* In select mode the row's own actions step aside: a click ticks the row. */}
+                          {selection.active ? null : (
+                            <>
+                              {s.id === current ? null : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="pointer-coarse:h-11"
+                                  aria-label={t.security.signOutDevice(device, s.user_name)}
+                                  disabled={busy !== null}
+                                  onClick={() => void end(s)}
+                                >
+                                  {t.security.signOut}
+                                </Button>
+                              )}
+                            </>
                           )}
                         </TableCell>
                       ) : null}
@@ -474,14 +481,6 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
           )
         }}
       </Loaded>
-      <ExportSheet
-        open={exporting}
-        onClose={() => setExporting(false)}
-        list={t.security.devices}
-        columns={deviceExportColumns(timeZone)}
-        shown={shown}
-        selected={shown.filter((s) => selection.has(s.id))}
-      />
     </>
   )
 }

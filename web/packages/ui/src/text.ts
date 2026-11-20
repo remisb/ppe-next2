@@ -75,6 +75,16 @@ const en = {
   exportFormatHelp: 'Excel opens it as it is. CSV is plain text, for other programs.',
   exportNoColumns: 'Choose at least one column.',
   exportCount: (n: number) => `Export (${n})`,
+  exportSummarySelected: (n: number) => `${n} selected`,
+  exportChangeRows: 'Change',
+  // Select mode (components/select-mode.tsx): a list's checkboxes appear only while an action picks rows.
+  selectModeHint: 'Click a row to tick it. Esc leaves.',
+  exportModeTitle: (list: string) => `Export ${list}`,
+  exportModeHint: 'Tick the rows to export, or export them all.',
+  exportPicked: (n: number) => (n > 0 ? `Export ${n}…` : 'Export…'),
+  exportAllButton: (n: number) => `Export all ${n}…`,
+  exportAllMatchingButton: (n: number) => `Export all ${n} matching…`,
+  exportAllShort: (n: number) => `All ${n}…`,
 }
 
 export type UiText = typeof en
@@ -141,6 +151,15 @@ const lt: UiText = {
   exportFormatHelp: 'Excel atveria jį tiesiogiai. CSV – paprastas tekstas kitoms programoms.',
   exportNoColumns: 'Pasirinkite bent vieną stulpelį.',
   exportCount: (n: number) => `Eksportuoti (${n})`,
+  exportSummarySelected: (n: number) => `Pažymėta: ${n}`,
+  exportChangeRows: 'Keisti',
+  selectModeHint: 'Spustelėkite eilutę, kad ją pažymėtumėte. Esc – išeiti.',
+  exportModeTitle: (list: string) => `Eksportuoti: ${list}`,
+  exportModeHint: 'Pažymėkite eilutes eksportui arba eksportuokite visas.',
+  exportPicked: (n: number) => (n > 0 ? `Eksportuoti ${n}…` : 'Eksportuoti…'),
+  exportAllButton: (n: number) => `Eksportuoti visas ${n}…`,
+  exportAllMatchingButton: (n: number) => `Eksportuoti visas ${n} atitinkančias…`,
+  exportAllShort: (n: number) => `Visas ${n}…`,
 }
 
 const ru: UiText = {
@@ -205,6 +224,15 @@ const ru: UiText = {
   exportFormatHelp: 'Excel открывает его как есть. CSV — простой текст для других программ.',
   exportNoColumns: 'Выберите хотя бы один столбец.',
   exportCount: (n: number) => `Экспортировать (${n})`,
+  exportSummarySelected: (n: number) => `Выбрано: ${n}`,
+  exportChangeRows: 'Изменить',
+  selectModeHint: 'Нажмите на строку, чтобы отметить её. Esc — выйти.',
+  exportModeTitle: (list: string) => `Экспорт: ${list}`,
+  exportModeHint: 'Отметьте строки для экспорта или экспортируйте все.',
+  exportPicked: (n: number) => (n > 0 ? `Экспортировать ${n}…` : 'Экспортировать…'),
+  exportAllButton: (n: number) => `Экспортировать все ${n}…`,
+  exportAllMatchingButton: (n: number) => `Экспортировать все ${n} подходящие…`,
+  exportAllShort: (n: number) => `Все ${n}…`,
 }
 
 export const dictionaries = { en, lt, ru }

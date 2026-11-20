@@ -113,6 +113,12 @@ export const assets = {
   shown: (n: number) => plural(n, { one: '# SIM', other: '# SIMs' }),
   // Change Status: saved at once, no confirmation (§5).
   changeStatus: 'Change Status',
+  // Change Status of several SIM cards: its select mode (WARE-45).
+  changeStatusMode: {
+    start: 'Change Status…',
+    title: 'Change Status',
+    hint: 'Tick the SIM cards to change, then choose their status. Click a row to tick it; Esc leaves.',
+  },
   changeStatusOf: (number: string) => `Change Status of ${number}`,
   statusNote: 'Select the current status confirmed by your provider. This records it; it does not activate or block the card.',
   activateNote: 'Email your provider to activate this SIM (Prepare Activation Email). Once activation is confirmed, change the status to Active.',

@@ -1,4 +1,4 @@
-import type { HistoryQuery, HistorySort, OrderStatus } from '@ppe/api-client'
+import type { HistoryQuery, HistorySort, ListedOrder, OrderStatus } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Button } from '@ppe/ui/components/button'
 import { Field, Input, controlProps } from '@ppe/ui/components/field'
@@ -9,9 +9,9 @@ import { Table, TableBody, TableCell, TableGroupRow, TableHead, TableHeader, Tab
 import type { SortColumn, SortState } from '@ppe/ui/lib/sort'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ExportSheet } from '@ppe/ui/components/export-sheet'
-import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
-import { useSelection } from '@ppe/ui/lib/use-selection'
+import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
+import { RowCheckbox, SelectAllCheckbox, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
+import { selectRowProps, useSelection } from '@ppe/ui/lib/use-selection'
 import { ChevronRight, Download, Plus } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 
@@ -34,6 +34,9 @@ import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
 import { formatEuro } from '@/lib/utils'
 
 const PAGE_SIZE = 20
+
+/** An order's key in the selection; a module constant, so the hook's memos hold. */
+const orderId = (o: ListedOrder) => o.id
 
 interface Filters {
   employee: PickedEmployee | null
@@ -185,8 +188,8 @@ export function History({
   // J and K: the next or previous order on this page, while one is open; Escape closes it beside the list.
   const shownIds = useMemo(() => orders.data?.orders.map((o) => o.id), [orders.data])
   // The orders ticked for Export: those on the page shown. Export's All takes every page matching the filters.
-  const selection = useSelection(useMemo(() => shownIds ?? [], [shownIds]))
-  const [exporting, setExporting] = useState(false)
+  // Export's select mode (WARE-45): ticks are kept across pages; Export all takes every page matching the filters.
+  const selection = useSelection(useMemo(() => orders.data?.orders ?? [], [orders.data]), orderId, { acrossPages: true })
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: 'history', order: id }, { scroll: false }), onClose: close })
 
   const tz = settings.data?.timezone
@@ -235,7 +238,7 @@ export function History({
         filters={{ label: t.history.filters, count: foldedFilters, controls: 'history-filters', open: showFilters, onToggle: () => setShowFilters((v) => !v) }}
         // A link, so it also opens in a new tab. Not on a phone, whose tab bar has New order.
         // Export: in the header from md, in ⋯ below (a phone's list has no checkboxes, so it exports all matching).
-        secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: !orders.data?.total }]}
+        secondary={[{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: !orders.data?.total || selection.active }]}
         primary={{ label: t.shell.createOrder, icon: Plus, link: linkTo({ name: 'createOrder' }, navigate), hiddenBelow: 'md' }}
       />
 
@@ -302,6 +305,15 @@ export function History({
         )}
       </section>
       </div>
+      {/* Above the list, so the mode's bar stays while a filter leaves no orders. */}
+      <ExportMode
+        selection={selection}
+        list={t.history.title}
+        columns={orderExportColumns(tz)}
+        shown={orders.data?.orders ?? []}
+        // Every page matching the tab, filters and sort, fetched when exporting.
+        matching={{ count: orders.data?.total ?? 0, load: () => loadAllOrders(client, { ...scope, ...(filters.status ? { status: filters.status } : {}), sort: sort.key, dir: sort.dir }) }}
+      />
       {orders.error ? (
         <ErrorState error={orders.error} onRetry={orders.reload} />
       ) : !orders.data ? (
@@ -334,12 +346,6 @@ export function History({
             and the employee code, so it stays one line a row down to 30rem
             of room (a desktop from about 1200px).
           */}
-          <SelectionBar selection={selection}>
-            <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
-              <Download aria-hidden />
-              {t.common.exportSelected}
-            </Button>
-          </SelectionBar>
           <Table
             stack="list"
             // Beside an open order the short columns already fit one line a row; widths come from their content there.
@@ -351,10 +357,12 @@ export function History({
           >
             <TableHeader>
               <TableRow>
-                {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
-                <TableHead className="w-10 stacked:hidden">
-                  <SelectAllCheckbox selection={selection} />
-                </TableHead>
+                {/* The checkboxes are there only in select mode (WARE-45). */}
+                {selection.active ? (
+                  <TableHead className={selectCellClass}>
+                    <SelectAllCheckbox selection={selection} />
+                  </TableHead>
+                ) : null}
                 {columns.map((c) => (
                   <SortableHead key={c.key} column={c} align={c.key === 'total' ? 'right' : 'left'} className={selected ? undefined : historyWidths[c.key]} {...sortProps} />
                 ))}
@@ -367,7 +375,7 @@ export function History({
                 const newMonth = sort.key === 'date' && (!prev || monthOf(activityAt(prev), tz).key !== month.key)
                 return (
                   <Fragment key={o.id}>
-                  {newMonth ? <TableGroupRow colSpan={columns.length + 1}>{month.label}</TableGroupRow> : null}
+                  {newMonth ? <TableGroupRow colSpan={columns.length + (selection.active ? 1 : 0)}>{month.label}</TableGroupRow> : null}
                   <TableRow
                     data-state={selected === o.id ? 'selected' : undefined}
                     aria-current={selected === o.id ? 'true' : undefined}
@@ -375,18 +383,22 @@ export function History({
                       stackedBreak,
                       'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted',
                       // Ticked for Export.
-                      selection.has(o.id) && 'bg-primary/5',
+                      selectRowClass(selection, o.id),
                     )}
                     // The whole row opens the order; the record number is the real link,
                     // for keyboards, screen readers and "open in new tab".
                     onClick={(ev) => {
-                      if ((ev.target as Element).closest('a, button, input, [data-slot=select-cell]') || window.getSelection()?.toString()) return
+                      if ((ev.target as Element).closest('a, button, input') || window.getSelection()?.toString()) return
                       open(o.id)
                     }}
+                    // In select mode a click anywhere on the row ticks it instead.
+                    {...selectRowProps(selection, o.id)}
                   >
-                    <TableCell data-slot="select-cell" className="stacked:hidden">
-                      <RowCheckbox selection={selection} id={o.id} name={o.record_number} />
-                    </TableCell>
+                    {selection.active ? (
+                      <TableCell className={selectCellClass}>
+                        <RowCheckbox selection={selection} id={o.id} name={o.record_number} />
+                      </TableCell>
+                    ) : null}
                     {/*
                       Second line in a row: the record number, still the link for keyboards and "open in new tab".
                       With no order open, hovering it previews the order; beside one, the row itself does that.
@@ -442,16 +454,6 @@ export function History({
           </nav>
         </>
       )}
-      <ExportSheet
-        open={exporting}
-        onClose={() => setExporting(false)}
-        list={t.history.title}
-        columns={orderExportColumns(tz)}
-        shown={orders.data?.orders ?? []}
-        selected={orders.data?.orders.filter((o) => selection.has(o.id)) ?? []}
-        // Every page matching the tab, filters and sort, fetched when exporting.
-        matching={{ count: orders.data?.total ?? 0, load: () => loadAllOrders(client, { ...scope, ...(filters.status ? { status: filters.status } : {}), sort: sort.key, dir: sort.dir }) }}
-      />
     </ListDetail>
   )
 }

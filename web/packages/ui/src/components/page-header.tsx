@@ -68,6 +68,8 @@ export function ShortWords({ label, short }: { label: string; short?: string | u
 }
 
 function ActionButton({ action, variant }: { action: ToolbarAction; variant: 'default' | 'outline' }) {
+  // 'never' is only ever an item in ⋯ (ActionItem), never a button too.
+  if (action.showFrom === 'never') return null
   const Icon = action.icon
   const from = action.showFrom === 'sm' || action.showFrom === 'md' || action.showFrom === 'lg' ? buttonFrom[action.showFrom] : undefined
   const className = cn(from, action.hiddenBelow && buttonFrom[action.hiddenBelow])

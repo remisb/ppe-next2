@@ -24,6 +24,9 @@ export function ExportSheet<T>({
   shown,
   selected = [],
   matching,
+  scope,
+  onChangeRows,
+  onExported,
 }: {
   open: boolean
   onClose: () => void
@@ -39,6 +42,15 @@ export function ExportSheet<T>({
    * instead of All shown, every page fetched in the screen's order when exporting.
    */
   matching?: { count: number; load: () => Promise<readonly T[]> } | undefined
+  /**
+   * The rows already chosen in select mode (ExportMode): the sheet shows them
+   * as a summary with Change (`onChangeRows`, back to the list) instead of
+   * asking. Without it, it offers Selected or All shown when rows are ticked.
+   */
+  scope?: 'selected' | 'all' | undefined
+  onChangeRows?: (() => void) | undefined
+  /** After the file is saved (select mode ends then); the sheet closes itself first. */
+  onExported?: (() => void) | undefined
 }) {
   const t = uiText()
   const formId = useId()
@@ -51,7 +63,7 @@ export function ExportSheet<T>({
   // Each time it opens: the selection if there is one, the screen's columns.
   useEffect(() => {
     if (!open) return
-    setRows(selected.length > 0 ? 'selected' : 'shown')
+    setRows(scope ? (scope === 'selected' ? 'selected' : 'shown') : selected.length > 0 ? 'selected' : 'shown')
     setChosen(new Set(columns.filter((c) => c.shown).map((c) => c.key)))
     setError(undefined)
     // Only on opening: what the screen changes meanwhile is read when exporting.
@@ -79,6 +91,7 @@ export function ExportSheet<T>({
       const rowsOut = useSelected || !matching ? out : await matching.load()
       saveFile(exportFile(format, cols, rowsOut, list), exportFileName(list, format))
       onClose()
+      onExported?.()
     } catch (err) {
       setError(errorText(err))
     } finally {
@@ -105,7 +118,19 @@ export function ExportSheet<T>({
       }
     >
       <form id={formId} onSubmit={(e) => void submit(e)} className="grid gap-5">
-        {selected.length > 0 ? (
+        {scope ? (
+          // The rows were picked on the list: said, not asked; Change goes back to picking.
+          <div className="flex min-h-11 items-center gap-2 rounded-md bg-muted px-3 text-sm">
+            <span className="font-medium">
+              {useSelected ? t.exportSummarySelected(count) : matching ? t.exportAllMatching(count) : t.exportAllShown(count)}
+            </span>
+            {onChangeRows ? (
+              <Button type="button" size="sm" variant="link" className="ml-auto h-auto p-0" onClick={onChangeRows}>
+                {t.exportChangeRows}
+              </Button>
+            ) : null}
+          </div>
+        ) : selected.length > 0 ? (
           <fieldset className="grid gap-1">
             <legend className="mb-1 text-sm font-medium">{t.exportRows}</legend>
             {(['selected', 'shown'] as const).map((v) => (

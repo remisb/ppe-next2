@@ -109,7 +109,10 @@ Excel or CSV, built in the browser by `@ppe/ui`'s `table-export.ts` (no dependen
 `SelectionBar`/`useSelection`; columns offered by permission (`lib/employee-export.ts`). WARE-44 gave every list the same
 (each list's columns in a `lib/*-export.ts`, Administration's in `apps/admin/src/lib/list-export.ts`): a list loaded page by page
 (Orders, SIM Cards, Equipment) exports "All matching the filters" through `ExportSheet`'s `matching` (every page fetched at export);
-SIM Cards' Change Status is on the shared `SelectionBar`. Exports are not on the Audit log. **Duplicates and merging** (migration 0052, spec "Duplicates and merging" in
+Exports are not on the Audit log. **Select mode** (WARE-45, `docs/ux/export-select-mode.html`): no list shows
+checkboxes while browsing; Export (`ExportMode`) and SIM Cards' Change Status… start a mode (`useSelection`'s `mode`, `SelectModeBar`:
+above the list from md, pinned above the tab bar on a phone) in which a row click ticks it (`selectRowProps`); Cancel, Esc or the
+finished action end it. **Duplicates and merging** (migration 0052, spec "Duplicates and merging" in
 `employee-service.md`): Add New Employee warns of alike names (`employee.CompareNames`, `POST …/employees/similar`)
 with Use This Employee; Employees offers possible duplicates (Not the Same Person, `employee_distinct_pairs`) and
 **Merge Employees** (`employees.merge`, Administrator and Manager): one transaction moves the removed record's orders,

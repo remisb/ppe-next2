@@ -22,9 +22,9 @@ import { useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail, PaneBar } from '@ppe/ui/components/list-detail'
 import { formatNumber } from '@ppe/i18n'
 import { Button } from '@ppe/ui/components/button'
-import { ExportSheet } from '@ppe/ui/components/export-sheet'
-import { RowCheckbox, SelectAllCheckbox, SelectionBar } from '@ppe/ui/components/selection-bar'
-import { useSelection } from '@ppe/ui/lib/use-selection'
+import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
+import { RowCheckbox, SelectAllCheckbox, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
+import { selectRowProps, useSelection } from '@ppe/ui/lib/use-selection'
 import { Download } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -33,6 +33,9 @@ import { errorExportColumns } from '@/lib/list-export'
 import { type Route, type SystemTab, linkTo, systemTabPermission, systemTabs } from '@/lib/router'
 
 import { BackupsTab } from './backups'
+
+/** A row's key in the selection; a module constant, so the hook's memos hold. */
+const errorId = (e: ErrorEvent) => e.id
 
 type SystemRoute = Extract<Route, { name: 'system' }>
 type Navigate = (to: Route, options?: { replace?: boolean; scroll?: boolean }) => void
@@ -338,9 +341,8 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
   const shownIds = useMemo(() => errors.map((e) => e.id), [errors])
   useListKeys({ ids: shownIds, selected, onOpen: open, onClose: close })
   const beside = selected !== undefined
-  const [exporting, setExporting] = useState(false)
   // The errors ticked for Export, of those loaded (Older loads more).
-  const selection = useSelection(shownIds)
+  const selection = useSelection(errors, errorId)
 
   return (
     <ListDetail
@@ -367,19 +369,15 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
         />
         {/* The tab's Export beside Refresh: System's header belongs to every tab. It exports the errors loaded. */}
         <div className="flex gap-2">
-          <Button variant="outline" disabled={errors.length === 0} onClick={() => setExporting(true)}>
+          <Button variant="outline" disabled={errors.length === 0 || selection.active} onClick={() => selection.start(EXPORT_MODE)}>
             <Download aria-hidden />
             {t.common.export}
           </Button>
           <RefreshButton loading={pages.loading} onClick={reload} />
         </div>
       </div>
-      <SelectionBar selection={selection}>
-        <Button size="sm" variant="outline" onClick={() => setExporting(true)}>
-          <Download aria-hidden />
-          {t.common.exportSelected}
-        </Button>
-      </SelectionBar>
+      {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
+      <ExportMode selection={selection} list={t.system.errors} columns={errorExportColumns(timeZone)} shown={errors} />
       {pages.error ? (
         <ErrorState error={pages.error} onRetry={reload} />
       ) : !pages.data ? (
@@ -391,10 +389,12 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
           <Table stack="list" stackBelow={beside ? 'sm' : 'md'} busy={pages.loading}>
             <TableHeader>
               <TableRow>
-                {/* Ticking rows is for the table; the stacked list (a phone) has none. */}
-                <TableHead className="w-10 stacked:hidden">
-                  <SelectAllCheckbox selection={selection} />
-                </TableHead>
+                {/* The checkboxes are there only in select mode (WARE-45). */}
+                {selection.active ? (
+                  <TableHead className={selectCellClass}>
+                    <SelectAllCheckbox selection={selection} />
+                  </TableHead>
+                ) : null}
                 <TableHead>{t.system.lastSeen}</TableHead>
                 <TableHead>{t.system.error}</TableHead>
                 {beside ? null : <TableHead>{t.system.kind}</TableHead>}
@@ -404,18 +404,20 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
             <TableBody>
               {errors.map((e) => (
                 <TableRow
-                  key={e.id}
+                  key={e.id} {...selectRowProps(selection, e.id)}
                   data-state={selected === e.id ? 'selected' : undefined}
                   aria-current={selected === e.id ? 'true' : undefined}
-                  className={cn(stackedBreak, 'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted', selection.has(e.id) && 'bg-primary/5')}
+                  className={cn(stackedBreak, 'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted', selectRowClass(selection, e.id))}
                   onClick={(ev) => {
-                    if ((ev.target as Element).closest('a, button, input, [data-slot=select-cell]') || window.getSelection()?.toString()) return
+                    if ((ev.target as Element).closest('a, button') || window.getSelection()?.toString()) return
                     open(e.id)
                   }}
                 >
-                  <TableCell data-slot="select-cell" className="stacked:hidden">
-                    <RowCheckbox selection={selection} id={e.id} name={e.message} />
-                  </TableCell>
+                  {selection.active ? (
+                    <TableCell className={selectCellClass}>
+                      <RowCheckbox selection={selection} id={e.id} name={e.message} />
+                    </TableCell>
+                  ) : null}
                   <TableCell className="whitespace-nowrap tabular-nums stacked:order-2 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">
                     <RelativeDate iso={e.last_seen} timeZone={timeZone} time />
                   </TableCell>
@@ -439,14 +441,6 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
           <OlderButton pages={pages} label={t.system.older} />
         </>
       )}
-      <ExportSheet
-        open={exporting}
-        onClose={() => setExporting(false)}
-        list={t.system.errors}
-        columns={errorExportColumns(timeZone)}
-        shown={errors}
-        selected={errors.filter((e) => selection.has(e.id))}
-      />
     </ListDetail>
   )
 }
