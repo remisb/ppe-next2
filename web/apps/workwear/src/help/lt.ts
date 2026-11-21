@@ -171,7 +171,7 @@ export const lt: Guide = {
           devices: ['desktop'],
         },
         { p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Taip pat galima filtruoti pagal darbuotoją ir datą. Palieskite užsakymą, kad jį atidarytumėte; rodyklė **←** jo viršuje grąžina į sąrašą.', devices: ['tablet'] },
-        { p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Darbuotojo paieška visada virš sąrašo; mygtuke **Filtrai** – **Data**. Rikiavimo mygtukas virš užsakymų nurodo jų tvarką žodžiais, pavyzdžiui, **Data, naujausi pirmi**: pasirinkite jį, kad rikiuotumėte pagal kitą stulpelį arba apverstumėte tvarką. Palieskite užsakymą, kad jį atidarytumėte; rodyklė **←** jo viršuje grąžina į sąrašą. Jo numeris ir pagrindinis veiksmas slenkant lieka viršuje.', devices: ['phone'] },
+        { p: '**Visi**, **Užsakyta** ir **Išduota** filtruoja užsakymus pagal būseną. Darbuotojo paieška visada virš sąrašo; mygtuke **Filtrai** – **Data**. Rikiavimo mygtukas virš užsakymų nurodo jų tvarką žodžiais, pavyzdžiui, **Data, naujausi pirmi**: pasirinkite jį, kad rikiuotumėte pagal kitą stulpelį arba apverstumėte tvarką. Palieskite užsakymą, kad jį atidarytumėte; rodyklė **←** jo viršuje grąžina į sąrašą. Jo numeris ir veiksmai slenkant lieka viršuje.', devices: ['phone'] },
         {
           p: '**Data** iš pradžių rodo **Visos datos**; vietoj to galite pasirinkti **Paskutinės 7 dienos**, **Šis mėnuo** arba **Praėjęs mėnuo**. **Pasirinktas laikotarpis…** jo vietoje atveria **Nuo** ir **Iki**: **Taikyti** padaro tą laikotarpį rodomu pasirinkimu, pavyzdžiui, **2026.09.01 – 2026.09.30**, o **Atšaukti** palieka filtrą kaip buvo. Norėdami jį pakeisti, vėl pasirinkite **Pasirinktas laikotarpis…**.',
         },
@@ -179,12 +179,13 @@ export const lt: Guide = {
           p: 'Kiekvienas datos laukas, čia ir kitur, priima datą taip, kaip ją rašo jūsų kalba: **2026.10.15**. Rinkite skaitmenis, o skyrikliai atsiras patys. Tuščiame lauke, vos pradėjus rinkti, pirmiausia įrašomi einamieji metai; jei reikia kitų, įrašykite juos ant viršaus. Arba pasirinkite kalendorių šalia lauko ir pažymėkite dieną: dienos, kurių pasirinkti negalima, pavyzdžiui, **Iki** anksčiau nei **Nuo**, yra pilkos. Neegzistuojanti data atmetama, ir **Taikyti** laukia, kol ji bus ištaisyta.',
         },
         { shots: [{ name: 'date-picker', alt: 'Pasirinktas laikotarpis, atvertas virš filtro „Data“, su kalendoriumi „Nuo“' }] },
-        { p: 'Užsakymas, kurio būsena **Užsakyta**, turi šiuos veiksmus:' },
+        { p: 'Užsakymo veiksmai yra juostoje po jo numeriu: pagrindinis – su žodžiais, toliau piktogramos, tada **⋯**. Užveskite žymeklį ant piktogramos, kad pamatytumėte jos pavadinimą; jutikliniame ekrane **⋯** jas išvardija ir pavadinimais. Užsakymas, kurio būsena **Užsakyta**, turi šiuos:' },
         {
           ul: [
-            '**Sukurti patvirtinimo nuorodą** sukuria naują nuorodą darbuotojui ir parodo ją žemiau su **Kopijuoti nuorodą** ir **Siųsti nuorodą per WhatsApp**. Tada mygtukas tampa **Patvirtinimo nuoroda** – juo nuorodą galima paslėpti ir vėl parodyti. Išėjus iš užsakymo nuoroda neberodoma; nauja nuoroda pakeičia senąją.',
-            '**Spausdinti užsakymą** atspausdina užsakymo įrašą, kurį darbuotojas pasirašo.',
-            '**Pažymėti kaip pasirašytą ir išduotą** pažymi, kad darbuotojas pasirašė atspausdintą įrašą. Programa pirma paklausia; tada užsakymas tampa **Išduota**, o šalia būsenos atsiranda žalias ženkliukas **Pasirašyta**.',
+            '**Sukurti patvirtinimo nuorodą** (kai vietos mažai, **Sukurti nuorodą**) sukuria naują nuorodą darbuotojui ir parodo ją žemiau su **Kopijuoti nuorodą** ir **Siųsti nuorodą per WhatsApp**. Tada mygtukas tampa **Patvirtinimo nuoroda** – juo nuorodą galima paslėpti ir vėl parodyti. Išėjus iš užsakymo nuoroda neberodoma; nauja nuoroda pakeičia senąją.',
+            'Spausdintuvas, **Spausdinti užsakymą**, atspausdina užsakymo įrašą, kurį darbuotojas pasirašo.',
+            'Parašas, **Pažymėti kaip pasirašytą ir išduotą**, pažymi, kad darbuotojas pasirašė atspausdintą įrašą. Programa pirma paklausia; tada užsakymas tampa **Išduota**, o šalia būsenos atsiranda žalias ženkliukas **Pasirašyta**.',
+            '**⋯ → Kopijuoti į WhatsApp** dar kartą nukopijuoja užsakymo žinutę tiekėjui, taip pat ir **Išduota** užsakyme.',
           ],
         },
         { p: '**⋯ → Ištrinti užsakymą…** pašalina užsakymą, pvz., bandomąjį. Prieš tai programa paklausia.', roles: ['manager'] },
@@ -197,7 +198,7 @@ export const lt: Guide = {
       title: 'Išdavimo įrašas',
       blocks: [
         { p: 'Užsakymas, kurio būsena **Išduota**, turi užrakintą įrašą anglų ir rusų kalbomis (Items Given Record / Акт выдачи). Atidarykite jį mygtuku **Peržiūrėti užsakymą**.' },
-        { ul: ['**Spausdinti įrašą** atspausdina jį viename A4 lape; užsakyme tą patį daro **Spausdinti užsakymą**.', '**Siųsti per WhatsApp** jį išsiunčia.'] },
+        { ul: ['**Spausdinti įrašą** atspausdina jį viename A4 lape; užsakyme tą patį daro spausdintuvas, **Spausdinti užsakymą**.', '**Siųsti per WhatsApp** jį išsiunčia.'] },
         { p: 'Datos įraše ir Įmonės turto atspausdintuose bei PDF išdavimo aktuose rašomos **2026 10 15**, visomis kalbomis vienodai.' },
         { shots: [{ name: 'record', alt: 'Dvikalbis išdavimo įrašas' }] },
       ],
@@ -366,6 +367,10 @@ export const lt: Guide = {
         },
         { shots: [{ name: 'asset', alt: 'SIM puslapis: būsena, turėtojas ir išdavimai' }], roles: ['employee'] },
         {
+          p: 'SIM ar daikto veiksmai yra juostoje po jo numeriais. Pagrindinis – su žodžiais: **Išduoti SIM** arba **Išduoti turtą**, kai jis biure, **Priimti**, kai kas nors jį turi. Toliau piktogramos: raktas, **Rodyti PIN ir PUK**, ir, kol jis išduotas, spausdintuvas, **Spausdinti aktą**, kuris dar kartą atspausdina jo aktą. Užveskite žymeklį ant piktogramos, kad pamatytumėte jos pavadinimą; jutikliniame ekrane **⋯** jas išvardija ir pavadinimais. Po **⋯** taip pat yra **Redaguoti**, **Paruošti aktyvavimo laišką** ir **Paruošti blokavimo laišką**, o paskutinis – **Pažymėti kaip negrąžintą**.',
+          roles: ['admin', 'manager'],
+        },
+        {
           p: '**Rodyti PIN ir PUK**, raktas tarp SIM veiksmų, parodo jos PIN ir PUK: SIM numerius, kiekvieną kodą dideliais skaitmenimis su mygtuku jam nukopijuoti ir kada tai įrašyta. Jį turi visi, kurie mato SIM korteles, ir slaptažodžio neprašoma. Kiekvienas kartas įrašomas į SIM **Pakeitimai**, bet ne patys kodai. **Baigta** jį uždaro; jis užsidaro ir pats po minutės arba išėjus iš skirtuko. SIM be PIN ir PUK raktas pilkas ir neveikia.',
         },
         { shots: [{ name: 'sim-codes', alt: 'Rodyti PIN ir PUK: SIM PIN ir PUK, kiekvienas su kopijavimo mygtuku' }] },
@@ -374,7 +379,7 @@ export const lt: Guide = {
         { p: 'Kai darbuotojas pasirašo, po išdavimu pasirinkite **Įkelti pasirašytą aktą**, tada nufotografuokite aktą arba pasirinkite failą: PDF, JPEG arba PNG iki 10 MB. Iš nuotraukos pašalinama fotografavimo vieta ir fotoaparato duomenys. Įkėlus dar kartą, ankstesnės kopijos lieka po naujausia.', roles: ['admin', 'manager'], devices: ['phone'] },
         { shots: [{ name: 'signed-copy', alt: 'Išdavimas su įkelta pasirašyta kopija' }] },
         {
-          p: 'Kai daiktas fiziškai grįžta į biurą, **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** ir **Atsisiųsti PDF** pateikia jo aktą. Spausdinimas, kiekvienas atsisiųstas PDF ir blokavimo laiškas įrašomi skiltyje **Pakeitimai**. Iš pradžių ji suskleista; pasirinkite **Pakeitimai**, kad ją atidarytumėte.',
+          p: 'Kai daiktas fiziškai grįžta į biurą, pasirinkite **Priimti**: tada **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** ir **Atsisiųsti PDF** pateikia jo aktą. Spausdinimas, kiekvienas atsisiųstas PDF ir blokavimo laiškas įrašomi skiltyje **Pakeitimai**. Iš pradžių ji suskleista; pasirinkite **Pakeitimai**, kad ją atidarytumėte.',
           roles: ['admin', 'manager'],
         },
         {

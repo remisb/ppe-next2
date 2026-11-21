@@ -126,11 +126,12 @@ Kiekvienas datos laukas, čia ir kitur, priima datą taip, kaip ją rašo jūsų
 
 ![Pasirinktas laikotarpis, atvertas virš filtro „Data“, su kalendoriumi „Nuo“](../../web/apps/workwear/public/help-img/lt/desktop/date-picker.png)
 
-Užsakymas, kurio būsena **Užsakyta**, turi šiuos veiksmus:
+Užsakymo veiksmai yra juostoje po jo numeriu: pagrindinis – su žodžiais, toliau piktogramos, tada **⋯**. Užveskite žymeklį ant piktogramos, kad pamatytumėte jos pavadinimą; jutikliniame ekrane **⋯** jas išvardija ir pavadinimais. Užsakymas, kurio būsena **Užsakyta**, turi šiuos:
 
-- **Sukurti patvirtinimo nuorodą** sukuria naują nuorodą darbuotojui ir parodo ją žemiau su **Kopijuoti nuorodą** ir **Siųsti nuorodą per WhatsApp**. Tada mygtukas tampa **Patvirtinimo nuoroda** – juo nuorodą galima paslėpti ir vėl parodyti. Išėjus iš užsakymo nuoroda neberodoma; nauja nuoroda pakeičia senąją.
-- **Spausdinti užsakymą** atspausdina užsakymo įrašą, kurį darbuotojas pasirašo.
-- **Pažymėti kaip pasirašytą ir išduotą** pažymi, kad darbuotojas pasirašė atspausdintą įrašą. Programa pirma paklausia; tada užsakymas tampa **Išduota**, o šalia būsenos atsiranda žalias ženkliukas **Pasirašyta**.
+- **Sukurti patvirtinimo nuorodą** (kai vietos mažai, **Sukurti nuorodą**) sukuria naują nuorodą darbuotojui ir parodo ją žemiau su **Kopijuoti nuorodą** ir **Siųsti nuorodą per WhatsApp**. Tada mygtukas tampa **Patvirtinimo nuoroda** – juo nuorodą galima paslėpti ir vėl parodyti. Išėjus iš užsakymo nuoroda neberodoma; nauja nuoroda pakeičia senąją.
+- Spausdintuvas, **Spausdinti užsakymą**, atspausdina užsakymo įrašą, kurį darbuotojas pasirašo.
+- Parašas, **Pažymėti kaip pasirašytą ir išduotą**, pažymi, kad darbuotojas pasirašė atspausdintą įrašą. Programa pirma paklausia; tada užsakymas tampa **Išduota**, o šalia būsenos atsiranda žalias ženkliukas **Pasirašyta**.
+- **⋯ → Kopijuoti į WhatsApp** dar kartą nukopijuoja užsakymo žinutę tiekėjui, taip pat ir **Išduota** užsakyme.
 
 *Tik vadovams:*
 
@@ -144,7 +145,7 @@ Užsakymo **Pakeitimai** rodo, kas jam nutiko ir kas tai padarė: užsakyta, suk
 
 Užsakymas, kurio būsena **Išduota**, turi užrakintą įrašą anglų ir rusų kalbomis (Items Given Record / Акт выдачи). Atidarykite jį mygtuku **Peržiūrėti užsakymą**.
 
-- **Spausdinti įrašą** atspausdina jį viename A4 lape; užsakyme tą patį daro **Spausdinti užsakymą**.
+- **Spausdinti įrašą** atspausdina jį viename A4 lape; užsakyme tą patį daro spausdintuvas, **Spausdinti užsakymą**.
 - **Siųsti per WhatsApp** jį išsiunčia.
 
 Datos įraše ir Įmonės turto atspausdintuose bei PDF išdavimo aktuose rašomos **2026 10 15**, visomis kalbomis vienodai.
@@ -284,6 +285,10 @@ Kiekvienas žingsnis atsiveria, kai baigtas ankstesnis, o eilutė prie mygtuko n
 
 ![SIM puslapis: būsena, turėtojas ir išdavimai](../../web/apps/workwear/public/help-img/lt/desktop/asset.png)
 
+*Tik administratoriams ir vadovams:*
+
+SIM ar daikto veiksmai yra juostoje po jo numeriais. Pagrindinis – su žodžiais: **Išduoti SIM** arba **Išduoti turtą**, kai jis biure, **Priimti**, kai kas nors jį turi. Toliau piktogramos: raktas, **Rodyti PIN ir PUK**, ir, kol jis išduotas, spausdintuvas, **Spausdinti aktą**, kuris dar kartą atspausdina jo aktą. Užveskite žymeklį ant piktogramos, kad pamatytumėte jos pavadinimą; jutikliniame ekrane **⋯** jas išvardija ir pavadinimais. Po **⋯** taip pat yra **Redaguoti**, **Paruošti aktyvavimo laišką** ir **Paruošti blokavimo laišką**, o paskutinis – **Pažymėti kaip negrąžintą**.
+
 **Rodyti PIN ir PUK**, raktas tarp SIM veiksmų, parodo jos PIN ir PUK: SIM numerius, kiekvieną kodą dideliais skaitmenimis su mygtuku jam nukopijuoti ir kada tai įrašyta. Jį turi visi, kurie mato SIM korteles, ir slaptažodžio neprašoma. Kiekvienas kartas įrašomas į SIM **Pakeitimai**, bet ne patys kodai. **Baigta** jį uždaro; jis užsidaro ir pats po minutės arba išėjus iš skirtuko. SIM be PIN ir PUK raktas pilkas ir neveikia.
 
 ![Rodyti PIN ir PUK: SIM PIN ir PUK, kiekvienas su kopijavimo mygtuku](../../web/apps/workwear/public/help-img/lt/desktop/sim-codes.png)
@@ -298,7 +303,7 @@ Kai darbuotojas pasirašo, nuskenuokite arba nufotografuokite aktą ir po jo iš
 
 *Tik administratoriams ir vadovams:*
 
-Kai daiktas fiziškai grįžta į biurą, **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** ir **Atsisiųsti PDF** pateikia jo aktą. Spausdinimas, kiekvienas atsisiųstas PDF ir blokavimo laiškas įrašomi skiltyje **Pakeitimai**. Iš pradžių ji suskleista; pasirinkite **Pakeitimai**, kad ją atidarytumėte.
+Kai daiktas fiziškai grįžta į biurą, pasirinkite **Priimti**: tada **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** ir **Atsisiųsti PDF** pateikia jo aktą. Spausdinimas, kiekvienas atsisiųstas PDF ir blokavimo laiškas įrašomi skiltyje **Pakeitimai**. Iš pradžių ji suskleista; pasirinkite **Pakeitimai**, kad ją atidarytumėte.
 
 Išėjus iš darbo, niekas negrąžinama savaime. Kai darbuotojas negrąžina kortelės, **Pažymėti kaip negrąžintą** įrašo, kur ji yra: vis dar pas jį ar nežinoma. Kortelė lieka jo, kol grįš. Tada **Paruošti blokavimo laišką** pateikia tekstą, kurį nukopijuosite į savo laišką tiekėjui; kai jis patvirtins, ekrane **Keisti būseną** pasirinkite **Užblokuota**.
 
