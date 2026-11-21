@@ -126,11 +126,12 @@ Every date field, here and elsewhere, takes a date as your language writes it: *
 
 ![Custom range open over the Date filter, with the From calendar](../../web/apps/workwear/public/help-img/en/desktop/date-picker.png)
 
-An **Ordered** order has these actions:
+An order's actions are in the bar under its number: the main one with its words, then icons, then **⋯**. Point at an icon to see its name; on a touch screen, **⋯** lists them by name too. An **Ordered** order has these:
 
-- **Create confirmation link** makes a new link for the employee and shows it below, with **Copy link** and **Share link via WhatsApp**. The button then becomes **Confirmation link**, which hides and shows that link. Once you leave the order the link is no longer shown; a new one replaces it.
-- **Print Order** prints the order's record for the employee to sign.
-- **Mark as Signed & Given** records that the employee signed the printed record. The app asks first; the order is then **Given**, with a green **Signed** badge beside its status.
+- **Create confirmation link** (**Create link** where there is little room) makes a new link for the employee and shows it below, with **Copy link** and **Share link via WhatsApp**. The button then becomes **Confirmation link**, which hides and shows that link. Once you leave the order the link is no longer shown; a new one replaces it.
+- The printer, **Print Order**, prints the order's record for the employee to sign.
+- The signature, **Mark as Signed & Given**, records that the employee signed the printed record. The app asks first; the order is then **Given**, with a green **Signed** badge beside its status.
+- **⋯ → Copy for WhatsApp** copies the order's message for the supplier again, on a **Given** order too.
 
 *Managers only:*
 
@@ -144,7 +145,7 @@ An order's **Changes** list what happened to it and who did it: ordered, a link 
 
 A **Given** order has a locked record in English and Russian. Open it with **View Order**.
 
-- **Print Record** prints it on one A4 page; **Print Order** on the order does the same.
+- **Print Record** prints it on one A4 page; the printer, **Print Order**, on the order does the same.
 - **Share via WhatsApp** sends it.
 
 Dates on the record, and on the printed and PDF assignment forms of Company Assets, are written **2026 10 15**, the same in every language.
@@ -284,6 +285,10 @@ Each step opens when the one before it is done, and the line beside the button s
 
 ![A SIM's page: its status, holder and assignments](../../web/apps/workwear/public/help-img/en/desktop/asset.png)
 
+*Administrators and managers only:*
+
+A SIM's or an item's actions are in the bar under its numbers. The main one keeps its words: **Give SIM** or **Give Asset** in the office, **Return** while someone holds it. Then come icons: the key, **Show PIN and PUK**, and, while it is held, the printer, **Print Form**, which prints its form again. Point at an icon to see its name; on a touch screen, **⋯** lists them by name too. **⋯** also holds **Edit**, **Prepare Activation Email** and **Prepare Blocking Email**, and, last, **Mark as Not Returned**.
+
 **Show PIN and PUK**, the key among a SIM's actions, shows its PIN and PUK: the SIM's numbers, each code large with a button to copy it, and when it was recorded. Everyone who sees SIM cards has it, and no password is asked. Each time is recorded in the SIM's **Changes**, never the codes themselves. **Done** closes it; it also closes by itself after a minute, or when you leave the tab. On a SIM without PIN and PUK the key is greyed out.
 
 ![Show PIN and PUK: the SIM's PIN and PUK, each with its copy button](../../web/apps/workwear/public/help-img/en/desktop/sim-codes.png)
@@ -298,7 +303,7 @@ Once the employee has signed, scan or photograph the form and choose **Upload Si
 
 *Administrators and managers only:*
 
-When it is physically back in the office, **Register SIM Return** or **Register Asset Return** puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** and **Download PDF** for its form. Printing, each PDF downloaded and the blocking email are recorded in its **Changes**, closed at first; choose **Changes** to open them.
+When it is physically back in the office, choose **Return**: **Register SIM Return** or **Register Asset Return** then puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** and **Download PDF** for its form. Printing, each PDF downloaded and the blocking email are recorded in its **Changes**, closed at first; choose **Changes** to open them.
 
 Leaving never returns anything. When an employee does not give a card back, **Mark as Not Returned** records where it is: still with them, or unknown. It stays theirs until it comes back. **Prepare Blocking Email** then gives the text to copy into your own email to the provider; once they confirm, choose **Blocked** in **Change Status**.
 

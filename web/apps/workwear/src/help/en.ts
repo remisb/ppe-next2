@@ -168,7 +168,7 @@ export const en: Guide = {
           devices: ['desktop'],
         },
         { p: '**All**, **Ordered** and **Given** filter the orders by status. You can also filter by employee and date. Tap an order to open it; the arrow **←** at its top takes you back to the list.', devices: ['tablet'] },
-        { p: '**All**, **Ordered** and **Given** filter the orders by status. The employee search is always above the list; **Filters** holds **Date**. The sort button above the orders says their order in words, such as **Date, newest first**: choose it to sort by another column or to reverse the order. Tap an order to open it; the arrow **←** at its top takes you back to the list. Its number and main action stay at the top as you scroll.', devices: ['phone'] },
+        { p: '**All**, **Ordered** and **Given** filter the orders by status. The employee search is always above the list; **Filters** holds **Date**. The sort button above the orders says their order in words, such as **Date, newest first**: choose it to sort by another column or to reverse the order. Tap an order to open it; the arrow **←** at its top takes you back to the list. Its number and its actions stay at the top as you scroll.', devices: ['phone'] },
         {
           p: '**Date** shows **All dates** at first; choose **Last 7 days**, **This month** or **Previous month** instead. **Custom range…** opens **From** and **To** in its place: **Apply** makes that range the choice shown, such as **2026-09-01 – 2026-09-30**, and **Cancel** leaves the filter as it was. Choose **Custom range…** again to change it.',
         },
@@ -176,12 +176,13 @@ export const en: Guide = {
           p: 'Every date field, here and elsewhere, takes a date as your language writes it: **2026-10-15**. Type the digits and the separators are added for you. In an empty field the current year comes first as you start typing; to use another year, type it over. Or choose the calendar beside the field and pick a day: days you cannot choose, such as a **To** before **From**, are greyed out. A date that does not exist is refused, and **Apply** waits until it is put right.',
         },
         { shots: [{ name: 'date-picker', alt: 'Custom range open over the Date filter, with the From calendar' }] },
-        { p: 'An **Ordered** order has these actions:' },
+        { p: "An order's actions are in the bar under its number: the main one with its words, then icons, then **⋯**. Point at an icon to see its name; on a touch screen, **⋯** lists them by name too. An **Ordered** order has these:" },
         {
           ul: [
-            '**Create confirmation link** makes a new link for the employee and shows it below, with **Copy link** and **Share link via WhatsApp**. The button then becomes **Confirmation link**, which hides and shows that link. Once you leave the order the link is no longer shown; a new one replaces it.',
-            '**Print Order** prints the order\'s record for the employee to sign.',
-            '**Mark as Signed & Given** records that the employee signed the printed record. The app asks first; the order is then **Given**, with a green **Signed** badge beside its status.',
+            '**Create confirmation link** (**Create link** where there is little room) makes a new link for the employee and shows it below, with **Copy link** and **Share link via WhatsApp**. The button then becomes **Confirmation link**, which hides and shows that link. Once you leave the order the link is no longer shown; a new one replaces it.',
+            'The printer, **Print Order**, prints the order\'s record for the employee to sign.',
+            'The signature, **Mark as Signed & Given**, records that the employee signed the printed record. The app asks first; the order is then **Given**, with a green **Signed** badge beside its status.',
+            '**⋯ → Copy for WhatsApp** copies the order\'s message for the supplier again, on a **Given** order too.',
           ],
         },
         { p: '**⋯ → Delete order…** removes an order, such as a test order, after asking.', roles: ['manager'] },
@@ -194,7 +195,7 @@ export const en: Guide = {
       title: 'Items Given Record',
       blocks: [
         { p: 'A **Given** order has a locked record in English and Russian. Open it with **View Order**.' },
-        { ul: ['**Print Record** prints it on one A4 page; **Print Order** on the order does the same.', '**Share via WhatsApp** sends it.'] },
+        { ul: ['**Print Record** prints it on one A4 page; the printer, **Print Order**, on the order does the same.', '**Share via WhatsApp** sends it.'] },
         { p: 'Dates on the record, and on the printed and PDF assignment forms of Company Assets, are written **2026 10 15**, the same in every language.' },
         { shots: [{ name: 'record', alt: 'The bilingual Items Given Record' }] },
       ],
@@ -363,6 +364,10 @@ export const en: Guide = {
         },
         { shots: [{ name: 'asset', alt: "A SIM's page: its status, holder and assignments" }], roles: ['employee'] },
         {
+          p: 'A SIM\'s or an item\'s actions are in the bar under its numbers. The main one keeps its words: **Give SIM** or **Give Asset** in the office, **Return** while someone holds it. Then come icons: the key, **Show PIN and PUK**, and, while it is held, the printer, **Print Form**, which prints its form again. Point at an icon to see its name; on a touch screen, **⋯** lists them by name too. **⋯** also holds **Edit**, **Prepare Activation Email** and **Prepare Blocking Email**, and, last, **Mark as Not Returned**.',
+          roles: ['admin', 'manager'],
+        },
+        {
           p: "**Show PIN and PUK**, the key among a SIM's actions, shows its PIN and PUK: the SIM's numbers, each code large with a button to copy it, and when it was recorded. Everyone who sees SIM cards has it, and no password is asked. Each time is recorded in the SIM's **Changes**, never the codes themselves. **Done** closes it; it also closes by itself after a minute, or when you leave the tab. On a SIM without PIN and PUK the key is greyed out.",
         },
         { shots: [{ name: 'sim-codes', alt: "Show PIN and PUK: the SIM's PIN and PUK, each with its copy button" }] },
@@ -371,7 +376,7 @@ export const en: Guide = {
         { p: 'Once the employee has signed, choose **Upload Signed Form** under its assignment, then take a photo of the form or choose a file: a PDF, JPEG or PNG of up to 10 MB. A photo\'s location and camera details are removed. Uploading again keeps the earlier copies, under the newest.', roles: ['admin', 'manager'], devices: ['phone'] },
         { shots: [{ name: 'signed-copy', alt: 'An assignment with its signed copy uploaded' }] },
         {
-          p: 'When it is physically back in the office, **Register SIM Return** or **Register Asset Return** puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** and **Download PDF** for its form. Printing, each PDF downloaded and the blocking email are recorded in its **Changes**, closed at first; choose **Changes** to open them.',
+          p: 'When it is physically back in the office, choose **Return**: **Register SIM Return** or **Register Asset Return** then puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** and **Download PDF** for its form. Printing, each PDF downloaded and the blocking email are recorded in its **Changes**, closed at first; choose **Changes** to open them.',
           roles: ['admin', 'manager'],
         },
         {
