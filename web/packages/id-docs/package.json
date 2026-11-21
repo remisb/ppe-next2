@@ -3,9 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Reading an identity document in the browser, as rules: a passport's page or a card's two sides as photos, the reading's draft and what stops Save, the names and kind from the MRZ, the differences from an employee on file, the request Save sends, the Document Copies' encoding, the page found, turned and flattened, the portrait's box, the corners. Taken from docs-import (its src/lib), shared with docs-scan (docs/apps/docs-scan-plan.md, section 5.1). No screens.",
+  "description": "Reading an identity document in the browser, as rules: a passport's page or a card's two sides as photos, the reading's draft and what stops Save, the names and kind from the MRZ, the differences from an employee on file, the request Save sends, the Document Copies' encoding, the page found, turned and flattened, the portrait's box, the corners. Taken from docs-import (its src/lib), shared with docs-scan (docs/apps/docs-scan-plan.md, section 5.1). And the one screen part both apps share, Adjust Corners (corner-editor.tsx), its words given by the app.",
   "exports": {
-    "./*": "./src/*.ts"
+    "./*": "./src/*.ts",
+    "./corner-editor": "./src/corner-editor.tsx"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -15,9 +16,12 @@
     "@ppe/api-client": "workspace:*",
     "@ppe/mrz": "workspace:*",
     "@ppe/routing": "workspace:*",
-    "@ppe/scan-kit": "workspace:*"
+    "@ppe/scan-kit": "workspace:*",
+    "@ppe/ui": "workspace:*",
+    "react": "^19.3.0"
   },
   "devDependencies": {
+    "@types/react": "^19.3.0",
     "jsdom": "^30.1.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.1",

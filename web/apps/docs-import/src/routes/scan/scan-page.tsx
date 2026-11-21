@@ -26,7 +26,7 @@ import {
 } from '@ppe/id-docs/scan'
 
 import type { ImportStart } from '../import/import-page'
-import { CornerEditor } from './corner-editor'
+import { CornerEditor } from '@ppe/id-docs/corner-editor'
 import { PageCard } from './page-card'
 import { RecentScans } from './recent-scans'
 
@@ -300,6 +300,14 @@ export function ScanPage({ onSaveToPersonnel }: { onSaveToPersonnel: (start: Imp
           size={editingPage.size}
           onDone={(c) => setCorners(editingPage.source, c)}
           onCancel={() => setEditing(null)}
+          words={{
+            title: t.scan.cornersTitle,
+            hint: t.scan.cornersHint,
+            cancel: t.scan.cancel,
+            done: t.scan.cornersDone,
+            photoAlt: t.scan.photoAlt,
+            cornerNames: t.scan.cornerNames,
+          }}
         />
       ) : null}
     </>

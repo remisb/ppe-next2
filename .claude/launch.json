@@ -42,6 +42,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["web/spikes/ui-sdk-csp/node_modules/vite/bin/vite.js", "preview", "web/spikes/ui-sdk-csp", "--port", "5199", "--strictPort"],
       "port": 5199
+    },
+    {
+      "name": "docs-scan",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "web/apps/docs-scan", "dev"],
+      "port": 5190
     }
   ]
 }
