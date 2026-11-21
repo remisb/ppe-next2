@@ -965,6 +965,40 @@ importers:
         specifier: ^8.3.1
         version: 8.3.1(@types/node@26.6.2)(jiti@2.7.0)
 
+  spikes/viz:
+    dependencies:
+      '@ppe/mrz':
+        specifier: workspace:*
+        version: link:../../packages/mrz
+      '@tesseract.js-data/eng':
+        specifier: 1.0.0
+        version: 1.0.0
+      '@tesseract.js-data/lit':
+        specifier: 1.0.0
+        version: 1.0.0
+      '@tesseract.js-data/rus':
+        specifier: 1.0.0
+        version: 1.0.0
+      tesseract.js:
+        specifier: 7.0.0
+        version: 7.0.0
+      tesseract.js-core:
+        specifier: 7.0.0
+        version: 7.0.0
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.63.0
+        version: 1.63.0
+      '@types/node':
+        specifier: ^26.6.2
+        version: 26.6.2
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^5.0.1
+        version: 5.0.1(@types/node@26.6.2)(jsdom@30.1.1)(vite@8.3.1(@types/node@26.6.2)(jiti@2.7.0))
+
 packages:
 
   '@asamuzakjp/css-color@7.0.1':
@@ -1466,6 +1500,12 @@ packages:
 
   '@tesseract.js-data/eng@1.0.0':
     resolution: {integrity: sha512-mbTumm6KQPUHyzTPQaF3ObXYnx0SqqfV2nabqFVQBwD6Kl7PhGSLSzOlfFTWy0P3BjghaSKA2W9GB19Jk+ZcTg==}
+
+  '@tesseract.js-data/lit@1.0.0':
+    resolution: {integrity: sha512-HJBugoUf+R4EBIoLlIVn0Tihh5TSR7z+mQIQEV204RGjzTtgEQqgoP1jhnvYKagfuGOBRnTe1dsT2ZUnClF6nQ==}
+
+  '@tesseract.js-data/rus@1.0.0':
+    resolution: {integrity: sha512-GVOaLultru90gsuVGjXyPCKsg4SMeExnqSnzb8Gb+9zZ0F4wbA6bgWu/metQlcmU7OwTnYVd4UdSH9D4yBMZEA==}
 
   '@ts-morph/common@0.27.0':
     resolution: {integrity: sha512-Wf29UqxWDpc+i61k3oIOzcUfQt79PIT9y/MWfAGlrkjg6lBC1hwDECLXPVJAhWjiGbfBCxZd65F/LIZF3+jeJQ==}
@@ -3820,6 +3860,10 @@ snapshots:
       vite: 8.3.1(@types/node@26.6.2)(jiti@2.7.0)
 
   '@tesseract.js-data/eng@1.0.0': {}
+
+  '@tesseract.js-data/lit@1.0.0': {}
+
+  '@tesseract.js-data/rus@1.0.0': {}
 
   '@ts-morph/common@0.27.0':
     dependencies:

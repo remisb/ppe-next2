@@ -39,6 +39,8 @@ web/
                          and the scripts that measured it; never built into an image
     ui-sdk-csp/          docs-scan phase 1, throwaway: @ppe/ui's ui-sdk components served under
                          the device policy, with and without the csp-nonce tag
+    viz/                 docs-scan phase 2, throwaway: printed names, dates, place and authority
+                         read with tesseract.js and measured on made-up sides (README: verdict)
   apps/
     workwear/            the staff app, at /
     admin/               Administration, at /admin/: Users, Roles & permissions,

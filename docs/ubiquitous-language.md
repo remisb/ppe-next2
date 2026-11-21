@@ -1274,14 +1274,17 @@ replaced by **Scan Documents** (docs-scan, decided 2026-11-21, to build).
   Documents, Scans, Not saved, Saved, MRZ not read, Find Employee, Choose Another Employee…,
   Update Employee, Take from the document, Already the same, Save Document, Scan Next Document.
 
-### MRZ, Printed, MRZ agrees, Check, Typed (a field's source)
+### MRZ, MRZ agrees, Printed, Check, Typed (a field's source)
 - **Brief:** the mark beside each field Scan Documents read, saying where its value came from.
-- **Detail:** **MRZ**: from the MRZ, its check digits right. **Printed · MRZ agrees**: a name read
-  from the printed text whose letters, folded, equal the MRZ's (the MRZ has no accents).
-  **Printed**: from the printed text alone (issued on, authority, place of birth). **Check**: a
-  doubtful reading to compare with the document. **Typed**: corrected by the user. When the MRZ
-  cannot be read, **Retake** or **Type the MRZ**.
-- **UI:** MRZ, Printed, MRZ agrees, Check, Typed; Retake, Type the MRZ.
+- **Detail:** **MRZ**: from the MRZ, its check digits right. **MRZ agrees · check the letters**:
+  a name read from the printed text whose letters, folded, equal the MRZ's; the MRZ has no
+  accents and the OCR may drop one, so the user compares it with the document and ticks **I have
+  compared the names with the document**. **Printed**: the date of issue, taken because it lies 5
+  or 10 years before the expiry. **Check**: a doubtful reading to compare with the document.
+  **Typed**: entered or corrected by the user. When the MRZ cannot be read, **Retake** or **Type
+  the MRZ**.
+- **UI:** MRZ, MRZ agrees · check the letters, Printed, Check, Typed; I have compared the names
+  with the document; Retake, Type the MRZ.
 
 ### Mark Employment Ended, Legal Hold, retention
 - **Brief:** when the person's employment ended, which starts the clock; and a stop on it.
@@ -1473,7 +1476,8 @@ App Launcher (the source is `@ppe/launcher`'s `text.ts`):
 | Scan Documents (app) / Scans / Not saved / Saved / MRZ not read | Dokumentų skenavimas / Nuskaitymai / Neišsaugota / Išsaugota / MRZ neperskaityta | Сканирование документов / Сканы / Не сохранено / Сохранено / MRZ не прочитана |
 | Find Employee / Choose Another Employee… / Update Employee / Take from the document / Already the same | Rasti darbuotoją / Pasirinkti kitą darbuotoją… / Atnaujinti darbuotoją / Paimti iš dokumento / Jau sutampa | Найти сотрудника / Выбрать другого сотрудника… / Обновить сотрудника / Взять из документа / Уже совпадает |
 | Save Document / Scan Next Document | Išsaugoti dokumentą / Nuskaityti kitą dokumentą | Сохранить документ / Сканировать следующий документ |
-| MRZ / Printed / MRZ agrees / Check / Typed | MRZ / Atspausdinta / MRZ sutampa / Patikrinkite / Įvesta | MRZ / Напечатано / MRZ совпадает / Проверьте / Введено |
+| MRZ / Printed / MRZ agrees · check the letters / Check / Typed | MRZ / Atspausdinta / MRZ sutampa · patikrinkite raides / Patikrinkite / Įvesta | MRZ / Напечатано / MRZ совпадает · проверьте буквы / Проверьте / Введено |
+| I have compared the names with the document | Palyginau vardą ir pavardę su dokumentu | Я сверил имя и фамилию с документом |
 | Retake / Type the MRZ | Fotografuoti iš naujo / Įvesti MRZ | Переснять / Ввести MRZ |
 | Adjust Corners / Check corners / Turn Left / Turn Right | Pataisyti kampus / Patikrinkite kampus / Pasukti kairėn / Pasukti dešinėn | Поправить углы / Проверьте углы / Повернуть влево / Повернуть вправо |
 | Mark Employment Ended / Employment ended / Legal Hold | Pažymėti darbo pabaigą / Darbas baigtas / Draudimas naikinti | Отметить окончание работы / Работа окончена / Запрет удаления |

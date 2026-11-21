@@ -1,0 +1,28 @@
+{
+  "name": "@ppe/viz-spike",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "docs-scan phase 2, the printed fields (VIZ) spike: made-up document pages drawn and roughened as flattened phone photos, read with tesseract.js (Lithuanian, English, Russian), and the names, dates and codes taken only where the MRZ confirms them, measured. Throwaway: never built or deployed; what lasts is its verdict in docs/apps/docs-scan-plan.md and, on go, src/viz.ts.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "models": "node --experimental-strip-types --no-warnings scripts/models.ts",
+    "pages": "node --experimental-strip-types --no-warnings scripts/pages.ts",
+    "measure": "node --experimental-strip-types --no-warnings scripts/measure.ts"
+  },
+  "dependencies": {
+    "@ppe/mrz": "workspace:*",
+    "@tesseract.js-data/eng": "1.0.0",
+    "@tesseract.js-data/lit": "1.0.0",
+    "@tesseract.js-data/rus": "1.0.0",
+    "tesseract.js": "7.0.0",
+    "tesseract.js-core": "7.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}
