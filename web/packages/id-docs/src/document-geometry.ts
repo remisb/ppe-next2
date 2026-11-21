@@ -7,7 +7,7 @@
  */
 import type { BandPlace } from '@ppe/mrz/reader'
 
-import type { DocType } from './flow'
+import type { DocType } from './flow.ts'
 
 /** Each document's size, mm. */
 export const DOC_MM: Record<DocType, { w: number; h: number }> = { passport: { w: 125, h: 88 }, card: { w: 85.6, h: 54 } }

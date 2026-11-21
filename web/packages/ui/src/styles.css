@@ -1,3 +1,10 @@
+/*
+ * ui-sdk adds the little CSS its behaviours need (a closed popup hidden, a sheet's dimming) in
+ * this layer, at run time as constructed style sheets: the apps' CSP has no 'unsafe-inline'
+ * for styles, and index.html's <meta property="csp-nonce"> without a nonce asks for them.
+ * Declared first, so every style of ours wins over it.
+ */
+@layer ui-sdk;
 @import 'tailwindcss';
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -450,5 +457,62 @@
 @media (width < 64rem) {
   :has(> [data-slot='pane-bar']):has([data-slot='record-header']) > [data-slot='pane-bar'] {
     display: none;
+  }
+}
+
+/*
+ * The toast stack (components/toast.tsx): at the top, the newest in front, those behind
+ * peeking 8px below it; expanded while hovered or focused. ui-sdk sets the variables.
+ */
+@layer components {
+  .ppe-toasts {
+    position: fixed;
+    z-index: 60;
+    top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+    left: 50%;
+    translate: -50% 0;
+    width: min(24rem, calc(100vw - 2rem));
+    height: var(--toast-front-height);
+  }
+  .ppe-toasts[data-expanded] {
+    height: calc(var(--toast-stack-height) + (var(--toast-count) - 1) * 8px);
+  }
+  .ppe-toasts [data-slot='toast'] {
+    --y: calc(var(--toast-index) * 8px);
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    z-index: calc(100 - var(--toast-index));
+    overflow: hidden;
+    height: var(--toast-height);
+    translate: var(--toast-swipe-x, 0px) calc(var(--y) + var(--toast-swipe-y, 0px));
+    scale: calc(1 - var(--toast-index) * 0.05);
+    transition-property: translate, scale, opacity, height;
+    transition-duration: 400ms;
+    user-select: none;
+  }
+  .ppe-toasts [data-slot='toast']:not([data-front], [data-expanded]) {
+    height: var(--toast-front-height);
+  }
+  .ppe-toasts [data-slot='toast'][data-expanded] {
+    --y: calc(var(--toast-offset) + var(--toast-index) * 8px);
+    scale: 1;
+  }
+  .ppe-toasts [data-slot='toast'][data-starting-style] {
+    transition: none;
+  }
+  .ppe-toasts [data-slot='toast'][data-starting-style][data-front] {
+    --y: -110%;
+  }
+  .ppe-toasts [data-slot='toast']:is([data-starting-style]:not([data-front]), [data-ending-style]) {
+    opacity: 0;
+  }
+  .ppe-toasts [data-slot='toast'][data-swiping] {
+    transition: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ppe-toasts [data-slot='toast'] {
+      transition-property: opacity;
+    }
   }
 }

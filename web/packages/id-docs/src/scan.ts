@@ -11,7 +11,7 @@ import type { IdentityDocumentKind } from '@ppe/api-client'
 import type { PhotoReading, Turn } from '@ppe/mrz/reader'
 import type { Quad } from '@ppe/scan-kit/perspective'
 
-import { kindOf, namesFromMrz, type DocType } from './flow'
+import { kindOf, namesFromMrz, type DocType } from './flow.ts'
 
 /** The most pages one archive holds (the API's limit too). */
 export const MAX_PAGES = 10

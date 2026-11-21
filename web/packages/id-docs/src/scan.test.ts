@@ -12,7 +12,7 @@ import {
   scanBlockers,
   type ScanAction,
   type ScanBatch,
-} from './scan'
+} from './scan.ts'
 
 const today = '2026-11-05'
 // testdata/mrz/vectors.json's made-up Lithuanian passport.

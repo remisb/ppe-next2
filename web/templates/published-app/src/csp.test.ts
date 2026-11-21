@@ -23,6 +23,11 @@ const inlineScripts = (html: string) => [...html.matchAll(/<script(?![^>]*\bsrc=
 const hash = (s: string) => `'sha256-${createHash('sha256').update(s, 'utf8').digest('base64')}'`
 
 describe('Content-Security-Policy', () => {
+  it('carries <meta property="csp-nonce">, so ui-sdk adds its CSS as constructed sheets, not a blocked <style>', () => {
+    expect(indexHtml).toMatch(/<meta property="csp-nonce" \/>/)
+    expect(staffPolicy.split(';').map((d) => d.trim()).find((d) => d.startsWith('style-src'))).toBe("style-src 'self'")
+  })
+
   it('is the standard profile', () => {
     expect(manifest.profile).toBe('standard')
     expect(staffPolicy).not.toBe('')

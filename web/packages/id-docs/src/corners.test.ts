@@ -1,4 +1,4 @@
-import { keyStep, moveCorner, wholePhoto } from './corners'
+import { keyStep, moveCorner, wholePhoto } from './corners.ts'
 
 describe('corners', () => {
   const q = wholePhoto(400, 300)

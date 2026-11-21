@@ -8,7 +8,7 @@ import { Camera, CircleCheck, ImagePlus, Keyboard, TriangleAlert, Video } from '
 import { useRef, useState } from 'react'
 
 import { t } from '@/i18n'
-import { readPhotoOf, slotsOf, type DocType, type Holder, type Photo, type Photos, type Slot } from '@/lib/flow'
+import { readPhotoOf, slotsOf, type DocType, type Holder, type Photo, type Photos, type Slot } from '@ppe/id-docs/flow'
 
 import { LiveCapture } from './live-capture'
 import { HolderLine } from './person-step'

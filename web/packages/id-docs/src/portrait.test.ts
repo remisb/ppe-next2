@@ -1,6 +1,6 @@
 import type { BandPlace } from '@ppe/mrz/reader'
 
-import { PORTRAIT_RATIO, cropRect, fitBox, moveBox, portraitBox, resizeBox } from './portrait'
+import { PORTRAIT_RATIO, cropRect, fitBox, moveBox, portraitBox, resizeBox } from './portrait.ts'
 
 /** A box's own ratio in pixels, for a picture of this aspect. */
 const ratio = (b: { w: number; h: number }, aspect: number) => (b.w * aspect) / b.h

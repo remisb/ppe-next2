@@ -22,6 +22,11 @@ const inlineScripts = (html: string) => [...html.matchAll(/<script(?![^>]*\bsrc=
 const hash = (s: string) => `'sha256-${createHash('sha256').update(s, 'utf8').digest('base64')}'`
 
 describe('Content-Security-Policy', () => {
+  it('carries <meta property="csp-nonce">, so ui-sdk adds its CSS as constructed sheets, not a blocked <style>', () => {
+    expect(indexHtml).toMatch(/<meta property="csp-nonce" \/>/)
+    expect(directives(policy).get('style-src')).toEqual(["'self'"])
+  })
+
   it("is the staff app's first policy in the Caddyfile, which its csp.test.ts reads", () => {
     expect(staffPolicy).not.toBe('')
     expect(/Content-Security-Policy "([^"]+)"/.exec(caddyfile)?.[1]).toBe(staffPolicy)

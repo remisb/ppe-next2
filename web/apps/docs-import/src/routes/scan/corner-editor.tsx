@@ -5,8 +5,8 @@ import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 
 import { t } from '@/i18n'
-import { ARROWS, keyStep, moveCorner } from '@/lib/corners'
-import { turnedPreview } from '@/lib/make-page'
+import { ARROWS, keyStep, moveCorner } from '@ppe/id-docs/corners'
+import { turnedPreview } from '@ppe/id-docs/make-page'
 
 /**
  * Adjust Corners (Scan Document): the photo, turned as its page is, with the

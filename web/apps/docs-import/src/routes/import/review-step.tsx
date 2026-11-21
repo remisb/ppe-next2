@@ -20,8 +20,8 @@ import {
   type Holder,
   type Photos,
   type Slot,
-} from '@/lib/flow'
-import { todayHere } from '@/lib/reader'
+} from '@ppe/id-docs/flow'
+import { todayHere } from '@ppe/id-docs/reader'
 
 import { issueText, noteText } from './issues'
 import { HolderLine } from './person-step'

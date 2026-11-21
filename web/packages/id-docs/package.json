@@ -1,0 +1,26 @@
+{
+  "name": "@ppe/id-docs",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Reading an identity document in the browser, as rules: a passport's page or a card's two sides as photos, the reading's draft and what stops Save, the names and kind from the MRZ, the differences from an employee on file, the request Save sends, the Document Copies' encoding, the page found, turned and flattened, the portrait's box, the corners. Taken from docs-import (its src/lib), shared with docs-scan (docs/apps/docs-scan-plan.md, section 5.1). No screens.",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ppe/api-client": "workspace:*",
+    "@ppe/mrz": "workspace:*",
+    "@ppe/routing": "workspace:*",
+    "@ppe/scan-kit": "workspace:*"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.1"
+  }
+}

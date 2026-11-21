@@ -27,6 +27,11 @@
     </script>
     <!-- Confirmation links carry a token in the path; never send it as a Referer. -->
     <meta name="referrer" content="no-referrer" />
+    <!--
+      Without a nonce in the policy, ui-sdk's components (@ppe/ui: Drawer, Toast, Gallery…) add their CSS as
+      constructed style sheets only when this tag is here; else as <style>, which style-src 'self' blocks.
+    -->
+    <meta property="csp-nonce" />
     <title>Workwear &amp; Equipment</title>
   </head>
   <body>

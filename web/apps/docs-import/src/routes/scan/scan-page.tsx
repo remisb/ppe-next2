@@ -11,7 +11,7 @@ import { Camera, CircleCheck, Download, ImagePlus, TriangleAlert, UserRoundPlus 
 import { useEffect, useReducer, useRef, useState } from 'react'
 
 import { t } from '@/i18n'
-import { makePage, type MakeOptions } from '@/lib/make-page'
+import { makePage, type MakeOptions } from '@ppe/id-docs/make-page'
 import {
   archiveName,
   detailsAgreed,
@@ -23,7 +23,7 @@ import {
   scanBatch,
   scanBlockers,
   unsavedWork,
-} from '@/lib/scan'
+} from '@ppe/id-docs/scan'
 
 import type { ImportStart } from '../import/import-page'
 import { CornerEditor } from './corner-editor'

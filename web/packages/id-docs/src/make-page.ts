@@ -10,10 +10,10 @@ import type { IdentityDocumentKind } from '@ppe/api-client'
 import type { BandPlace, PhotoReading, Turn } from '@ppe/mrz/reader'
 import type { Perspective, Quad, Rgba } from '@ppe/scan-kit/perspective'
 
-import { COPY_MAX_SIDE } from './flow'
-import { aspectOf, pageQuad } from './page-box'
-import { loadReader, todayHere } from './reader'
-import { docTypeOf } from './scan'
+import { COPY_MAX_SIDE } from './flow.ts'
+import { aspectOf, pageQuad } from './page-box.ts'
+import { loadReader, todayHere } from './reader.ts'
+import { docTypeOf } from './scan.ts'
 
 /** The side corners are looked for at; findPage works smaller still. */
 const FIND_SIDE = 1000

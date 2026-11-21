@@ -3,6 +3,11 @@ import { localized, plural } from '@ppe/i18n'
 /** The words the shared components draw, in each language. */
 const en = {
   close: 'Close',
+  // ui-sdk's sheets, toasts and gallery (drawer.tsx, toast.tsx, gallery.tsx).
+  resizeSheet: 'Resize sheet',
+  notifications: 'Notifications',
+  pageOf: (n: number, total: number) => `Page ${n} of ${total}`,
+  pages: 'Pages',
   // A form sheet's footer (components/form-sheet.tsx).
   cancel: 'Cancel',
   save: 'Save',
@@ -91,6 +96,10 @@ export type UiText = typeof en
 
 const lt: UiText = {
   close: 'Uždaryti',
+  resizeSheet: 'Keisti lapo dydį',
+  notifications: 'Pranešimai',
+  pageOf: (n: number, total: number) => `${n} puslapis iš ${total}`,
+  pages: 'Puslapiai',
   cancel: 'Atšaukti',
   save: 'Išsaugoti',
   saving: 'Saugoma…',
@@ -164,6 +173,10 @@ const lt: UiText = {
 
 const ru: UiText = {
   close: 'Закрыть',
+  resizeSheet: 'Изменить размер панели',
+  notifications: 'Уведомления',
+  pageOf: (n: number, total: number) => `Страница ${n} из ${total}`,
+  pages: 'Страницы',
   cancel: 'Отмена',
   save: 'Сохранить',
   saving: 'Сохранение…',

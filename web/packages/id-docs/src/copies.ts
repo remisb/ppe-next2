@@ -3,7 +3,7 @@
  * its longer side. Drawing it anew leaves the camera's metadata behind, its
  * location included, so none of it leaves the phone (PR-3).
  */
-import { COPY_MAX_SIDE } from './flow'
+import { COPY_MAX_SIDE } from './flow.ts'
 
 export async function documentCopy(photo: Blob): Promise<Blob> {
   const bitmap = await createImageBitmap(photo)
