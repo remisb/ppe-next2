@@ -29,12 +29,14 @@ type fakeRepo struct {
 	failSave  error
 	removed   map[uuid.UUID]bool
 	retention map[uuid.UUID]Retention
+	// scans are the kept scans Save linked, by document.
+	scans map[uuid.UUID]uuid.UUID
 }
 
 func newFakeRepo() *fakeRepo {
 	return &fakeRepo{employees: map[uuid.UUID]EmployeeRecord{}, subjects: map[uuid.UUID]Subject{},
 		documents: map[uuid.UUID]Document{}, sealed: map[uuid.UUID][]byte{}, numbers: map[string]Ref{}, copies: map[uuid.UUID][]Copy{},
-		removed: map[uuid.UUID]bool{}, retention: map[uuid.UUID]Retention{}}
+		removed: map[uuid.UUID]bool{}, retention: map[uuid.UUID]Retention{}, scans: map[uuid.UUID]uuid.UUID{}}
 }
 
 func (r *fakeRepo) DocumentByNumber(_ context.Context, idx []byte, state string) (Ref, bool, error) {
@@ -123,6 +125,9 @@ func (r *fakeRepo) Save(_ context.Context, rec SaveRecord) error {
 	}
 	r.documents[rec.Document.ID] = rec.Document
 	r.sealed[rec.Document.ID] = rec.Sealed
+	if rec.ScanID != uuid.Nil {
+		r.scans[rec.Document.ID] = rec.ScanID
+	}
 	r.numbers[string(rec.NumberIndex)+rec.Document.IssuingState] = Ref{EmployeeID: rec.EmployeeID, DocumentID: rec.Document.ID}
 	r.copies[rec.Document.ID] = rec.Copies
 	r.events = append(r.events, events...)
@@ -147,24 +152,29 @@ func (r *fakeRepo) Record(_ context.Context, events []audit.Event) error {
 	return nil
 }
 
-func (r *fakeRepo) UpdateDocument(_ context.Context, id uuid.UUID, mutate func(Document) (DocumentChange, []audit.Event, error)) error {
+func (r *fakeRepo) UpdateDocument(_ context.Context, id uuid.UUID, mutate func(Document) (DocumentChange, []audit.Event, error)) ([]string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	d, ok := r.documents[id]
 	if !ok || r.removed[id] {
-		return ErrNotFound
+		return nil, ErrNotFound
 	}
 	change, events, err := mutate(d)
 	if err != nil || len(events) == 0 {
-		return err
+		return nil, err
 	}
 	d.OnEmployeeRecord = change.OnEmployeeRecord
 	r.documents[id] = d
+	var scanKeys []string
 	if change.Removed {
 		r.removed[id] = true
+		if scan, ok := r.scans[id]; ok {
+			scanKeys = []string{"personnel-scans/" + scan.String()}
+			delete(r.scans, id)
+		}
 	}
 	r.events = append(r.events, events...)
-	return nil
+	return scanKeys, nil
 }
 
 func (r *fakeRepo) UpdateSubject(_ context.Context, employeeID uuid.UUID, mutate func(Retention) (Retention, []audit.Event, error)) error {

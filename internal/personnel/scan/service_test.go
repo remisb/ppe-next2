@@ -35,15 +35,30 @@ type fakeRepo struct {
 
 func newFakeRepo() *fakeRepo { return &fakeRepo{rows: map[uuid.UUID]Record{}} }
 
-func (r *fakeRepo) Insert(_ context.Context, rec Record, events []audit.Event) error {
+func (r *fakeRepo) Insert(_ context.Context, rec Record, events []audit.Event, replaces uuid.UUID,
+	replaced func(Record) ([]audit.Event, error)) (Record, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.fail != nil {
-		return r.fail
+		return Record{}, r.fail
+	}
+	var old Record
+	if replaces != uuid.Nil {
+		o, ok := r.rows[replaces]
+		if !ok || o.CreatedBy != rec.CreatedBy || !o.ExpiresAt.After(rec.CreatedAt) || o.State == Saved {
+			return Record{}, ErrNotFound
+		}
+		evs, err := replaced(o)
+		if err != nil {
+			return Record{}, err
+		}
+		old = o
+		delete(r.rows, replaces)
+		events = append(evs, events...)
 	}
 	r.rows[rec.ID] = rec
 	r.events = append(r.events, events...)
-	return nil
+	return old, nil
 }
 
 func (r *fakeRepo) Live(_ context.Context, owner uuid.UUID, now time.Time) ([]Record, error) {
@@ -329,7 +344,7 @@ func TestKeepRefuses(t *testing.T) {
 		"too wide":       {jonas, [][]byte{jpegOf(t, document.MaxCopySide+1, 10)}, ErrPageNotJPEG},
 		"over 5 MB":      {jonas, [][]byte{huge}, ErrPageTooLarge},
 		"no kind":        {Meta{Surname: "A"}, [][]byte{page}, ErrInvalid},
-		"no surname":     {Meta{Kind: IDCard}, [][]byte{page}, ErrInvalid},
+		"read, no name":  {Meta{Kind: Passport, MRZ: passportMRZ}, [][]byte{page}, ErrInvalid},
 		"only symbols":   {Meta{Surname: "../", Kind: IDCard}, [][]byte{page}, ErrInvalid},
 		"bad number":     {Meta{Surname: "A", Kind: IDCard, Number: "12/34"}, [][]byte{page}, ErrInvalid},
 		"not an MRZ":     {Meta{Surname: "A", Kind: Passport, MRZ: []string{"HELLO", "WORLD"}}, [][]byte{page}, ErrInvalid},
@@ -416,10 +431,11 @@ func TestFileName(t *testing.T) {
 		{Meta{Surname: "Žemaitė", Kind: ResidencePermit}, "Žemaitė_residence-permit.zip"},
 		{Meta{Surname: `O'Brien/"x"`, GivenNames: "  Seán  ", Kind: Passport}, "OBrienx_Seán_passport.zip"},
 		{Meta{Surname: "Smith-Jones", GivenNames: "_", Kind: Passport}, "Smith-Jones_passport.zip"},
+		{Meta{Kind: IDCard}, "Scan_2026-11-21.zip"},
 	} {
 		m := tc.meta
 		m.Normalize()
-		if got := m.FileName(); got != tc.want {
+		if got := m.FileName("2026-11-21"); got != tc.want {
 			t.Errorf("%+v: %q, want %q", tc.meta, got, tc.want)
 		}
 	}
@@ -436,4 +452,102 @@ func TestBuildZipIsTheSameForTheSamePages(t *testing.T) {
 		t.Error("two zips of the same pages differ")
 	}
 	checkZip(t, a, pages)
+}
+
+func TestKeepSaysWhetherTheMRZWasRead(t *testing.T) {
+	svc, _, _, _ := newTestService(t)
+	ctx, me, page := context.Background(), uuid.New(), jpegOf(t, 10, 10)
+	read, err := svc.Keep(ctx, Meta{Surname: "Pavyzdys", Kind: Passport, MRZ: passportMRZ}, [][]byte{page}, me)
+	if err != nil || read.State != Read {
+		t.Fatalf("with its MRZ: %v, %q", err, read.State)
+	}
+	unread, err := svc.Keep(ctx, Meta{Kind: IDCard}, [][]byte{page}, me)
+	if err != nil || unread.State != Unread || unread.FileName != "Scan_2026-11-13.zip" || unread.Surname != "" {
+		t.Fatalf("with no MRZ: %v, %+v", err, unread)
+	}
+	bad := slices.Clone(passportMRZ)
+	bad[1] = bad[1][:9] + "0" + bad[1][10:]
+	if bad[1] == passportMRZ[1] {
+		bad[1] = bad[1][:9] + "1" + bad[1][10:]
+	}
+	wrong, err := svc.Keep(ctx, Meta{Surname: "Pavyzdys", Kind: Passport, MRZ: bad}, [][]byte{page}, me)
+	if err != nil || wrong.State != Unread {
+		t.Fatalf("a wrong check digit: %v, %q", err, wrong.State)
+	}
+	if wrong.DocumentID != nil || wrong.EmployeeID != nil {
+		t.Error("a new scan is linked to nothing")
+	}
+}
+
+func TestKeepReplacesAnEarlierScan(t *testing.T) {
+	svc, repo, store, _ := newTestService(t)
+	ctx, me, page := context.Background(), uuid.New(), jpegOf(t, 10, 10)
+	first, err := svc.Keep(ctx, Meta{Kind: IDCard}, [][]byte{page}, me)
+	if err != nil {
+		t.Fatal(err)
+	}
+	again := Meta{Surname: "Pavyzdys", Kind: Passport, MRZ: passportMRZ, Replaces: &first.ID}
+	second, err := svc.Keep(ctx, again, [][]byte{page, page}, me)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := repo.rows[first.ID]; ok {
+		t.Error("the replaced scan is still kept")
+	}
+	if _, ok := store.objects[objectKey(first.ID)]; ok {
+		t.Error("the replaced scan's object is still in the store")
+	}
+	var names []string
+	for _, e := range repo.events {
+		names = append(names, e.Event)
+	}
+	if !slices.Equal(names, []string{EventKept, EventRemoved, EventKept}) {
+		t.Errorf("events %v", names)
+	}
+	// Another user's scan, one already gone, or a saved one cannot be replaced; nothing is written.
+	other := uuid.New()
+	before := len(repo.rows)
+	if _, err := svc.Keep(ctx, Meta{Kind: IDCard, Replaces: &second.ID}, [][]byte{page}, other); !errors.Is(err, ErrNotFound) {
+		t.Errorf("another user's: %v", err)
+	}
+	if _, err := svc.Keep(ctx, Meta{Kind: IDCard, Replaces: &first.ID}, [][]byte{page}, me); !errors.Is(err, ErrNotFound) {
+		t.Errorf("a gone one: %v", err)
+	}
+	saved := repo.rows[second.ID]
+	saved.State, saved.DocumentID, saved.EmployeeID = Saved, &first.ID, &me
+	repo.rows[second.ID] = saved
+	if _, err := svc.Keep(ctx, Meta{Kind: IDCard, Replaces: &second.ID}, [][]byte{page}, me); !errors.Is(err, ErrNotFound) {
+		t.Errorf("a saved one: %v", err)
+	}
+	if len(repo.rows) != before || len(store.objects) != before {
+		t.Errorf("a refused replace wrote: rows %d, objects %d, want %d", len(repo.rows), len(store.objects), before)
+	}
+}
+
+func TestPageIsOneOfTheMakersOwnPages(t *testing.T) {
+	svc, repo, _, _ := newTestService(t)
+	ctx, me := context.Background(), uuid.New()
+	pages := [][]byte{jpegOf(t, 10, 10), jpegOf(t, 12, 10)}
+	kept, err := svc.Keep(ctx, jonas, pages, me)
+	if err != nil {
+		t.Fatal(err)
+	}
+	events := len(repo.events)
+	for n, want := range pages {
+		got, err := svc.Page(ctx, kept.ID, n+1, me)
+		if err != nil || !bytes.Equal(got, want) {
+			t.Errorf("page %d: %v, %d bytes", n+1, err, len(got))
+		}
+	}
+	for _, n := range []int{0, 3} {
+		if _, err := svc.Page(ctx, kept.ID, n, me); !errors.Is(err, ErrNotFound) {
+			t.Errorf("page %d: %v", n, err)
+		}
+	}
+	if _, err := svc.Page(ctx, kept.ID, 1, uuid.New()); !errors.Is(err, ErrNotFound) {
+		t.Errorf("another user: %v", err)
+	}
+	if len(repo.events) != events {
+		t.Error("a page shown was recorded")
+	}
 }

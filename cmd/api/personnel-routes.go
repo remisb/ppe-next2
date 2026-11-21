@@ -26,6 +26,7 @@ type personnelHandler struct {
 func registerPersonnelRoutes(rt *router, documents *document.Service, sensitive func(role.Permission, http.HandlerFunc) http.HandlerFunc) {
 	h := &personnelHandler{documents: documents}
 	rt.restricted("POST /api/v1/personnel/documents/check", h.check, role.PersonnelDocumentsManage)
+	rt.restricted("POST /api/v1/personnel/documents/match", h.match, role.PersonnelDocumentsManage)
 	rt.restricted("POST /api/v1/personnel/documents", h.save, role.PersonnelDocumentsManage)
 	rt.restricted("GET /api/v1/personnel/documents/by-employee/{id}", h.documentsOf, role.PersonnelDocumentsRead)
 	rt.authenticated("GET /api/v1/personnel/documents/by-employee/{id}/validity", h.validity)
@@ -70,6 +71,31 @@ func (h *personnelHandler) check(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, res)
 }
 
+// matchRequest is Match's body: the lines and the names as read or typed,
+// never in the URL.
+type matchRequest struct {
+	MRZ        []string `json:"mrz"`
+	Surname    string   `json:"surname"`
+	GivenNames string   `json:"given_names"`
+}
+
+// match answers who the document may belong to (Scan Documents' Find
+// Employee); it writes nothing and is never cached.
+func (h *personnelHandler) match(w http.ResponseWriter, r *http.Request) {
+	var req matchRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	res, err := h.documents.Match(r.Context(), document.MatchParams{MRZ: req.MRZ, Surname: req.Surname, GivenNames: req.GivenNames})
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeNoStore(w)
+	writeJSON(w, http.StatusOK, res)
+}
+
 // saveRequest is Save's "document" part.
 type saveRequest struct {
 	Employee struct {
@@ -89,6 +115,8 @@ type saveRequest struct {
 	Authority           string          `json:"authority"`
 	AddToEmployeeRecord bool            `json:"add_to_employee_record"`
 	Take                []document.Take `json:"take"`
+	// ScanID is the user's kept scan the document was read from (Scan Documents).
+	ScanID *uuid.UUID `json:"scan_id"`
 }
 
 // copyParts are the multipart parts that carry a Document Copy, by side.
@@ -141,6 +169,9 @@ func (h *personnelHandler) save(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Employee.ID != nil {
 		p.EmployeeID = *req.Employee.ID
+	}
+	if req.ScanID != nil {
+		p.ScanID = *req.ScanID
 	}
 	if n := req.Employee.New; n != nil {
 		p.New = &document.NewEmployee{FirstName: n.FirstName, LastName: n.LastName, Code: n.Code}

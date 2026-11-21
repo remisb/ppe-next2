@@ -155,3 +155,25 @@ func TestRetentionAndLegalHold(t *testing.T) {
 		t.Errorf("events = %v", names)
 	}
 }
+
+func TestRemoveErasesTheScanSavedAsTheDocument(t *testing.T) {
+	svc, repo, store := newTestService(t)
+	scanID := uuid.New()
+	p := passportParams(t, jonas, uuid.Nil)
+	p.ScanID = scanID
+	doc, err := svc.Save(context.Background(), p, uuid.New())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if repo.scans[doc.ID] != scanID {
+		t.Fatalf("Save linked scan %v, want %v", repo.scans[doc.ID], scanID)
+	}
+	scanObject := "personnel-scans/" + scanID.String()
+	store.objects[scanObject] = []byte("sealed")
+	if err := svc.Remove(context.Background(), doc.ID, uuid.New()); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := store.objects[scanObject]; ok {
+		t.Error("the scan saved as the removed document kept its object")
+	}
+}

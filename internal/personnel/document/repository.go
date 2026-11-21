@@ -51,6 +51,9 @@ type SaveRecord struct {
 	Sealed        []byte
 	NumberIndex   []byte
 	Copies        []Copy
+	// ScanID is the kept scan Save links to the document and employee: the
+	// document's maker's, live and unsaved, else ErrScanNotFound. uuid.Nil for none.
+	ScanID uuid.UUID
 	// Mutate decides, under the locks, what the employee becomes and which
 	// events record it all, given the employee as it is and the person's live
 	// documents of the same kind, which this one supersedes.
@@ -89,8 +92,10 @@ type Repository interface {
 	// Record writes events alone (Show Document's, recorded before the answer).
 	Record(ctx context.Context, events []audit.Event) error
 	// UpdateDocument locks a live document, and writes what mutate makes of
-	// it (OnEmployeeRecord, or its removal when Removed is set) with the events.
-	UpdateDocument(ctx context.Context, id uuid.UUID, mutate func(cur Document) (DocumentChange, []audit.Event, error)) error
+	// it (OnEmployeeRecord, or its removal when Removed is set) with the
+	// events. A removal erases the kept scan saved as it and returns that
+	// scan's object key, so its object can go too.
+	UpdateDocument(ctx context.Context, id uuid.UUID, mutate func(cur Document) (DocumentChange, []audit.Event, error)) ([]string, error)
 	// UpdateSubject locks the employee's subject (ErrNotFound when they have
 	// no personnel file) and writes what mutate makes of its retention.
 	UpdateSubject(ctx context.Context, employeeID uuid.UUID, mutate func(cur Retention) (Retention, []audit.Event, error)) error
@@ -100,9 +105,9 @@ type Repository interface {
 	// employment (or, without that, the employee's deletion) ended at least
 	// months before, and no Legal Hold runs past today.
 	Due(ctx context.Context, today string, months int) ([]uuid.UUID, error)
-	// Shred deletes the subject, their data key, documents and copies' rows,
-	// writes the events, and returns the copies' object keys, so their
-	// objects can go too. Idempotent: an employee with no file is no error.
+	// Shred deletes the subject, their data key, documents and copies' rows
+	// and the kept scans saved as their documents, writes the events, and
+	// returns the copies' and scans' object keys, so their objects can go too. Idempotent: an employee with no file is no error.
 	Shred(ctx context.Context, employeeID uuid.UUID, events func(documents int) []audit.Event) ([]string, error)
 }
 

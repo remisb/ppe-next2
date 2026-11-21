@@ -20,6 +20,9 @@ var (
 	ErrActorNotFound = errors.New("acting user not found")
 	// ErrEmployeeNotFound is a document for an employee who is not there (or deleted).
 	ErrEmployeeNotFound = errors.New("employee not found")
+	// ErrScanNotFound is a Save naming a kept scan that is not the actor's
+	// own, live and unsaved (404): none, another user's, expired or saved.
+	ErrScanNotFound = errors.New("scan not found")
 	// ErrEmployeeCodeTaken is a new employee with a code another live employee has.
 	ErrEmployeeCodeTaken = errors.New("employee code already in use")
 	// ErrNotConfigured is Personnel files without its keys (API_PERSONNEL_KEY,

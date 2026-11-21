@@ -13,7 +13,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/audit"
 )
 
-// PostgresRepository keeps kept scans in personnel.scans (migration 0053).
+// PostgresRepository keeps kept scans in personnel.scans (migrations 0053, 0056).
 type PostgresRepository struct {
 	pool *pgxpool.Pool
 }
@@ -26,27 +26,48 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 }
 
 const scanColumns = `id, created_by_user_id, created_at, expires_at, object_key, bytes, sha256,
-	sealed_key, key_id, sealed_meta, pages`
+	sealed_key, key_id, sealed_meta, pages, state, document_id, employee_id`
 
 func scanRecord(row pgx.Row) (Record, error) {
 	var r Record
 	err := row.Scan(&r.ID, &r.CreatedBy, &r.CreatedAt, &r.ExpiresAt, &r.ObjectKey, &r.Bytes, &r.SHA256,
-		&r.SealedKey, &r.KeyID, &r.SealedMeta, &r.Pages)
+		&r.SealedKey, &r.KeyID, &r.SealedMeta, &r.Pages, &r.State, &r.DocumentID, &r.EmployeeID)
 	r.CreatedAt, r.ExpiresAt = r.CreatedAt.UTC(), r.ExpiresAt.UTC()
 	return r, err
 }
 
-// Insert writes the scan's row and its events in one transaction.
-func (r *PostgresRepository) Insert(ctx context.Context, rec Record, events []audit.Event) error {
-	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+// Insert writes the scan's row and its events in one transaction, first
+// deleting the scan it replaces (its maker's, live, not saved) with that one's events.
+func (r *PostgresRepository) Insert(ctx context.Context, rec Record, events []audit.Event, replaces uuid.UUID,
+	replaced func(Record) ([]audit.Event, error)) (Record, error) {
+	var old Record
+	err := translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		if replaces != uuid.Nil {
+			var err error
+			old, err = scanRecord(tx.QueryRow(ctx, `DELETE FROM personnel.scans
+				WHERE id = $1 AND created_by_user_id = $2 AND expires_at > $3 AND state <> 'saved' RETURNING `+scanColumns,
+				replaces, rec.CreatedBy, rec.CreatedAt))
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrNotFound
+			}
+			if err != nil {
+				return err
+			}
+			evs, err := replaced(old)
+			if err != nil {
+				return err
+			}
+			events = append(evs, events...)
+		}
 		if _, err := tx.Exec(ctx, `INSERT INTO personnel.scans (`+scanColumns+`)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NULL, NULL)`,
 			rec.ID, rec.CreatedBy, rec.CreatedAt, rec.ExpiresAt, rec.ObjectKey, rec.Bytes, rec.SHA256,
-			rec.SealedKey, rec.KeyID, rec.SealedMeta, rec.Pages); err != nil {
+			rec.SealedKey, rec.KeyID, rec.SealedMeta, rec.Pages, rec.State); err != nil {
 			return err
 		}
 		return audit.InsertAll(ctx, tx, events)
 	}))
+	return old, err
 }
 
 // Live reads owner's scans not expired at now, newest first.

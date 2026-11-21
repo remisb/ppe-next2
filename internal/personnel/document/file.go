@@ -118,7 +118,7 @@ func (s *Service) SetEmployeeRecord(ctx context.Context, id uuid.UUID, on bool, 
 	if actor == uuid.Nil {
 		return fieldError("actor", "is required")
 	}
-	return s.repo.UpdateDocument(ctx, id, func(cur Document) (DocumentChange, []audit.Event, error) {
+	_, err := s.repo.UpdateDocument(ctx, id, func(cur Document) (DocumentChange, []audit.Event, error) {
 		if cur.OnEmployeeRecord == on {
 			return DocumentChange{OnEmployeeRecord: on}, nil, nil
 		}
@@ -127,11 +127,13 @@ func (s *Service) SetEmployeeRecord(ctx context.Context, id uuid.UUID, on bool, 
 		ev, err := audit.New(s.newID(), &actor, EventUpdated, auditEntity, cur.EmployeeID, s.now(), before, after)
 		return DocumentChange{OnEmployeeRecord: on}, []audit.Event{ev}, err
 	})
+	return err
 }
 
-// Remove removes a document and deletes its copies' objects. The sealed row
-// and the objects' older versions stay openable with the person's key until
-// the retention rule shreds it.
+// Remove removes a document and deletes its copies' objects, and erases the
+// kept scan saved as it (its row with the document's, its object after). The
+// sealed row and the objects' older versions stay openable with the person's
+// key until the retention rule shreds it.
 func (s *Service) Remove(ctx context.Context, id, actor uuid.UUID) error {
 	if actor == uuid.Nil {
 		return fieldError("actor", "is required")
@@ -144,14 +146,17 @@ func (s *Service) Remove(ctx context.Context, id, actor uuid.UUID) error {
 			}
 		}
 	}
-	err := s.repo.UpdateDocument(ctx, id, func(cur Document) (DocumentChange, []audit.Event, error) {
+	scanKeys, err := s.repo.UpdateDocument(ctx, id, func(cur Document) (DocumentChange, []audit.Event, error) {
 		ev, err := audit.New(s.newID(), &actor, EventRemoved, auditEntity, cur.EmployeeID, s.now(), summaryOf(cur), nil)
 		return DocumentChange{OnEmployeeRecord: cur.OnEmployeeRecord, Removed: true}, []audit.Event{ev}, err
 	})
 	if err != nil {
 		return err
 	}
-	for _, k := range keys {
+	if s.store == nil {
+		return nil
+	}
+	for _, k := range append(keys, scanKeys...) {
 		_ = s.store.Delete(context.WithoutCancel(ctx), k)
 	}
 	return nil

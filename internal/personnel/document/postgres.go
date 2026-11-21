@@ -241,6 +241,17 @@ func (r *PostgresRepository) Save(ctx context.Context, rec SaveRecord) error {
 				return err
 			}
 		}
+		if rec.ScanID != uuid.Nil {
+			tag, err := tx.Exec(ctx, `UPDATE personnel.scans SET state = 'saved', document_id = $2, employee_id = $3
+				WHERE id = $1 AND created_by_user_id = $4 AND expires_at > $5 AND state <> 'saved'`,
+				rec.ScanID, doc.ID, doc.EmployeeID, actor, now)
+			if err != nil {
+				return err
+			}
+			if tag.RowsAffected() == 0 {
+				return ErrScanNotFound
+			}
+		}
 		return audit.InsertAll(ctx, tx, events)
 	}))
 }

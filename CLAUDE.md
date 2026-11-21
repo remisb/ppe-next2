@@ -180,8 +180,9 @@ pages as a zip and downloads it, **Save to Personnel** hands them to Import. **K
 the zip is kept `API_PERSONNEL_SCAN_DAYS` (3) days for its uploader alone, sealed under a per-scan data key in
 `personnel.scans` and `personnel-scans/{id}`, and erased by the upkeep (`PurgeExpired`).
 **Scan Documents** (`docs-scan`, to build; [plan](docs/apps/docs-scan-plan.md), every decision made 2026-11-21; ADR 0007's
-amendment of that day) reads first, then finds the person (`POST …/personnel/documents/match`), updates, merges or adds them;
-kept scans gain a state and a link to the saved document; its mockup is `docs/ux/mockups/docs-scan.html`. It replaces Import
+amendment of that day) reads first, then finds the person (`POST …/personnel/documents/match`, built: `document/match.go`, its `People` port
+adapted in `cmd/api/checkers.go`), updates, merges or adds them; kept scans gain a state (`unread`/`read`/`saved`), `replaces`,
+a page route and a link to the saved document (migration 0056, built; `ppe_app` may update those three columns alone); its mockup is `docs/ux/mockups/docs-scan.html`. It replaces Import
 Documents after its trial, sharing `@ppe/id-docs`, and uses ui-sdk only through `@ppe/ui`.
 **App Launcher** (ADR 0006, accepted with every recommended decision; phases 1 to 3 built; spec
 `docs/specs/app-launcher.md`, guide `docs/ux/app-launcher.html`): a fourth app at `/apps/`

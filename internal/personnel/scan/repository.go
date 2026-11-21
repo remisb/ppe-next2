@@ -25,13 +25,20 @@ type Record struct {
 	KeyID      int16
 	SealedMeta []byte
 	Pages      int
+	State      State
+	DocumentID *uuid.UUID
+	EmployeeID *uuid.UUID
 }
 
 // Repository keeps kept scans' rows (personnel.scans). Removing one is a
 // hard delete: the row holds the only key to the object.
 type Repository interface {
-	// Insert writes the row and its events in one transaction.
-	Insert(ctx context.Context, rec Record, events []audit.Event) error
+	// Insert writes the row and its events in one transaction. With replaces
+	// set, it first deletes that scan of rec's maker, live and not saved, with
+	// the events replaced makes of it, and returns it; ErrNotFound when there
+	// is none, and then nothing is written.
+	Insert(ctx context.Context, rec Record, events []audit.Event, replaces uuid.UUID,
+		replaced func(Record) ([]audit.Event, error)) (Record, error)
 	// Live are owner's scans not expired at now, newest first ([] when none).
 	Live(ctx context.Context, owner uuid.UUID, now time.Time) ([]Record, error)
 	// Get is owner's scan by id, not expired at now; ErrNotFound otherwise.

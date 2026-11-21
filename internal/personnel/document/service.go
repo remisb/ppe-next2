@@ -37,6 +37,8 @@ type Service struct {
 	loc   *time.Location
 	// aiUsage forgets a shredded person in the AI usage ledger (their calls' employee link).
 	aiUsage EmployeeForgetter
+	// people is People, for Match (match.go).
+	people People
 }
 
 // EmployeeForgetter is the AI usage ledger: a shredded person's calls keep
@@ -201,7 +203,7 @@ func (s *Service) Save(ctx context.Context, p SaveParams, actor uuid.UUID) (Docu
 	}
 
 	// The person's data key: theirs if they have one, else a new one.
-	rec := SaveRecord{NewEmployee: newEmployee, EmployeeID: employeeID, NumberIndex: numberIndex}
+	rec := SaveRecord{NewEmployee: newEmployee, EmployeeID: employeeID, NumberIndex: numberIndex, ScanID: p.ScanID}
 	var box *sealbox.Box
 	subject, found, err := s.repo.Subject(ctx, employeeID)
 	if err != nil {

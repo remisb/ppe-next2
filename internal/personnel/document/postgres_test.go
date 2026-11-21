@@ -274,3 +274,88 @@ func TestPostgresShowRemoveAndShred(t *testing.T) {
 		t.Errorf("run again = %+v", res)
 	}
 }
+
+// keptScan writes a kept scan's row as the scan package would (its sealed
+// values stand-ins: the document package only links and erases it).
+func keptScan(t *testing.T, owner *pgxpool.Pool, by uuid.UUID) uuid.UUID {
+	t.Helper()
+	id := uuid.New()
+	if _, err := owner.Exec(context.Background(), `INSERT INTO personnel.scans (id, created_by_user_id, created_at, expires_at,
+		object_key, bytes, sha256, sealed_key, key_id, sealed_meta, pages, state)
+		VALUES ($1, $2, $3, $4, $7, 10, $5, $6, 1, $6, 1, 'read')`,
+		id, by, today, today.AddDate(0, 0, 3), make([]byte, 32), make([]byte, 40), "personnel-scans/"+id.String()); err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
+func TestPostgresSaveLinksItsScanAndRemoveOrShreddingErasesIt(t *testing.T) {
+	svc, owner, actor := pgSetup(t)
+	ctx := context.Background()
+	other := uuid.New()
+	if _, err := owner.Exec(ctx, `INSERT INTO users (id, email, name, password_hash, created_at, updated_at,
+		created_by_user_id, updated_by_user_id) VALUES ($1, 'other@example.com', 'Other', 'x', now(), now(), $1, $1)`, other); err != nil {
+		t.Fatal(err)
+	}
+	mine, theirs := keptScan(t, owner, actor), keptScan(t, owner, other)
+
+	// Another user's scan: refused, and nothing of the Save is written.
+	p := passportParams(t, jonas, uuid.Nil)
+	p.ScanID = theirs
+	if _, err := svc.Save(ctx, p, actor); !errors.Is(err, ErrScanNotFound) {
+		t.Fatalf("Save naming another user's scan = %v", err)
+	}
+	if n := count(t, owner, `SELECT count(*) FROM personnel.identity_documents`); n != 0 {
+		t.Errorf("a refused Save left %d documents", n)
+	}
+
+	p.ScanID = mine
+	doc, err := svc.Save(ctx, p, actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var state string
+	var docID, employeeID uuid.UUID
+	if err := owner.QueryRow(ctx, `SELECT state, document_id, employee_id FROM personnel.scans WHERE id = $1`, mine).
+		Scan(&state, &docID, &employeeID); err != nil {
+		t.Fatal(err)
+	}
+	if state != "saved" || docID != doc.ID || employeeID != doc.EmployeeID {
+		t.Errorf("the scan after Save: %s, %v, %v", state, docID, employeeID)
+	}
+
+	// A saved scan is not saved again.
+	q := passportParams(t, ona, uuid.Nil)
+	q.New = &NewEmployee{FirstName: "Ona", LastName: "Bandomoji"}
+	q.Surname, q.GivenNames, q.ScanID = "Bandomoji", "Ona", mine
+	if _, err := svc.Save(ctx, q, actor); !errors.Is(err, ErrScanNotFound) {
+		t.Errorf("saving a saved scan again = %v", err)
+	}
+
+	if err := svc.Remove(ctx, doc.ID, actor); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, owner, `SELECT count(*) FROM personnel.scans WHERE id = $1`, mine); n != 0 {
+		t.Error("Remove left the scan saved as the document")
+	}
+
+	// Ona's scan goes with her file when it is shredded.
+	onas := keptScan(t, owner, actor)
+	q.ScanID = onas
+	ona0, err := svc.Save(ctx, q, actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := owner.Exec(ctx, `UPDATE employees SET deleted_at = '2022-06-01', deleted_by_user_id = $2 WHERE id = $1`, ona0.EmployeeID, actor); err != nil {
+		t.Fatal(err)
+	}
+	if res, err := svc.ShredDue(ctx, 36, quiet); err != nil || res.Files != 1 {
+		t.Fatalf("shred = %+v, %v", res, err)
+	}
+	if n := count(t, owner, `SELECT count(*) FROM personnel.scans WHERE id = $1`, onas); n != 0 {
+		t.Error("the shredding left the scan saved as the person's document")
+	}
+	if n := count(t, owner, `SELECT count(*) FROM personnel.scans WHERE id = $1`, theirs); n != 1 {
+		t.Error("another user's unsaved scan went too")
+	}
+}
