@@ -112,6 +112,7 @@ export type ShotName =
   | 'record'
   | 'employees'
   | 'employee'
+  | 'employee-page'
   | 'duplicate-warning'
   | 'merge-employees'
   | 'catalogue'

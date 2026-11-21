@@ -155,7 +155,9 @@ Datos įraše ir Įmonės turto atspausdintuose bei PDF išdavimo aktuose rašom
 
 Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją. Kai kuriam nors trūksta dydžio, **Visi** ir **Trūksta dydžio** virš sąrašo pasirenka, kas rodoma; užvedę žymeklį ant vieno, matysite, ką jis rodo.
 
-Darbuotojo puslapyje rodoma:
+Iš sąrašo **Darbuotojai** darbuotojas atidaromas šalia jo: `J` ir `K` pereina prie kito ar ankstesnio, `Esc` uždaro. Iš bet kur kitur, pavyzdžiui, iš užsakymo, jo turimos SIM ar daikto, **Reikia pakeisti**, suvestinės ar **Paieška** rezultatų, atsiveria **darbuotojo puslapis**: tas pats įrašas per visą ekrano plotį, kairėje – kas jam išduota ir ką jis turi, dešinėje – jo dydžiai, nuotraukos ir dokumentai. Nuoroda virš vardo, pavyzdžiui, **← WE-000010**, grąžina ten, iš kur atėjote. Šalia sąrašo jo puslapį atveria ir **Atidaryti puslapį**, taip pat sąraše esantis vardas, atidarytas naujame skirtuke.
+
+Prie kiekvieno darbuotojo rodoma:
 
 - **Dydžiai** ir **Pageidaujama kalba**, kiekvienas su savo mygtuku **Redaguoti**;
 - **Išduotos prekės**: visos išduotos prekės su naudojimo trukme ir pakeitimo data;
@@ -165,7 +167,15 @@ Darbuotojo puslapyje rodoma:
 
 Skiltys po dydžiais iš pradžių suskleistos, o jų pavadinimuose nurodyta, kiek jose įrašų; pasirinkite pavadinimą, kad skiltį atidarytumėte ar suskleistumėte.
 
-**Redaguoti** prie **Dydžiai** paverčia dydžius laukais tiesiog čia: **Išsaugoti** išsaugo juos būsimiems užsakymams, **Atšaukti** palieka, kaip buvo. Raudonas **Trūksta** atidaro to dydžio lauką. Pageidaujama kalba keičiama taip pat. **Naujas užsakymas** pradeda užsakymą šiam darbuotojui.
+**Redaguoti** prie **Dydžiai** paverčia dydžius laukais tiesiog čia: **Išsaugoti** išsaugo juos būsimiems užsakymams, **Atšaukti** palieka, kaip buvo. Raudonas **Trūksta** atidaro to dydžio lauką. Pageidaujama kalba keičiama taip pat.
+
+*Tik administratoriams ir vadovams:*
+
+Viršuje **Naujas užsakymas** pradeda užsakymą šiam darbuotojui. Pieštukas, **Redaguoti duomenis**, keičia jo vardą, kodą ir pastabas; po **⋯** yra **Sujungti su…** ir **Ištrinti darbuotoją…**.
+
+*Tik darbuotojo rolei:*
+
+**Naujas užsakymas** viršuje pradeda užsakymą šiam darbuotojui.
 
 *Tik administratoriams ir vadovams:*
 
@@ -189,13 +199,17 @@ Kai vienas žmogus turi du įrašus, ekrane **Darbuotojai** virš sąrašo rodom
 ![Langas „Sujungti darbuotojus“: paliekamas įrašas ir kiekvienos eilutės reikšmė](../../web/apps/workwear/public/help-img/lt/desktop/merge-employees.png)
 
 ![Darbuotojų sąrašas](../../web/apps/workwear/public/help-img/lt/desktop/employees.png)
-![Darbuotojo puslapis su išduotomis prekėmis](../../web/apps/workwear/public/help-img/lt/desktop/employee.png)
+![Iš darbuotojų sąrašo atidarytas darbuotojas su išduotomis prekėmis](../../web/apps/workwear/public/help-img/lt/desktop/employee.png)
+
+![Darbuotojo puslapis: išduotos prekės šalia jo dydžių, nuotraukų ir dokumentų](../../web/apps/workwear/public/help-img/lt/desktop/employee-page.png)
 
 ## 10. Prekių katalogas ir prekių rinkiniai
 
 Kiekviena katalogo prekė turi kainą, naudojimo laikotarpį ir dydžių grupę. Užsakymuose rodoma ir sumuojama ši kaina. Prekės be kainos ar naudojimo laikotarpio užsakyti negalima. Pakeitus kainą, esami užsakymai nesikeičia.
 
 Prekė gali turėti ir **Pirkimo kainą** – kiek mokame tiekėjui. Ji neprivaloma, užsakyti jos nereikia, o užsakymuose ji nerodoma. Atidarytoje prekėje matyti abi kainos ir kaip jos keitėsi, o jos **Pakeitimai**, iš pradžių suskleisti, rodo, kas ir kada keitė prekę.
+
+Prekė gali nurodyti savo **Tiekėją** – įmonę, iš kurios ji perkama. Atidarytoje prekėje jis matyti, arba rašoma **Tiekėjas nenurodytas**.
 
 Spustelėjus prekę, ji atsidaro šalia sąrašo. `J` ir `K` pereina tarp prekių, o `Esc` prekę uždaro. Prekė be kainos ar naudojimo laikotarpio pažymėta **Neužpildyta**; užvedę žymeklį ant žymos, matysite, ko trūksta.
 
@@ -205,10 +219,30 @@ Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane „Ku
 
 Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekrane **Prekių rinkiniai**.
 
+Languose **Pridėti prekę** ir **Redaguoti prekę** pasirinkite **Tiekėją** iš sąrašo, kurį administratoriai tvarko **Administravime**, ekrane **Tiekėjai**, arba **Tiekėjas nenurodytas**. Ten ištrynus tiekėją, jo prekės lieka be tiekėjo.
+
 ![Prekių katalogas](../../web/apps/workwear/public/help-img/lt/desktop/catalogue.png)
 ![Prekių rinkiniai](../../web/apps/workwear/public/help-img/lt/desktop/item-sets.png)
 
-## 11. Įmonės turtas
+## 11. Sąrašo eksportas
+
+**Eksportuoti** išsaugo sąrašą kaip failą skaičiuoklei: **Excel (.xlsx)** arba **CSV**. Šis mygtukas yra ekranų **Užsakymai**, **Darbuotojai**, **Prekių katalogas**, **SIM kortelės** ir **Įranga** viršuje. Ekranuose **Prekių rinkiniai**, **Reikia pakeisti** ir darbuotojo **Išduotos prekės** jis iš karto atveria langą **Eksportuoti** su visomis eilutėmis.
+
+Sąrašo viršuje pasirinkite **Eksportuoti**. Šalia eilučių atsiranda žymimieji langeliai, o juosta virš sąrašo nurodo, ką darote ir kiek eilučių pažymėta, pavyzdžiui, **Eksportuoti: Darbuotojai · Pažymėta 3**. Kol ji rodoma, spustelėjus eilutę ji pažymima, o ne atidaroma, o pačios eilutės mygtukai paslepiami. Langelis stulpelio viršuje pažymi visas rodomas eilutes.
+
+- **Eksportuoti 3…** eksportuoja jūsų pažymėtas eilutes.
+- **Eksportuoti visas 142…** eksportuoja visas eilutes, kurias palieka skirtukas ir paieška. Ekranuose **Užsakymai**, **SIM kortelės** ir **Įranga**, kurie rodo po puslapį, tai **Eksportuoti visas 70 atitinkančias…**: visi puslapiai, atitinkantys filtrus.
+- **Atšaukti** išeina nieko neeksportavus, ir žymimieji langeliai dingsta.
+
+Išeiti galima ir `Esc`.
+
+Lange **Eksportuoti** nurodytos jūsų pasirinktos eilutės, pavyzdžiui, **Pažymėta: 3**; **Keisti** grąžina į sąrašą pasirinkti iš naujo. Pažymėkite norimus stulpelius (ekrane rodomi jau pažymėti), pasirinkite **Excel (.xlsx)** arba **CSV**, tada **Eksportuoti (3)**. Failas, pavyzdžiui, `Darbuotojai 2026-11-20.xlsx`, atsisiunčiamas su eilutėmis sąrašo tvarka ir stulpelių pavadinimais jūsų kalba. Jame tik tai, ką matote ekrane.
+
+*Tik administratoriams:*
+
+**Administravime** tas pats **Eksportuoti** yra ekranuose **Naudotojai**, **Rolės ir teisės**, **Tiekėjai**, **Programų tvarkymas**, taip pat **Saugos** skirtuke **Prisijungę įrenginiai** ir **Sistemos** skirtuke **Klaidos**.
+
+## 12. Įmonės turtas
 
 Skyriuje **Įmonės turtas** registruojamos darbuotojams išduodamos įmonės SIM, įranga ir baldai: kur kiekvienas daiktas yra, pas ką jis ir koks aktas pasirašytas jį išduodant. Jame yra du ekranai: **SIM kortelės** ir **Įranga**, kurioje registruojama ir įranga, ir baldai; ją mato tik tie, kam suteikta rolė **Įrangos išdavimai**. Kiekvienas daiktas – atskiras įrašas su savo inventoriaus numeriu, todėl trys vienodi nešiojamieji kompiuteriai yra trys turto vienetai.
 
@@ -231,6 +265,8 @@ Mygtukas **Peržiūrėti PDF** ekrane **SIM kortelės** (telefone – po **⋯**
 **Pridėti SIM** užregistruoja kortelę, kai ją atsiunčia tiekėjas. Jos SIM Nr., tiekėjas ir inventoriaus numeris (pasiūlomas kitas) reikalingi iš karto; telefono numeris, planas ir negrąžinimo vertė gali palaukti, kol kortelė bus išduodama. Tiekėjas pasirenkamas iš sąrašo, kurį administratorius tvarko **Administravime**, ekrane **Nustatymai**; numatytasis jau pasirinktas. Kol sąrašas tuščias, tiekėją įrašote patys. Ten nustatyta negrąžinimo vertė įrašoma iš anksto; ją galite pakeisti arba ištrinti. Ekrane **Įranga** mygtukas **Pridėti turtą** užregistruoja vieną daiktą: jo pavadinimą ir kategoriją, pagal kurią pasiūlomas numeris, pavyzdžiui, `PC-000003`.
 
 **Keisti būseną** įrašo tiekėjo patvirtintą būseną. Kortelės ji neaktyvuoja ir neužblokuoja: dėl to rašykite tiekėjui.
+
+Norėdami pakeisti kelias korteles iš karto, viršuje pasirinkite **Keisti būseną…** (telefone ar kai kortelė atidaryta – po **⋯**), pažymėkite korteles, tada juostoje pasirinkite jų būseną. **Atšaukti** išeina nieko nepakeitus.
 
 SIM ar daiktas išduodamas trimis žingsniais lange **Išduoti SIM** arba **Išduoti turtą**:
 
@@ -268,7 +304,7 @@ Išėjus iš darbo, niekas negrąžinama savaime. Kai darbuotojas negrąžina ko
 
 Paieška randa SIM pagal SIM, telefono ar inventoriaus numerį, o daiktą – pagal inventoriaus numerį.
 
-## 12. Skenuoti SIM
+## 13. Skenuoti SIM
 
 *Tik administratoriams ir vadovams.*
 
@@ -286,17 +322,17 @@ Sąrašas apačioje patikrina visas SIM iš karto ir nurodo, ką taisyti: numeri
 
 **PIN ir PUK** viršuje randa SIM pagal SIM Nr. arba telefono numerį, bent 4 skaitmenis. **Rodyti PIN ir PUK** juos parodo, kaip ir raktas prie SIM ekrane **SIM kortelės**; kiekvienas kartas įrašomas į SIM **Pakeitimai**, bet ne kodai. SIM be jų turi **Pridėti PIN ir PUK**. Jie saugomi užšifruoti ir niekada nerodomi sąraše. Parodyti kodai vėl paslepiami po minutės arba išėjus iš skirtuko. Skenuojamos SIM lieka savo sąraše, kol čia ieškote kurios nors.
 
-## 13. Administravimas
+## 14. Administravimas
 
 *Tik administratoriams.*
 
-**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro **Apžvalgoje**. Kiti jo ekranai: **Naudotojai**, **Rolės ir teisės**, **Audito žurnalas**, **Sauga**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai** ir **Programų tvarkymas**.
+**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro **Apžvalgoje**. Kiti jo ekranai: **Naudotojai**, **Rolės ir teisės**, **Audito žurnalas**, **Sauga**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai**, **Tiekėjai** ir **Programų tvarkymas**.
 
 Atidarykite jį mygtuku **Administravimas** šoninės juostos apačioje. Jis turi savo šoninę juostą; **Darbo drabužiai ir įranga** jos apačioje grąžina atgal.
 
-Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo abiejų. **Administravimą** mato visi, kurių rolės leidžia tvarkyti naudotojus, roles ar nustatymus arba skaityti audito žurnalą, saugą, sistemą, naudojimą ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.
+Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo abiejų. **Administravimą** mato visi, kurių rolės leidžia tvarkyti naudotojus, roles, nustatymus ar tiekėjus arba skaityti audito žurnalą, saugą, sistemą, naudojimą ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.
 
-## 14. Apžvalga
+## 15. Apžvalga
 
 *Tik administratoriams.*
 
@@ -313,7 +349,7 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 
 ![Apžvalga: kam reikia dėmesio, toliau rodikliai](../../web/apps/workwear/public/help-img/lt/desktop/overview.png)
 
-## 15. Naudotojai
+## 16. Naudotojai
 
 *Tik administratoriams.*
 
@@ -325,7 +361,7 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 
 ![Naudotojų ekranas](../../web/apps/workwear/public/help-img/lt/desktop/users.png)
 
-## 16. Rolės ir teisės
+## 17. Rolės ir teisės
 
 *Tik administratoriams.*
 
@@ -340,7 +376,7 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 ![Rolės ir teisės: įtaisytos rolės ir jas turintys naudotojai](../../web/apps/workwear/public/help-img/lt/desktop/roles.png)
 ![Rolės teisės, sugrupuotos, prie kiekvienos – ką ji leidžia](../../web/apps/workwear/public/help-img/lt/desktop/role.png)
 
-## 17. Audito žurnalas
+## 18. Audito žurnalas
 
 *Tik administratoriams.*
 
@@ -356,7 +392,7 @@ Filtruokite pagal **Sritis**, **Pakeitimas**, **Naudotojas** ir datas. Spustelė
 
 ![Audito žurnalas: atidarytas kainos pakeitimas su laukais prieš ir po](../../web/apps/workwear/public/help-img/lt/desktop/audit-log.png)
 
-## 18. Sauga
+## 19. Sauga
 
 *Tik administratoriams.*
 
@@ -371,7 +407,7 @@ Filtruokite pagal **Sritis**, **Pakeitimas**, **Naudotojas** ir datas. Spustelė
 ![Sauga: prisijungimai su adresu ir įrenginiu](../../web/apps/workwear/public/help-img/lt/desktop/security.png)
 ![Prieigos peržiūra: naudotojai, jų rolės ir paskutinis prisijungimas](../../web/apps/workwear/public/help-img/lt/desktop/access-review.png)
 
-## 19. Sistema
+## 20. Sistema
 
 *Tik administratoriams.*
 
@@ -386,7 +422,7 @@ Kai kas nors nepavyksta, programėlė parodo **Nuoroda į užklausą**, pvz., `9
 ![Sistema: programėlė, jos užklausos ir duomenų bazė](../../web/apps/workwear/public/help-img/lt/desktop/system.png)
 ![Klaidos: atidaryta klaida su nuoroda į užklausą](../../web/apps/workwear/public/help-img/lt/desktop/errors.png)
 
-## 20. Atsarginės kopijos
+## 21. Atsarginės kopijos
 
 *Tik administratoriams.*
 
@@ -405,7 +441,7 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 
 ![Atsarginės kopijos: paskutinė kopija, naujausios kopijos ir nustatymai](../../web/apps/workwear/public/help-img/lt/desktop/backups.png)
 
-## 21. Naudojimas
+## 22. Naudojimas
 
 *Tik administratoriams.*
 
@@ -420,7 +456,7 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 
 ![Naudojimas: aktyvūs asmenys, prisijungimai ir kita](../../web/apps/workwear/public/help-img/lt/desktop/usage.png)
 
-## 22. Nustatymai
+## 23. Nustatymai
 
 *Tik administratoriams.*
 
@@ -436,7 +472,21 @@ Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš
 
 ![Nustatymai: SIM tiekėjai, vienas iš jų numatytasis, ir numatytoji negrąžinimo vertė](../../web/apps/workwear/public/help-img/lt/desktop/sim-providers.png)
 
-## 23. Programų tvarkymas
+## 24. Tiekėjai
+
+*Tik administratoriams.*
+
+**Tiekėjai** Administravime – tai įmonės, iš kurių perkamos katalogo prekės: kiekvienos **Vidinis kodas**, pavadinimas, vieta, kiek prekių jai priskirta ir su kuo susisiekti. Ieškokite pagal kodą, pavadinimą, miestą ar kontaktą. Telefone šis ekranas yra **Daugiau**.
+
+**Pridėti tiekėją** prideda naują. Privalomi jo **Vidinis kodas** (jūsų pačių trumpas kodas) ir **Pavadinimas**; kodas turi skirtis nuo kitų tiekėjų kodų, nepaisant didžiųjų ir mažųjų raidžių. Kitus duomenis įveskite, kiek žinote: **Įmonės kodą** ir **PVM mokėtojo kodą**, **Banko sąskaitą** (IBAN), adresą su dviejų raidžių **Šalimi**, pvz., LT, kontaktinį asmenį, el. paštą, telefoną, svetainę ir pastabas. **Redaguoti** jį pakeičia; pakeitimas matomas visose šio tiekėjo prekėse.
+
+**⋯ → Ištrinti tiekėją…** ištrina tiekėją, prieš tai paklausęs, ir nurodo, kiek prekių jam priskirta: jos lieka be tiekėjo. Užsakymai nesikeičia. **⋯ → Pakeitimai** atveria šio tiekėjo **Audito žurnalą**.
+
+Prekės tiekėjas pasirenkamas prekių kataloge, lange **Redaguoti prekę**. Šį ekraną mato ir tie, kuriems **Rolėse ir teisėse** suteikta teisė **Tvarkyti tiekėjus**.
+
+![Tiekėjai: kiekvieno vidinis kodas, vieta, prekės ir kontaktai](../../web/apps/workwear/public/help-img/lt/desktop/suppliers.png)
+
+## 25. Programų tvarkymas
 
 *Tik administratoriams.*
 
@@ -454,7 +504,7 @@ Programai, kurios niekas nebando pirma, įjunkite **Stabili seka diegimus**: tad
 
 ![Programų tvarkymas: „Skenuoti SIM“ šalia sąrašo, su versijomis ir kanalais](../../web/apps/workwear/public/help-img/lt/desktop/manage-apps.png)
 
-## 24. Jūsų paskyra
+## 26. Jūsų paskyra
 
 - **Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis. Datos rašomos pagal kalbą: 2026-10-15 anglų, 2026.10.15 lietuvių, 15.10.2026 rusų kalba.
 - **Tema**: **Šviesi**, **Tamsi** arba **Kaip įrenginyje**. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.
@@ -466,7 +516,7 @@ Programai, kurios niekas nebando pirma, įjunkite **Stabili seka diegimus**: tad
 ![Paskyra: kalba, tema ir slaptažodis](../../web/apps/workwear/public/help-img/lt/desktop/account.png)
 ![Prisijungę įrenginiai: šis įrenginys ir telefonas](../../web/apps/workwear/public/help-img/lt/desktop/devices.png)
 
-## 25. Programos įdiegimas
+## 27. Programos įdiegimas
 
 Įtraukite programą į telefono pradžios ekraną ir atidarykite ją kaip bet kurią kitą: savo lange, be naršyklės adreso juostos, pavadinimu **Workwear**.
 
@@ -488,14 +538,14 @@ Kompiuteryje ją taip pat galima įdiegti naršyklėmis Chrome ir Edge: paskyroj
 - Be ryšio programa rodo **Nepavyksta pasiekti serverio**. Ryšiui atsiradus, ji pati vėl atidaro puslapį, arba pasirinkite **Bandyti dar kartą**.
 - Piktogramos nuorodos yra ta kalba, kurią naudojote pridėdami programą. Pakeitę kalbą, pašalinkite programą iš pradžios ekrano ir pridėkite iš naujo.
 
-## 26. Paieška ir spartieji klavišai
+## 28. Paieška ir spartieji klavišai
 
 | Klavišas | Ką daro |
 | --- | --- |
 | `⌘K` / `Ctrl K` | Ieško įrašų numerių, darbuotojų, prekių, įmonės turto ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**. |
 | `/` | Pereina į paieškos arba „Pridėti prekę“ lauką. |
 | `G`, tada `D` `O` `H` `E` `A` `C` `S` `U` | Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Įmonės turtą, Katalogą, Prekių rinkinius arba Naudotojus (Administravime). |
-| `J` / `K`, `Esc` | Pereina per Užsakymus, SIM korteles, Įrangą ar Prekių katalogą arba uždaro atidarytą įrašą. |
+| `J` / `K`, `Esc` | Pereina per Užsakymus, SIM korteles, Įrangą ar Prekių katalogą arba uždaro atidarytą įrašą. `Esc` taip pat išeina iš Eksportuoti ir Keisti būseną… nieko nepadarius. |
 | `⌘/Ctrl` `Enter` | Ekrane „Kurti užsakymą“ atidaro užsakymo peržiūrą. |
 | `?` | Rodo visus sparčiuosius klavišus. |
 

@@ -161,6 +161,13 @@ test('employees, catalogue, item sets, users, roles, settings, backups', async (
   // Items given is closed at first; the shot shows it open.
   await page.getByRole('button', { name: new RegExp(`^${T.employees.itemsGiven}`) }).click()
   await shot('employee')
+  // Her page, the width of the screen, from Open page beside the list: a desktop's alone, as a phone and a tablet show
+  // the page as they show her opened from the list (docs/ux/employee-page.md).
+  if (device === 'desktop') {
+    await page.getByRole('button', { name: T.employees.openPage }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Jonas Petraitis' })).toBeVisible()
+    await shot('employee-page')
+  }
 
   await openTab(T.shell.catalogue)
   await expect(page.getByRole('row', { name: /Safety shoes/ })).toBeVisible()

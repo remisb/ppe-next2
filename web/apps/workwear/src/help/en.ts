@@ -205,10 +205,20 @@ export const en: Guide = {
       blocks: [
         { p: 'The list shows each employee\'s sizes and note, and marks anyone missing a size. A long note is cut to one line; open the employee to read it all. When someone is missing a size, **All** and **Missing a size** above the list choose who is shown.', devices: ['phone', 'tablet'] },
         { p: "The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee. When someone is missing a size, **All** and **Missing a size** above the list choose who is shown; point at one to see what it lists.", devices: ['desktop'] },
-        { p: "Each employee's page shows:" },
+        {
+          p: "From the **Employees** list, an employee opens beside it: `J` and `K` move to the next or previous one, and `Esc` closes it. From anywhere else, such as an order, a SIM or an item they hold, **Replacements due**, a dashboard or **Search**, the **employee's page** opens instead: the same record the width of the screen, with what they were given and hold on the left and their sizes, photos and documents on the right. The link above its name, such as **← WE-000010**, takes you back where you came from. Beside the list, **Open page** opens their page too, and so does a name in the list opened in a new tab.",
+          devices: ['desktop'],
+        },
+        {
+          p: "From the **Employees** list, an employee opens in place of the list, and the arrow **←** at the top takes you back to it. From anywhere else, such as an order, a SIM or an item they hold, **Replacements due**, a dashboard or **Search**, the **employee's page** opens, and its **←** takes you back where you came from.",
+          devices: ['phone', 'tablet'],
+        },
+        { p: 'Each employee shows:' },
         { ul: ['**Sizes** and **Preferred language**, each with its own **Edit**;', '**Items given**: every item given, with its usage time and replacement date;', '**Ordered, not yet given**: orders not yet given;', 'the company assets they hold, and held before: **Given SIM** and **Equipment**;', '**Changes**: who changed their details or sizes, and when.'] },
         { p: 'The sections below the sizes are closed at first, each title counting what it holds; choose a title to open or close it.' },
-        { p: "**Edit** beside **Sizes** turns them into their fields right there: **Save** keeps them for future orders, **Cancel** leaves them as they were. A red **Missing** opens that size's field. The preferred language is changed the same way. **New order** starts an order for them." },
+        { p: "**Edit** beside **Sizes** turns them into their fields right there: **Save** keeps them for future orders, **Cancel** leaves them as they were. A red **Missing** opens that size's field. The preferred language is changed the same way." },
+        { p: 'At the top, **New order** starts an order for them. The pencil, **Edit details**, changes their name, code and notes; **⋯** holds **Merge with…** and **Delete employee…**.', roles: ['admin', 'manager'] },
+        { p: '**New order**, at the top, starts an order for them.', roles: ['employee'] },
         { p: 'An employee who still holds a company asset cannot be deleted: leaving never returns it. Register its return first.', roles: ['admin', 'manager'] },
         {
           p: "Before adding someone, the app checks whether they may already be here: the same name with the words in another order, without accents or in another alphabet, or a name a letter or two apart. **Add New Employee** then shows **This person may already be an employee**. **Use This Employee** opens that employee, or chooses them for the order in **Create Order**. If it is someone else, **Add as New Employee** adds them anyway.",
@@ -235,9 +245,10 @@ export const en: Guide = {
         {
           shots: [
             { name: 'employees', alt: 'The Employees list' },
-            { name: 'employee', alt: "An employee's page with the items given" },
+            { name: 'employee', alt: 'An employee opened from the Employees list, with the items given' },
           ],
         },
+        { shots: [{ name: 'employee-page', alt: "The employee's page: the items given beside their sizes, photos and documents" }], devices: ['desktop'] },
       ],
     },
     {
