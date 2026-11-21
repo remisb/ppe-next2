@@ -1,10 +1,12 @@
 # docs-scan: requirements and plan
 
 - **Date:** 2026-11-21
-- **Status:** proposal, revision 1. The [decisions](#11-decisions) carry recommendations and are
-  open until the user confirms them. Once they are made, the changes to Personnel files go into an
-  amendment of ADR 0007 and into [personnel-service.md](../specs/personnel-service.md), which then
-  bind where they differ from this plan.
+- **Status:** accepted, revision 2 (2026-11-21: **every decision made as recommended**, D1–D11).
+  Phase 0 is done: the changes to Personnel files are
+  [ADR 0007's amendment of 2026-11-21](../architecture/adr/0007-personnel-files-identity-documents.md#amendment-2026-11-21-scan-documents)
+  and "Match" and "Kept scans" in [personnel-service.md](../specs/personnel-service.md), which bind
+  where they differ from this plan; the app's words are in the glossary, section 14.
+  Revision 1 (the same day) was the proposal.
 - **Mockup:** [docs/ux/mockups/docs-scan.html](../ux/mockups/docs-scan.html) (round 1), the screens
   this plan builds.
 - **Builds on:** [docs-import plan](docs-import-plan.md) and
@@ -211,10 +213,13 @@ Migration `00xx_kept_scan_links`:
   `state = 'saved'` iff `document_id is not null` (CHECK).
 - The scan's pages are already sealed under the scan's own key; a page served for a tile is opened
   with it, as the archive is.
-- When the person's file is shredded, the link goes with the document (the scan expires in 3 days
-  anyway).
+- Removing the document, or shredding the person's file, erases a scan linked to it in the same
+  transaction (the row, so its key; then the object), as Remove does. The scan expires in 3 days
+  anyway.
 
-No new table. `grants.sql`: the new columns are DML on an existing table, so nothing changes.
+No new table. `grants.sql`: `ppe_app` may not UPDATE `personnel.scans` today; it gains UPDATE on
+the three new columns alone (`state`, `document_id`, `employee_id`), so the sealed values and
+`expires_at` stay as written.
 
 ### 5.5 Configuration
 
@@ -236,7 +241,7 @@ Nothing new. `API_PERSONNEL_SCAN_DAYS` (3) also sets how long Scans shows a scan
 
 | Phase | Content | Done when |
 | --- | --- | --- |
-| **0. Decide** | The user confirms D1–D11; ADR 0007 amendment (D4, D8); `personnel-service.md` gains Match and the scan links; the glossary its words (section 10) | decisions recorded |
+| **0. Decide** | The user confirms D1–D11; ADR 0007 amendment (D4, D8); `personnel-service.md` gains Match and the scan links; the glossary its words (section 10) | decisions recorded. *Done 2026-11-21: every decision as recommended.* |
 | **1. Shared parts** | `@ppe/id-docs` from docs-import (docs-import switched to it, unchanged on screen); `useLiveCamera` in `@ppe/scan-kit` (Scan SIMs switched to it); ui-sdk in `@ppe/ui`: `@layer ui-sdk`, Drawer and action sheet, Toast, filmstrip, image cropper, with tests; the CSP proof (DSN-3) | docs-import's and Scan SIMs' unit and e2e tests green on the packages; the ui-sdk wrappers' tests green; one e2e page behind Caddy opens a ui-sdk Drawer with no CSP report |
 | **2. VIZ spike** (parallel to 1 and 3) | Read the printed names, dates and personal code on the specimens of `web/e2e/fixtures/documents` and the team's own documents (read locally, never committed): tesseract `lit`+`eng`(+`rus`) in the worker, the zones from the MRZ band's geometry | **Go** if ≥ 95 % of names fold to the MRZ's and 0 % are taken wrong (a fold mismatch is typed, never taken); else DS-14 ships as typed fields with **Check**, as Import Documents |
 | **3. API** | Match, the scan links (migration, Save's `scan_id`, unread scans, pages), policy entries, spec | Go service, Postgres and `cmd/api` HTTP tests (section 8) |
@@ -288,7 +293,7 @@ labels with them, before the screens use them.
 
 ## 11. Decisions
 
-| # | Decision | Recommendation |
+| # | Decision | Decided (2026-11-21, as recommended) |
 | --- | --- | --- |
 | D1 | Scan Documents beside Import Documents, or replacing it | **Replace it after the trial**: share `@ppe/id-docs` now, retire Import Documents' tile once Scan Documents is Stable |
 | D2 | Home: the Scans grid, or straight into the camera | **The grid**, with Scan Document one tap away; the camera opens first when there is no scan |
