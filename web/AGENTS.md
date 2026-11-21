@@ -91,6 +91,13 @@ of every app that uses it, or its classes are silently missing (each app's
 `src/tailwind-sources.test.ts` fails then). Run shadcn's CLI in
 `packages/ui` (its `components.json`).
 
+**ui-sdk** (`@ui-sdk/react`, `@ui-sdk/core`, vercel-labs/ui; a beta, pinned exactly) is installed
+in `packages/ui` beside shadcn/ui, so components built with it are `@ppe/ui`'s like any other.
+Before using ui-sdk, follow the ui-sdk skill if it is installed, and read
+`packages/ui/node_modules/@ui-sdk/react/docs/llms.txt` (pnpm keeps it under `packages/ui`, not
+`web/node_modules`). To build a new component, also search `docs/core.md` there by heading, and
+read `docs/rendering.md` next to it.
+
 **Permissions, not roles, decide what a screen shows.** `session.can('orders.delete')`,
 from the token's `perms` (the user's roles may change; their names say nothing). The
 server checks every request again; the UI only hides what would be refused.

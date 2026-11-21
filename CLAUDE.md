@@ -530,7 +530,7 @@ tests open it at `webURL/admin/` on one origin, as behind Caddy.
 ## Frontend (`web/`)
 
 pnpm workspace (pnpm 12, Node ≥ 22), React 19, TypeScript 7, Vite 8, Vitest 5, Tailwind 4,
-shadcn/ui on Base UI. Follow `web/AGENTS.md`.
+shadcn/ui on Base UI, and ui-sdk (`@ui-sdk/react`, a beta, in `@ppe/ui`; its skill in `.claude/skills/ui-sdk`). Follow `web/AGENTS.md`.
 
 ```bash
 cd web && pnpm install
