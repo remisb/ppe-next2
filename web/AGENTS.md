@@ -32,9 +32,13 @@ web/
     mrz/                 identity documents' MRZ (ICAO 9303): parsing, check digits, the
                          corrections they confirm, the LT personal code, fold() for names;
                          pure, no DOM, its test vectors shared with Go (testdata/mrz)
+    id-docs/             reading an identity document as rules (photo slots, the draft, Save's
+                         input, page, portrait and corner geometry): docs-import's, for docs-scan
   spikes/
     mrz/                 docs-import phase 1, throwaway: a bare page reading specimen photos,
                          and the scripts that measured it; never built into an image
+    ui-sdk-csp/          docs-scan phase 1, throwaway: @ppe/ui's ui-sdk components served under
+                         the device policy, with and without the csp-nonce tag
   apps/
     workwear/            the staff app, at /
     admin/               Administration, at /admin/: Users, Roles & permissions,
@@ -96,7 +100,16 @@ in `packages/ui` beside shadcn/ui, so components built with it are `@ppe/ui`'s l
 Before using ui-sdk, follow the ui-sdk skill if it is installed, and read
 `packages/ui/node_modules/@ui-sdk/react/docs/llms.txt` (pnpm keeps it under `packages/ui`, not
 `web/node_modules`). To build a new component, also search `docs/core.md` there by heading, and
-read `docs/rendering.md` next to it.
+read `docs/rendering.md` next to it. Apps never import `@ui-sdk/*`: `@ppe/ui` wraps it, and uses it
+only where shadcn/ui has nothing that fits (docs-scan plan D9): `drawer.tsx` (a bottom sheet a
+finger drags, with snap points; `ActionSheet` and `createActionSheet`), `toast.tsx` (`toast()` and
+`<Toaster />`, once at the root), `gallery.tsx` (pages over a thumbnail strip), `image-cropper.tsx`.
+`styles.css` declares `@layer ui-sdk;` first, so every style of ours wins; `@ui-sdk/core/web.css`
+is not loaded. **Every app's `index.html` carries `<meta property="csp-nonce" />`** (its
+`csp.test.ts` checks it): with `style-src 'self'` and no nonce, ui-sdk then adds its CSS as
+constructed style sheets; without the tag it adds `<style>` elements, which the policy blocks
+(proved in `spikes/ui-sdk-csp`). Tests of a ui-sdk wrapper use `src/test/ui-sdk.ts` (jsdom's
+stubs, strict mode, a render).
 
 **Permissions, not roles, decide what a screen shows.** `session.can('orders.delete')`,
 from the token's `perms` (the user's roles may change; their names say nothing). The
