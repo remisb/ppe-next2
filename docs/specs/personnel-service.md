@@ -9,7 +9,8 @@ numbers below are its). AI usage, through which the colour photo's call goes, is
 [ai-usage-service.md](ai-usage-service.md). **Scan Documents** (docs-scan), which reads first and
 then finds the person, adds Match and the kept scans' state and link (ADR 0007's amendment of
 2026-11-21; the [docs-scan plan](../apps/docs-scan-plan.md), whose DS- numbers are used below);
-their API is **built** (`document/match.go`, migration 0056), the app is to build.
+their API is **built** (`document/match.go`, migration 0056), and so is the app; the printed fields it reads are the browser's
+(`@ppe/id-docs` `printed.ts`): the API gets the names as typed or confirmed, as from Import Documents.
 
 - **Packages:** `internal/personnel/mrz` (the MRZ parser, **built**), `internal/personnel/document`
   (entity, service, repository, Postgres; the five-file layout of `internal/domain/user`; **built:**

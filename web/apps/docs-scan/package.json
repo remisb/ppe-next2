@@ -22,6 +22,7 @@
     "@ppe/routing": "workspace:*",
     "@ppe/scan-kit": "workspace:*",
     "@ppe/ui": "workspace:*",
+    "@tesseract.js-data/lit": "1.0.0",
     "lucide-react": "^1.48.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

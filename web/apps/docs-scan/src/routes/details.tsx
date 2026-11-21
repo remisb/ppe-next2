@@ -13,12 +13,14 @@ import { saveFile } from '@ppe/ui/lib/save-file'
 import { Camera, CircleAlert, CircleCheck, Crop, Download, Keyboard, Search, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { PrintedLine } from '@/components/printed-line'
 import { Chip, Group, Row, ScreenBar } from '@/components/screen-bar'
 import { t } from '@/i18n'
 import { draftFrom, findBlockers, parseDraft, type ScanDraft } from '@/lib/flow'
 import { keepScan } from '@/lib/pages'
 import { useRouter } from '@/lib/router'
 import { type Session, useSessions } from '@/lib/sessions'
+import { usePrinted } from '@/lib/use-printed'
 import { useScan } from '@/lib/use-scan'
 
 /** The scan's screen once its pages are taken, or reopened from Scans. */
@@ -55,6 +57,10 @@ function Details({ scan }: { scan: Session }) {
   const saved = scan.state === 'saved'
   const kindWord = t.kinds[scan.kind]
   const current = scan.pages[Math.min(page, scan.pages.length) - 1]
+  usePrinted(scan)
+  const printed = scan.printed
+  const namesPage = printed?.namesPage !== undefined ? scan.pages[printed.namesPage] : undefined
+  const nameBoxes = [printed?.surname?.box, printed?.givenNames?.box].filter((b) => b !== undefined)
 
   const set = (patch: Partial<ScanDraft>) => sessions.update(scan.id, (s) => ({ ...s, draft: { ...s.draft, ...patch } }))
 
@@ -176,6 +182,18 @@ function Details({ scan }: { scan: Session }) {
               </Row>
             ) : null}
           </Group>
+          {!saved && printed?.state === 'reading' ? (
+            <p role="status" className="px-4 text-sm text-muted-foreground">
+              {t.details.readingPrint}
+            </p>
+          ) : null}
+          {!saved && namesPage && nameBoxes.length > 0 ? (
+            <Group title={t.details.asPrinted}>
+              <div className="px-4 py-3">
+                <PrintedLine page={namesPage.blob} boxes={nameBoxes} alt={t.details.printedAlt} />
+              </div>
+            </Group>
+          ) : null}
           {saved ? null : (
             <label className="flex min-h-11 items-start gap-3 rounded-xl border border-border bg-card px-4 py-3">
               <input type="checkbox" className="mt-1 size-5 accent-primary" checked={d.namesChecked} onChange={(e) => set({ namesChecked: e.target.checked })} />
@@ -194,7 +212,7 @@ function Details({ scan }: { scan: Session }) {
             </Row>
             {saved ? null : (
               <div className="flex flex-col gap-3 px-4 py-3">
-                <Field label={t.details.issuedOn} hint={t.details.optional}>
+                <Field label={t.details.issuedOn} hint={d.issuedOn !== '' && d.issuedOn === printed?.issuedOn ? t.details.sources.printed : t.details.optional}>
                   {(p) => <Input {...controlProps(p)} type="date" value={d.issuedOn} onChange={(e) => set({ issuedOn: e.target.value })} />}
                 </Field>
                 <Field label={t.details.issuedBy} hint={t.details.optional}>

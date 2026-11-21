@@ -7,6 +7,7 @@
  */
 import type { DocumentCandidate, DocumentTake, IdentityDocumentInput, IdentityDocumentKind, KeptScanState, ScanMetaInput } from '@ppe/api-client'
 import { kindOf, linesOf, namesFromMrz } from '@ppe/id-docs/flow'
+import type { PrintedFields } from '@ppe/id-docs/printed'
 import { fold, parseMrz, type Mrz } from '@ppe/mrz'
 
 /** Where a page goes: a passport's data page, a card's back (with the MRZ) or front. */
@@ -155,3 +156,20 @@ export function mergeable(a: DocumentCandidate, b: DocumentCandidate): { keep: s
   if (!a.has_documents) return { keep: b.employee.id, remove: a.employee.id }
   return null
 }
+
+/**
+ * The draft with the printed fields put in (DS-14): the names as printed, with their accents,
+ * only over the MRZ's own (never over what the user typed or confirmed), and the date of issue
+ * when none was typed. The names stay to be compared: the tick is the user's.
+ */
+export function withPrinted(d: ScanDraft, m: Mrz, p: PrintedFields): ScanDraft {
+  const fromMrz = namesFromMrz(m)
+  const untouched = !d.namesChecked && d.surname === fromMrz.surname && d.givenNames === fromMrz.givenNames
+  return {
+    ...d,
+    ...(untouched && p.surname ? { surname: p.surname.value } : {}),
+    ...(untouched && p.givenNames ? { givenNames: p.givenNames.value } : {}),
+    ...(d.issuedOn === '' && p.issuedOn ? { issuedOn: p.issuedOn } : {}),
+  }
+}
+

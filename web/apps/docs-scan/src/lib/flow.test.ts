@@ -16,6 +16,7 @@ import {
   saveInputOf,
   sideOf,
   tickedAtFirst,
+  withPrinted,
   type ScanDraft,
 } from './flow'
 
@@ -116,3 +117,17 @@ describe('Merge Employees here', () => {
     expect(mergeable(cand('a', true), cand('b', true))).toBeNull()
   })
 })
+
+describe('the printed fields', () => {
+  const box = { x0: 0, y0: 0, x1: 1, y1: 1 }
+  const printed = { surname: { value: 'Pavyždys', box }, givenNames: { value: 'Jonas', box }, issuedOn: '2021-05-15' }
+  it('put the names as printed over the MRZ’s, to be compared, and the date of issue when none was typed', () => {
+    expect(withPrinted(draftFrom(m), m, printed)).toMatchObject({ surname: 'Pavyždys', givenNames: 'Jonas', issuedOn: '2021-05-15', namesChecked: false })
+  })
+  it('never over what the user typed or confirmed', () => {
+    expect(withPrinted({ ...draftFrom(m), surname: 'Pavyzdys-Typed' }, m, printed).surname).toBe('Pavyzdys-Typed')
+    expect(withPrinted(checked(draftFrom(m)), m, printed).surname).toBe('Pavyzdys')
+    expect(withPrinted({ ...draftFrom(m), issuedOn: '2021-05-16' }, m, printed).issuedOn).toBe('2021-05-16')
+  })
+})
+

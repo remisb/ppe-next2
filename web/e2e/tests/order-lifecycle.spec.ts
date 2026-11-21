@@ -4445,7 +4445,7 @@ test('Import Documents, Scan Document: photos straightened in perspective, kept 
   await expect(page.getByRole('heading', { name: 'Whose document is it?' })).toBeVisible()
 })
 
-test('Scan Documents: read first, then the person found; updated, merged or added; a scan its MRZ did not read, typed and deleted', async () => {
+test('Scan Documents: read first, the printed names offered, then the person found; updated, merged or added; a scan its MRZ did not read, typed and deleted', async () => {
   test.skip(!runsApp('docs-scan'), 'Scan Documents is not started (E2E_APPS)')
   // Every photo is turned, flattened and read twice in the browser: several seconds each.
   test.setTimeout(420_000)
@@ -4499,7 +4499,11 @@ test('Scan Documents: read first, then the person found; updated, merged or adde
   // A: an ID card, one employee alike. The MRZ has no accents: Find Employee waits for the names to be compared.
   await scan('id-lt-misread-front.jpg', 'id-lt-misread-back.jpg')
   await expect(page.getByText('MRZ read and checked')).toBeVisible()
-  await expect(page.getByLabel('Surname')).toHaveValue('Zukauskaite Bandomoji')
+  // Then the printed text, in the background (DS-14): the names as printed (the hyphen is the print's; the MRZ has
+  // a space), beside the picture of their line, offered, not taken: Find Employee still waits for the tick.
+  await expect(page.getByRole('img', { name: 'The names as printed on the document' })).toBeVisible({ timeout: 90_000 })
+  await expect(page.getByLabel('Surname')).toHaveValue(/^[ŽZ]ukauskait[ėe]-Bandomoji$/)
+  await expect(page.getByText('MRZ agrees · check the letters').first()).toBeVisible()
   await expect(page.getByRole('button', { name: 'Find Employee' })).toBeDisabled()
   await checkNames('Žukauskaitė-Bandomoji', 'Miglė Ona')
   // On a phone the details fit: nothing scrolls sideways.

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 
 import tailwindcss from '@tailwindcss/vite'
@@ -11,6 +12,8 @@ import { defineConfig } from 'vitest/config'
 // imports, while a package's TypeScript would reach Node unbundled. It lists
 // the text reader's files and the OCR-B model, served at <base>readers/.
 import { serveMrzReaderFiles } from '../../packages/mrz/src/reader/reader-files.ts'
+// The printed fields' model (@ppe/id-docs' printed-reader.ts), served at <base>readers/ beside the MRZ's.
+import { packageDir, serveReaderFiles } from '../../packages/scan-kit/src/reader-files.ts'
 
 // A published app (ADR 0006): its build is relative (base './'), and the
 // API's page names where it is mounted (a channel or version under
@@ -31,7 +34,13 @@ export default defineConfig(({ command, mode }) => {
   const https = env['VITE_HTTPS'] === '1'
   return {
     base: command === 'build' ? './' : `/apps/${manifest.slug}/`,
-    plugins: [react(), tailwindcss(), serveMrzReaderFiles(), ...(https ? [basicSsl()] : [])],
+    plugins: [
+      react(),
+      tailwindcss(),
+      serveMrzReaderFiles(),
+      serveReaderFiles({ 'lit.traineddata.gz': join(packageDir('@tesseract.js-data/lit', import.meta.url), '4.0.0_best_int/lit.traineddata.gz') }, 'ppe-printed-files'),
+      ...(https ? [basicSsl()] : []),
+    ],
     // The MRZ reader's image worker (@ppe/mrz's reader/image.worker.ts) is a module worker, built as one.
     worker: { format: 'es' as const },
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
