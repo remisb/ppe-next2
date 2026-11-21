@@ -63,8 +63,12 @@ export function RecordHeader({
   return (
     // display: contents, no box of its own: the rows stick the length of the record, not of its header.
     <header className="contents">
-      {/* In a record that spaces its parts with gap-4 (Orders, the Audit log), the mark and the row take none between them. */}
-      <div ref={mark} aria-hidden className={cn('-mt-3 h-px md:-mt-8 print:hidden [.gap-4>*>&]:-mb-4', beside && 'lg:mt-0')} />
+      {/*
+        In a record that spaces its parts with gap-4 (Orders, the Audit log), the mark and the row take none between them.
+        Below lg the row takes main's top padding, as a PageHeader does; from lg something is above it (a pane's card
+        beside a list, a record page's Back link), so it does not reach up over it.
+      */}
+      <div ref={mark} aria-hidden className="-mt-3 h-px md:-mt-8 lg:mt-0 print:hidden [.gap-4>*>&]:-mb-4" />
       <div
         ref={row}
         data-slot="record-header"

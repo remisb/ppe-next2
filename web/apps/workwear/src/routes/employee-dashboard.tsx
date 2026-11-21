@@ -166,7 +166,7 @@ function needsOf(d: Data): Need[] {
     tag: t.dashboard.sizeTag,
     title: e.employee_name,
     detail: missingText(e),
-    action: { label: t.dashboard.addSizes, context: t.dashboard.forContext(e.employee_name), to: { name: 'employee', id: e.employee_id } },
+    action: { label: t.dashboard.addSizes, context: t.dashboard.forContext(e.employee_name), to: { name: 'employeePage', id: e.employee_id, from: t.dashboard.employeeDashboard } },
   }))
   return [...waiting, ...due, ...sizes]
 }
@@ -209,7 +209,7 @@ function RecentlyGivenCard({ d, navigate }: { d: Data; navigate: Navigate }) {
           {d.recently_given.map((g) => (
             <li key={g.order_id} className="flex items-center justify-between gap-3 border-b border-border py-2.5">
               <div className="min-w-0">
-                <a {...linkTo({ name: 'employee', id: g.employee_id }, navigate)} className={cn(inlineLink, 'block truncate')}>
+                <a {...linkTo({ name: 'employeePage', id: g.employee_id, from: t.dashboard.employeeDashboard }, navigate)} className={cn(inlineLink, 'block truncate')}>
                   {g.employee_name}
                 </a>
                 <span className="text-xs text-muted-foreground tabular-nums">

@@ -110,7 +110,7 @@ function Group({ items, tz, navigate }: { items: DashboardReplacement[]; tz: str
     <li>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <h2 className="text-sm font-semibold">
-          <a {...linkTo({ name: 'employee', id: who.employee_id }, navigate)} className={inlineLink}>
+          <a {...linkTo({ name: 'employeePage', id: who.employee_id, from: t.dashboard.replacementsDue }, navigate)} className={inlineLink}>
             {who.employee_name}
           </a>
           {who.employee_code ? <span className="font-normal text-muted-foreground"> · {who.employee_code}</span> : null}

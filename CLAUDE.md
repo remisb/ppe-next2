@@ -564,6 +564,12 @@ in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TA
   `@ppe/mrz` (passports' and ID cards' MRZ, for docs-import; its Go twin is `internal/personnel/mrz`, both tested on `testdata/mrz/vectors.json`). A screen shows controls by `session.can(...)`, never by role.
   A package with components of its own is named with `@source` in each app's `index.css`:
   Tailwind scans only the app's files and `@ppe/ui`, so its classes would be missing.
+- **The employee's page** (WARE-47, `docs/ux/employee-page.md`): the Employees list opens an employee
+  beside it (`/employees/<id>`); every other link (an order, SIM cards and Equipment, an item's Orders,
+  Replacements due, the Employee Dashboard, ⌘K) opens `/employees/<id>/page` (route `employeePage`), the
+  same `EmployeeDetail` (`routes/employee.tsx`, `place`) in two columns from its container's `@4xl`. A
+  link's `from` label is kept with its history entry (`@ppe/app-shell`'s `fromOf`, `cameFrom`), and the
+  page's way back names and returns there, else Employees; the pane has **Open page**.
 - A record's header is its identity row, then its **action bar** (WARE-46,
   `docs/ux/record-actions.md`, Option B): `RecordHeader`'s `actions` is a `RecordAction[]`
   from one model per record kind (`lib/order-actions.ts`, `asset-actions.ts`,

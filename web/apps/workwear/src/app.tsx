@@ -17,7 +17,7 @@ import { Fragment, Suspense, lazy, useEffect, useId, useRef, useState } from 're
 import { CommandPalette, type PaletteApp, type PaletteSection } from '@/components/command-palette'
 import { t } from '@/i18n'
 import { useOpenKey } from '@/lib/open-sections'
-import { type Route, canGoBack, linkTo, startRoute, useRouter } from '@/lib/router'
+import { type Route, cameFrom, canGoBack, linkTo, startRoute, useRouter } from '@/lib/router'
 import { type GoTarget, shortcutList, useShortcuts } from '@/lib/shortcuts'
 import { draftLineCount } from '@/lib/working-order'
 
@@ -30,6 +30,7 @@ import { ConfirmPage } from './routes/confirm'
 import { CreateOrder } from './routes/create-order'
 import { Dashboard } from './routes/dashboard'
 import { EmployeeDashboard } from './routes/employee-dashboard'
+import { EmployeeDetail } from './routes/employee'
 import { Employees } from './routes/employees'
 import { History } from './routes/history'
 import { ItemSets } from './routes/item-sets'
@@ -101,7 +102,7 @@ function isCurrent(current: Route['name'], tab: Route['name']): boolean {
   return (
     current === tab ||
     (current === 'record' && tab === 'history') ||
-    (current === 'employee' && tab === 'employees') ||
+    ((current === 'employee' || current === 'employeePage') && tab === 'employees') ||
     // Company Assets' link is the SIM cards'; Equipment and an asset's page are in the section too.
     ((current === 'equipment' || current === 'asset' || current === 'assetForm') && tab === 'simCards') ||
     (current === 'managerDashboard' && tab === 'dashboard') ||
@@ -294,6 +295,12 @@ export function App() {
   }
   /** Back to where the user came from inside the app, else to the given screen (a shared or bookmarked link). */
   const back = (fallback: Route) => () => (canGoBack() ? window.history.back() : navigate(fallback))
+  // The employee's page goes back where its link was (an order: "WE-000010"), named by it; opened
+  // directly or from ⌘K, which names no place, to Employees. Its words and where it goes always agree.
+  const employeePageBack = () => {
+    const from = cameFrom()
+    return from && canGoBack() ? { label: from, onBack: () => window.history.back() } : { label: t.employees.title, onBack: () => navigate({ name: 'employees' }) }
+  }
 
   // No grid in print: the navigation is hidden there, and the page would fall into its narrow column.
   return (
@@ -514,6 +521,7 @@ export function App() {
         {route.name === 'employees' || route.name === 'employee' ? (
           <Employees missing={route.name === 'employees' && (route.missing ?? false)} selected={route.name === 'employee' ? route.id : undefined} navigate={navigate} />
         ) : null}
+        {route.name === 'employeePage' ? <EmployeeDetail key={route.id} id={route.id} place={{ page: true, back: employeePageBack() }} navigate={navigate} /> : null}
         {route.name === 'simCards' || route.name === 'equipment' ? (
           // startRoute has already sent anyone from a register they may not see (equipment.read, sim_cards.read).
           <Assets

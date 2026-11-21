@@ -61,8 +61,12 @@ Rules:
 - **Detail:** the reader word too ("the Orders screen"). Kinds:
   - **List screen**: finds records (Orders, Employees, Item Catalogue, Users, Audit log). On
     Company Assets the list screens are **registers** (SIM Cards, Equipment), the brief's word.
-  - **Record page**: one record at its own address (an employee, an asset). Reader word **page** ("the employee's page"). An order has no record page: the
-    order pane is its page below `lg`.
+  - **Record page**: one record at its own address, the width of the screen (an asset at
+    `/assets/<id>`, an employee at `/employees/<id>/page`). Reader word **page** ("the
+    employee's page"). Its register or list opens the record **beside** it instead; every
+    other link (an order, a SIM card's Held by, Replacements due, a dashboard, ⌘K) opens the
+    page, and an employee beside the list has **Open page** (`docs/ux/employee-page.md`).
+    An order has no record page: the order pane is its page below `lg`.
   - **Dashboard**: key figures and panels, read-only (the three Dashboards, Overview, Usage,
     System's Status).
   - **Composer**: a screen that builds something before it is stored (Create Order).
@@ -163,13 +167,16 @@ Rules:
 
 ### Back link
 - **Brief:** the way from a record or document back to the list it came from, named by that
-  list.
+  list; on a record page opened from another screen, back to that screen, named by it.
 - **Detail:** below `lg` it is an icon in the record's sticky row, named "Back to Orders"; a
   record page from `lg` and a document keep the ghost button above the title. Beside a list
   the record has ✕ in the same row instead. A screen opened from another (Replacements due,
   a mail template) has it as an arrow at the start of its header's row (`PageHeader`'s
-  `back`): nothing goes above a page header, which starts at the top of the window.
-- **UI:** "← Employees", "← Audit log", "Item Catalogue". On a document: "← Back".
+  `back`): nothing goes above a page header, which starts at the top of the window. The
+  employee's page names where its link was ("← WE-000010", "← SIM-000001", "← Replacements
+  due") and goes back there; opened directly or from ⌘K, which names no place, it says and
+  goes to Employees (its words and where it goes always agree; `cameFrom` in `@ppe/app-shell`).
+- **UI:** "← Employees", "← Audit log", "Item Catalogue", "← WE-000010". On a document: "← Back".
 
 ### Filter bar
 - **Brief:** the controls between the header and a list that choose what it shows: filter

@@ -20,7 +20,7 @@ export {
   passwordProblem,
   validatePasswordChange,
 } from './password.ts'
-export { type Addresses, type NavigateOptions, type Router, canGoBack, linkWith, useAddressRouter } from './router.ts'
+export { type Addresses, type NavigateOptions, type Router, cameFrom, canGoBack, linkWith, useAddressRouter } from './router.ts'
 export { ADMINISTRATION_PERMISSIONS, type Session, canAdminister, keepSignedInChoice, refreshDue, sessionFromToken } from './session.ts'
 export { SignIn } from './sign-in.tsx'
 export { type Theme, applyTheme, loadTheme, saveTheme, themes, useTheme } from './theme.ts'

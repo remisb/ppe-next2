@@ -40,6 +40,8 @@ export const employees = {
   sizes: 'Sizes',
   editSizes: 'Edit Sizes',
   editDetails: 'Edit details',
+  // The employee's page from the pane beside the list (docs/ux/employee-page.md).
+  openPage: 'Open page',
   deleteEmployee: 'Delete employee…',
   confirmDelete: (name: string) => `Delete ${name}? Their past orders are kept.`,
   editSizesTitle: (name: string) => `Edit Sizes: ${name}`,

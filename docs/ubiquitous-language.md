@@ -201,8 +201,10 @@ Rules for using it:
   The name is everyone's; the rest is the employee's **profile** (code, notes, language,
   photos, an identity document's details), with **See employee profiles** and **Manage
   employee profiles** (`employee_profiles.read`/`.manage`, migration 0050).
-- **Code:** `internal/domain/employee`, table `employees`. **UI:** Employees, an employee's
-  page, **Add New Employee**, **Edit details**, **Merge with…**, **Delete employee…**.
+- **Code:** `internal/domain/employee`, table `employees`. **UI:** Employees, an employee
+  beside the list, the employee's page (`/employees/<id>/page`, from anywhere else, and **Open
+  page** beside the list), **Add New Employee**, **Edit details**, **Merge with…**, **Delete
+  employee…**.
 
 ### Possible duplicate
 - **Brief:** two employee records whose names are alike, so they may be one person.

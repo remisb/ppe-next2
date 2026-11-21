@@ -336,7 +336,7 @@ function ItemOrders({
             </div>
             <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-xs text-muted-foreground tabular-nums">
               <a
-                {...linkTo({ name: 'employee', id: o.employee_id }, navigate)}
+                {...linkTo({ name: 'employeePage', id: o.employee_id, from: t.catalogue.title }, navigate)}
                 className={linkVariants({ className: 'text-foreground' })}
               >
                 {o.employee_first_name} {o.employee_last_name}

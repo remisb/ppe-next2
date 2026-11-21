@@ -10,6 +10,7 @@ import {
   Link2,
   type LucideIcon,
   Mail,
+  Maximize2,
   MessageCircle,
   Pencil,
   Plus,
@@ -46,6 +47,8 @@ export const actionIcons = {
   add: { icon: Plus },
   /** Take back: Return. */
   return: { icon: Undo2 },
+  /** Open the record as a page, the width of the screen (the employee's page from the pane). */
+  page: { icon: Maximize2 },
   /** Delete: only ever in ⋯, never a tool. */
   delete: { icon: Trash2 },
 } as const satisfies Record<string, { icon: LucideIcon; className?: string }>

@@ -231,7 +231,7 @@ export function AssetDetail({
               <StateFact title={t.assets.heldBy} className="pl-4">
                 {a.open_assignment ? (
                   <>
-                    <a {...linkTo({ name: 'employee', id: a.open_assignment.employee_id }, navigate)} className={link}>
+                    <a {...linkTo({ name: 'employeePage', id: a.open_assignment.employee_id, from: a.inventory_no }, navigate)} className={link}>
                       {a.open_assignment.employee_name}
                     </a>
                     <span className="block text-xs text-muted-foreground">
@@ -399,7 +399,7 @@ function AssignmentItem({
   return (
     <li className="text-sm">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <a {...linkTo({ name: 'employee', id: s.employee_id }, navigate)} className={link}>
+        <a {...linkTo({ name: 'employeePage', id: s.employee_id, from: inventoryNo }, navigate)} className={link}>
           {s.employee_name}
         </a>
         <span className="text-muted-foreground tabular-nums">{t.assets.daysHeld(s.days_held)}</span>
