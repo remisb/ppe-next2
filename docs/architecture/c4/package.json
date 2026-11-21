@@ -1,0 +1,8 @@
+{
+  "name": "ppe-next2-c4",
+  "private": true,
+  "type": "module",
+  "description": "Generates the C4 diagrams and Structurizr DSL in this folder from model.mjs",
+  "scripts": { "build": "node build.mjs" },
+  "dependencies": { "elkjs": "0.12.1" }
+}

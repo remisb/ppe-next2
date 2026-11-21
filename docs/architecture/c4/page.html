@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PPE-next2 — C4 architecture model</title>
+<style>
+:root{--bg:#f6f7f9;--fg:#1b1f24;--mut:#5b6470;--line:#d9dee5;--card:#fff;--acc:#1168bd}
+@media (prefers-color-scheme:dark){:root{--bg:#15181c;--fg:#e8eaee;--mut:#9aa3ae;--line:#2c3138;--card:#1d2126;--acc:#6aa9ec}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.top{padding:22px 28px 0;max-width:1500px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--mut);font-size:13.5px;margin:0}
+.sub a{color:var(--acc)}
+nav{display:flex;gap:4px;flex-wrap:wrap;margin:18px 0 0;border-bottom:1px solid var(--line)}
+nav a{padding:9px 14px;border-radius:8px 8px 0 0;color:var(--mut);text-decoration:none;font-size:14px;border:1px solid transparent;border-bottom:none;margin-bottom:-1px}
+nav a:hover{color:var(--fg)}
+nav a.on{color:var(--fg);background:var(--card);border-color:var(--line);font-weight:600}
+main{max-width:1500px;margin:0 auto;padding:0 28px 40px}
+.view,.pane{background:var(--card);border:1px solid var(--line);border-top:none;border-radius:0 0 10px 10px;padding:18px 20px 20px}
+.vh h2{font-size:17px;margin:0 0 4px}
+.vh p{margin:0;color:var(--mut);max-width:110ch;font-size:14px}
+.tools{display:flex;gap:6px;align-items:center;margin:14px 0 8px}
+.tools button{font:inherit;font-size:14px;min-width:38px;height:30px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:6px;cursor:pointer}
+.tools button:hover{border-color:var(--acc)}
+.zv{color:var(--mut);font-size:12.5px;margin-left:6px}
+.canvas{overflow:auto;border:1px solid var(--line);border-radius:8px;background:#fff;max-height:78vh;cursor:grab}
+.canvas.drag{cursor:grabbing}
+.canvas svg{display:block;transform-origin:0 0}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;margin-top:12px;font-size:13px;color:var(--mut)}
+.legend b{color:var(--fg)}
+.key{display:inline-flex;align-items:center;gap:7px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:14px;overflow:auto;max-height:60vh;font-size:12.5px;line-height:1.45}
+.pane h3{font-size:15px;margin:20px 0 6px}
+.pane h3:first-child{margin-top:0}
+.pane ul{margin:4px 0 0;padding-left:20px}
+.pane li{margin:3px 0}
+code{font-size:.92em;background:var(--bg);padding:1px 5px;border-radius:4px;border:1px solid var(--line)}
+.copy{font:inherit;font-size:13px;padding:5px 12px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg);cursor:pointer}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}.top,main{padding-left:14px;padding-right:14px}}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>PPE-next2 — C4 architecture model</h1>
+  <p class="sub">Source: <a href="{{REPO}}">{{REPO}}</a> · analysed at commit <code>{{COMMIT}}</code> ({{COMMITDATE}}) · generated {{GENERATED}} · drag to pan, hover an element or arrow for details</p>
+  <nav>{{TABS}}</nav>
+</div>
+<main>
+{{VIEWS}}
+<section id="v-catalogue" class="pane" hidden>
+  <table><thead><tr><th>Element</th><th>Type / technology</th><th>Inside</th><th>Responsibility</th></tr></thead><tbody>{{ROWS}}</tbody></table>
+</section>
+<section id="v-source" class="pane" hidden>
+  <div class="grid2">
+    <div>
+      <h3>How this model is kept current</h3>
+      <ul>
+        <li>One model (<code>model.mjs</code>) generates every diagram on this page <i>and</i> the Structurizr DSL below, so views never drift from each other.</li>
+        <li>Relationships are recorded at the lowest true level (component or container); the context and container views derive <b>implied relationships</b> from them, like Structurizr does.</li>
+        <li>Re-check against these sources on each change: <code>docker-compose.prod.yml</code> (containers, ports, volumes), <code>deploy/Caddyfile</code> (routing), <code>cmd/api/config.go</code> (external endpoints), <code>internal/*</code> (components), <code>web/apps/*</code> (SPAs), <code>docs/architecture/adr</code> and <code>context-map.md</code>.</li>
+        <li>Lives in the repo at <code>docs/architecture/c4/</code> (instructions: <code>docs/architecture/c4-model.md</code>); reviewed with every ADR.</li>
+      </ul>
+      <h3>C4 conventions applied</h3>
+      <ul>
+        <li>Every diagram has a title naming its type and scope, a short description and a key.</li>
+        <li>Every element shows name, type and technology (containers, components) plus one-sentence responsibility.</li>
+        <li>Every relationship is one-directional with a verb-phrase label and its protocol/technology.</li>
+        <li>External people and systems are grey; the system/container in scope is drawn as a dashed boundary.</li>
+        <li>Shapes carry meaning only beyond colour: cylinder = database, browser window = SPA, folder = file store, dashed border = batch job.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Not modelled (yet)</h3>
+      <ul>
+        <li>Planned bounded contexts from ADR 0001 (People split, Competence, Projects & crew, Timesheets, Reporting, outbox worker).</li>
+        <li>Build-time systems: GitHub Actions CI and the private <code>remisb/dbbackup</code> module fetched during image builds.</li>
+        <li>The development setup (Vite dev servers on 5180–5188, local Postgres on 5442).</li>
+        <li>Dynamic diagrams (e.g. the order lifecycle: Create → ORDERED → confirmation link → GIVEN).</li>
+      </ul>
+    </div>
+  </div>
+  <h3>Structurizr DSL <button class="copy" id="copyDsl">Copy</button></h3>
+  <pre id="dsl">{{DSL}}</pre>
+</section>
+</main>
+<script>
+(function(){
+  const keys=[...document.querySelectorAll("nav a")].map(a=>a.dataset.k);
+  const zoom={};
+  function show(){
+    let k=(location.hash||"").slice(1); if(!keys.includes(k)) k=keys[0];
+    document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("on",a.dataset.k===k));
+    document.querySelectorAll("main > section").forEach(s=>s.hidden=s.id!=="v-"+k);
+    const sec=document.getElementById("v-"+k); if(sec && sec.querySelector(".canvas") && zoom[k]===undefined) fit(sec,k);
+  }
+  function apply(sec,k){
+    const svg=sec.querySelector("svg"); const w=+svg.getAttribute("width"), h=+svg.getAttribute("height");
+    svg.style.width=(w*zoom[k])+"px"; svg.style.height=(h*zoom[k])+"px";
+    sec.querySelector(".zv").textContent=Math.round(zoom[k]*100)+"%";
+  }
+  function fit(sec,k){
+    const c=sec.querySelector(".canvas"), svg=sec.querySelector("svg");
+    const w=+svg.getAttribute("width"); const avail=c.clientWidth-2;
+    zoom[k]=Math.min(1,Math.max(.3,avail/w)); apply(sec,k);
+  }
+  document.querySelectorAll(".view").forEach(sec=>{
+    const k=sec.id.slice(2);
+    sec.querySelectorAll(".tools button").forEach(b=>b.addEventListener("click",()=>{
+      const z=+b.dataset.z; if(z===0) return fit(sec,k);
+      zoom[k]=Math.min(2.5,Math.max(.25,(zoom[k]||1)*(z>0?1.2:1/1.2))); apply(sec,k);
+    }));
+    const c=sec.querySelector(".canvas"); let d=null;
+    c.addEventListener("pointerdown",e=>{d={x:e.clientX,y:e.clientY,l:c.scrollLeft,t:c.scrollTop};c.classList.add("drag");c.setPointerCapture(e.pointerId)});
+    c.addEventListener("pointermove",e=>{if(!d)return;c.scrollLeft=d.l-(e.clientX-d.x);c.scrollTop=d.t-(e.clientY-d.y)});
+    const end=()=>{d=null;c.classList.remove("drag")}; c.addEventListener("pointerup",end); c.addEventListener("pointercancel",end);
+  });
+  document.getElementById("copyDsl").addEventListener("click",async e=>{
+    try{await navigator.clipboard.writeText(document.getElementById("dsl").textContent);e.target.textContent="Copied";}
+    catch(_){e.target.textContent="Select the text and copy";}
+    setTimeout(()=>e.target.textContent="Copy",1800);
+  });
+  window.addEventListener("hashchange",show); window.addEventListener("resize",()=>{});
+  show();
+})();
+</script>
+</body>
+</html>
