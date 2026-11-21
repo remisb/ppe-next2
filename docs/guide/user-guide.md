@@ -155,7 +155,9 @@ Dates on the record, and on the printed and PDF assignment forms of Company Asse
 
 The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee. When someone is missing a size, **All** and **Missing a size** above the list choose who is shown; point at one to see what it lists.
 
-Each employee's page shows:
+From the **Employees** list, an employee opens beside it: `J` and `K` move to the next or previous one, and `Esc` closes it. From anywhere else, such as an order, a SIM or an item they hold, **Replacements due**, a dashboard or **Search**, the **employee's page** opens instead: the same record the width of the screen, with what they were given and hold on the left and their sizes, photos and documents on the right. The link above its name, such as **← WE-000010**, takes you back where you came from. Beside the list, **Open page** opens their page too, and so does a name in the list opened in a new tab.
+
+Each employee shows:
 
 - **Sizes** and **Preferred language**, each with its own **Edit**;
 - **Items given**: every item given, with its usage time and replacement date;
@@ -165,7 +167,15 @@ Each employee's page shows:
 
 The sections below the sizes are closed at first, each title counting what it holds; choose a title to open or close it.
 
-**Edit** beside **Sizes** turns them into their fields right there: **Save** keeps them for future orders, **Cancel** leaves them as they were. A red **Missing** opens that size's field. The preferred language is changed the same way. **New order** starts an order for them.
+**Edit** beside **Sizes** turns them into their fields right there: **Save** keeps them for future orders, **Cancel** leaves them as they were. A red **Missing** opens that size's field. The preferred language is changed the same way.
+
+*Administrators and managers only:*
+
+At the top, **New order** starts an order for them. The pencil, **Edit details**, changes their name, code and notes; **⋯** holds **Merge with…** and **Delete employee…**.
+
+*The employee role only:*
+
+**New order**, at the top, starts an order for them.
 
 *Administrators and managers only:*
 
@@ -189,13 +199,17 @@ A record with identity documents is always the one kept. Links to the removed re
 ![Merge Employees: the record kept and the value kept in each row](../../web/apps/workwear/public/help-img/en/desktop/merge-employees.png)
 
 ![The Employees list](../../web/apps/workwear/public/help-img/en/desktop/employees.png)
-![An employee's page with the items given](../../web/apps/workwear/public/help-img/en/desktop/employee.png)
+![An employee opened from the Employees list, with the items given](../../web/apps/workwear/public/help-img/en/desktop/employee.png)
+
+![The employee's page: the items given beside their sizes, photos and documents](../../web/apps/workwear/public/help-img/en/desktop/employee-page.png)
 
 ## 10. Item Catalogue and Item Sets
 
 Each catalogue item has a price, a service period and a size group. Orders show and total the price. You can't order an item without a price or service period. Changing a price never alters existing orders.
 
 An item can also have a **Purchase price**: what we pay the supplier. It is optional, never needed to order, and orders don't show it. An open item shows both prices and how they changed, and its **Changes**, closed at first, list who changed the item, and when.
+
+An item may name its **Supplier**, the company it is bought from. An open item shows it, or **No supplier**.
 
 Click an item to open it beside the list. `J` and `K` move between items, and `Esc` closes it. An item without a price or service period is marked **Incomplete**; point at the mark to see which is missing.
 
@@ -205,10 +219,30 @@ An item set is a kit of items with default quantities. You apply it on Create Or
 
 You add and change items in **Item Catalogue**, and kits in **Item Sets**.
 
+On **Add Item** and **Edit Item**, choose the **Supplier** from the list administrators keep in **Administration**, on **Suppliers**, or **No supplier**. A supplier deleted there leaves its items with none.
+
 ![The Item Catalogue](../../web/apps/workwear/public/help-img/en/desktop/catalogue.png)
 ![Item Sets](../../web/apps/workwear/public/help-img/en/desktop/item-sets.png)
 
-## 11. Company Assets
+## 11. Export a list
+
+**Export** saves a list as a file for a spreadsheet: **Excel (.xlsx)** or **CSV**. It is at the top of **Orders**, **Employees**, **Item Catalogue**, **SIM Cards** and **Equipment**. On **Item Sets**, **Replacements due** and an employee's **Items given** it opens the **Export** window straight away, with every row.
+
+Choose **Export** at the top of the list. Checkboxes appear beside the rows, and a bar above the list says what you are doing and how many rows are ticked, such as **Export Employees · 3 selected**. While it is there, clicking a row ticks it instead of opening it, and the row's own buttons are hidden. The box at the top of the column ticks every row shown.
+
+- **Export 3…** exports the rows you ticked.
+- **Export all 142…** exports every row the tab and search show. On **Orders**, **SIM Cards** and **Equipment**, which show a page at a time, it is **Export all 70 matching…**: every page that matches the filters.
+- **Cancel** leaves without exporting, and the checkboxes go away.
+
+`Esc` leaves too.
+
+The **Export** window names the rows you picked, such as **3 selected**; **Change** takes you back to the list to pick again. Tick the columns you want (those the screen shows are ticked already), choose **Excel (.xlsx)** or **CSV**, then **Export (3)**. The file, such as `Employees 2026-11-20.xlsx`, downloads with the rows in the list's order and the column names in your language. It holds only what you can see on the screen.
+
+*Administrators only:*
+
+In **Administration** the same **Export** is on **Users**, **Roles & permissions**, **Suppliers**, **Manage apps**, and on **Security**'s **Signed-in devices** and **System**'s **Errors**.
+
+## 12. Company Assets
 
 **Company Assets** records the SIMs, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two screens: **SIM Cards**, and **Equipment**, for equipment and furniture alike, which only those given the **Equipment Assignments** role see. Each item is one record with its own inventory number, so three identical laptops are three assets.
 
@@ -231,6 +265,8 @@ A SIM's **Status** is what the provider confirms: **Not Activated**, **Active** 
 **Add SIM** registers a card as it arrives from the provider. Its SIM No., provider and inventory number, the next one suggested, are needed now; the phone number, plan and non-return value can wait until it is given. The provider is chosen from the list an administrator keeps in **Administration**, on **Settings**, with the default one already chosen; while that list is empty, you type it. The non-return value set there is filled in, and you can change or clear it. On **Equipment**, **Add Asset** registers one item: its name and category, which suggests its number, such as `PC-000003`.
 
 **Change Status** records the status the provider confirmed. It does not activate or block the card: email the provider for that.
+
+To change several cards at once, choose **Change Status…** at the top (under **⋯** on a phone, or while a card is open), tick the cards, then choose their status in the bar. **Cancel** leaves without changing any.
 
 To give a SIM or an item, follow the three steps on **Give SIM** or **Give Asset**:
 
@@ -268,7 +304,7 @@ Leaving never returns anything. When an employee does not give a card back, **Ma
 
 Search finds a SIM by its SIM, phone or inventory number, and an item by its inventory number.
 
-## 12. Scan SIMs
+## 13. Scan SIMs
 
 *Administrators and managers only.*
 
@@ -286,17 +322,17 @@ The list below checks every SIM at once and says what needs fixing: a number tha
 
 **PIN and PUK**, at the top, finds a SIM by its SIM No. or phone number, at least 4 digits. **Show PIN and PUK** shows them, as the key on a SIM in **SIM Cards** does; each time is recorded in its **Changes**, never the codes. A SIM without them has **Add PIN and PUK**. They are kept encrypted, and never shown in a list. Shown codes hide again after a minute, or when you leave the tab. The SIMs you were scanning stay in their list while you look one up here.
 
-## 13. Administration
+## 14. Administration
 
 *Administrators only.*
 
-**Administration** is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on **Overview**. Its other screens are **Users**, **Roles & permissions**, **Audit log**, **Security**, **System**, **Usage**, **Settings**, **Mail Templates** and **Manage apps**.
+**Administration** is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on **Overview**. Its other screens are **Users**, **Roles & permissions**, **Audit log**, **Security**, **System**, **Usage**, **Settings**, **Mail Templates**, **Suppliers** and **Manage apps**.
 
 Open it with **Administration** at the foot of the sidebar. It has a sidebar of its own; **Workwear & Equipment**, at its foot, takes you back.
 
-You are signed in to both at once, and **Sign out** in either signs you out of both. Anyone whose roles let them manage users, roles or settings, or read the Audit log, Security, System, Usage or the backups, sees **Administration**, with only the screens their roles open.
+You are signed in to both at once, and **Sign out** in either signs you out of both. Anyone whose roles let them manage users, roles, settings or suppliers, or read the Audit log, Security, System, Usage or the backups, sees **Administration**, with only the screens their roles open.
 
-## 14. Overview
+## 15. Overview
 
 *Administrators only.*
 
@@ -313,7 +349,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 
 ![Overview: what needs attention, then the figures](../../web/apps/workwear/public/help-img/en/desktop/overview.png)
 
-## 15. Users
+## 16. Users
 
 *Administrators only.*
 
@@ -325,7 +361,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 
 ![The Users screen](../../web/apps/workwear/public/help-img/en/desktop/users.png)
 
-## 16. Roles & permissions
+## 17. Roles & permissions
 
 *Administrators only.*
 
@@ -340,7 +376,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 ![Roles & permissions: the built-in roles and the users holding them](../../web/apps/workwear/public/help-img/en/desktop/roles.png)
 ![A role's permissions, grouped, each with what it allows](../../web/apps/workwear/public/help-img/en/desktop/role.png)
 
-## 17. Audit log
+## 18. Audit log
 
 *Administrators only.*
 
@@ -356,7 +392,7 @@ Filter by **Area**, **Change**, **Person** and dates. Click a change to open it 
 
 ![Audit log: a price change open, with the fields before and after](../../web/apps/workwear/public/help-img/en/desktop/audit-log.png)
 
-## 18. Security
+## 19. Security
 
 *Administrators only.*
 
@@ -371,7 +407,7 @@ Filter by **Area**, **Change**, **Person** and dates. Click a change to open it 
 ![Security: sign-ins with their address and device](../../web/apps/workwear/public/help-img/en/desktop/security.png)
 ![The access review: users, their roles and last sign-in](../../web/apps/workwear/public/help-img/en/desktop/access-review.png)
 
-## 19. System
+## 20. System
 
 *Administrators only.*
 
@@ -386,7 +422,7 @@ When something goes wrong, the app shows a **Reference**, such as `9f2c1a7e`. Th
 ![System: the app, its requests and the database](../../web/apps/workwear/public/help-img/en/desktop/system.png)
 ![Errors: an error open, with its reference](../../web/apps/workwear/public/help-img/en/desktop/errors.png)
 
-## 20. Backups
+## 21. Backups
 
 *Administrators only.*
 
@@ -405,7 +441,7 @@ The settings are made on the server, and a backup is restored there too: the app
 
 ![Backups: the last backup, the recent ones and the settings](../../web/apps/workwear/public/help-img/en/desktop/backups.png)
 
-## 21. Usage
+## 22. Usage
 
 *Administrators only.*
 
@@ -420,7 +456,7 @@ The settings are made on the server, and a backup is restored there too: the app
 
 ![Usage: active people, sign-ins and more](../../web/apps/workwear/public/help-img/en/desktop/usage.png)
 
-## 22. Settings
+## 23. Settings
 
 *Administrators only.*
 
@@ -436,7 +472,21 @@ A card already registered keeps its provider, even one you remove from the list,
 
 ![Settings: the SIM providers, one of them the default, and the default non-return value](../../web/apps/workwear/public/help-img/en/desktop/sim-providers.png)
 
-## 23. Manage apps
+## 24. Suppliers
+
+*Administrators only.*
+
+**Suppliers**, in Administration, lists the companies catalogue items are bought from: each one's **Internal code**, name, where it is, how many items name it, and whom to contact. Search by code, name, city or contact. On a phone it is under **More**.
+
+**Add Supplier** adds one. Its **Internal code**, your own short code for it, and its **Name** are required; the code must differ from every other supplier's, whatever the case. Add the rest as you know it: the **Company code** and **VAT code**, the **Bank account** (IBAN), the address with a two-letter **Country**, such as LT, the contact person, email, phone, website and notes. **Edit** changes it; every item from that supplier shows the change.
+
+**⋯ → Delete supplier…** deletes one after asking first, and says how many items name it: they are left with no supplier. Orders are not changed. **⋯ → Changes** opens the **Audit log** for that supplier.
+
+An item's supplier is chosen on **Edit Item**, in the Item Catalogue. Someone given **Manage Suppliers** on **Roles & permissions** sees this screen too.
+
+![Suppliers: each with its internal code, place, items and contact](../../web/apps/workwear/public/help-img/en/desktop/suppliers.png)
+
+## 25. Manage apps
 
 *Administrators only.*
 
@@ -454,7 +504,7 @@ Turn on **Stable follows deploys** for an app no one tries first: each deploy's 
 
 ![Manage apps: Scan SIMs beside the list, with its versions and channels](../../web/apps/workwear/public/help-img/en/desktop/manage-apps.png)
 
-## 24. Your account
+## 26. Your account
 
 - **Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian. Dates follow your language: 2026-10-15 in English, 2026.10.15 in Lithuanian, 15.10.2026 in Russian.
 - **Theme**: **Light**, **Dark** or **System**, which follows the device. It is kept on this device, and the sign-in page uses it too.
@@ -466,7 +516,7 @@ Turn on **Stable follows deploys** for an app no one tries first: each deploy's 
 ![Account: language, theme and password](../../web/apps/workwear/public/help-img/en/desktop/account.png)
 ![Signed-in devices: this device and a phone](../../web/apps/workwear/public/help-img/en/desktop/devices.png)
 
-## 25. Install the app
+## 27. Install the app
 
 Add the app to your phone's home screen to open it like any other app: in a window of its own, without the browser's address bar, under the name **Workwear**.
 
@@ -488,14 +538,14 @@ On a computer, Chrome and Edge can install it too: choose **Install app** on you
 - Without a connection, the app shows **The server cannot be reached**. It opens the page again by itself once you are back online, or choose **Retry**.
 - The icon's shortcuts are in the language you used when you added the app. After changing your language, remove the app from the home screen and add it again.
 
-## 26. Search and shortcuts
+## 28. Search and shortcuts
 
 | Key | Does |
 | --- | --- |
 | `⌘K` / `Ctrl K` | Search record numbers, employees, items, company assets and screens. For example, type a name, then choose **New order for …**. |
 | `/` | Go to the search or Add Item field. |
 | `G` then `D` `O` `H` `E` `A` `C` `S` `U` | Go to Dashboard, Create Order, Orders, Employees, Company Assets, Catalogue, Item Sets or Users (in Administration). |
-| `J` / `K`, `Esc` | Move through Orders, SIM Cards, Equipment or the Item Catalogue, or close the one open. |
+| `J` / `K`, `Esc` | Move through Orders, SIM Cards, Equipment or the Item Catalogue, or close the one open. `Esc` also leaves Export and Change Status… without doing anything. |
 | `⌘/Ctrl` `Enter` | On Create Order, review the order. |
 | `?` | Show all shortcuts. |
 

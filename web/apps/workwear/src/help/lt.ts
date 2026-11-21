@@ -208,10 +208,20 @@ export const lt: Guide = {
       blocks: [
         { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite atidarę darbuotoją. Kai kuriam nors trūksta dydžio, **Visi** ir **Trūksta dydžio** virš sąrašo pasirenka, kas rodoma.', devices: ['phone', 'tablet'] },
         { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją. Kai kuriam nors trūksta dydžio, **Visi** ir **Trūksta dydžio** virš sąrašo pasirenka, kas rodoma; užvedę žymeklį ant vieno, matysite, ką jis rodo.', devices: ['desktop'] },
-        { p: 'Darbuotojo puslapyje rodoma:' },
+        {
+          p: 'Iš sąrašo **Darbuotojai** darbuotojas atidaromas šalia jo: `J` ir `K` pereina prie kito ar ankstesnio, `Esc` uždaro. Iš bet kur kitur, pavyzdžiui, iš užsakymo, jo turimos SIM ar daikto, **Reikia pakeisti**, suvestinės ar **Paieška** rezultatų, atsiveria **darbuotojo puslapis**: tas pats įrašas per visą ekrano plotį, kairėje – kas jam išduota ir ką jis turi, dešinėje – jo dydžiai, nuotraukos ir dokumentai. Nuoroda virš vardo, pavyzdžiui, **← WE-000010**, grąžina ten, iš kur atėjote. Šalia sąrašo jo puslapį atveria ir **Atidaryti puslapį**, taip pat sąraše esantis vardas, atidarytas naujame skirtuke.',
+          devices: ['desktop'],
+        },
+        {
+          p: 'Iš sąrašo **Darbuotojai** darbuotojas atidaromas vietoje sąrašo, o rodyklė **←** viršuje grąžina į sąrašą. Iš bet kur kitur, pavyzdžiui, iš užsakymo, jo turimos SIM ar daikto, **Reikia pakeisti**, suvestinės ar **Paieška** rezultatų, atsiveria **darbuotojo puslapis**, o jo **←** grąžina ten, iš kur atėjote.',
+          devices: ['phone', 'tablet'],
+        },
+        { p: 'Prie kiekvieno darbuotojo rodoma:' },
         { ul: ['**Dydžiai** ir **Pageidaujama kalba**, kiekvienas su savo mygtuku **Redaguoti**;', '**Išduotos prekės**: visos išduotos prekės su naudojimo trukme ir pakeitimo data;', '**Užsakyta, dar neišduota**: dar neišduoti užsakymai;', 'įmonės turtas, kurį jis turi ir turėjo: **Išduotos SIM** ir **Įranga**;', '**Pakeitimai**: kas ir kada keitė jo duomenis ar dydžius.'] },
         { p: 'Skiltys po dydžiais iš pradžių suskleistos, o jų pavadinimuose nurodyta, kiek jose įrašų; pasirinkite pavadinimą, kad skiltį atidarytumėte ar suskleistumėte.' },
-        { p: '**Redaguoti** prie **Dydžiai** paverčia dydžius laukais tiesiog čia: **Išsaugoti** išsaugo juos būsimiems užsakymams, **Atšaukti** palieka, kaip buvo. Raudonas **Trūksta** atidaro to dydžio lauką. Pageidaujama kalba keičiama taip pat. **Naujas užsakymas** pradeda užsakymą šiam darbuotojui.' },
+        { p: '**Redaguoti** prie **Dydžiai** paverčia dydžius laukais tiesiog čia: **Išsaugoti** išsaugo juos būsimiems užsakymams, **Atšaukti** palieka, kaip buvo. Raudonas **Trūksta** atidaro to dydžio lauką. Pageidaujama kalba keičiama taip pat.' },
+        { p: 'Viršuje **Naujas užsakymas** pradeda užsakymą šiam darbuotojui. Pieštukas, **Redaguoti duomenis**, keičia jo vardą, kodą ir pastabas; po **⋯** yra **Sujungti su…** ir **Ištrinti darbuotoją…**.', roles: ['admin', 'manager'] },
+        { p: '**Naujas užsakymas** viršuje pradeda užsakymą šiam darbuotojui.', roles: ['employee'] },
         { p: 'Darbuotojo, kuris dar turi įmonės turto, ištrinti negalima: išėjus iš darbo, niekas negrąžinama savaime. Pirmiausia užregistruokite grąžinimą.', roles: ['admin', 'manager'] },
         {
           p: 'Prieš pridėdama žmogų, programa patikrina, ar jo jau nėra: tas pats vardas su žodžiais kita tvarka, be diakritinių ženklų ar kita abėcėle, arba vardas, kuris skiriasi viena ar dviem raidėmis. Tada lange **Pridėti darbuotoją** rodoma **Šis žmogus galbūt jau yra darbuotojas**. **Naudoti šį darbuotoją** atveria tą darbuotoją arba ekrane **Kurti užsakymą** pasirenka jį užsakymui. Jei tai kitas žmogus, **Pridėti kaip naują darbuotoją** vis tiek jį prideda.',
@@ -238,9 +248,10 @@ export const lt: Guide = {
         {
           shots: [
             { name: 'employees', alt: 'Darbuotojų sąrašas' },
-            { name: 'employee', alt: 'Darbuotojo puslapis su išduotomis prekėmis' },
+            { name: 'employee', alt: 'Iš darbuotojų sąrašo atidarytas darbuotojas su išduotomis prekėmis' },
           ],
         },
+        { shots: [{ name: 'employee-page', alt: 'Darbuotojo puslapis: išduotos prekės šalia jo dydžių, nuotraukų ir dokumentų' }], devices: ['desktop'] },
       ],
     },
     {
