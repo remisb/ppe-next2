@@ -1655,7 +1655,7 @@ export interface AppVersion {
   published_by_user_id: string | null
 }
 
-/** A name that points at one version of an app: stable, beta, preview or a variant. */
+/** A name that points at one version of an app: stable, beta or preview. */
 export interface AppChannel {
   id: string
   app_id: string
@@ -1673,7 +1673,7 @@ export interface AppReleases {
   channels: AppChannel[]
 }
 
-/** Points a channel at a version; a variant needs a label, the fixed channels have none. */
+/** Points a channel at a version. */
 export interface ChannelInput {
   version: string
 }
@@ -1707,7 +1707,7 @@ export interface AppFeedback {
 export interface AppTrial {
   version: string
   published_at: string
-  /** The channels opening it now, with a variant's label. */
+  /** The channels opening it now. */
   channels: AppChannel[]
   /** People who used it, and on how many days, over the last `days`. */
   people: number

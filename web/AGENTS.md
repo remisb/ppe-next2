@@ -304,7 +304,7 @@ The workwear app is the reference.
   their line's size group via `sizeRank`, never by whether a size looks numeric); a paged
   list (Orders) sends `sort`/`dir` to the API.
 - **Density**: Comfortable (the default) or Compact, a user's choice on Account and in
-  ⌘K, saved per user on the device (`lib/density.ts`, `<html data-density>`). Style it
+  ⌘K, saved per user on the device (`@ppe/app-shell`'s `density.ts`, `<html data-density>`). Style it
   with the `compact:` variant, which needs a screen with a fine pointer: Compact never
   shrinks a touch target or the printed record. `Table` already gives unstacked rows 32px
   and their buttons and ⋯ 28px (WCAG 2.5.8's 24px minimum); a stacked table keeps its

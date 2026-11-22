@@ -226,8 +226,9 @@ services:
       # Published apps' builds, written by the API.
       - published:/srv/published:ro
 
-# The private dbbackup module is fetched with this read-only GitHub token during
-# the api and backup builds (docs/backups.md); the file is gitignored.
+# The private modules (dbbackup, and pdf-mini for the api) are fetched with this
+# read-only GitHub token during the api and backup builds (docs/backups.md); the
+# file is gitignored.
 secrets:
   github_token:
     file: ${GITHUB_TOKEN_FILE:-.github-token}

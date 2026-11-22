@@ -64,8 +64,8 @@ else, administrators included (`asset.Sight`; the API answers 404 for such an it
 permissions off wider access, granting them to every role that had it: **See Item Sets**
 (`item_sets.read`; the active sets stay open for Create Order) and **Change Item prices**
 (`item_prices.manage`, needs `catalogue.manage`; `catalogue.Rights` refuses a price change
-without it). **Administration** is a second web app at `/admin/` (`web/apps/admin`: Users,
-Overview, Users, Roles & permissions, Audit log, Security, System, Usage, Settings, Mail Templates, Suppliers) on the staff app's origin, sharing its sign-in and
+without it). **Administration** is a second web app at `/admin/` (`web/apps/admin`:
+Overview, Users, Roles & permissions, Audit log, Security, System, Usage, Settings, Mail Templates, Suppliers, Manage apps) on the staff app's origin, sharing its sign-in and
 the packages `@ppe/ui`, `@ppe/app-shell`, `@ppe/i18n`, `@ppe/backups` and `@ppe/audit`; the
 administrator's Dashboard stays in the staff app. The **Audit log** (`audit.read`, migration
 0023, spec `docs/specs/audit-service.md`) reads every recorded change with the request,
@@ -171,7 +171,7 @@ sign-in, recorded first), Remove, Mark Employment Ended, Legal Hold, and the upk
 `personnel.portraits.colorize` (no built-in role), with the person's consent; the photo is saved `ai_generated`, labelled
 AI-coloured in the staff app and never the ID badge's. e2e runs a fake OpenAI on 18095.
 **Scan Document** (plan FR-22), Import Documents' second tab beside **Import to Personnel** (`/scan`,
-`routes/scan`, rules `src/lib/scan.ts`, `page-box.ts`, `corners.ts`, the pipeline `make-page.ts`): up to 10 photos
+`routes/scan`, rules `@ppe/id-docs`' `scan.ts`, `page-box.ts`, `corners.ts`, the pipeline `make-page.ts`): up to 10 photos
 of one person's document, each turned the way up its MRZ reads (`readPhoto(…, { turns: true })`), its 4 corners found
 and flattened by a perspective transform (`@ppe/scan-kit/perspective`: our own edges, Hough lines guided by the MRZ
 band, a homography and warp, in a worker), with Turn Left/Right and Adjust Corners; **Download Archive** keeps the
@@ -200,7 +200,7 @@ events `app.*`). Apps in testing (POC, In development) are for the built-in **Te
 (`useLauncher`) for every app's **Apps** entry (no extra row), the staff app's ⌘K and the landing:
 someone with several apps (`hasSeveralApps`) who signs in at the staff app's `/` lands on `/apps/`
 (`ApiProvider`'s async `onSignedIn`). Each app sends its slug as `X-PPE-App` (`workwear`, `admin`,
-`launcher`, `sim-scan`, `docs-import`); the audit trail, security log, error list and Usage record any registered slug
+`launcher`, `sim-scan`, `docs-import`, `docs-scan`); the audit trail, security log, error list and Usage record any registered slug
 (the four source CHECKs widened in 0042). PPE Crew (`../PPE-staff`) is a linked tile opening its own site.
 Phase 3, **published apps** (migration 0043: `launcher_versions`, `launcher_channels`,
 `launcher_channel_choices`; `error_events.app_version`): an app on this site may be published as
@@ -335,7 +335,7 @@ image runs `pnpm fetch` from the lockfile alone before copying the sources (`web
 keeps tests and e2e out) and only `vite build`, since CI's web job typechecks.
 Caddy also sends the security headers, including a Content-Security-Policy that allows
 `index.html`'s inline theme script, the same in every app, by its hash
-(`web/apps/{workwear,admin,sim-scan,launcher}/src/csp.test.ts` keep them in step; rules in `web/AGENTS.md`);
+(every app's `web/apps/<app>/src/csp.test.ts` keeps them in step; rules in `web/AGENTS.md`);
 published apps get their profile's policy, the `device` one (Scan SIMs) alone `'wasm-unsafe-eval'`,
 `worker-src 'self'` and the camera (ADR 0005; the API sends the page's, Caddy the files').
 `.env.prod` needs `API_SIM_CODES_KEY` (`openssl rand -hex 32`, kept offline too: a restore
@@ -558,7 +558,8 @@ in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TA
 `.claude/launch.json` must match), each published app's `/apps/<slug>` to its manifest's `devPort` (Scan SIMs 5184;
 `VITE_APP_<SLUG>_TARGET`, such as `VITE_APP_SIM_SCAN_TARGET`, overrides it) and the rest of `/apps` to
 `VITE_LAUNCHER_TARGET` (5186). `.claude/launch.json` has `api` (port 8090), `workwear`
-(port 5180), `admin` (port 5182), `sim-scan` (5184) and `launcher` (5186) configs.
+(port 5180), `admin` (port 5182), `sim-scan` (5184), `launcher` (5186), `docs-import` (5188), `docs-scan`
+(5190, and `docs-scan-https` for a phone's camera) and `ui-sdk-csp-spike` (5199) configs.
 
 - `packages/api-client` is a **hand-written** typed client (`types.ts` mirrors the Go JSON);
   update it with every API change. Its `permissions.ts` lists the permission catalogue in

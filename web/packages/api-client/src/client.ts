@@ -324,7 +324,7 @@ export function createClient(options: ClientOptions) {
       feedback: (slug: string) => request<AppFeedback[]>('GET', `/api/v1/apps/${seg(slug)}/feedback`),
       /** A published app's versions, newest first, and its channels. */
       releases: (slug: string) => request<AppReleases>('GET', `/api/v1/apps/${seg(slug)}/releases`),
-      /** Points a channel at a version: promote, roll back, or add or change a variant. */
+      /** Points a channel at a version: promote or roll back. */
       pointChannel: (slug: string, name: string, input: ChannelInput) =>
         request<AppChannel>('PUT', `/api/v1/apps/${seg(slug)}/channels/${seg(name)}`, input),
       /** Each version's use, errors and feedback, newest first. */
