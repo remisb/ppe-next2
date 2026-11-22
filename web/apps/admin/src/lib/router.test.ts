@@ -30,7 +30,8 @@ describe('router', () => {
     for (const tab of ['errors', 'backups'] as const) expect(parsePath(pathOf({ name: 'system', tab }))).toEqual({ name: 'system', tab })
     expect(pathOf({ name: 'system', tab: 'errors', error: 'e1' })).toBe('/system/errors/e1')
     expect(parsePath('/system/errors/e1')).toEqual({ name: 'system', tab: 'errors', error: 'e1' })
-    expect(parsePath('/backups')).toEqual({ name: 'system', tab: 'backups' })
+    // Backups' address before it was a tab of System is retired: the start screen, as any unknown one.
+    expect(parsePath('/backups')).toEqual({ name: 'home' })
     expect(parsePath('/system/backups/x')).toEqual({ name: 'home' })
   })
 

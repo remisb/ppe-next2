@@ -230,8 +230,6 @@ test('Backups: an administrator sees whether the database is backed up', async (
   await card.getByRole('link').click()
   await expect(page.getByRole('heading', { name: 'System', exact: true })).toBeVisible()
   await expect(page).toHaveURL(/\/admin\/system\/backups$/)
-  // Backups' old address leads there too.
-  await page.goto('/admin/backups')
   await expect(page.getByText('No backups yet.')).toBeVisible()
 })
 
@@ -3595,7 +3593,7 @@ test('Language: Lithuanian or Russian on Account; the app and every later sign-i
     '/admin/mail-templates',
     '/admin/mail-templates/sim.blocking',
     '/admin/suppliers',
-    '/admin/backups',
+    '/admin/system/backups',
     '/account',
   ]) {
     await page.goto(path)

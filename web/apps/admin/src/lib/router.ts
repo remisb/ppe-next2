@@ -142,8 +142,6 @@ export function parsePath(pathname: string, search = ''): Route {
   }
   const apps = /^\/apps(?:\/([^/]+))?$/.exec(path)
   if (apps) return apps[1] ? { name: 'apps', app: decodeURIComponent(apps[1]) } : { name: 'apps' }
-  // Backups was a screen of its own before System.
-  if (path === '/backups') return { name: 'system', tab: 'backups' }
   const system = /^\/system(?:\/(errors|backups))?(?:\/([^/]+))?$/.exec(path)
   if (system) {
     const tab = (system[1] as SystemTab | undefined) ?? 'status'
