@@ -217,7 +217,7 @@ tests and build, and is then removed.
   when that is elsewhere (Administration at `/apps/admin/` goes to `/admin/`), and is 404 when
   the tile opens `/apps/<slug>/` itself; without `API_APPS_DIR` every such address is 404. Caddy serves the files from
   the `published` volume, cached for a year, `/apps/files/standard/*` and `/apps/files/device/*`
-  only. The old `/sim-scan/…` redirects (308) to `/apps/sim-scan/…`. `assets` and `files` are
+  only. `assets` and `files` are
   reserved slugs (`launcher.ReservedSlugs`): exactly the `/apps/<name>/` paths Caddy answers
   before the API (`TestReservedSlugsAreCaddys`). The slug rule and the reserved slugs are also
   in `@ppe/api-client`'s `app-slugs.ts`, for Manage apps and `make new-app`

@@ -4716,9 +4716,6 @@ test('no screen broke the Content-Security-Policy', async () => {
       // Only Scan SIMs may compile its readers' WebAssembly (ADR 0005).
       expect(policies[0]!.value.includes("'wasm-unsafe-eval'"), path).toBe(path.startsWith('/apps/sim-scan/') || path === worker)
     }
-    // Its old address still opens it.
-    const old = await page.request.get('/sim-scan/find', { maxRedirects: 0 })
-    expect([old.status(), old.headers()['location']]).toEqual([308, '/apps/sim-scan/find'])
   }
   expect(cspViolations).toEqual([])
 })
