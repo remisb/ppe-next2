@@ -1,6 +1,7 @@
 import type { Supplier, SupplierInput } from '@ppe/api-client'
 
 import { t } from '@/i18n'
+import { isEmail } from '@/lib/email'
 
 /**
  * Suppliers screen rules. The API enforces all of them
@@ -31,7 +32,6 @@ export const SUPPLIER_LIMITS: Record<keyof SupplierDraft, number> = {
   notes: 2000,
 }
 
-const EMAIL = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/
 
 /** The form for a supplier, or an empty one for Add Supplier. */
 export function draftOf(s?: Supplier): SupplierDraft {
@@ -67,7 +67,7 @@ export function validateSupplier(d: SupplierDraft): SupplierErrors {
   if (!v.code) errors.code = t.suppliers.enterCode
   if (!v.name) errors.name = t.suppliers.enterName
   if (v.country && !/^[A-Z]{2}$/.test(v.country)) errors.country = t.suppliers.invalidCountry
-  if (v.email && !EMAIL.test(v.email)) errors.email = t.suppliers.invalidEmail
+  if (v.email && !isEmail(v.email)) errors.email = t.suppliers.invalidEmail
   for (const key of Object.keys(SUPPLIER_LIMITS) as (keyof SupplierDraft)[]) {
     if (!errors[key] && [...v[key]].length > SUPPLIER_LIMITS[key]) errors[key] = t.suppliers.tooLong(SUPPLIER_LIMITS[key])
   }

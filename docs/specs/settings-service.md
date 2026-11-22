@@ -63,7 +63,7 @@ existed, and the field says an administrator can list them.
 - A provider's **e-mail** is where its SIM activation and blocking emails go
   (`{{provider.email}}`, [mail-template-service.md](mail-template-service.md)). It is
   trimmed; one bare address with a dot in its domain (`net/mail`, no display name, no list),
-  at most 254 characters, or `''` for none; anything else is `ErrInvalid` (400). Unset, the
+  at most 254 characters (`internal/email`, the rule users and suppliers share), or `''` for none; anything else is `ErrInvalid` (400). Unset, the
   email's To shows `[Provider E-mail]`, and the sheet says the provider has none.
 - The default Non-return Value is what Add SIM fills in for a new card's Non-return Value
   (the field stays editable, and may be emptied). It is cents from 0 to 10 000 000 000, an

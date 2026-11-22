@@ -254,6 +254,7 @@ func TestCreateValidation(t *testing.T) {
 		{"missing email", func(p *CreateParams) { p.Email = " " }, admin.ID, ErrInvalid},
 		{"bad email", func(p *CreateParams) { p.Email = "not-an-email" }, admin.ID, ErrInvalid},
 		{"display-name email", func(p *CreateParams) { p.Email = "E <e@example.com>" }, admin.ID, ErrInvalid},
+		{"email without a dot in its domain", func(p *CreateParams) { p.Email = "e@localhost" }, admin.ID, ErrInvalid},
 		{"missing name", func(p *CreateParams) { p.Name = "" }, admin.ID, ErrInvalid},
 		{"short password", func(p *CreateParams) { p.Password = "short" }, admin.ID, ErrInvalid},
 		{"long password", func(p *CreateParams) { p.Password = strings.Repeat("x", 73) }, admin.ID, ErrInvalid},

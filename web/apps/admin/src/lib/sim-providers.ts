@@ -1,6 +1,8 @@
 import type { SimProvider } from '@ppe/api-client'
 import { euroInput, parseEuro } from '@ppe/i18n'
 
+import { isEmail } from '@/lib/email'
+
 /**
  * The Settings list of SIM providers, kept as a draft until saved: the
  * same rules the server applies (internal/domain/settings). Names are trimmed,
@@ -62,7 +64,7 @@ export function sameProviders(a: SimProviders, b: SimProviders): boolean {
 }
 
 /** An e-mail address's limit (RFC 5321's path), the server's own. */
-export const MAX_EMAIL_LENGTH = 254
+export { MAX_EMAIL_LENGTH } from '@/lib/email'
 
 /**
  * Whether email can be saved as a provider's address: empty (none), or one
@@ -71,7 +73,7 @@ export const MAX_EMAIL_LENGTH = 254
  */
 export function emailOk(email: string): boolean {
   const e = email.trim()
-  return e === '' || (e.length <= MAX_EMAIL_LENGTH && /^[^\s@,;<>"()]+@[^\s@,;<>"()]+\.[^\s@,;<>"()]+$/.test(e))
+  return e === '' || isEmail(e)
 }
 
 /** The names of the providers whose e-mail cannot be saved. */

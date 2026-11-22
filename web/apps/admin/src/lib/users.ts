@@ -2,6 +2,7 @@ import type { Permission, Role, User } from '@ppe/api-client'
 import { passwordProblem } from '@ppe/app-shell'
 
 import { t } from '@/i18n'
+import { isEmail } from '@/lib/email'
 
 /**
  * Users screen rules. The API enforces all of them; these mirror
@@ -80,7 +81,6 @@ export function draftOf(u: User | undefined, all: readonly Role[]): UserDraft {
 }
 
 /** A bare address, as the API's mail.ParseAddress check accepts it. */
-const EMAIL = /^[^\s@<>()",;]+@[^\s@<>()",;]+\.[^\s@<>()",;]+$/
 
 export function validateUser(d: UserDraft, isNew: boolean): UserErrors {
   const errors: UserErrors = {}
@@ -89,7 +89,7 @@ export function validateUser(d: UserDraft, isNew: boolean): UserErrors {
   else if (name.length > 200) errors.name = t.users.nameTooLong
   const email = d.email.trim()
   if (!email) errors.email = t.users.enterEmail
-  else if (!EMAIL.test(email) || email.length > 254) errors.email = t.users.invalidEmail
+  else if (!isEmail(email)) errors.email = t.users.invalidEmail
   if (d.roleIds.length === 0) errors.roles = t.users.chooseRole
   if (isNew) Object.assign(errors, validateNewPassword(d.password, d.confirm))
   return errors

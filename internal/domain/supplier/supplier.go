@@ -6,13 +6,14 @@
 package supplier
 
 import (
-	"net/mail"
 	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
 
 	"github.com/google/uuid"
+
+	"github.com/remisb/ppe-next2/internal/email"
 )
 
 // Length limits of a supplier's text, in characters; the database's CHECKs
@@ -26,7 +27,6 @@ const (
 	maxCityLen          = 100
 	maxPostalCodeLen    = 20
 	maxContactPersonLen = 200
-	maxEmailLen         = 254
 	maxPhoneLen         = 50
 	maxWebsiteLen       = 300
 	maxBankAccountLen   = 50
@@ -130,9 +130,9 @@ func (p *Params) Validate() error {
 		return fieldError("country", "must be a two-letter country code")
 	case long(p.ContactPerson, maxContactPersonLen):
 		return fieldError("contact_person", "is too long")
-	case long(p.Email, maxEmailLen):
+	case long(p.Email, email.MaxLen):
 		return fieldError("email", "is too long")
-	case p.Email != "" && !validEmail(p.Email):
+	case p.Email != "" && !email.Valid(p.Email):
 		return fieldError("email", "is not an email address")
 	case long(p.Phone, maxPhoneLen):
 		return fieldError("phone", "is too long")
@@ -144,10 +144,4 @@ func (p *Params) Validate() error {
 		return fieldError("notes", "is too long")
 	}
 	return nil
-}
-
-// validEmail reports whether s is one bare address (no display name).
-func validEmail(s string) bool {
-	a, err := mail.ParseAddress(s)
-	return err == nil && a.Address == s
 }
