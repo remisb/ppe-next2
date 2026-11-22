@@ -79,7 +79,10 @@ jobs:
       - run: pnpm test
       # make new-app's template still starts an app that typechecks, passes its tests and builds.
       - run: pnpm check:new-app
-      - run: pnpm build
+      # vite build only: an app's `build` script runs tsc first, which
+      # `pnpm typecheck` above already did (as web/Dockerfile does).
+      - name: Build
+        run: pnpm --filter "{./apps/*}" --filter "{./spikes/ui-sdk-csp}" exec vite build
 
   e2e:
     name: End-to-end (Playwright via Caddy)
@@ -135,8 +138,9 @@ jobs:
       - run: make migrate PSQL="$PSQL_CI"
       - run: pnpm install --frozen-lockfile
         working-directory: web
+      # vite build only: this job needs the web job, which typechecked.
       - name: Build the web bundle Caddy serves
-        run: pnpm build
+        run: pnpm --filter "{./apps/*}" exec vite build
         working-directory: web
       - run: pnpm exec playwright install --with-deps chromium
         working-directory: web/e2e
