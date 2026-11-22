@@ -4,12 +4,22 @@ import { Button } from '@ppe/ui/components/button'
 import { FormSheet } from '@ppe/ui/components/form-sheet'
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 
-import { t } from '@/i18n'
-import { ARROWS, keyStep, moveCorner } from '@ppe/id-docs/corners'
-import { turnedPreview } from '@ppe/id-docs/make-page'
+import { ARROWS, keyStep, moveCorner } from './corners.ts'
+import { turnedPreview } from './make-page.ts'
+
+/** The editor's words, in the app's language. */
+export interface CornerEditorWords {
+  title: string
+  hint: string
+  cancel: string
+  done: string
+  photoAlt: string
+  /** Top left, top right, bottom right, bottom left. */
+  cornerNames: readonly string[]
+}
 
 /**
- * Adjust Corners (Scan Document): the photo, turned as its page is, with the
+ * Adjust Corners (Import Documents' Scan Document, Scan Documents): the photo, turned as its page is, with the
  * page's 4 corners as handles and the page's outline between them. A handle
  * is dragged, or focused (Tab) and moved with the arrow keys, Shift for
  * further (lib/corners.ts keeps it inside the photo and the page unfolded).
@@ -22,7 +32,9 @@ export function CornerEditor({
   size,
   onDone,
   onCancel,
+  words,
 }: {
+  words: CornerEditorWords
   photo: Blob
   turn: Turn
   /** In the turned photo's full pixels. */
@@ -77,14 +89,14 @@ export function CornerEditor({
       open
       wide
       onClose={onCancel}
-      title={t.scan.cornersTitle}
-      description={t.scan.cornersHint}
+      title={words.title}
+      description={words.hint}
       footer={
         <div className="flex flex-wrap justify-end gap-2">
           <Button variant="outline" onClick={onCancel}>
-            {t.scan.cancel}
+            {words.cancel}
           </Button>
-          <Button onClick={() => onDone(quad)}>{t.scan.cornersDone}</Button>
+          <Button onClick={() => onDone(quad)}>{words.done}</Button>
         </div>
       }
     >
@@ -98,7 +110,7 @@ export function CornerEditor({
             onPointerUp={() => (dragging.current = null)}
             onPointerCancel={() => (dragging.current = null)}
           >
-            <img src={preview.url} alt={t.scan.photoAlt} className="block size-full" draggable={false} />
+            <img src={preview.url} alt={words.photoAlt} className="block size-full" draggable={false} />
             <svg aria-hidden viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 size-full">
               <polygon points={outline} className="fill-primary/15 stroke-primary" strokeWidth={0.6} vectorEffect="non-scaling-stroke" />
             </svg>
@@ -106,7 +118,7 @@ export function CornerEditor({
               <button
                 key={i}
                 type="button"
-                aria-label={t.scan.cornerNames[i]}
+                aria-label={words.cornerNames[i]}
                 onPointerDown={(e) => {
                   e.preventDefault()
                   e.currentTarget.setPointerCapture(e.pointerId)

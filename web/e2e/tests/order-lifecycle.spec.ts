@@ -9,6 +9,7 @@ import pg from 'pg'
 
 import { admin, apiEnv, caddyMode, dbDSN, openAIPort, publishBuild, repoRoot, runsApp, webURL } from '../env.ts'
 import { unzipStored } from '../../packages/ui/src/lib/table-export.ts'
+import { mrzOf, specimenDocuments } from '../fixtures/documents/specimens.ts'
 
 // One ordered story, run in sequence: each step builds on the data the
 // previous one created. It covers the manual's §7 validation rows and every
@@ -4442,6 +4443,127 @@ test('Import Documents, Scan Document: photos straightened in perspective, kept 
   // This passport is on file already (the first Import Documents step): back to Person, nothing saved.
   await page.getByRole('button', { name: 'Change' }).click()
   await expect(page.getByRole('heading', { name: 'Whose document is it?' })).toBeVisible()
+})
+
+test('Scan Documents: read first, then the person found; updated, merged or added; a scan its MRZ did not read, typed and deleted', async () => {
+  test.skip(!runsApp('docs-scan'), 'Scan Documents is not started (E2E_APPS)')
+  // Every photo is turned, flattened and read twice in the browser: several seconds each.
+  test.setTimeout(420_000)
+  const specimen = (name: string) => join(repoRoot, 'web/e2e/fixtures/documents', name)
+  const db = new pg.Client({ connectionString: dbDSN })
+  await db.connect()
+  try {
+    // Personnel Documents (role.PersonnelID), and the employees a document may belong to: one alike, two of one person.
+    await db.query(`INSERT INTO user_roles (user_id, role_id) SELECT id, $2 FROM users WHERE email = $1 ON CONFLICT DO NOTHING`, [
+      admin.email,
+      'a0e1d000-0000-4000-8000-000000000006',
+    ])
+    for (const [first, last, code] of [
+      ['Migle Ona', 'Zukauskaite-Bandomoji', 'DS-1'],
+      ['Petras', 'Bandomasis', 'DS-2'],
+      ['Petras', 'Bandomasys', null],
+    ]) {
+      await db.query(
+        `INSERT INTO employees (id, first_name, last_name, code, notes, created_at, updated_at, created_by_user_id, updated_by_user_id)
+         SELECT gen_random_uuid(), $2, $3, $4, '', now(), now(), id, id FROM users WHERE email = $1`,
+        [admin.email, first, last, code],
+      )
+    }
+  } finally {
+    await db.end()
+  }
+  await page.goto('/apps/docs-scan/')
+  // Signed in by the steps before; run alone (-g), it signs in here.
+  if (await page.getByRole('heading', { name: 'Sign in' }).isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await page.getByLabel('Email').fill(admin.email)
+    await page.getByLabel(/^Password/).fill(admin.password)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+  }
+  await expect(page.getByRole('heading', { name: 'Scans', level: 1 })).toBeVisible()
+
+  /** Scan Document, then photos chosen (headless Chromium has no camera): the pages made, kept, opened. */
+  const scan = async (...files: string[]) => {
+    await page.getByRole('button', { name: 'Scan Document' }).click()
+    const camera = page.getByRole('dialog', { name: 'Camera' })
+    await expect(camera).toBeVisible()
+    if (files.some((f) => f.startsWith('passport'))) await camera.getByRole('button', { name: 'Passport' }).click()
+    await camera.locator('input[type=file]').setInputFiles(files.map(specimen))
+    await expect(page.getByRole('button', { name: 'Find Employee' })).toBeVisible({ timeout: 150_000 })
+  }
+  const checkNames = async (surname: string, given: string) => {
+    await page.getByLabel('Surname').fill(surname)
+    await page.getByLabel('Given names').fill(given)
+    await page.getByRole('checkbox', { name: 'I have compared the names with the document.' }).check()
+  }
+
+  // A: an ID card, one employee alike. The MRZ has no accents: Find Employee waits for the names to be compared.
+  await scan('id-lt-misread-front.jpg', 'id-lt-misread-back.jpg')
+  await expect(page.getByText('MRZ read and checked')).toBeVisible()
+  await expect(page.getByLabel('Surname')).toHaveValue('Zukauskaite Bandomoji')
+  await expect(page.getByRole('button', { name: 'Find Employee' })).toBeDisabled()
+  await checkNames('Žukauskaitė-Bandomoji', 'Miglė Ona')
+  // On a phone the details fit: nothing scrolls sideways.
+  const desktop = page.viewportSize()!
+  await page.setViewportSize({ width: 375, height: 812 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.setViewportSize(desktop)
+  await page.getByRole('button', { name: 'Find Employee' }).click()
+  await expect(page.getByRole('heading', { name: 'This person may already be an employee' })).toBeVisible()
+  const migle = page.getByRole('article', { name: 'Migle Ona Zukauskaite-Bandomoji' })
+  await expect(migle).toContainText('Same name')
+  await migle.getByRole('button', { name: 'Use This Employee' }).click()
+  await expect(page.getByRole('heading', { name: 'Update Employee' })).toBeVisible()
+  // D5: what the record lacks, and the name that differs only by accents, start ticked.
+  await expect(page.getByRole('checkbox', { name: /Name · Accents added/ })).toBeChecked()
+  await expect(page.getByRole('checkbox', { name: /Birth date · Not on file/ })).toBeChecked()
+  await page.getByRole('button', { name: 'Save Document and Update' }).click()
+  await expect(page.getByRole('heading', { name: 'Saved' })).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText('ID card saved to Miglė Ona Žukauskaitė-Bandomoji’s personnel file.')).toBeVisible()
+  await expect(page.getByText(/Updated: Name, Birth date/)).toBeVisible()
+  await page.getByRole('button', { name: 'Back to Scans' }).click()
+  await expect(page.getByRole('button', { name: /Zukauskaite.* · ID card · Saved/ })).toBeVisible()
+
+  // B: a passport, two records of one person: merged first, then the kept one updated.
+  await scan('passport-lookalike.jpg')
+  await checkNames('Bandomasis', 'Petras')
+  await page.getByRole('button', { name: 'Find Employee' }).click()
+  const pair = page.getByRole('group', { name: /^Petras Bandomas[iy]s and Petras Bandomas[iy]s may be one person$/ })
+  await expect(pair).toBeVisible()
+  await pair.getByRole('button', { name: 'Merge Employees…' }).click()
+  await expect(page.getByRole('heading', { name: 'Merge Employees' })).toBeVisible()
+  await page.getByRole('button', { name: 'Merge Employees', exact: true }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Merge Employees', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Update Employee' })).toBeVisible()
+  await expect(page.getByText(/^Merged: /)).toBeVisible()
+  await page.getByRole('button', { name: /^Save Document/ }).click()
+  await expect(page.getByRole('heading', { name: 'Saved' })).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText('Merged', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Back to Scans' }).click()
+
+  // C: a passport nobody on file is like: a new employee made from it.
+  await scan('passport-expired.jpg')
+  await checkNames('Eriksson', 'Anna Maria')
+  await page.getByRole('button', { name: 'Find Employee' }).click()
+  await expect(page.getByRole('heading', { name: 'No employee is like this person' })).toBeVisible()
+  await page.getByRole('button', { name: 'Add as New Employee' }).click()
+  await expect(page.getByLabel('Last name')).toHaveValue('Eriksson')
+  await page.getByRole('button', { name: 'Add Employee and Save Document' }).click()
+  await expect(page.getByText('New employee added')).toBeVisible({ timeout: 30_000 })
+  await page.getByRole('button', { name: 'Back to Scans' }).click()
+
+  // D: a card's front alone, no MRZ: kept unread, the MRZ typed, read in its place; then deleted.
+  await page.getByRole('button', { name: 'Scan Document' }).click()
+  await page.getByRole('dialog', { name: 'Camera' }).locator('input[type=file]').setInputFiles(specimen('id-lt-front.jpg'))
+  await expect(page.getByText('The MRZ could not be read')).toBeVisible({ timeout: 150_000 })
+  await expect(page.getByRole('button', { name: 'Find Employee' })).toBeDisabled()
+  await page.getByRole('textbox', { name: 'MRZ' }).fill(mrzOf(specimenDocuments.find((d) => d.id === 'id-wrong-digit')!).join('\n'))
+  await page.getByRole('button', { name: 'Read These Lines' }).click()
+  // Its true lines read: the specimen printed a wrong digit, these do not.
+  await expect(page.getByText('MRZ read and checked')).toBeVisible({ timeout: 30_000 })
+  await page.getByRole('button', { name: 'Delete Scan' }).first().click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Delete Scan' }).click()
+  await expect(page.getByRole('heading', { name: 'Scans', level: 1 })).toBeVisible()
+  await expect(page.getByText('3 scans · 0 not saved yet')).toBeVisible()
 })
 
 test('Scan SIMs, published: a new version on Beta, chosen in App Launcher by a tester; Make Stable promotes and rolls back', async () => {

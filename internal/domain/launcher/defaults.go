@@ -41,5 +41,8 @@ var Defaults = []App{
 	// Identity documents read from passports and ID cards (ADR 0007): Personnel Documents' alone.
 	{Slug: "docs-import", Kind: KindApp, Group: "people", Icon: "scan", Color: "#5b3f8c", Href: "/apps/docs-import/", Tier: TierHere, Stage: StagePOC,
 		Names: Names{"Import Documents", "Dokumentų importas", "Импорт документов"}, AnyOf: []role.Permission{role.PersonnelDocumentsManage}},
+	// Read first, then find the person (docs/apps/docs-scan-plan.md): Import Documents' successor, Personnel Documents' alone.
+	{Slug: "docs-scan", Kind: KindApp, Group: "people", Icon: "scan", Color: "#2f6f8f", Href: "/apps/docs-scan/", Tier: TierHere, Stage: StagePOC,
+		Names: Names{"Scan Documents", "Dokumentų skenavimas", "Сканирование документов"}, AnyOf: []role.Permission{role.PersonnelDocumentsManage}},
 	// make new-app adds each new published app's tile above this line, in POC (Testers only).
 }

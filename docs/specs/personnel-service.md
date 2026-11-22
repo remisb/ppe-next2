@@ -31,7 +31,7 @@ their API is **built** (`document/match.go`, migration 0056), the app is to buil
   `personnel.scans` (kept scans; `ppe_app` may not UPDATE it; **built**). `0056_personnel_scan_links` adds the scans' `state`,
   `document_id` and `employee_id`; `grants.sql` gives `ppe_app` UPDATE on those three columns alone.
 - **App:** `web/apps/docs-import` (published, `device` profile, slug `docs-import`; **built**; retired after
-  Scan Documents' trial) and `web/apps/docs-scan` (the same profile, slug `docs-scan`; **to build**); the staff
+  Scan Documents' trial) and `web/apps/docs-scan` (the same profile, slug `docs-scan`; **built**, POC); the staff
   app's employee page shows the **Identity** section (`components/identity-section.tsx`, its rules
   `lib/identity.ts`; **built**): the validity line for everyone, the documents and Show Document for
   `personnel.documents.read` (those added to the employee record; every one for

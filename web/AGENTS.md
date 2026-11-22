@@ -48,6 +48,9 @@ web/
     sim-scan/            Scan SIMs, a trial (ADR 0005), published at /apps/sim-scan/
                          (ADR 0006 phase 3); moves into the staff app once it passes
     launcher/            App Launcher, at /apps/ (ADR 0006): every app a user's roles open
+    docs-import/         Import Documents, published at /apps/docs-import/: choose the person, then read
+    docs-scan/           Scan Documents, published at /apps/docs-scan/ (docs-scan plan): read first, then find
+                         the person (Match), update, merge or add; replaces docs-import after its trial
 ```
 
 **Two apps, one origin, one sign-in.** Administration is a separate app (ADR 0002) on the

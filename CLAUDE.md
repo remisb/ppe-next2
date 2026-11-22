@@ -179,7 +179,9 @@ pages as a zip and downloads it, **Save to Personnel** hands them to Import. **K
 "Kept scans" in `personnel-service.md`; migration 0053, `internal/personnel/scan`, `cmd/api/personnel-scan-routes.go`):
 the zip is kept `API_PERSONNEL_SCAN_DAYS` (3) days for its uploader alone, sealed under a per-scan data key in
 `personnel.scans` and `personnel-scans/{id}`, and erased by the upkeep (`PurgeExpired`).
-**Scan Documents** (`docs-scan`, to build; [plan](docs/apps/docs-scan-plan.md), every decision made 2026-11-21; ADR 0007's
+**Scan Documents** (`docs-scan`, built as a POC published app, device profile, `web/apps/docs-scan`: Scans, Camera, Details,
+Find Employee, Update, Merge, Add New, Saved, Adjust Corners as addresses (`lib/router.tsx`, one router in context), its rules
+`src/lib/flow.ts`, scans in progress in this tab's memory (`lib/sessions.tsx`); [plan](docs/apps/docs-scan-plan.md), every decision made 2026-11-21; ADR 0007's
 amendment of that day) reads first, then finds the person (`POST …/personnel/documents/match`, built: `document/match.go`, its `People` port
 adapted in `cmd/api/checkers.go`), updates, merges or adds them; kept scans gain a state (`unread`/`read`/`saved`), `replaces`,
 a page route and a link to the saved document (migration 0056, built; `ppe_app` may update those three columns alone); its mockup is `docs/ux/mockups/docs-scan.html`. It replaces Import
@@ -308,8 +310,8 @@ cd web/e2e && pnpm guide   # Help screenshots on phone, tablet, desktop in EN, L
 Ports and names are chosen not to clash with the sibling PPE-next project (5432/5433,
 8080, 5173–5175): Postgres 5442, API 8090, Vite 5180 (Administration 5182, reached through
 5180 at `/admin/`; Scan SIMs 5184, at `/apps/sim-scan/`; App Launcher 5186, at `/apps/`; Import Documents
-5188, at `/apps/docs-import/`), e2e 18090/5181 (Administration 5183, Scan SIMs 5185, App Launcher 5187,
-Import Documents 5189), compose project
+5188, at `/apps/docs-import/`; Scan Documents 5190, at `/apps/docs-scan/`), e2e 18090/5181 (Administration 5183,
+Scan SIMs 5185, App Launcher 5187, Import Documents 5189, Scan Documents 5191), compose project
 `ppe-next2`, volume `ppe-next2-pgdata`, DB user/databases `ppe2`/`ppe2`/`ppe2_test`. Keep
 new ports out of PPE-next's range.
 
@@ -545,6 +547,7 @@ pnpm --dir apps/admin dev                            # Administration on 5182; o
 pnpm --dir apps/sim-scan dev                         # Scan SIMs on 5184; open it at http://localhost:5180/apps/sim-scan/ (VITE_HTTPS=1: https on the LAN, for a phone's camera)
 pnpm --dir apps/launcher dev                         # App Launcher on 5186; open it at http://localhost:5180/apps/
 pnpm --dir apps/docs-import dev                      # Import Documents on 5188; open it at http://localhost:5180/apps/docs-import/ (VITE_HTTPS=1 for a phone's camera)
+pnpm --dir apps/docs-scan dev                        # Scan Documents on 5190; open it at http://localhost:5180/apps/docs-scan/ (VITE_HTTPS=1 for a phone's camera)
 pnpm --dir apps/workwear exec vitest run src/lib/working-order.test.ts   # one test file
 ```
 
