@@ -133,3 +133,14 @@ func TestOnlyPersonnelDocumentsSeesIdentityDocuments(t *testing.T) {
 		}
 	}
 }
+
+// Export (data.export) stays with the roles that saw lists before it was a
+// permission (migration 0059): the three staff roles, not the add-on ones.
+func TestExportIsTheStaffRoles(t *testing.T) {
+	for _, key := range BuiltinKeys() {
+		want := key == KeyAdmin || key == KeyManager || key == KeyEmployee
+		if got := slices.Contains(BuiltinPermissions([]string{key}), DataExport); got != want {
+			t.Errorf("built-in role %s has data.export = %v, want %v", key, got, want)
+		}
+	}
+}

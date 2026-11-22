@@ -104,7 +104,9 @@ export function History({
   onOpenRecord: (id: string, print: boolean) => void
 }) {
   const { client } = useApi()
-  const { userId } = useSession()
+  const session = useSession()
+  const { userId } = session
+  const canExport = session.can('data.export')
   // Back from an order's record, the list is as it was left; a tab from the address (a dashboard's link) starts afresh on it.
   const [left] = useState(() => {
     const was = leftForRecord.get(userId)
@@ -237,8 +239,8 @@ export function History({
         title={t.history.title}
         filters={{ label: t.history.filters, count: foldedFilters, controls: 'history-filters', open: showFilters, onToggle: () => setShowFilters((v) => !v) }}
         // A link, so it also opens in a new tab. Not on a phone, whose tab bar has New order.
-        // Export: in the header from md, in ⋯ below (a phone's list has no checkboxes, so it exports all matching).
-        secondary={[{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: !orders.data?.total || selection.active }]}
+        // Export (data.export): in the header from md, in ⋯ below (a phone's list has no checkboxes, so it exports all matching).
+        secondary={canExport ? [{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: !orders.data?.total || selection.active }] : []}
         primary={{ label: t.shell.createOrder, icon: Plus, link: linkTo({ name: 'createOrder' }, navigate), hiddenBelow: 'md' }}
       />
 
@@ -306,14 +308,16 @@ export function History({
       </section>
       </div>
       {/* Above the list, so the mode's bar stays while a filter leaves no orders. */}
-      <ExportMode
-        selection={selection}
-        list={t.history.title}
-        columns={orderExportColumns(tz)}
-        shown={orders.data?.orders ?? []}
-        // Every page matching the tab, filters and sort, fetched when exporting.
-        matching={{ count: orders.data?.total ?? 0, load: () => loadAllOrders(client, { ...scope, ...(filters.status ? { status: filters.status } : {}), sort: sort.key, dir: sort.dir }) }}
-      />
+      {canExport ? (
+        <ExportMode
+          selection={selection}
+          list={t.history.title}
+          columns={orderExportColumns(tz)}
+          shown={orders.data?.orders ?? []}
+          // Every page matching the tab, filters and sort, fetched when exporting.
+          matching={{ count: orders.data?.total ?? 0, load: () => loadAllOrders(client, { ...scope, ...(filters.status ? { status: filters.status } : {}), sort: sort.key, dir: sort.dir }) }}
+        />
+      ) : null}
       {orders.error ? (
         <ErrorState error={orders.error} onRetry={orders.reload} />
       ) : !orders.data ? (

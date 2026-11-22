@@ -1706,7 +1706,7 @@ func TestPostgresRolesHTTP(t *testing.T) {
 	}
 	login := api.do(t, "POST", "/api/v1/auth/login", "", map[string]any{"email": "k@example.com", "password": "password123"})
 	claims, err := api.tokens.parse(decode[tokenJSON](t, login.Body.Bytes()).AccessToken)
-	if err != nil || !slices.Equal(claims.Perms, []string{"employee_profiles.read", "employee_profiles.manage", "employee_sizes.read", "employee_sizes.manage", "catalogue.manage", "item_sets.read", "sim_cards.read", "dashboard.employee"}) {
+	if err != nil || !slices.Equal(claims.Perms, []string{"data.export", "employee_profiles.read", "employee_profiles.manage", "employee_sizes.read", "employee_sizes.manage", "catalogue.manage", "item_sets.read", "sim_cards.read", "dashboard.employee"}) {
 		t.Errorf("k's token perms %v, %v", claims.Perms, err)
 	}
 	if rec := api.do(t, "DELETE", "/api/v1/roles/"+store.ID.String(), adminTok, nil); rec.Code != http.StatusConflict {

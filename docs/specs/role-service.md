@@ -45,7 +45,12 @@ Routes and the built-in roles' permissions: `docs/specs/user-service.md#permissi
   since every signed-in user saw SIM cards) and `sim_cards.manage` (every role with
   `assets.manage`, which since changes Equipment & Furniture only). Migration 0050 added
   `employee_profiles.read`/`.manage` and `employee_sizes.read`/`.manage` (every role but the
-  three add-on roles, since every signed-in user saw and changed employees).
+  three add-on roles, since every signed-in user saw and changed employees). Migration 0059
+  added `data.export` (Export data: Export on every list, WARE-43/44/45) to every role but the
+  three add-on roles, since every signed-in user could export any list they saw; a role added
+  since has it only when ticked. Exports are built in the browser, so no route needs it: the
+  apps show Export (the header button, ⋯ on a phone, select mode and the Export sheet) by
+  `session.can('data.export')`. The Audit log's export stays `audit.export`'s.
 - **Equipment Assignments** (key `equipment`, migration 0032) grants `equipment.read` alone:
   seeing Equipment & Furniture and who holds each item (`docs/specs/asset-service.md`).
   No other built-in role has it, Administrator included; an administrator gives it on Users,

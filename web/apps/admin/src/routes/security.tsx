@@ -302,6 +302,7 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
   const { client } = useApi()
   const session = useSession()
   const list = useLoad<LiveSession[]>(() => client.security.sessions())
+  const canExport = session.can('data.export')
   const [busy, setBusy] = useState<string | null>(null)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
   const mayEnd = session.can('users.manage')
@@ -364,10 +365,12 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
         <p className="max-w-prose text-sm text-muted-foreground">{t.security.devicesHint}</p>
         {/* The tab's Export beside Refresh: Security's header belongs to all three tabs. */}
         <div className="flex gap-2">
-          <Button variant="outline" disabled={shown.length === 0 || selection.active} onClick={() => selection.start(EXPORT_MODE)}>
-            <Download aria-hidden />
-            {t.common.export}
-          </Button>
+          {canExport ? (
+            <Button variant="outline" disabled={shown.length === 0 || selection.active} onClick={() => selection.start(EXPORT_MODE)}>
+              <Download aria-hidden />
+              {t.common.export}
+            </Button>
+          ) : null}
           <RefreshButton loading={list.loading} onClick={list.reload} />
         </div>
       </div>
@@ -400,7 +403,7 @@ function Devices({ timeZone }: { timeZone: string | undefined }) {
               {t.security.deviceCount(data.length)} · {t.security.people(person ? 1 : people)}
             </p>
             {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
-            <ExportMode selection={selection} list={t.security.devices} columns={deviceExportColumns(timeZone)} shown={shown} />
+            {canExport ? <ExportMode selection={selection} list={t.security.devices} columns={deviceExportColumns(timeZone)} shown={shown} /> : null}
             <Table stack="list">
               <TableHeader>
                 <TableRow>

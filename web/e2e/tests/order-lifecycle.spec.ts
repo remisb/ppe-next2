@@ -3533,6 +3533,58 @@ test('Roles & permissions: a role made of permissions, given to a user, lets the
   await expect(page.getByRole('row', { name: /^Storekeeper/ })).toBeVisible()
 })
 
+test('Export takes Export data: a role without it shows no Export on any list, on a phone neither, until it is given', async ({ browser }) => {
+  // The built-in staff roles hold it (migration 0059); a role added since does not, unless ticked.
+  await openTab('Roles & permissions')
+  await page.getByRole('button', { name: 'Edit Manager' }).click()
+  let dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('checkbox', { name: /^Export data/ })).toBeChecked()
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+  await expect(page.getByRole('row', { name: /^Storekeeper/ })).not.toContainText('Export data')
+
+  // Someone holding Storekeeper alone: the lists it opens (Orders, Item Catalogue; Employees takes an employee permission),
+  // with no Export in the header or under ⋯.
+  const ned = { name: 'Ned Noexport', email: 'ned@example.com', password: 'ned-password-1' }
+  await openTab('Users')
+  await page.getByRole('button', { name: 'Add User' }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Name').fill(ned.name)
+  await dialog.getByLabel('Email').fill(ned.email)
+  await dialog.getByRole('checkbox', { name: /^Employee/ }).uncheck()
+  await dialog.getByRole('checkbox', { name: /^Storekeeper/ }).check()
+  await dialog.getByRole('textbox', { name: /^Password/ }).fill(ned.password)
+  await dialog.getByLabel('Confirm password').fill(ned.password)
+  await dialog.getByRole('button', { name: 'Add User' }).click()
+  await expect(page.getByRole('row', { name: new RegExp(ned.name) })).toContainText('Storekeeper')
+  const other = await signInElsewhere(browser, ned.email, ned.password)
+  await expect(other.getByRole('heading', { name: 'Create Order' })).toBeVisible()
+  const nav = other.getByRole('navigation', { name: 'Main' })
+  for (const list of ['Orders', 'Item Catalogue']) {
+    await nav.getByRole('link', { name: list }).click()
+    await expect(other.getByRole('heading', { name: list, level: 1 })).toBeVisible()
+    await expect(other.getByRole('button', { name: 'Export', exact: true })).toHaveCount(0)
+  }
+  // Item Catalogue's ⋯ (Pictures, Storekeeper's) holds no Export either, on a phone as on a desktop.
+  await other.setViewportSize({ width: 375, height: 812 })
+  await other.getByRole('button', { name: 'More actions for Item Catalogue' }).click()
+  await expect(other.getByRole('menuitem', { name: 'Pictures' })).toBeVisible()
+  await expect(other.getByRole('menuitem', { name: 'Export' })).toHaveCount(0)
+  await other.keyboard.press('Escape')
+
+  // Given Export data, the role exports, at the next sign-in renewal (here a reload).
+  await openTab('Roles & permissions')
+  await page.getByRole('button', { name: 'Edit Storekeeper' }).click()
+  dialog = page.getByRole('dialog')
+  await dialog.getByRole('checkbox', { name: /^Export data/ }).check()
+  await dialog.getByRole('button', { name: 'Save' }).click()
+  await expect(dialog).toBeHidden()
+  await expect(page.getByRole('row', { name: /^Storekeeper/ })).toContainText('Export data')
+  await other.reload()
+  await other.getByRole('button', { name: 'More actions for Item Catalogue' }).click()
+  await expect(other.getByRole('menuitem', { name: 'Export' })).toBeVisible()
+  await other.context().close()
+})
+
 test('Orders: only a manager deletes an order, after asking; it then leaves Orders', async ({ browser }) => {
   // The administrator has no Delete order: the order's ⋯ holds Copy for WhatsApp only.
   await openTab('Orders')

@@ -31,7 +31,9 @@ import { formatEuro } from '@/lib/utils'
  */
 export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
-  const canManageItems = useSession().can('item_sets.manage')
+  const session = useSession()
+  const canManageItems = session.can('item_sets.manage')
+  const canExport = session.can('data.export')
   const sets = useLoad(() => client.itemSets.list())
   const catalogue = useLoad(() => client.catalogue.list())
   const [editing, setEditing] = useState<ItemSet | 'new' | null>(null)
@@ -57,7 +59,7 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
       <PageHeader
         title={t.catalogue.setsTitle}
         description={t.catalogue.setsDescription}
-        secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: exportRows.length === 0 }]}
+        secondary={canExport ? [{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: exportRows.length === 0 }] : []}
         primary={canManageItems ? { label: t.catalogue.addItemSet, short: t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
       />
       <ActionError error={action.error} />
@@ -135,7 +137,7 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
       <FormSheet open={changes !== null} onClose={() => setChanges(null)} title={changes?.name ?? ''} description={auditText().changesIntro}>
         {changes ? <SetChanges id={changes.id} updatedAt={changes.updated_at} /> : null}
       </FormSheet>
-      <ExportSheet open={exporting} onClose={() => setExporting(false)} list={t.catalogue.setsTitle} columns={itemSetExportColumns()} shown={exportRows} />
+      {canExport ? <ExportSheet open={exporting} onClose={() => setExporting(false)} list={t.catalogue.setsTitle} columns={itemSetExportColumns()} shown={exportRows} /> : null}
       <SetForm
         set={editing}
         catalogue={catalogue.data ?? []}

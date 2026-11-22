@@ -123,6 +123,7 @@ export function Assets({
   const { client } = useApi()
   const session = useSession()
   const canManage = session.can(managePermission(kind))
+  const canExport = session.can('data.export')
   const settings = useLoad(() => client.settings())
   const today = todayIn(settings.data?.timezone)
   // A dashboard's Company Assets card opens the register on the tab of one of its tiles (SIM Cards' places on Location).
@@ -353,7 +354,9 @@ export function Assets({
             ...(bulkStatus
               ? [{ label: t.assets.changeStatusMode.start, icon: ListChecks, onClick: () => startMode(STATUS_MODE), showFrom: beside ? ('never' as const) : ('md' as const), disabled: !list.data || list.data.total === 0 || ticking }]
               : []),
-            { label: t.common.export, icon: Download, onClick: () => startMode(EXPORT_MODE), showFrom: beside ? 'never' : 'md', disabled: !list.data || list.data.total === 0 || ticking },
+            ...(canExport
+              ? [{ label: t.common.export, icon: Download, onClick: () => startMode(EXPORT_MODE), showFrom: beside ? ('never' as const) : ('md' as const), disabled: !list.data || list.data.total === 0 || ticking }]
+              : []),
           ]}
           primary={canManage ? { label: sim ? t.assets.addSimCard : t.assets.addAsset, short: sim ? undefined : t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
         />
@@ -422,13 +425,15 @@ export function Assets({
         </p>
         <ActionError error={action.error} />
         {/* Export's select mode, with its sheet: every card or item the filters match (all pages, in the register's sort), or those ticked. */}
-        <ExportMode
-          selection={selection}
-          list={sim ? t.assets.simCards : t.assets.equipment}
-          columns={assetExportColumns(kind, settings.data?.timezone)}
-          shown={pageRows}
-          matching={list.data ? { count: list.data.total, load: () => loadAllAssets(client.assets.list, query) } : undefined}
-        />
+        {canExport ? (
+          <ExportMode
+            selection={selection}
+            list={sim ? t.assets.simCards : t.assets.equipment}
+            columns={assetExportColumns(kind, settings.data?.timezone)}
+            shown={pageRows}
+            matching={list.data ? { count: list.data.total, load: () => loadAllAssets(client.assets.list, query) } : undefined}
+          />
+        ) : null}
         {selection.mode === STATUS_MODE ? (
           <SelectModeBar selection={selection} title={t.assets.changeStatusMode.title} hint={t.assets.changeStatusMode.hint}>
             <BulkStatusMenu disabled={bulkBusy || selection.count === 0} onChange={(next) => void changeChosen(next)} />
