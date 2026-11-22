@@ -201,7 +201,7 @@ The keys are in `overview.Keys()` and `ATTENTION_KEYS` (`@ppe/api-client`), comp
   - open, it shows first and last seen, who (with links to their Sign-ins and the changes
     they made, for whoever may read those), the app, the device, the reference with a copy
     button, and the stack.
-- **Backups** (`/system/backups`; `/admin/backups` leads there) is the former Backups
+- **Backups** (`/system/backups`) is the former Backups
   screen.
 
 On a phone, Roles & permissions, System and Settings are under More.

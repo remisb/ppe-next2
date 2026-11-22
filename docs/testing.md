@@ -159,7 +159,7 @@ reports them ([specs/backup-service.md](specs/backup-service.md)).
 | Reads the agent's rows: the latest-reporting agent, newest runs first, last success, kept totals without pruned files, encryption from the transforms | `backup.TestPostgresRead` |
 | `GET /api/v1/backups` needs `backups.read` (administrators); an empty database gives `runs: []`, `agent: null`, overdue | `TestRoutePolicy`, `TestPostgresBackupsHTTP` |
 | The screen names the worst first (no agent, offline, failed, none yet, overdue, up to date), in the organisation timezone; sizes, durations and simple schedules in words, in the user's language | `@ppe/backups` `index.test.ts` |
-| System's Backups tab (Administration; `/admin/backups` leads there) and the Dashboard card (opens it there), administrators only; no sideways scroll on a phone or tablet | admin web `router` tests; e2e *Backups: an administrator sees whether the database is backed up*, *phone and tablet: …* |
+| System's Backups tab (Administration, `/admin/system/backups`) and the Dashboard card (opens it there), administrators only; no sideways scroll on a phone or tablet | admin web `router` tests; e2e *Backups: an administrator sees whether the database is backed up*, *phone and tablet: …* |
 
 ## Monitoring
 
