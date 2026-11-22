@@ -577,14 +577,8 @@ func (h *assetHandler) formPrinted(w http.ResponseWriter, r *http.Request) {
 
 // formReprinted records that an assignment's stored form was printed again.
 func (h *assetHandler) formReprinted(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	assignmentID, err := parseUUIDPath(r, "assignmentID")
@@ -602,14 +596,8 @@ func (h *assetHandler) formReprinted(w http.ResponseWriter, r *http.Request) {
 // prepareEmail is Prepare Activation Email or Prepare Blocking Email: the
 // email from its template, {to, subject, body, missing}.
 func (h *assetHandler) prepareEmail(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	m, err := h.assets.PrepareEmail(r.Context(), id, asset.EmailKind(r.PathValue("kind")), actor)
@@ -622,14 +610,8 @@ func (h *assetHandler) prepareEmail(w http.ResponseWriter, r *http.Request) {
 
 // recordEmail records that the activation or blocking email was copied.
 func (h *assetHandler) recordEmail(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	if err := h.assets.RecordEmail(r.Context(), id, asset.EmailKind(r.PathValue("kind")), actor); err != nil {
@@ -642,22 +624,17 @@ func (h *assetHandler) recordEmail(w http.ResponseWriter, r *http.Request) {
 // formPDF is Download PDF on Give: the form Give would store, from
 // ?employee=&date=&plan=&value= (cents), as Preview builds it.
 func (h *assetHandler) formPDF(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	q := r.URL.Query()
-	p := asset.FormParams{GivenDate: q.Get("date")}
-	if p.EmployeeID, err = uuid.Parse(q.Get("employee")); err != nil {
+	employee, err := uuid.Parse(q.Get("employee"))
+	if err != nil {
 		writeError(w, r, errBadRequest)
 		return
 	}
+	p := asset.FormParams{EmployeeID: employee, GivenDate: q.Get("date")}
 	if plan := q.Get("plan"); plan != "" {
 		p.Plan = &plan
 	}
@@ -679,14 +656,8 @@ func (h *assetHandler) formPDF(w http.ResponseWriter, r *http.Request) {
 
 // storedFormPDF is Download PDF on an assignment: its stored form.
 func (h *assetHandler) storedFormPDF(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	assignmentID, err := parseUUIDPath(r, "assignmentID")

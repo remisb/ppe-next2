@@ -105,14 +105,8 @@ func (h *assetHandler) addSIMs(w http.ResponseWriter, r *http.Request) {
 // showSIMCodes is Show PIN and PUK. It records who saw them, so it is a
 // POST, and the answer is never stored by the browser or a proxy.
 func (h *assetHandler) showSIMCodes(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	c, err := h.assets.ShowSIMCodes(r.Context(), id, actor)
@@ -139,14 +133,8 @@ func (h *assetHandler) setSIMCodes(w http.ResponseWriter, r *http.Request) {
 
 // clearSIMCodes forgets a SIM card's PIN and PUK.
 func (h *assetHandler) clearSIMCodes(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	if err := h.assets.ClearSIMCodes(r.Context(), id, actor); err != nil {

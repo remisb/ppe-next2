@@ -71,14 +71,8 @@ func toRecordJSON(r order.Record, withID bool) recordJSON {
 // createLink is Open Employee Confirmation. The link is shown once; only its
 // hash is stored, and it replaces any earlier unused link.
 func (h *confirmationHandler) createLink(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	token, expires, err := h.orders.CreateConfirmationLink(r.Context(), id, actor)
@@ -92,14 +86,8 @@ func (h *confirmationHandler) createLink(w http.ResponseWriter, r *http.Request)
 
 // confirmPaper records a signed paper Items Given Record.
 func (h *confirmationHandler) confirmPaper(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	rec, err := h.orders.ConfirmPaper(r.Context(), id, actor)
@@ -113,14 +101,8 @@ func (h *confirmationHandler) confirmPaper(w http.ResponseWriter, r *http.Reques
 // confirmInPerson is hand-over mode: the employee confirmed on this staff
 // member's device. Body {"confirmed": true}, the ticked confirmation text.
 func (h *confirmationHandler) confirmInPerson(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	var req struct {
