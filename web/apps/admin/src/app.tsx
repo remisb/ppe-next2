@@ -1,10 +1,8 @@
 import { CheckingSignIn, ConfirmPassword, Offline, SignIn, applyDensity, loadDensity, useApi } from '@ppe/app-shell'
 import { setAppNames } from '@ppe/audit'
-import { appNames, hasSeveralApps, launcherText, useLauncher } from '@ppe/launcher'
+import { NotForYou, appNames, hasSeveralApps, launcherText, useLauncher } from '@ppe/launcher'
 import { launcherHref, staffHref } from '@ppe/routing'
-import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Brand, moreIcon, moreItem, navIcon, navItem, railTip } from '@ppe/ui/components/main-nav'
-import { EmptyState, PageHeader } from '@ppe/ui/components/states'
 import { cn } from '@ppe/ui/lib/utils'
 import {
   Activity,
@@ -105,7 +103,7 @@ export function App() {
   if (!session) return <SignIn appName={t.common.appName} tagline={t.shell.signInTagline} />
 
   const route = startRoute(asked, session.can)
-  if (!route) return <NotForYou onSignOut={signOut} />
+  if (!route) return <NotForYou text={{ title: t.shell.notForYouTitle, text: t.shell.notForYou, backToWorkwear: t.shell.backToWorkwear, signOut: t.shell.signOut }} onSignOut={signOut} />
   const all = sections()
   const shown = screens.filter((s) => s.permissions.some(session.can)).map((s) => all[s.name])
   const inBar = shown.filter((s) => !s.inMore)
@@ -266,24 +264,3 @@ function FootLinks({ name, severalApps, onSignOut, item, icon }: { name: string;
 }
 
 /** A signed-in user whose roles open none of Administration's screens. */
-function NotForYou({ onSignOut }: { onSignOut: () => void }) {
-  return (
-    <main className="mx-auto grid min-h-dvh w-full max-w-xl content-center px-4 py-8">
-      <PageHeader title={t.shell.notForYouTitle} />
-      <EmptyState
-        action={
-          <div className="flex flex-wrap justify-center gap-2">
-            <a href={staffHref('/')} className={buttonVariants()}>
-              {t.shell.backToWorkwear}
-            </a>
-            <Button variant="outline" onClick={onSignOut}>
-              {t.shell.signOut}
-            </Button>
-          </div>
-        }
-      >
-        {t.shell.notForYou}
-      </EmptyState>
-    </main>
-  )
-}

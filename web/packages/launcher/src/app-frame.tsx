@@ -1,7 +1,8 @@
 import { CheckingSignIn, ConfirmPassword, Offline, type Session, SignIn, applyDensity, loadDensity, useApi } from '@ppe/app-shell'
-import { launcherHref } from '@ppe/routing'
+import { launcherHref, staffHref } from '@ppe/routing'
 import { Button, buttonVariants } from '@ppe/ui/components/button'
 import { Brand } from '@ppe/ui/components/main-nav'
+import { EmptyState, PageHeader } from '@ppe/ui/components/states'
 import { cn } from '@ppe/ui/lib/utils'
 import { ArrowLeft, Grip, LogOut } from 'lucide-react'
 import { type MouseEvent, type ReactNode, useEffect } from 'react'
@@ -27,6 +28,40 @@ export function SignedIn({ appName, tagline, children }: { appName: string; tagl
       {children(session)}
       <ConfirmPassword prompt={passwordPrompt} />
     </>
+  )
+}
+
+/** The words of NotForYou, in the app's own dictionary. */
+export interface NotForYouText {
+  title: string
+  text: string
+  backToWorkwear: string
+  signOut: string
+}
+
+/**
+ * A small app's screen for a signed-in user whom none of it is for: back to
+ * the staff app, or sign out to use another account.
+ */
+export function NotForYou({ text, onSignOut }: { text: NotForYouText; onSignOut: () => void }) {
+  return (
+    <main className="mx-auto grid min-h-dvh w-full max-w-xl content-center px-4 py-8">
+      <PageHeader title={text.title} />
+      <EmptyState
+        action={
+          <div className="flex flex-wrap justify-center gap-2">
+            <a href={staffHref('/')} className={buttonVariants()}>
+              {text.backToWorkwear}
+            </a>
+            <Button variant="outline" onClick={onSignOut}>
+              {text.signOut}
+            </Button>
+          </div>
+        }
+      >
+        {text.text}
+      </EmptyState>
+    </main>
   )
 }
 

@@ -19,6 +19,7 @@ import {
   rememberPins,
   saveShowTesting,
   SignedIn,
+  TileIcon,
   togglePin,
   useLauncher,
 } from '@ppe/launcher'
@@ -287,15 +288,6 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 /** How a tile's link opens: on this origin as a page (a published app on the user's channel), a linked site in a new tab. */
 const openProps = (app: LauncherApp, href: string) => (app.tier === 'linked' ? { href, target: '_blank', rel: 'noopener noreferrer' } : { href })
-
-function TileIcon({ app, className }: { app: LauncherApp; className?: string }) {
-  const Icon = appIcons[app.icon] ?? Box
-  return (
-    <span aria-hidden className={cn('grid shrink-0 place-items-center text-white', className)} style={{ backgroundColor: app.color }}>
-      <Icon className="size-full" />
-    </span>
-  )
-}
 
 function Grid({ apps, list, onOpen, onAbout }: { apps: LauncherApp[]; list: LauncherList; onOpen: (a: LauncherApp) => void; onAbout: (a: LauncherApp) => void }) {
   const text = launcherText()

@@ -1,8 +1,6 @@
 import { type Session, useApi } from '@ppe/app-shell'
-import { AppFrame, SignedIn } from '@ppe/launcher'
+import { AppFrame, NotForYou, SignedIn } from '@ppe/launcher'
 import { staffHref } from '@ppe/routing'
-import { Button, buttonVariants } from '@ppe/ui/components/button'
-import { EmptyState, PageHeader } from '@ppe/ui/components/states'
 
 import { t } from '@/i18n'
 import { type Route, linkTo, useRouter } from '@/lib/router'
@@ -35,7 +33,7 @@ function Screens({ session }: { session: Session }) {
   ]
   const shown = tabs.filter((x) => x.shown)
   const route = shown.find((x) => x.route.name === asked.name)?.route ?? shown[0]?.route
-  if (!route) return <NotForYou onSignOut={() => void signOut()} />
+  if (!route) return <NotForYou text={{ title: t.shell.notForYouTitle, text: t.shell.notForYou, backToWorkwear: t.shell.backToWorkwear, signOut: t.shell.signOut }} onSignOut={() => void signOut()} />
 
   return (
     <AppFrame
@@ -62,24 +60,3 @@ function Screens({ session }: { session: Session }) {
 }
 
 /** A signed-in user whose roles open neither screen. */
-function NotForYou({ onSignOut }: { onSignOut: () => void }) {
-  return (
-    <main className="mx-auto grid min-h-dvh w-full max-w-xl content-center px-4 py-8">
-      <PageHeader title={t.shell.notForYouTitle} />
-      <EmptyState
-        action={
-          <div className="flex flex-wrap justify-center gap-2">
-            <a href={staffHref('/')} className={buttonVariants()}>
-              {t.shell.backToWorkwear}
-            </a>
-            <Button variant="outline" onClick={onSignOut}>
-              {t.shell.signOut}
-            </Button>
-          </div>
-        }
-      >
-        {t.shell.notForYou}
-      </EmptyState>
-    </main>
-  )
-}
