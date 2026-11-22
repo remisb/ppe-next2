@@ -1,7 +1,7 @@
 import { APP_ICONS, ApiError, type AppFeedback, type AppGroup, type AppKind, type AppStage, type AppTier, type LauncherApp, PERMISSIONS, type Permission } from '@ppe/api-client'
 import { useApi } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
-import { appIcons, appName, launcherText } from '@ppe/launcher'
+import { TileIcon, appIcons, appName, launcherText } from '@ppe/launcher'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
@@ -22,7 +22,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
 import { RowCheckbox, SelectAllCheckbox, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
 import { selectRowProps, useSelection } from '@ppe/ui/lib/use-selection'
-import { ArrowDown, ArrowUp, Box, Download, ExternalLink, Plus } from 'lucide-react'
+import { ArrowDown, ArrowUp, Download, ExternalLink, Plus } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { t } from '@/i18n'
@@ -179,15 +179,6 @@ export function AppsPage({ route, navigate }: { route: Extract<Route, { name: 'a
         }}
       />
     </>
-  )
-}
-
-function TileIcon({ app, className }: { app: Pick<LauncherApp, 'icon' | 'color'>; className?: string }) {
-  const Icon = appIcons[app.icon] ?? Box
-  return (
-    <span aria-hidden className={cn('grid shrink-0 place-items-center text-white', className)} style={{ backgroundColor: app.color }}>
-      <Icon className="size-full" />
-    </span>
   )
 }
 

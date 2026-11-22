@@ -5,4 +5,5 @@ export { RECENT_MAX, loadRecent, loadShowTesting, noteOpened, saveShowTesting, d
 export { appName, appNames, launcherText, parentName } from './text.ts'
 export { FIXED_CHANNELS, channelHref, channelName, channelPath, channelsOf, chosenChannel, chosenHref, mayOpenChannel, mayStay, openHref, stablePath } from './channels.ts'
 export { ChannelStripe } from './channel-stripe.tsx'
-export { AppFrame, type FrameTab, SignedIn } from './app-frame.tsx'
+export { AppFrame, type FrameTab, NotForYou, type NotForYouText, SignedIn } from './app-frame.tsx'
+export { TileIcon } from './tile-icon.tsx'

@@ -1,8 +1,6 @@
 import { type Session, useApi } from '@ppe/app-shell'
-import { AppFrame, SignedIn } from '@ppe/launcher'
+import { AppFrame, NotForYou, SignedIn } from '@ppe/launcher'
 import { staffHref } from '@ppe/routing'
-import { Button, buttonVariants } from '@ppe/ui/components/button'
-import { EmptyState, PageHeader } from '@ppe/ui/components/states'
 
 import { useState } from 'react'
 
@@ -41,7 +39,7 @@ function Screens({ session }: { session: Session }) {
   // Scan Document is mounted once opened, then kept (its work survives a visit to Import).
   const [scanOpened, setScanOpened] = useState(false)
   if (route.name === 'scan' && !scanOpened) setScanOpened(true)
-  if (!session.can('personnel.documents.manage')) return <NotForYou onSignOut={() => void signOut()} />
+  if (!session.can('personnel.documents.manage')) return <NotForYou text={{ title: t.shell.notForYouTitle, text: t.shell.notForYou, backToWorkwear: t.shell.backToWorkwear, signOut: t.shell.signOut }} onSignOut={() => void signOut()} />
   const tabs = [
     { route: { name: 'home' } as const, label: t.shell.importTab },
     { route: { name: 'scan' } as const, label: t.shell.scanTab },
@@ -72,24 +70,3 @@ function Screens({ session }: { session: Session }) {
 }
 
 /** A signed-in user whose roles do not open the app. */
-function NotForYou({ onSignOut }: { onSignOut: () => void }) {
-  return (
-    <main className="mx-auto grid min-h-dvh w-full max-w-xl content-center px-4 py-8">
-      <PageHeader title={t.shell.notForYouTitle} />
-      <EmptyState
-        action={
-          <div className="flex flex-wrap justify-center gap-2">
-            <a href={staffHref('/')} className={buttonVariants()}>
-              {t.shell.backToWorkwear}
-            </a>
-            <Button variant="outline" onClick={onSignOut}>
-              {t.shell.signOut}
-            </Button>
-          </div>
-        }
-      >
-        {t.shell.notForYou}
-      </EmptyState>
-    </main>
-  )
-}
