@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/csv"
 	"errors"
-	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -291,15 +290,8 @@ func (h *aiHandler) colorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.MultipartForm.RemoveAll()
-	f, _, err := r.FormFile("portrait")
-	if err != nil {
-		writeErrorMessage(w, http.StatusBadRequest, `send the portrait as multipart/form-data, in a part named portrait`)
-		return
-	}
-	data, err := io.ReadAll(io.LimitReader(f, colour.MaxBytes+1))
-	f.Close()
-	if err != nil {
-		writeError(w, r, err)
+	data, _, ok := formFile(w, r, "portrait", colour.MaxBytes, `send the portrait as multipart/form-data, in a part named portrait`)
+	if !ok {
 		return
 	}
 	var employee uuid.UUID

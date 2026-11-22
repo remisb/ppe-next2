@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"mime"
 	"net/http"
@@ -499,26 +498,13 @@ func (h *assetHandler) uploadSignedCopy(w http.ResponseWriter, r *http.Request) 
 		writeError(w, r, err)
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, asset.MaxSignedCopyBytes+64<<10)
-	if err := r.ParseMultipartForm(1 << 20); err != nil {
-		var tooBig *http.MaxBytesError
-		if errors.As(err, &tooBig) {
-			writeError(w, r, asset.ErrFileTooLarge)
-			return
-		}
-		writeErrorMessage(w, http.StatusBadRequest, "send the file as multipart/form-data, in a field named file")
+	const shape = "send the file as multipart/form-data, in a field named file"
+	if !parseMultipart(w, r, asset.MaxSignedCopyBytes+64<<10, asset.ErrFileTooLarge, shape) {
 		return
 	}
 	defer r.MultipartForm.RemoveAll()
-	f, header, err := r.FormFile("file")
-	if err != nil {
-		writeErrorMessage(w, http.StatusBadRequest, "send the file as multipart/form-data, in a field named file")
-		return
-	}
-	defer f.Close()
-	data, err := io.ReadAll(io.LimitReader(f, asset.MaxSignedCopyBytes+1))
-	if err != nil {
-		writeError(w, r, err)
+	data, fileName, ok := formFile(w, r, "file", asset.MaxSignedCopyBytes, shape)
+	if !ok {
 		return
 	}
 	actor, err := actorID(r)
@@ -526,7 +512,7 @@ func (h *assetHandler) uploadSignedCopy(w http.ResponseWriter, r *http.Request) 
 		writeError(w, r, err)
 		return
 	}
-	c, err := h.assets.UploadSignedCopy(r.Context(), id, assignmentID, asset.Upload{FileName: header.Filename, Data: data}, actor)
+	c, err := h.assets.UploadSignedCopy(r.Context(), id, assignmentID, asset.Upload{FileName: fileName, Data: data}, actor)
 	if err != nil {
 		writeError(w, r, err)
 		return

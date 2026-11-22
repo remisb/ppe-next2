@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"mime"
 	"net/http"
@@ -47,14 +46,7 @@ func (h *scanHandler) keep(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, keepLimit)
-	if err := r.ParseMultipartForm(1 << 20); err != nil {
-		var tooBig *http.MaxBytesError
-		if errors.As(err, &tooBig) {
-			writeError(w, r, scan.ErrPageTooLarge)
-			return
-		}
-		writeErrorMessage(w, http.StatusBadRequest, keepShape)
+	if !parseMultipart(w, r, keepLimit, scan.ErrPageTooLarge, keepShape) {
 		return
 	}
 	defer r.MultipartForm.RemoveAll()

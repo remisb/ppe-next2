@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -57,26 +56,13 @@ func (h *employeePhotoHandler) upload(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, employeephoto.MaxBytes+64<<10)
-	if err := r.ParseMultipartForm(1 << 20); err != nil {
-		var tooBig *http.MaxBytesError
-		if errors.As(err, &tooBig) {
-			writeError(w, r, employeephoto.ErrFileTooLarge)
-			return
-		}
-		writeErrorMessage(w, http.StatusBadRequest, "send the photo as multipart/form-data, in a field named file")
+	const shape = "send the photo as multipart/form-data, in a field named file"
+	if !parseMultipart(w, r, employeephoto.MaxBytes+64<<10, employeephoto.ErrFileTooLarge, shape) {
 		return
 	}
 	defer r.MultipartForm.RemoveAll()
-	f, header, err := r.FormFile("file")
-	if err != nil {
-		writeErrorMessage(w, http.StatusBadRequest, "send the photo as multipart/form-data, in a field named file")
-		return
-	}
-	defer f.Close()
-	data, err := io.ReadAll(io.LimitReader(f, employeephoto.MaxBytes+1))
-	if err != nil {
-		writeError(w, r, err)
+	data, fileName, ok := formFile(w, r, "file", employeephoto.MaxBytes, shape)
+	if !ok {
 		return
 	}
 	actor, err := actorID(r)
@@ -85,7 +71,7 @@ func (h *employeePhotoHandler) upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// An AI-coloured photo (Import Documents' Make Colour Photo) says so, with how the person consented.
-	upload := employeephoto.Upload{FileName: header.Filename, Data: data, AIGenerated: r.FormValue("ai_generated") == "true", ConsentBy: r.FormValue("consent")}
+	upload := employeephoto.Upload{FileName: fileName, Data: data, AIGenerated: r.FormValue("ai_generated") == "true", ConsentBy: r.FormValue("consent")}
 	p, err := h.photos.Add(r.Context(), id, upload, r.MultipartForm.Value["uses"], actor)
 	if err != nil {
 		writeError(w, r, err)
