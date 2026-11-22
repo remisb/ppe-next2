@@ -277,6 +277,16 @@ func parseUUIDPath(r *http.Request, key string) (uuid.UUID, error) {
 	return id, nil
 }
 
+// actorOf is the signed-in actor, answering the error itself.
+func actorOf(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return uuid.Nil, false
+	}
+	return actor, true
+}
+
 // idAndActor reads the path's id and the signed-in actor, answering the error itself.
 func idAndActor(w http.ResponseWriter, r *http.Request) (uuid.UUID, uuid.UUID, bool) {
 	id, err := parseUUIDPath(r, "id")

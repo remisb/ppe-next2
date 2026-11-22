@@ -87,9 +87,13 @@ func assetRights(r *http.Request) asset.Rights {
 	return asset.Rights{SIM: holds(r, role.SIMCardsManage), Equipment: holds(r, role.AssetsManage)}
 }
 
+// assetFunc is a handler of one asset's route, given the asset's id once seen
+// or changes has checked it: a route on one asset cannot skip the check.
+type assetFunc func(w http.ResponseWriter, r *http.Request, id uuid.UUID)
+
 // changes answers 404 for an asset the user may not see and 403 for one they
 // may not change, before next runs.
-func (h *assetHandler) changes(next http.HandlerFunc) http.HandlerFunc {
+func (h *assetHandler) changes(next assetFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUUIDPath(r, "id")
 		if err != nil {
@@ -100,12 +104,12 @@ func (h *assetHandler) changes(next http.HandlerFunc) http.HandlerFunc {
 			writeError(w, r, err)
 			return
 		}
-		next(w, r)
+		next(w, r, id)
 	}
 }
 
 // seen answers 404 for an asset the user may not see, before next runs.
-func (h *assetHandler) seen(next http.HandlerFunc) http.HandlerFunc {
+func (h *assetHandler) seen(next assetFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := parseUUIDPath(r, "id")
 		if err != nil {
@@ -116,7 +120,7 @@ func (h *assetHandler) seen(next http.HandlerFunc) http.HandlerFunc {
 			writeError(w, r, err)
 			return
 		}
-		next(w, r)
+		next(w, r, id)
 	}
 }
 
@@ -318,12 +322,7 @@ func (h *assetHandler) nextNumber(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"inventory_no": n})
 }
 
-func (h *assetHandler) get(w http.ResponseWriter, r *http.Request) {
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
+func (h *assetHandler) get(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
 	d, err := h.assets.Get(r.Context(), id)
 	if err != nil {
 		writeError(w, r, err)
@@ -361,14 +360,10 @@ func (h *assetHandler) create(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, v)
 }
 
-// withAsset reads the actor, the asset id and the JSON body for a write.
-func withAsset[T any](w http.ResponseWriter, r *http.Request) (actor, id uuid.UUID, body T, ok bool) {
+// withBody reads the actor and the JSON body for a write.
+func withBody[T any](w http.ResponseWriter, r *http.Request) (actor uuid.UUID, body T, ok bool) {
 	var err error
 	if actor, err = actorID(r); err != nil {
-		writeError(w, r, err)
-		return
-	}
-	if id, err = parseUUIDPath(r, "id"); err != nil {
 		writeError(w, r, err)
 		return
 	}
@@ -376,11 +371,11 @@ func withAsset[T any](w http.ResponseWriter, r *http.Request) (actor, id uuid.UU
 		writeError(w, r, err)
 		return
 	}
-	return actor, id, body, true
+	return actor, body, true
 }
 
-func (h *assetHandler) update(w http.ResponseWriter, r *http.Request) {
-	actor, id, req, ok := withAsset[assetParams](w, r)
+func (h *assetHandler) update(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	actor, req, ok := withBody[assetParams](w, r)
 	if !ok {
 		return
 	}
@@ -393,8 +388,8 @@ func (h *assetHandler) update(w http.ResponseWriter, r *http.Request) {
 }
 
 // changeStatus is Change Status: saved at once, no confirmation step (§5).
-func (h *assetHandler) changeStatus(w http.ResponseWriter, r *http.Request) {
-	actor, id, req, ok := withAsset[statusRequest](w, r)
+func (h *assetHandler) changeStatus(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	actor, req, ok := withBody[statusRequest](w, r)
 	if !ok {
 		return
 	}
@@ -408,8 +403,8 @@ func (h *assetHandler) changeStatus(w http.ResponseWriter, r *http.Request) {
 
 // preview is Print Form: the form Give would store, and its
 // hash, without writing anything.
-func (h *assetHandler) preview(w http.ResponseWriter, r *http.Request) {
-	_, id, req, ok := withAsset[formRequest](w, r)
+func (h *assetHandler) preview(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	_, req, ok := withBody[formRequest](w, r)
 	if !ok {
 		return
 	}
@@ -422,8 +417,8 @@ func (h *assetHandler) preview(w http.ResponseWriter, r *http.Request) {
 }
 
 // give is Give SIM and Give Asset.
-func (h *assetHandler) give(w http.ResponseWriter, r *http.Request) {
-	actor, id, req, ok := withAsset[giveRequest](w, r)
+func (h *assetHandler) give(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	actor, req, ok := withBody[giveRequest](w, r)
 	if !ok {
 		return
 	}
@@ -438,8 +433,8 @@ func (h *assetHandler) give(w http.ResponseWriter, r *http.Request) {
 }
 
 // giveBack is Return (SIM and item).
-func (h *assetHandler) giveBack(w http.ResponseWriter, r *http.Request) {
-	actor, id, req, ok := withAsset[returnRequest](w, r)
+func (h *assetHandler) giveBack(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	actor, req, ok := withBody[returnRequest](w, r)
 	if !ok {
 		return
 	}
@@ -451,8 +446,8 @@ func (h *assetHandler) giveBack(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, a)
 }
 
-func (h *assetHandler) markNotReturned(w http.ResponseWriter, r *http.Request) {
-	actor, id, req, ok := withAsset[notReturnedRequest](w, r)
+func (h *assetHandler) markNotReturned(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	actor, req, ok := withBody[notReturnedRequest](w, r)
 	if !ok {
 		return
 	}
@@ -465,12 +460,7 @@ func (h *assetHandler) markNotReturned(w http.ResponseWriter, r *http.Request) {
 }
 
 // form is an assignment's stored form, for reprinting.
-func (h *assetHandler) form(w http.ResponseWriter, r *http.Request) {
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
+func (h *assetHandler) form(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
 	assignmentID, err := parseUUIDPath(r, "assignmentID")
 	if err != nil {
 		writeError(w, r, err)
@@ -487,12 +477,7 @@ func (h *assetHandler) form(w http.ResponseWriter, r *http.Request) {
 // uploadSignedCopy takes a multipart form with one "file": the scan or photo of
 // an assignment's signed form (§9). The body may be the file's 10 MB and a
 // little for the form around it.
-func (h *assetHandler) uploadSignedCopy(w http.ResponseWriter, r *http.Request) {
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
+func (h *assetHandler) uploadSignedCopy(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
 	assignmentID, err := parseUUIDPath(r, "assignmentID")
 	if err != nil {
 		writeError(w, r, err)
@@ -522,16 +507,16 @@ func (h *assetHandler) uploadSignedCopy(w http.ResponseWriter, r *http.Request) 
 
 // signedCopy sends a signed copy as an attachment, never shown in the page:
 // its type is the one checked on upload, and the browser may not guess another.
-func (h *assetHandler) signedCopy(w http.ResponseWriter, r *http.Request) {
-	ids := make([]uuid.UUID, 3)
-	for i, name := range []string{"id", "assignmentID", "copyID"} {
+func (h *assetHandler) signedCopy(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	ids := make([]uuid.UUID, 2)
+	for i, name := range []string{"assignmentID", "copyID"} {
 		var err error
 		if ids[i], err = parseUUIDPath(r, name); err != nil {
 			writeError(w, r, err)
 			return
 		}
 	}
-	c, body, err := h.assets.SignedCopy(r.Context(), ids[0], ids[1], ids[2])
+	c, body, err := h.assets.SignedCopy(r.Context(), id, ids[0], ids[1])
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -549,8 +534,8 @@ func (h *assetHandler) signedCopy(w http.ResponseWriter, r *http.Request) {
 
 // formPrinted records that Print Form printed the form Give would store; the
 // body is Preview's.
-func (h *assetHandler) formPrinted(w http.ResponseWriter, r *http.Request) {
-	actor, id, req, ok := withAsset[formRequest](w, r)
+func (h *assetHandler) formPrinted(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	actor, req, ok := withBody[formRequest](w, r)
 	if !ok {
 		return
 	}
@@ -562,8 +547,8 @@ func (h *assetHandler) formPrinted(w http.ResponseWriter, r *http.Request) {
 }
 
 // formReprinted records that an assignment's stored form was printed again.
-func (h *assetHandler) formReprinted(w http.ResponseWriter, r *http.Request) {
-	id, actor, ok := idAndActor(w, r)
+func (h *assetHandler) formReprinted(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	actor, ok := actorOf(w, r)
 	if !ok {
 		return
 	}
@@ -581,8 +566,8 @@ func (h *assetHandler) formReprinted(w http.ResponseWriter, r *http.Request) {
 
 // prepareEmail is Prepare Activation Email or Prepare Blocking Email: the
 // email from its template, {to, subject, body, missing}.
-func (h *assetHandler) prepareEmail(w http.ResponseWriter, r *http.Request) {
-	id, actor, ok := idAndActor(w, r)
+func (h *assetHandler) prepareEmail(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	actor, ok := actorOf(w, r)
 	if !ok {
 		return
 	}
@@ -595,8 +580,8 @@ func (h *assetHandler) prepareEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 // recordEmail records that the activation or blocking email was copied.
-func (h *assetHandler) recordEmail(w http.ResponseWriter, r *http.Request) {
-	id, actor, ok := idAndActor(w, r)
+func (h *assetHandler) recordEmail(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	actor, ok := actorOf(w, r)
 	if !ok {
 		return
 	}
@@ -609,8 +594,8 @@ func (h *assetHandler) recordEmail(w http.ResponseWriter, r *http.Request) {
 
 // formPDF is Download PDF on Give: the form Give would store, from
 // ?employee=&date=&plan=&value= (cents), as Preview builds it.
-func (h *assetHandler) formPDF(w http.ResponseWriter, r *http.Request) {
-	id, actor, ok := idAndActor(w, r)
+func (h *assetHandler) formPDF(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	actor, ok := actorOf(w, r)
 	if !ok {
 		return
 	}
@@ -641,8 +626,8 @@ func (h *assetHandler) formPDF(w http.ResponseWriter, r *http.Request) {
 }
 
 // storedFormPDF is Download PDF on an assignment: its stored form.
-func (h *assetHandler) storedFormPDF(w http.ResponseWriter, r *http.Request) {
-	id, actor, ok := idAndActor(w, r)
+func (h *assetHandler) storedFormPDF(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	actor, ok := actorOf(w, r)
 	if !ok {
 		return
 	}
