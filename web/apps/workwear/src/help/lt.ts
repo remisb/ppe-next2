@@ -291,6 +291,9 @@ export const lt: Guide = {
           p: '**Eksportuoti** išsaugo sąrašą kaip failą skaičiuoklei: **Excel (.xlsx)** arba **CSV**. Šis mygtukas yra ekranų **Užsakymai**, **Darbuotojai**, **Prekių katalogas**, **SIM kortelės** ir **Įranga** viršuje. Ekranuose **Prekių rinkiniai**, **Reikia pakeisti** ir darbuotojo **Išduotos prekės** jis iš karto atveria langą **Eksportuoti** su visomis eilutėmis.',
         },
         {
+          p: '**Eksportuoti** rodomas tik tada, kai bent viena jūsų rolė turi teisę **Eksportuoti duomenis**. Ją turi **Administratorius**, **Vadovas** ir **Darbuotojas**, o administratorius gali ją suteikti kitoms rolėms ekrane **Rolės ir teisės**. Be jos jokiame sąraše **Eksportuoti** nėra.',
+        },
+        {
           p: 'Sąrašo viršuje pasirinkite **Eksportuoti**. Šalia eilučių atsiranda žymimieji langeliai, o juosta virš sąrašo nurodo, ką darote ir kiek eilučių pažymėta, pavyzdžiui, **Eksportuoti: Darbuotojai · Pažymėta 3**. Kol ji rodoma, spustelėjus eilutę ji pažymima, o ne atidaroma, o pačios eilutės mygtukai paslepiami. Langelis stulpelio viršuje pažymi visas rodomas eilutes.',
           devices: ['tablet', 'desktop'],
         },
@@ -309,7 +312,7 @@ export const lt: Guide = {
         {
           p: 'Lange **Eksportuoti** nurodytos jūsų pasirinktos eilutės, pavyzdžiui, **Pažymėta: 3**; **Keisti** grąžina į sąrašą pasirinkti iš naujo. Pažymėkite norimus stulpelius (ekrane rodomi jau pažymėti), pasirinkite **Excel (.xlsx)** arba **CSV**, tada **Eksportuoti (3)**. Failas, pavyzdžiui, `Darbuotojai 2026-11-20.xlsx`, atsisiunčiamas su eilutėmis sąrašo tvarka ir stulpelių pavadinimais jūsų kalba. Jame tik tai, ką matote ekrane.',
         },
-        { p: '**Administravime** tas pats **Eksportuoti** yra ekranuose **Naudotojai**, **Rolės ir teisės**, **Tiekėjai**, **Programų tvarkymas**, taip pat **Saugos** skirtuke **Prisijungę įrenginiai** ir **Sistemos** skirtuke **Klaidos**.', roles: ['admin'] },
+        { p: '**Administravime** tas pats **Eksportuoti** yra ekranuose **Naudotojai**, **Rolės ir teisės**, **Tiekėjai**, **Įmonės**, **Programų tvarkymas**, taip pat **Saugos** skirtuke **Prisijungę įrenginiai** ir **Sistemos** skirtuke **Klaidos**.', roles: ['admin'] },
       ],
     },
     {
@@ -474,6 +477,7 @@ export const lt: Guide = {
         {
           ul: [
             '**Administratorius**, **Vadovas** ir **Darbuotojas** yra įtaisytos rolės. **Administratorius** gali viską ir jo pakeisti negalima: **Peržiūrėti** parodo, ką jis leidžia. Ką leidžia **Vadovas** ir **Darbuotojas**, galite keisti, bet ne jų pavadinimus ar aprašymus, o ištrinti jų negalima.',
+            'Teisė **Eksportuoti duomenis** leidžia rolės naudotojams eksportuoti sąrašus. Įtaisytos rolės ją turi; jūsų pridėta rolė – tik jei ją pažymite. Nuimkite žymę **Vadovo** ar **Darbuotojo** rolėje, kad jie nebeeksportuotų. **Audito žurnalo** eksportui reikia atskiros teisės.',
             '**Pridėti rolę** sukuria naują: pavadinimas, kam ji skirta, ir jos teisės. Kai kurioms teisėms reikia kitos, kuri pažymima kartu: teisei **Tvarkyti naudotojus** reikia teisės **Matyti naudotojus**.',
             'Pakeitimas rolę turinčius naudotojus pasiekia per kelias minutes.',
             '**⋯ → Ištrinti rolę…** ištrina rolę, kurios neturi nė vienas naudotojas. Pirmiausia atimkite ją iš naudotojų skiltyje **Naudotojai**.',
