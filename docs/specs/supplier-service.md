@@ -23,7 +23,7 @@ these records.
 | `postal_code` | Optional, at most 20 |
 | `country` | ISO 3166-1 alpha-2 (`LT`), or empty; saved in upper case. The database's CHECK refuses any other shape |
 | `contact_person` | Optional, at most 200 |
-| `email` | Optional, at most 254; one bare address (no display name), saved in lower case |
+| `email` | Optional; one bare address with a dot in its domain, at most 254 (`internal/email`, the rule users, suppliers and SIM providers share); saved in lower case |
 | `phone` | Optional, at most 50, as typed |
 | `website` | Optional, at most 300, as typed |
 | `bank_account` | The IBAN; optional, at most 50; saved in upper case without spaces |

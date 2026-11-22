@@ -10,7 +10,6 @@ package settings
 
 import (
 	"fmt"
-	"net/mail"
 	"net/url"
 	"regexp"
 	"strings"
@@ -18,14 +17,14 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
+
+	"github.com/remisb/ppe-next2/internal/email"
 )
 
 // Limits of the settings' fields, in characters unless they say otherwise.
 const (
 	maxChatNameLen    = 100
 	maxCompanyNameLen = 200
-	// maxEmailLen is an e-mail address's limit (RFC 5321's path).
-	maxEmailLen = 254
 	// maxProviderLen is a SIM card's provider's limit (asset.maxTextLen).
 	maxProviderLen = 100
 	maxProviders   = 50
@@ -221,7 +220,7 @@ func (p *SIMProvidersParams) Validate() error {
 			return fieldError("providers", fmt.Sprintf("list %s twice", sp.Name))
 		}
 		seen[key] = true
-		if sp.Email != "" && !validEmail(sp.Email) {
+		if sp.Email != "" && !email.Valid(sp.Email) {
 			return fieldError("email", fmt.Sprintf("of %s must be one e-mail address, such as sim@provider.lt", sp.Name))
 		}
 		if utf8.RuneCountInString(sp.DefaultPlan) > maxPlanLen {
@@ -235,18 +234,4 @@ func (p *SIMProvidersParams) Validate() error {
 		return fieldError("default_non_return_value_cents", "must be between 0 and 10000000000")
 	}
 	return nil
-}
-
-// validEmail tells whether s is one bare address (no name, no list) with a
-// domain that has a dot, which is all a copied e-mail needs.
-func validEmail(s string) bool {
-	if len(s) > maxEmailLen {
-		return false
-	}
-	a, err := mail.ParseAddress(s)
-	if err != nil || a.Address != s || a.Name != "" {
-		return false
-	}
-	at := strings.LastIndexByte(s, '@')
-	return at > 0 && strings.Contains(s[at+1:], ".")
 }

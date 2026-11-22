@@ -1,18 +1,18 @@
 package user
 
 import (
-	"net/mail"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/remisb/ppe-next2/internal/email"
 )
 
 // Limits of a user's fields, in bytes.
 const (
-	maxNameLen  = 200
-	maxEmailLen = 254
+	maxNameLen = 200
 	// bcrypt ignores input past 72 bytes; reject rather than silently truncate.
 	minPasswordLen = 8
 	maxPasswordLen = 72
@@ -126,15 +126,13 @@ func normalizeEmail(s string) string { return strings.ToLower(strings.TrimSpace(
 
 // validateProfile checks a bare email address, a name and at least one role,
 // each within its limit.
-func validateProfile(email, name string, roles []uuid.UUID) error {
+func validateProfile(address, name string, roles []uuid.UUID) error {
 	switch {
-	case email == "":
+	case address == "":
 		return fieldError("email", "is required")
-	case len(email) > maxEmailLen:
+	case len(address) > email.MaxLen:
 		return fieldError("email", "is too long")
-	}
-	// Require a bare address: "Name <a@b>" parses too, but is not what we store.
-	if addr, err := mail.ParseAddress(email); err != nil || addr.Address != email {
+	case !email.Valid(address):
 		return fieldError("email", "is not a valid address")
 	}
 	switch {

@@ -116,6 +116,7 @@ func TestValidate(t *testing.T) {
 		{"email", func(p *Params) { p.Email = "Orders@Example.LT" }, ""},
 		{"not an email", func(p *Params) { p.Email = "orders at example" }, "email"},
 		{"email with a display name", func(p *Params) { p.Email = "Orders <orders@example.lt>" }, "email"},
+		{"email without a dot in its domain", func(p *Params) { p.Email = "orders@localhost" }, "email"},
 		{"long notes", func(p *Params) { p.Notes = strings.Repeat("ž", 2001) }, "notes"},
 		{"notes at the limit in letters, not bytes", func(p *Params) { p.Notes = strings.Repeat("ž", 2000) }, ""},
 	}
