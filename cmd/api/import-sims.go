@@ -12,11 +12,6 @@ import (
 	"slices"
 	"strings"
 	"text/tabwriter"
-	"unicode"
-
-	"golang.org/x/text/runes"
-	"golang.org/x/text/transform"
-	"golang.org/x/text/unicode/norm"
 
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
@@ -128,9 +123,10 @@ func importSIMs(ctx context.Context, svc services, cfg config, out io.Writer) er
 }
 
 // parseSIMList reads the SIM card list (UTF-8, a header row, commas or
-// semicolons) and finds each holder among employees by name, in either
-// order, case and accents aside. It returns every problem it finds, with
-// its line.
+// semicolons) and finds each holder among employees by name, by the rule
+// Duplicates calls the same name (employee.NameKey: in any order, case and
+// accents aside, Cyrillic transliterated, hyphens as spaces). It returns
+// every problem it finds, with its line.
 func parseSIMList(data []byte, employees []employee.Employee) ([]simRow, []error) {
 	data = bytes.TrimPrefix(data, []byte("\xef\xbb\xbf")) // Excel's byte order mark
 	r := csv.NewReader(bytes.NewReader(data))
@@ -164,7 +160,7 @@ func parseSIMList(data []byte, employees []employee.Employee) ([]simRow, []error
 
 	byName := map[string][]employee.Employee{}
 	for _, e := range employees {
-		k := nameKey(e.FirstName + " " + e.LastName)
+		k := employee.NameKey(e.FirstName, e.LastName)
 		byName[k] = append(byName[k], e)
 	}
 	var rows []simRow
@@ -198,7 +194,7 @@ func parseSIMList(data []byte, employees []employee.Employee) ([]simRow, []error
 		}
 		row.SIM.Status = st
 		if name != "" {
-			switch found := byName[nameKey(name)]; len(found) {
+			switch found := byName[employee.NameKey(name, "")]; len(found) {
 			case 0:
 				problems = append(problems, fmt.Errorf("line %d: no employee is named %q", line, name))
 			case 1:
@@ -213,18 +209,6 @@ func parseSIMList(data []byte, employees []employee.Employee) ([]simRow, []error
 		problems = append(problems, errors.New("the file has no SIM cards"))
 	}
 	return rows, problems
-}
-
-// nameKey is a name's words in order, lower case, without accents: "Gild
-// Yuriy" and "Yuriy Gild" are one key, as are "Roškaitė" and "Roskaite".
-func nameKey(name string) string {
-	folded, _, err := transform.String(transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC), name)
-	if err != nil {
-		folded = name
-	}
-	words := strings.Fields(strings.ToLower(folded))
-	slices.Sort(words)
-	return strings.Join(words, " ")
 }
 
 func employeeCodes(es []employee.Employee) string {

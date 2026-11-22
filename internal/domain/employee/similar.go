@@ -43,6 +43,13 @@ func nameWords(first, last string) []string {
 	return words
 }
 
+// NameKey is a name's words as nameWords folds them, sorted: two names have
+// one key exactly when CompareNames calls them SameName. The SIM card import
+// finds holders by it.
+func NameKey(first, last string) string {
+	return strings.Join(slices.Sorted(slices.Values(nameWords(first, last))), " ")
+}
+
 // CompareNames says how alike two names are; false when they are not alike.
 func CompareNames(aFirst, aLast, bFirst, bLast string) (MatchKind, bool) {
 	return compareWords(nameWords(aFirst, aLast), nameWords(bFirst, bLast))

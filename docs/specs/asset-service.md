@@ -173,8 +173,10 @@ included, prints each card's number, status and holder, and writes nothing.
   Activated**; Available means nobody holds it, so Available with a name is refused.
 - A Lithuanian phone number is written as the app writes it (`37060327629` → `+370 603 27629`);
   the SIM number is kept as written; a provider not among Settings' SIM providers is noted.
-- The holder is the one live employee whose first and last names are the name's words, in
-  either order, case and accents aside; none, or more than one, is refused with the line.
+- The holder is the one live employee whose name is the same name as Duplicates finds it
+  (`employee.NameKey`, [employee-service.md](employee-service.md) "Duplicates and merging"):
+  the same words in either order, case and accents aside, Cyrillic transliterated, hyphens
+  as spaces. None, or more than one, is refused with the line.
 - Every problem in the file is listed before anything is written; then the cards are written
   in one transaction, all or none, so a SIM number already registered refuses the whole file
   and running it twice imports nothing the second time.
