@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/google/uuid"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/personnel/document"
 )
 
 // Adapters answering one domain's consumer-declared interfaces with another
@@ -137,6 +139,76 @@ var _ employee.Holdings = employeeHoldings{}
 
 func (e employeeHoldings) HeldBy(ctx context.Context, employeeID uuid.UUID) ([]string, error) {
 	return e.assets.HeldBy(ctx, employeeID)
+}
+
+// personnelPeople answers document.People: Scan Documents' Find Employee
+// offers employees whose names are alike (the employee service's rule), with
+// their record's birth date, nationality and sex, their live orders and the
+// company assets they hold, and which of them may be one person.
+type personnelPeople struct {
+	employees *employee.Service
+	orders    *order.Service
+	assets    *asset.Service
+}
+
+var _ document.People = personnelPeople{}
+
+// peopleOf is the adapter over the services built: main and the tests wire it alike.
+func peopleOf(svc services) personnelPeople {
+	return personnelPeople{employees: svc.employees, orders: svc.orders, assets: svc.assets}
+}
+
+func personOf(e employee.Employee) document.Person {
+	return document.Person{ID: e.ID, FullName: e.FullName(), Code: e.Code, BirthDate: e.BirthDate, Nationality: e.Nationality, Sex: e.Sex}
+}
+
+func (p personnelPeople) Alike(ctx context.Context, first, last string) ([]document.AlikePerson, error) {
+	ms, err := p.employees.Similar(ctx, first, last, uuid.Nil)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]document.AlikePerson, 0, len(ms))
+	for _, m := range ms {
+		out = append(out, document.AlikePerson{Person: personOf(m.Employee), Kind: string(m.Kind)})
+	}
+	return out, nil
+}
+
+func (p personnelPeople) Person(ctx context.Context, id uuid.UUID) (document.Person, bool, error) {
+	e, err := p.employees.Get(ctx, id)
+	if errors.Is(err, employee.ErrNotFound) {
+		return document.Person{}, false, nil
+	}
+	if err != nil {
+		return document.Person{}, false, err
+	}
+	return personOf(e), true, nil
+}
+
+func (p personnelPeople) Holds(ctx context.Context, id uuid.UUID) (int, int, error) {
+	listed, err := p.orders.List(ctx, order.ListParams{EmployeeID: &id, PageSize: 1})
+	if err != nil {
+		return 0, 0, err
+	}
+	held, err := p.assets.HeldBy(ctx, id)
+	if err != nil {
+		return 0, 0, err
+	}
+	return listed.Total, len(held), nil
+}
+
+func (p personnelPeople) Pairs(ctx context.Context, ids []uuid.UUID) ([]document.MatchPair, error) {
+	all, err := p.employees.PossibleDuplicates(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := []document.MatchPair{}
+	for _, pair := range all {
+		if slices.Contains(ids, pair.A.ID) && slices.Contains(ids, pair.B.ID) {
+			out = append(out, document.MatchPair{A: pair.A.ID, B: pair.B.ID, Kind: string(pair.Kind)})
+		}
+	}
+	return out, nil
 }
 
 // assetMailer answers asset.Mailer: a SIM card's email from its mail

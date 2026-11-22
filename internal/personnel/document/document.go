@@ -128,6 +128,9 @@ type SaveParams struct {
 	Take                []Take
 	// Copies are the images, JPEG, by side.
 	Copies map[Side][]byte
+	// ScanID is the actor's kept scan this document was read from (Scan
+	// Documents), linked to it in Save's transaction; uuid.Nil for none.
+	ScanID uuid.UUID
 }
 
 // Normalize trims what was typed.

@@ -28,6 +28,7 @@ func registerPersonnelScanRoutes(rt *router, scans *scan.Service) {
 	rt.restricted("POST /api/v1/personnel/scans", h.keep, role.PersonnelDocumentsManage)
 	rt.restricted("GET /api/v1/personnel/scans", h.list, role.PersonnelDocumentsManage)
 	rt.restricted("GET /api/v1/personnel/scans/{id}/archive", h.archive, role.PersonnelDocumentsManage)
+	rt.restricted("GET /api/v1/personnel/scans/{id}/pages/{n}", h.page, role.PersonnelDocumentsManage)
 	rt.restricted("DELETE /api/v1/personnel/scans/{id}", h.remove, role.PersonnelDocumentsManage)
 }
 
@@ -148,6 +149,31 @@ func (h *scanHandler) archive(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(http.StatusOK)
 	w.Write(a.Zip)
+}
+
+// page answers one page of the user's own scan as image/jpeg, for Scans'
+// tile and for opening the scan again; never cached.
+func (h *scanHandler) page(w http.ResponseWriter, r *http.Request) {
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
+		return
+	}
+	n, err := strconv.Atoi(r.PathValue("n"))
+	if err != nil || n < 1 || n > scan.MaxPages {
+		writeError(w, r, scan.ErrNotFound)
+		return
+	}
+	jpeg, err := h.scans.Page(r.Context(), id, n, actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeNoStore(w)
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Content-Length", strconv.Itoa(len(jpeg)))
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jpeg)
 }
 
 // remove deletes the user's own scan.

@@ -82,7 +82,10 @@ func objectKey(id uuid.UUID) string { return "personnel-scans/" + id.String() }
 
 // Keep checks the pages and the meta, builds the zip (page-01.jpg …),
 // seals it and its meta under a fresh data key, writes the object and then
-// the row with its event. A failed row deletes the object again.
+// the row with its event. A failed row deletes the object again. The scan is
+// read when the MRZ sent passes the API's re-reading, which then needs its
+// surname; else unread. One that replaces an earlier scan removes it, in the
+// same transaction, and its object after.
 func (s *Service) Keep(ctx context.Context, meta Meta, pages [][]byte, actor uuid.UUID) (Scan, error) {
 	if actor == uuid.Nil {
 		return Scan{}, fieldError("actor", "is required")
@@ -93,7 +96,8 @@ func (s *Service) Keep(ctx context.Context, meta Meta, pages [][]byte, actor uui
 	if err := meta.Validate(); err != nil {
 		return Scan{}, err
 	}
-	if err := s.checkMRZ(meta); err != nil {
+	state, err := s.stateOf(meta)
+	if err != nil {
 		return Scan{}, err
 	}
 	if err := checkPages(pages); err != nil {
@@ -110,7 +114,7 @@ func (s *Service) Keep(ctx context.Context, meta Meta, pages [][]byte, actor uui
 	if err != nil {
 		return Scan{}, err
 	}
-	fileName := meta.FileName()
+	fileName := meta.FileName(now.In(s.loc).Format(time.DateOnly))
 	plainMeta, err := json.Marshal(sealedMeta{Surname: meta.Surname, GivenNames: meta.GivenNames, Kind: meta.Kind,
 		Number: meta.Number, FileName: fileName})
 	if err != nil {
@@ -128,6 +132,7 @@ func (s *Service) Keep(ctx context.Context, meta Meta, pages [][]byte, actor uui
 	rec := Record{
 		ID: id, CreatedBy: actor, CreatedAt: now, ExpiresAt: now.AddDate(0, 0, s.days), ObjectKey: objectKey(id),
 		Bytes: len(archive), SHA256: sum[:], SealedKey: sealedKey, KeyID: keyID, SealedMeta: sealedMetaBytes, Pages: len(pages),
+		State: state,
 	}
 	ev, err := audit.New(s.newID(), &actor, EventKept, EntityType, id, now, nil,
 		map[string]any{"pages": rec.Pages, "expires_at": rec.ExpiresAt})
@@ -137,29 +142,48 @@ func (s *Service) Keep(ctx context.Context, meta Meta, pages [][]byte, actor uui
 	if err := s.store.Put(ctx, rec.ObjectKey, bytes.NewReader(sealedZip), int64(len(sealedZip)), "application/octet-stream"); err != nil {
 		return Scan{}, err
 	}
-	if err := s.repo.Insert(ctx, rec, []audit.Event{ev}); err != nil {
+	replaces := uuid.Nil
+	if meta.Replaces != nil {
+		replaces = *meta.Replaces
+	}
+	old, err := s.repo.Insert(ctx, rec, []audit.Event{ev}, replaces, func(old Record) ([]audit.Event, error) {
+		ev, err := audit.New(s.newID(), &actor, EventRemoved, EntityType, old.ID, now, map[string]any{"pages": old.Pages}, nil)
+		return []audit.Event{ev}, err
+	})
+	if err != nil {
 		_ = s.store.Delete(context.WithoutCancel(ctx), rec.ObjectKey)
 		return Scan{}, err
+	}
+	if old.ObjectKey != "" {
+		// Unreadable without its key already; a failure leaves an object no row names.
+		_ = s.store.Delete(context.WithoutCancel(ctx), old.ObjectKey)
 	}
 	m := sealedMeta{Surname: meta.Surname, GivenNames: meta.GivenNames, Kind: meta.Kind, Number: meta.Number, FileName: fileName}
 	return scanOf(rec, m), nil
 }
 
-// checkMRZ re-reads the lines, when Scan Document sent them, with the API's
-// own parser: they must be a document's MRZ of the kind named. A reading
-// with problems is still kept (the user checks the pages); the lines never are.
-func (s *Service) checkMRZ(meta Meta) error {
+// stateOf re-reads the lines, when they were sent, with the API's own parser:
+// they must be a document's MRZ of the kind named. Lines that pass make the
+// scan read, and a read scan needs its surname; none, or a reading with
+// problems, leave it unread (the user checks the pages). The lines are never kept.
+func (s *Service) stateOf(meta Meta) (State, error) {
 	if len(meta.MRZ) == 0 {
-		return nil
+		return Unread, nil
 	}
 	m := mrz.Parse(meta.MRZ, mrz.Options{Today: s.now().In(s.loc).Format(time.DateOnly)})
 	if m == nil {
-		return fieldError("mrz", "is not a passport's or ID card's machine-readable zone")
+		return "", fieldError("mrz", "is not a passport's or ID card's machine-readable zone")
 	}
 	if (meta.Kind == Passport) != strings.HasPrefix(m.DocumentCode, "P") {
-		return fieldError("kind", "does not match the document's code")
+		return "", fieldError("kind", "does not match the document's code")
 	}
-	return nil
+	if !m.Valid {
+		return Unread, nil
+	}
+	if meta.Surname == "" {
+		return "", fieldError("surname", "is required for a scan whose MRZ was read")
+	}
+	return Read, nil
 }
 
 // checkPages: one to MaxPages pages, each a JPEG of at most 5 MB and 2400 px.
@@ -227,44 +251,54 @@ func (s *Service) List(ctx context.Context, actor uuid.UUID) ([]Scan, error) {
 	return out, nil
 }
 
-// Open is the actor's own unexpired scan's zip and file name, its digest
-// checked; the download is recorded before it is answered. Another user's
-// scan, or an expired one, is ErrNotFound.
-func (s *Service) Open(ctx context.Context, id, actor uuid.UUID) (Archive, error) {
+// open is the actor's own unexpired scan, its meta and its zip opened and
+// the zip's digest checked. Another user's scan, or an expired one, is ErrNotFound.
+func (s *Service) open(ctx context.Context, id, actor uuid.UUID) (Record, sealedMeta, []byte, error) {
 	if actor == uuid.Nil {
-		return Archive{}, fieldError("actor", "is required")
+		return Record{}, sealedMeta{}, nil, fieldError("actor", "is required")
 	}
 	if !s.configured() {
-		return Archive{}, ErrNotConfigured
+		return Record{}, sealedMeta{}, nil, ErrNotConfigured
 	}
 	rec, err := s.repo.Get(ctx, id, actor, s.now())
 	if err != nil {
-		return Archive{}, err
+		return Record{}, sealedMeta{}, nil, err
 	}
 	box, err := s.keys.OpenDataKey(rec.SealedKey, rec.KeyID, keyContext(rec.ID))
 	if err != nil {
-		return Archive{}, unopenable(err)
+		return Record{}, sealedMeta{}, nil, unopenable(err)
 	}
 	m, err := openMeta(box, rec)
 	if err != nil {
-		return Archive{}, err
+		return Record{}, sealedMeta{}, nil, err
 	}
 	obj, err := s.store.Get(ctx, rec.ObjectKey)
 	if err != nil {
-		return Archive{}, err
+		return Record{}, sealedMeta{}, nil, err
 	}
 	sealed, err := io.ReadAll(obj)
 	obj.Close()
 	if err != nil {
-		return Archive{}, err
+		return Record{}, sealedMeta{}, nil, err
 	}
 	plain, err := box.Open(sealed, zipContext(rec.ID))
 	if err != nil {
-		return Archive{}, unopenable(err)
+		return Record{}, sealedMeta{}, nil, unopenable(err)
 	}
 	sum := sha256.Sum256(plain)
 	if subtle.ConstantTimeCompare(sum[:], rec.SHA256) != 1 || len(plain) != rec.Bytes {
-		return Archive{}, ErrUnopenable
+		return Record{}, sealedMeta{}, nil, ErrUnopenable
+	}
+	return rec, m, plain, nil
+}
+
+// Open is the actor's own unexpired scan's zip and file name, its digest
+// checked; the download is recorded before it is answered. Another user's
+// scan, or an expired one, is ErrNotFound.
+func (s *Service) Open(ctx context.Context, id, actor uuid.UUID) (Archive, error) {
+	rec, m, plain, err := s.open(ctx, id, actor)
+	if err != nil {
+		return Archive{}, err
 	}
 	ev, err := audit.New(s.newID(), &actor, EventDownloaded, EntityType, rec.ID, s.now(), nil, map[string]any{"pages": rec.Pages})
 	if err != nil {
@@ -274,6 +308,29 @@ func (s *Service) Open(ctx context.Context, id, actor uuid.UUID) (Archive, error
 		return Archive{}, err
 	}
 	return Archive{FileName: m.FileName, Zip: plain}, nil
+}
+
+// Page is one page of the actor's own unexpired scan, n from 1, as the zip
+// holds it: for Scans' tile and for opening a scan again. The page never
+// leaves its maker, so it is not recorded, unlike Download Archive.
+func (s *Service) Page(ctx context.Context, id uuid.UUID, n int, actor uuid.UUID) ([]byte, error) {
+	rec, _, plain, err := s.open(ctx, id, actor)
+	if err != nil {
+		return nil, err
+	}
+	if n < 1 || n > rec.Pages {
+		return nil, ErrNotFound
+	}
+	zr, err := zip.NewReader(bytes.NewReader(plain), int64(len(plain)))
+	if err != nil {
+		return nil, ErrUnopenable
+	}
+	f, err := zr.Open(fmt.Sprintf("page-%02d.jpg", n))
+	if err != nil {
+		return nil, ErrUnopenable
+	}
+	defer f.Close()
+	return io.ReadAll(f)
 }
 
 // Remove deletes the actor's own unexpired scan: its row (and so its key)
@@ -342,5 +399,6 @@ func unopenable(err error) error {
 // scanOf is a row and its opened meta as List answers them.
 func scanOf(rec Record, m sealedMeta) Scan {
 	return Scan{ID: rec.ID, FileName: m.FileName, Surname: m.Surname, GivenNames: m.GivenNames, Kind: m.Kind,
-		Number: m.Number, Pages: rec.Pages, Bytes: rec.Bytes, CreatedAt: rec.CreatedAt, ExpiresAt: rec.ExpiresAt}
+		Number: m.Number, Pages: rec.Pages, Bytes: rec.Bytes, State: rec.State, DocumentID: rec.DocumentID,
+		EmployeeID: rec.EmployeeID, CreatedAt: rec.CreatedAt, ExpiresAt: rec.ExpiresAt}
 }

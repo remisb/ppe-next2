@@ -131,7 +131,7 @@ func TestPostgresKeepListOpenRemovePurge(t *testing.T) {
 	}
 }
 
-func TestPostgresScansAreNeverUpdated(t *testing.T) {
+func TestPostgresScansChangeOnlyWhenSaved(t *testing.T) {
 	svc, owner, _, me, _ := pgSetup(t)
 	ctx := context.Background()
 	kept, err := svc.Keep(ctx, jonas, [][]byte{jpegOf(t, 10, 10)}, me)
@@ -139,8 +139,50 @@ func TestPostgresScansAreNeverUpdated(t *testing.T) {
 		t.Fatal(err)
 	}
 	app := dbtest.AppPool(t, owner, os.Getenv("API_TEST_DB_DSN"))
-	if _, err := app.Exec(ctx, `UPDATE personnel.scans SET pages = 2 WHERE id = $1`, kept.ID); err == nil {
-		t.Error("ppe_app updated a kept scan")
+	for _, sql := range []string{
+		`UPDATE personnel.scans SET pages = 2 WHERE id = $1`,
+		`UPDATE personnel.scans SET expires_at = expires_at + interval '1 year' WHERE id = $1`,
+		`UPDATE personnel.scans SET sealed_meta = sealed_meta WHERE id = $1`,
+	} {
+		if _, err := app.Exec(ctx, sql, kept.ID); err == nil {
+			t.Errorf("ppe_app may: %s", sql)
+		}
+	}
+	// Its state and links are the one change, and only together (saved with a document and an employee).
+	if _, err := app.Exec(ctx, `UPDATE personnel.scans SET state = 'saved' WHERE id = $1`, kept.ID); err == nil {
+		t.Error("a scan was saved without its document")
+	}
+	if _, err := app.Exec(ctx, `UPDATE personnel.scans SET state = 'read' WHERE id = $1`, kept.ID); err != nil {
+		t.Errorf("ppe_app may not change a scan's state: %v", err)
+	}
+}
+
+func TestPostgresKeepSaysItsStateAndReplaces(t *testing.T) {
+	svc, owner, c, me, _ := pgSetup(t)
+	ctx := context.Background()
+	page := jpegOf(t, 10, 10)
+	unread, err := svc.Keep(ctx, Meta{Kind: Passport}, [][]byte{page}, me)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.t = c.t.Add(time.Minute)
+	read, err := svc.Keep(ctx, Meta{Surname: "Pavyzdys", Kind: Passport, MRZ: passportMRZ, Replaces: &unread.ID}, [][]byte{page}, me)
+	if err != nil {
+		t.Fatal(err)
+	}
+	list, err := svc.List(ctx, me)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list) != 1 || list[0].ID != read.ID || list[0].State != Read || list[0].DocumentID != nil {
+		t.Fatalf("List = %+v", list)
+	}
+	if n := pgCount(t, owner, `SELECT count(*) FROM audit_events WHERE event = $1 AND entity_id = $2`, EventRemoved, unread.ID); n != 1 {
+		t.Errorf("removed events for the replaced scan = %d", n)
+	}
+	got, err := svc.Page(ctx, read.ID, 1, me)
+	if err != nil || len(got) != len(page) {
+		t.Errorf("page = %d bytes, %v", len(got), err)
 	}
 }
 

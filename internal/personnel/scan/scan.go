@@ -31,6 +31,16 @@ const (
 	EntityType = "personnel_scan"
 )
 
+// State is how far a scan got (migration 0056): its MRZ not read (none sent,
+// or one the API's re-reading did not pass), read, or saved as a document.
+type State string
+
+const (
+	Unread State = "unread"
+	Read   State = "read"
+	Saved  State = "saved"
+)
+
 // Kind is what document the scan is of.
 type Kind string
 
@@ -66,15 +76,19 @@ const (
 	MaxDays      = 14
 )
 
-// Meta is what names a scan, as Scan Document sends it: the person's names
-// as printed (or typed), the document's kind and number, and optionally the
-// MRZ lines it was read from, which are checked and not kept.
+// Meta is what names a scan, as Scan Document and Scan Documents send it:
+// the person's names as printed (or typed), the document's kind and number,
+// and optionally the MRZ lines it was read from, which are checked and not
+// kept. A scan whose MRZ was not read needs no names or number. Replaces is
+// the caller's own earlier scan of the same pages, not saved, which this one
+// (read again, or retaken) takes the place of.
 type Meta struct {
-	Surname    string   `json:"surname"`
-	GivenNames string   `json:"given_names"`
-	Kind       Kind     `json:"kind"`
-	Number     string   `json:"number"`
-	MRZ        []string `json:"mrz,omitempty"`
+	Surname    string     `json:"surname"`
+	GivenNames string     `json:"given_names"`
+	Kind       Kind       `json:"kind"`
+	Number     string     `json:"number"`
+	MRZ        []string   `json:"mrz,omitempty"`
+	Replaces   *uuid.UUID `json:"replaces,omitempty"`
 }
 
 // Normalize trims what was typed; the number is upper case.
@@ -93,9 +107,7 @@ func (m *Meta) Validate() error {
 	switch {
 	case !m.Kind.valid():
 		return fieldError("kind", "must be passport, id_card or residence_permit")
-	case m.Surname == "":
-		return fieldError("surname", "is required")
-	case fileWord(m.Surname) == "":
+	case m.Surname != "" && fileWord(m.Surname) == "":
 		return fieldError("surname", "has no letters")
 	case len(m.Surname) > maxNameLen || len(m.GivenNames) > maxNameLen:
 		return fieldError("names", "are too long")
@@ -110,8 +122,12 @@ func (m *Meta) Validate() error {
 }
 
 // FileName is the archive's name: <Surname>_<Given>_<kind>.zip, spaces as
-// underscores, any character a file name should not hold left out.
-func (m Meta) FileName() string {
+// underscores, any character a file name should not hold left out; a scan
+// with no surname (its MRZ not read) is Scan_<day>.zip.
+func (m Meta) FileName(day string) string {
+	if fileWord(m.Surname) == "" {
+		return "Scan_" + day + ".zip"
+	}
 	parts := []string{fileWord(m.Surname)}
 	if g := fileWord(m.GivenNames); g != "" {
 		parts = append(parts, g)
@@ -139,7 +155,7 @@ func fileWord(s string) string {
 	return b.String()
 }
 
-// Scan is a kept scan as its maker sees it in Recent scans.
+// Scan is a kept scan as its maker sees it in Recent scans and Scans.
 type Scan struct {
 	ID         uuid.UUID `json:"id"`
 	FileName   string    `json:"file_name"`
@@ -149,8 +165,12 @@ type Scan struct {
 	Number     string    `json:"number"`
 	Pages      int       `json:"pages"`
 	Bytes      int       `json:"bytes"`
-	CreatedAt  time.Time `json:"created_at"`
-	ExpiresAt  time.Time `json:"expires_at"`
+	State      State     `json:"state"`
+	// DocumentID and EmployeeID are the document it was saved as, and its employee.
+	DocumentID *uuid.UUID `json:"document_id"`
+	EmployeeID *uuid.UUID `json:"employee_id"`
+	CreatedAt  time.Time  `json:"created_at"`
+	ExpiresAt  time.Time  `json:"expires_at"`
 }
 
 // Archive is an opened scan: the zip and its file name.

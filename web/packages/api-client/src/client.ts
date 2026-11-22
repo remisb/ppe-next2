@@ -9,6 +9,8 @@ import type {
   AccessReview,
   DocumentCheck,
   DocumentCheckInput,
+  DocumentMatch,
+  DocumentMatchInput,
   DocumentCopies,
   DocumentCopySide,
   PersonnelRetention,
@@ -467,6 +469,8 @@ export function createClient(options: ClientOptions) {
     personnel: {
       /** Re-reads the lines and says what is wrong or already on file; writes nothing. */
       check: (input: DocumentCheckInput) => request<DocumentCheck>('POST', '/api/v1/personnel/documents/check', input),
+      /** Who the document may belong to (Scan Documents' Find Employee); writes nothing. */
+      match: (input: DocumentMatchInput) => request<DocumentMatch>('POST', '/api/v1/personnel/documents/match', input),
       /** Saves a reviewed document and its copies, all or none (a 409's conflict says which duplicate). */
       save: (input: IdentityDocumentInput, copies: DocumentCopies = {}) => {
         const body = new FormData()
@@ -522,6 +526,8 @@ export function createClient(options: ClientOptions) {
         /** The scan's zip and its file name (Download Archive; recorded). */
         download: (id: string) =>
           download(`/api/v1/personnel/scans/${seg(id)}/archive`).then((r) => ({ blob: r.blob, fileName: r.filename })),
+        /** One page of the scan, a JPEG, n from 1 (Scans' tile, opening a scan again; not recorded). */
+        page: (id: string, n: number) => download(`/api/v1/personnel/scans/${seg(id)}/pages/${n}`).then((r) => r.blob),
         remove: (id: string) => request<void>('DELETE', `/api/v1/personnel/scans/${seg(id)}`),
       },
     },

@@ -1765,6 +1765,38 @@ export interface DocumentCheck {
   possible_duplicates: string[]
 }
 
+/** Match's body (Scan Documents' Find Employee): the lines, and the names as read or typed. */
+export interface DocumentMatchInput {
+  mrz: string[]
+  surname?: string
+  given_names?: string
+}
+
+/** Why a candidate is offered, strongest first. */
+export type DocumentMatchKind = 'personal_code' | 'document_number' | 'same_name' | 'similar_name'
+
+/** An employee who may be the document's holder, with what the app compares. */
+export interface DocumentCandidate {
+  employee: { id: string; full_name: string; code: string | null }
+  kind: DocumentMatchKind
+  /** The record's, to compare with the document's; null when not on file. */
+  birth_date: string | null
+  nationality: string | null
+  sex: string | null
+  /** Live orders, and company assets held. */
+  orders: number
+  assets: number
+  /** Live identity documents on file: Merge Employees will not remove such a record. */
+  has_documents: boolean
+}
+
+/** Match's answer: Check's for the lines, at most five candidates, and those who may be one person. */
+export interface DocumentMatch {
+  check: DocumentCheck
+  candidates: DocumentCandidate[]
+  pairs: { a: string; b: string; kind: 'same_name' | 'similar_name' }[]
+}
+
 /** Save's "document" part (POST /api/v1/personnel/documents, multipart). */
 export interface IdentityDocumentInput {
   employee: { id: string } | { new: { first_name: string; last_name: string; code?: string | null } }
@@ -1779,6 +1811,8 @@ export interface IdentityDocumentInput {
   authority?: string
   add_to_employee_record: boolean
   take?: DocumentTake[]
+  /** The user's kept scan the document was read from (Scan Documents); it is then saved. */
+  scan_id?: string
 }
 
 /** Save's copies, JPEG, each at most 5 MB and 2400 px. */
@@ -1834,13 +1868,20 @@ export interface PersonnelRetention {
 
 /** What names a kept scan, as Scan Document sends it; the MRZ lines are checked, never kept. */
 export interface ScanMetaInput {
+  /** Required once the MRZ is read; '' for a scan whose MRZ was not. */
   surname: string
   given_names: string
   kind: IdentityDocumentKind
   /** Letters and digits, or '' when not read. */
   number: string
+  /** Lines that pass the API's re-reading make the scan read; none, or failing ones, unread. */
   mrz?: string[]
+  /** The user's own earlier scan, not saved, this one takes the place of. */
+  replaces?: string
 }
+
+/** How far a kept scan got: its MRZ not read, read, or saved as a document. */
+export type KeptScanState = 'unread' | 'read' | 'saved'
 
 /** A kept scan, as Recent scans lists it (its maker's alone; deleted at expires_at). */
 export interface KeptScan {
@@ -1853,6 +1894,10 @@ export interface KeptScan {
   number: string
   pages: number
   bytes: number
+  state: KeptScanState
+  /** The document it was saved as, and its employee; null until saved. */
+  document_id: string | null
+  employee_id: string | null
   created_at: string
   expires_at: string
 }

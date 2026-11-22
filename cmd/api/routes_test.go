@@ -942,6 +942,7 @@ var policy = map[string]rule{
 	"DELETE /api/v1/employee-photos/{id}/{photoID}":      {role.EmployeeProfilesManage, "staff"},
 	// Personnel files (ADR 0007): Personnel Documents alone; the validity line, anyone.
 	"POST /api/v1/personnel/documents/check":                    {role.PersonnelDocumentsManage, "personnel"},
+	"POST /api/v1/personnel/documents/match":                    {role.PersonnelDocumentsManage, "personnel"},
 	"POST /api/v1/personnel/documents":                          {role.PersonnelDocumentsManage, "personnel"},
 	"GET /api/v1/personnel/documents/by-employee/{id}":          {role.PersonnelDocumentsRead, "personnel"},
 	"GET /api/v1/personnel/documents/by-employee/{id}/validity": {"", "any"},
@@ -955,6 +956,7 @@ var policy = map[string]rule{
 	"POST /api/v1/personnel/scans":                              {role.PersonnelDocumentsManage, "personnel"},
 	"GET /api/v1/personnel/scans":                               {role.PersonnelDocumentsManage, "personnel"},
 	"GET /api/v1/personnel/scans/{id}/archive":                  {role.PersonnelDocumentsManage, "personnel"},
+	"GET /api/v1/personnel/scans/{id}/pages/{n}":                {role.PersonnelDocumentsManage, "personnel"},
 	"DELETE /api/v1/personnel/scans/{id}":                       {role.PersonnelDocumentsManage, "personnel"},
 
 	"GET /api/v1/catalogue":                    {"", "any"},

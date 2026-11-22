@@ -162,7 +162,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	}
 	svc.ai = &aiHandler{settings: aiSettings, ledger: aiLedger, report: aiStore, checker: openAI, colour: colour.NewService(aiSettings, aiLedger, openAI)}
 	svc.documents = document.NewService(document.NewPostgresRepository(pool), personnel, documentStore, document.WithLocation(loc),
-		document.WithAIUsage(aiStore))
+		document.WithAIUsage(aiStore), document.WithPeople(peopleOf(svc)))
 	svc.personnelRetentionMonths = cfg.PersonnelRetentionMonths
 	svc.scans = scan.NewService(scan.NewPostgresRepository(pool), personnel, documentStore, scan.WithDays(cfg.PersonnelScanDays),
 		scan.WithLocation(loc))

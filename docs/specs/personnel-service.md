@@ -9,7 +9,7 @@ numbers below are its). AI usage, through which the colour photo's call goes, is
 [ai-usage-service.md](ai-usage-service.md). **Scan Documents** (docs-scan), which reads first and
 then finds the person, adds Match and the kept scans' state and link (ADR 0007's amendment of
 2026-11-21; the [docs-scan plan](../apps/docs-scan-plan.md), whose DS- numbers are used below);
-those parts are **to build**.
+their API is **built** (`document/match.go`, migration 0056), the app is to build.
 
 - **Packages:** `internal/personnel/mrz` (the MRZ parser, **built**), `internal/personnel/document`
   (entity, service, repository, Postgres; the five-file layout of `internal/domain/user`; **built:**
@@ -28,7 +28,7 @@ those parts are **to build**.
   `nationality` and `sex`, the permissions and the built-in role; **built**); `grants.sql` gives
   `ppe_app` the schema, but not UPDATE on `subject_keys`. `0051_ai_usage` adds `employee_photos`'
   `ai_generated` and `consent` (with the colour photo; **built**). `0053_personnel_scans` adds
-  `personnel.scans` (kept scans; `ppe_app` may not UPDATE it; **built**). A migration for Scan Documents (**to build**) adds the scans' `state`,
+  `personnel.scans` (kept scans; `ppe_app` may not UPDATE it; **built**). `0056_personnel_scan_links` adds the scans' `state`,
   `document_id` and `employee_id`; `grants.sql` gives `ppe_app` UPDATE on those three columns alone.
 - **App:** `web/apps/docs-import` (published, `device` profile, slug `docs-import`; **built**; retired after
   Scan Documents' trial) and `web/apps/docs-scan` (the same profile, slug `docs-scan`; **to build**); the staff
@@ -110,7 +110,7 @@ chose to take (FR-8). `employee_photos` gains `ai_generated` and `consent` (who,
 The answer is `no-store`. The app shows it beside its own marks and keeps it by document number, so a late answer
 for an earlier reading is dropped (Scan SIMs' `registeredOf` pattern).
 
-### Match (Scan Documents, DS-6, DS-7; to build)
+### Match (Scan Documents, DS-6, DS-7; built)
 
 `POST /api/v1/personnel/documents/match`, body `{"mrz": [...], "surname", "given_names"}` (the
 names as read or typed; never in the URL), answers `no-store` and writes nothing:
@@ -126,8 +126,9 @@ names as read or typed; never in the URL), answers `no-store` and writes nothing
 - `pairs`: among the candidates, the pairs the employees' possible-duplicate rule gives, less
   those marked Not the Same Person (`employee_distinct_pairs`), as `{a, b, kind}`.
 
-Personnel files reach People through a port they declare (`document.Employees`: compare names,
-counts, pairs), adapted in `cmd/api/checkers.go`; People are never read from Personnel files'
+Personnel files reach People through a port they declare (`document.People`: names alike by
+`employee.Service.Similar`, a person by id, their live orders and held assets, the pairs from
+`PossibleDuplicates`), adapted in `cmd/api/checkers.go` (`personnelPeople`, `peopleOf`); People are never read from Personnel files'
 tables, nor these from People. The names are never logged; a 400 lists the MRZ's `problems` as
 Check does. Merging stays People's routes and `employees.merge`; the app reads their preview
 (`keep_has_documents`, `remove_has_documents`) and never offers to remove a record with
@@ -273,7 +274,7 @@ user who made it, `API_PERSONNEL_SCAN_DAYS` (3) days, so the work need not be do
   No event: the expiry was known when the scan was kept. It runs again after a restore.
 - Without Personnel files' keys or a files store every route answers 503.
 
-**For Scan Documents (DS-1, DS-12; to build):**
+**For Scan Documents (DS-1, DS-12; built):**
 
 - **Every scan is kept**, once its pages are taken: `state` is `read` when the MRZ lines sent pass
   the re-reading, else `unread`. An unread scan needs no names, kind or number; its file name is
@@ -297,7 +298,7 @@ user who made it, `API_PERSONNEL_SCAN_DAYS` (3) days, so the work need not be do
 | Route | Permission | Notes |
 | --- | --- | --- |
 | `POST /api/v1/personnel/documents/check` | `personnel.documents.manage` | writes nothing |
-| `POST /api/v1/personnel/documents/match` | `personnel.documents.manage` | writes nothing; `no-store` (to build) |
+| `POST /api/v1/personnel/documents/match` | `personnel.documents.manage` | writes nothing; `no-store` |
 | `POST /api/v1/personnel/documents` | `personnel.documents.manage` | multipart; 400 problems, 409 duplicate, 413, 415 |
 | `GET /api/v1/personnel/documents/by-employee/{id}/validity` | any signed-in user | kind, state, expiry |
 | `GET /api/v1/personnel/documents/by-employee/{id}` | `personnel.documents.read` | the summary |
@@ -313,11 +314,11 @@ user who made it, `API_PERSONNEL_SCAN_DAYS` (3) days, so the work need not be do
 | `POST /api/v1/personnel/scans` | `personnel.documents.manage` | multipart; 400, 413, 415; `no-store` |
 | `GET /api/v1/personnel/scans` | `personnel.documents.manage` | the caller's own; `no-store` |
 | `GET /api/v1/personnel/scans/{id}/archive` | `personnel.documents.manage` | the zip; the caller's own; `no-store` |
-| `GET /api/v1/personnel/scans/{id}/pages/{n}` | `personnel.documents.manage` | a page's JPEG; the caller's own; `no-store` (to build) |
+| `GET /api/v1/personnel/scans/{id}/pages/{n}` | `personnel.documents.manage` | a page's JPEG; the caller's own; `no-store` |
 | `DELETE /api/v1/personnel/scans/{id}` | `personnel.documents.manage` | the caller's own |
 
 Every route goes into `routes_test.go`'s policy table; the errors into `errorStatuses`
-(`document.ErrDuplicate` 409 for either `DuplicateError`, `ErrEmployeeCodeTaken` 409,
+(`document.ErrDuplicate` 409 for either `DuplicateError`, `ErrEmployeeCodeTaken` 409, `ErrScanNotFound` 404,
 `ErrCopyTooLarge` 413, `ErrCopyNotJPEG` 415, `ErrNotConfigured` 503; `colour.ErrOff` 409,
 `ErrTooOften` 429, `ErrNotPortrait` 415; `scan.ErrNotFound` 404, `ErrTooManyPages` and
 `ErrPageTooLarge` 413, `ErrPageNotJPEG` 415, `ErrNotConfigured` 503). `@ppe/api-client` gains

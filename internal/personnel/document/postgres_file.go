@@ -60,9 +60,12 @@ func (r *PostgresRepository) Record(ctx context.Context, events []audit.Event) e
 
 // UpdateDocument locks the live document, applies mutate, and writes its
 // Add to Employee Record or soft-deletes it, with the events, at the first
-// event's time and by its actor; no events, no write.
-func (r *PostgresRepository) UpdateDocument(ctx context.Context, id uuid.UUID, mutate func(cur Document) (DocumentChange, []audit.Event, error)) error {
-	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+// event's time and by its actor; no events, no write. A removal also deletes
+// the kept scan saved as the document, returning its object key.
+func (r *PostgresRepository) UpdateDocument(ctx context.Context, id uuid.UUID, mutate func(cur Document) (DocumentChange, []audit.Event, error)) ([]string, error) {
+	var scanKeys []string
+	err := translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		scanKeys = nil
 		cur, err := scanDocument(tx.QueryRow(ctx, `SELECT `+documentColumns+` FROM personnel.identity_documents d
 			WHERE d.id = $1 AND d.deleted_at IS NULL FOR UPDATE`, id))
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -85,6 +88,13 @@ func (r *PostgresRepository) UpdateDocument(ctx context.Context, id uuid.UUID, m
 				id, events[0].OccurredAt, actor); err != nil {
 				return err
 			}
+			rows, err := tx.Query(ctx, `DELETE FROM personnel.scans WHERE document_id = $1 RETURNING object_key`, id)
+			if err != nil {
+				return err
+			}
+			if scanKeys, err = pgx.CollectRows(rows, pgx.RowTo[string]); err != nil {
+				return err
+			}
 		} else if _, err := tx.Exec(ctx, `UPDATE personnel.identity_documents
 			SET on_employee_record = $2, updated_at = $3, updated_by_user_id = $4 WHERE id = $1`,
 			id, change.OnEmployeeRecord, events[0].OccurredAt, actor); err != nil {
@@ -92,6 +102,7 @@ func (r *PostgresRepository) UpdateDocument(ctx context.Context, id uuid.UUID, m
 		}
 		return audit.InsertAll(ctx, tx, events)
 	}))
+	return scanKeys, err
 }
 
 // UpdateSubject locks the subject (ErrNotFound without one), applies mutate
@@ -168,6 +179,16 @@ func (r *PostgresRepository) Shred(ctx context.Context, employeeID uuid.UUID, ev
 		if keys, err = pgx.CollectRows(rows, pgx.RowTo[string]); err != nil {
 			return err
 		}
+		rows, err = tx.Query(ctx, `DELETE FROM personnel.scans s USING personnel.identity_documents d
+			WHERE s.document_id = d.id AND d.employee_id = $1 RETURNING s.object_key`, employeeID)
+		if err != nil {
+			return err
+		}
+		scans, err := pgx.CollectRows(rows, pgx.RowTo[string])
+		if err != nil {
+			return err
+		}
+		keys = append(keys, scans...)
 		tag, err := tx.Exec(ctx, `DELETE FROM personnel.identity_documents WHERE employee_id = $1`, employeeID)
 		if err != nil {
 			return err

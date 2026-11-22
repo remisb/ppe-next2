@@ -44,8 +44,8 @@ func (stubDocuments) Document(context.Context, uuid.UUID) (document.Opened, erro
 	return document.Opened{}, document.ErrNotFound
 }
 func (stubDocuments) Record(context.Context, []audit.Event) error { return nil }
-func (stubDocuments) UpdateDocument(context.Context, uuid.UUID, func(document.Document) (document.DocumentChange, []audit.Event, error)) error {
-	return document.ErrNotFound
+func (stubDocuments) UpdateDocument(context.Context, uuid.UUID, func(document.Document) (document.DocumentChange, []audit.Event, error)) ([]string, error) {
+	return nil, document.ErrNotFound
 }
 func (stubDocuments) UpdateSubject(context.Context, uuid.UUID, func(document.Retention) (document.Retention, []audit.Event, error)) error {
 	return document.ErrNotFound

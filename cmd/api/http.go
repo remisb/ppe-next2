@@ -136,6 +136,7 @@ var errorStatuses = []struct {
 	{employeephoto.ErrNoStorage, http.StatusServiceUnavailable},
 	{document.ErrNotFound, http.StatusNotFound},
 	{document.ErrEmployeeNotFound, http.StatusNotFound},
+	{document.ErrScanNotFound, http.StatusNotFound},
 	{document.ErrCopyTooLarge, http.StatusRequestEntityTooLarge},
 	{document.ErrCopyNotJPEG, http.StatusUnsupportedMediaType},
 	{document.ErrNotConfigured, http.StatusServiceUnavailable},
