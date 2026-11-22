@@ -37,13 +37,19 @@ RUN --mount=type=cache,id=ppe-go-build,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux go build -tags timetzdata -trimpath -ldflags="-s -w -X main.commit=${API_COMMIT}" -o /out/api ./cmd/api
 # The published apps' folder (API_APPS_DIR), the API user's: a new named
 # volume mounted on it takes its owner from here. Scratch has no mkdir.
-RUN mkdir -p /out/published
+# And /tmp, which scratch lacks too: Go's multipart parsing writes every upload
+# part over its 1 MiB in memory to a temp file there, so without it any photo,
+# signed form or scan over 1 MiB answers 400 (TestAPIImageHasTmp). Copied as
+# a child of /out/root: COPY of a folder copies its contents and makes the
+# target itself root's 0755, which the API's user could not write.
+RUN mkdir -p /out/published /out/root/tmp && chmod 1777 /out/root/tmp
 
 FROM scratch
 # Root certificates for a managed (TLS) database.
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /out/api /api
 COPY --from=build --chown=65532:65532 /out/published /srv/published
+COPY --from=build /out/root/ /
 USER 65532:65532
 EXPOSE 8090
 # Exec form: the binary is PID 1 and gets SIGTERM, so shutdown drains.
