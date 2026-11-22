@@ -321,7 +321,7 @@ because Postgres tests truncate tables.
 
 `docker-compose.prod.yml` (project `ppe-next2-prod`, env file `.env.prod` from
 `.env.prod.example`) runs db → migrate (`deploy/migrate.sh`, must match `make migrate`)
-→ api (scratch image, `Dockerfile`, tzdata embedded) → caddy (`web/Dockerfile` bakes the
+→ api (scratch image, `Dockerfile`, tzdata embedded, and a writable `/tmp`: uploads over 1 MiB are parsed through temp files, `TestAPIImageHasTmp`) → caddy (`web/Dockerfile` bakes the
 built apps into the Caddy image, the staff app at `WEB_ROOT` served at `/`,
 Administration at `ADMIN_ROOT` served at `/admin/`,
 App Launcher at `LAUNCHER_ROOT` served at `/apps/`, and Scan SIMs' build at `/srv/build/sim-scan`
