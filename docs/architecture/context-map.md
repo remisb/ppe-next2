@@ -139,7 +139,11 @@ needs:
 | Timesheets | Timesheet owner | entries and periods |
 
 Today's `employees` table is People plus the Workwear wearer profile; the sizes move to
-`workwear` when People is introduced. A person who signs in (the employee role, for
+`workwear` when People is introduced. People's employment has started inside it: the
+organisation's companies (`companies`, migration 0057) and each person's employment periods at
+them (`employments`, migration 0058), from which a record reads as an employee, a candidate or a
+former employee ([employee-service.md](../specs/employee-service.md), "Employment"); they move
+to `people` with it. Personnel's Mark Employment Ended still keeps its own day (ADR 0007). A person who signs in (the employee role, for
 self-service) is a user linked to an employee, not an employee with a password.
 
 ## Frontend modules

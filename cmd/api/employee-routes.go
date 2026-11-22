@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"slices"
 
 	"github.com/google/uuid"
 
@@ -29,6 +31,12 @@ func registerEmployeeRoutes(rt *router, employees *employee.Service) {
 	rt.restricted("PUT /api/v1/employees/{id}", h.update, role.EmployeeProfilesManage)
 	rt.restricted("PUT /api/v1/employees/{id}/sizes", h.updateSizes, role.EmployeeSizesManage)
 	rt.restricted("DELETE /api/v1/employees/{id}", h.delete, role.EmployeesDelete)
+	// Employment (docs/specs/employee-service.md): periods at a company, which
+	// make the person an employee, a former employee or a candidate.
+	rt.restricted("POST /api/v1/employees/{id}/employments", h.employ, role.EmployeeProfilesManage)
+	rt.restricted("PUT /api/v1/employees/{id}/employments/{eid}", h.updateEmployment, role.EmployeeProfilesManage)
+	rt.restricted("POST /api/v1/employees/{id}/employments/{eid}/end", h.endEmployment, role.EmployeeProfilesManage)
+	rt.restricted("DELETE /api/v1/employees/{id}/employments/{eid}", h.removeEmployment, role.EmployeeProfilesManage)
 	// Duplicates and merging (docs/specs/employee-service.md): Add New Employee
 	// asks for alike names first; the Employees screen offers the pairs, Not
 	// the Same Person and Merge Employees.
@@ -88,17 +96,70 @@ func (req employeeRequest) params() employee.Params {
 	}
 }
 
+// createEmployeeRequest is Add New Employee's: the employee and, for an
+// employee rather than a candidate, the employment.
+type createEmployeeRequest struct {
+	employeeRequest
+	Employment *employRequest `json:"employment"`
+}
+
+// employRequest opens a period: Employ, Move to Another Company (end_current)
+// and Add New Employee's employment. started_on is YYYY-MM-DD, optional.
+type employRequest struct {
+	CompanyID  uuid.UUID `json:"company_id"`
+	StartedOn  *string   `json:"started_on"`
+	EndCurrent bool      `json:"end_current"`
+}
+
+func (req employRequest) params() employee.EmployParams {
+	return employee.EmployParams{CompanyID: req.CompanyID, StartedOn: req.StartedOn, EndCurrent: req.EndCurrent}
+}
+
+// employmentRequest replaces a period's company and dates (Edit Employment).
+type employmentRequest struct {
+	CompanyID uuid.UUID `json:"company_id"`
+	StartedOn *string   `json:"started_on"`
+	EndedOn   *string   `json:"ended_on"`
+}
+
+// endEmploymentRequest is End Employment's: the day the employee left.
+type endEmploymentRequest struct {
+	EndedOn string `json:"ended_on"`
+}
+
 type employeeSizesRequest struct {
 	HeightCm     *int    `json:"height_cm"`
 	ClothingSize *int    `json:"clothing_size"`
 	ShoeSize     *string `json:"shoe_size"`
 }
 
+// list is every live employee; ?status=employee|candidate|former and
+// ?company=<id> (the open employment's) narrow it.
 func (h *employeeHandler) list(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	status := employee.Status(q.Get("status"))
+	if status != "" && !status.Valid() {
+		writeError(w, r, fmt.Errorf("%w: status must be employee, candidate or former", employee.ErrInvalid))
+		return
+	}
+	var company *uuid.UUID
+	if c := q.Get("company"); c != "" {
+		id, err := uuid.Parse(c)
+		if err != nil {
+			writeError(w, r, fmt.Errorf("%w: company is not an id", employee.ErrInvalid))
+			return
+		}
+		company = &id
+	}
 	es, err := h.employees.List(r.Context())
 	if err != nil {
 		writeError(w, r, err)
 		return
+	}
+	if status != "" || company != nil {
+		es = slices.DeleteFunc(es, func(e employee.Employee) bool {
+			return (status != "" && e.Status != status) || (company != nil && (e.Company == nil || e.Company.ID != *company))
+		})
 	}
 	writeJSON(w, http.StatusOK, toEmployeesJSON(r, es))
 }
@@ -134,12 +195,17 @@ func (h *employeeHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	var req employeeRequest
+	var req createEmployeeRequest
 	if err := decodeJSON(w, r, &req); err != nil {
 		writeError(w, r, err)
 		return
 	}
-	e, err := h.employees.Create(r.Context(), req.params(), employeeRights(r), actor)
+	p := req.params()
+	if req.Employment != nil {
+		job := req.Employment.params()
+		p.Employment = &job
+	}
+	e, err := h.employees.Create(r.Context(), p, employeeRights(r), actor)
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -198,6 +264,92 @@ func (h *employeeHandler) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// employmentPath is the path's employee ({id}) and period ({eid}), and the actor.
+func employmentPath(w http.ResponseWriter, r *http.Request) (id, eid, actor uuid.UUID, ok bool) {
+	if id, actor, ok = idAndActor(w, r); !ok {
+		return
+	}
+	var err error
+	if eid, err = parseUUIDPath(r, "eid"); err != nil {
+		writeError(w, r, err)
+		return id, eid, actor, false
+	}
+	return id, eid, actor, true
+}
+
+// employ is Employ and Move to Another Company; it answers with the employee
+// and their employments.
+func (h *employeeHandler) employ(w http.ResponseWriter, r *http.Request) {
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
+		return
+	}
+	var req employRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	e, err := h.employees.Employ(r.Context(), id, req.params(), employeeRights(r), actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toEmployeeJSON(r, e))
+}
+
+func (h *employeeHandler) updateEmployment(w http.ResponseWriter, r *http.Request) {
+	id, eid, actor, ok := employmentPath(w, r)
+	if !ok {
+		return
+	}
+	var req employmentRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	e, err := h.employees.UpdateEmployment(r.Context(), id, eid, employee.EmploymentParams{
+		CompanyID: req.CompanyID, StartedOn: req.StartedOn, EndedOn: req.EndedOn,
+	}, employeeRights(r), actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toEmployeeJSON(r, e))
+}
+
+func (h *employeeHandler) endEmployment(w http.ResponseWriter, r *http.Request) {
+	id, eid, actor, ok := employmentPath(w, r)
+	if !ok {
+		return
+	}
+	var req endEmploymentRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	e, err := h.employees.EndEmployment(r.Context(), id, eid, req.EndedOn, employeeRights(r), actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toEmployeeJSON(r, e))
+}
+
+// removeEmployment removes a period entered by mistake; it answers with the
+// employee, a candidate again when it was their only one.
+func (h *employeeHandler) removeEmployment(w http.ResponseWriter, r *http.Request) {
+	id, eid, actor, ok := employmentPath(w, r)
+	if !ok {
+		return
+	}
+	e, err := h.employees.RemoveEmployment(r.Context(), id, eid, employeeRights(r), actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, toEmployeeJSON(r, e))
 }
 
 type similarRequest struct {

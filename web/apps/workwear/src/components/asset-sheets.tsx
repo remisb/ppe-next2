@@ -932,7 +932,7 @@ function MissingNote({ mail }: { mail: MailMessage }) {
   return (
     <ul role="note" className="grid gap-1 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
       {mail.missing.includes('provider.email') ? <li>{t.assets.missingProviderEmail}</li> : null}
-      {mail.missing.includes('company.name') ? <li>{t.assets.missingCompany}</li> : null}
+      {mail.missing.includes('company.name') ? <li>{t.employment.missingCompany}</li> : null}
       {others.length > 0 ? <li>{t.assets.missingFields}</li> : null}
     </ul>
   )

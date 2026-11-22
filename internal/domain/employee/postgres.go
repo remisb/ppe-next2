@@ -31,18 +31,26 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 }
 
 // columns are what scan reads, in its order: the employee's own columns, the
-// default photo's id and the identity document's fields.
+// default photo's id, the identity document's fields, and the open
+// employment's company and whether there was any employment (the status).
 const columns = `id, first_name, last_name, code, height_cm, clothing_size, shoe_size, notes, preferred_language,
 	created_at, updated_at, deleted_at, created_by_user_id, updated_by_user_id, deleted_by_user_id,
 	(SELECT p.id FROM employee_photos p WHERE p.employee_id = employees.id AND p.is_default AND p.deleted_at IS NULL) AS default_photo_id,
-	birth_date::text, nationality, sex`
+	birth_date::text, nationality, sex,
+	(SELECT m.company_id FROM employments m WHERE m.employee_id = employees.id AND m.ended_on IS NULL AND m.deleted_at IS NULL) AS company_id,
+	(SELECT c.name FROM employments m JOIN companies c ON c.id = m.company_id
+		WHERE m.employee_id = employees.id AND m.ended_on IS NULL AND m.deleted_at IS NULL) AS company_name,
+	EXISTS (SELECT 1 FROM employments m WHERE m.employee_id = employees.id AND m.deleted_at IS NULL) AS ever_employed`
 
 // scan reads one row of columns; ErrNotFound when there is none. Times are UTC.
 func scan(row pgx.Row) (Employee, error) {
 	var e Employee
+	var companyID *uuid.UUID
+	var companyName *string
+	var ever bool
 	err := row.Scan(&e.ID, &e.FirstName, &e.LastName, &e.Code, &e.HeightCm, &e.ClothingSize, &e.ShoeSize, &e.Notes, &e.PreferredLanguage,
 		&e.CreatedAt, &e.UpdatedAt, &e.DeletedAt, &e.CreatedByUserID, &e.UpdatedByUserID, &e.DeletedByUserID, &e.DefaultPhotoID,
-		&e.BirthDate, &e.Nationality, &e.Sex)
+		&e.BirthDate, &e.Nationality, &e.Sex, &companyID, &companyName, &ever)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Employee{}, ErrNotFound
 	}
@@ -50,6 +58,17 @@ func scan(row pgx.Row) (Employee, error) {
 		return Employee{}, err
 	}
 	e.CreatedAt, e.UpdatedAt = e.CreatedAt.UTC(), e.UpdatedAt.UTC()
+	switch {
+	case companyID != nil:
+		e.Status, e.Company = StatusEmployee, &CompanyRef{ID: *companyID}
+		if companyName != nil {
+			e.Company.Name = *companyName
+		}
+	case ever:
+		e.Status = StatusFormer
+	default:
+		e.Status = StatusCandidate
+	}
 	return e, nil
 }
 
@@ -67,8 +86,8 @@ func scanAll(rows pgx.Rows) ([]Employee, error) {
 	return out, rows.Err()
 }
 
-// Create inserts e and ev in one transaction.
-func (r *PostgresRepository) Create(ctx context.Context, e Employee, ev *audit.Event) error {
+// Create inserts e, its employments and evs in one transaction.
+func (r *PostgresRepository) Create(ctx context.Context, e Employee, evs []audit.Event) error {
 	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO employees (id, first_name, last_name, code, height_cm, clothing_size, shoe_size, notes,
@@ -78,8 +97,117 @@ func (r *PostgresRepository) Create(ctx context.Context, e Employee, ev *audit.E
 			e.PreferredLanguage, e.CreatedAt, e.UpdatedAt, e.CreatedByUserID, e.UpdatedByUserID); err != nil {
 			return err
 		}
-		return insertEvent(ctx, tx, ev)
+		for _, m := range e.Employments {
+			if err := writeEmployment(ctx, tx, m, nil); err != nil {
+				return err
+			}
+		}
+		return audit.InsertAll(ctx, tx, evs)
 	}))
+}
+
+// jobColumns are an employment's (m) columns as scanJob reads them, with its
+// company's name (c).
+const jobColumns = `m.id, m.employee_id, m.company_id, c.name, m.started_on::text, m.ended_on::text,
+	m.created_at, m.updated_at, m.created_by_user_id, m.updated_by_user_id`
+
+// jobOrder is the employments' order: open first, then newest.
+const jobOrder = `ORDER BY m.ended_on IS NULL DESC, m.ended_on DESC, m.started_on DESC NULLS LAST, m.created_at DESC, m.id`
+
+// readJobs reads employee id's live employments in jobOrder.
+func readJobs(ctx context.Context, q interface {
+	Query(context.Context, string, ...any) (pgx.Rows, error)
+}, id uuid.UUID) ([]Employment, error) {
+	rows, err := q.Query(ctx, `SELECT `+jobColumns+` FROM employments m JOIN companies c ON c.id = m.company_id
+		WHERE m.employee_id = $1 AND m.deleted_at IS NULL `+jobOrder, id)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Employment, error) {
+		var m Employment
+		err := row.Scan(&m.ID, &m.EmployeeID, &m.CompanyID, &m.CompanyName, &m.StartedOn, &m.EndedOn,
+			&m.CreatedAt, &m.UpdatedAt, &m.CreatedByUserID, &m.UpdatedByUserID)
+		m.CreatedAt, m.UpdatedAt = m.CreatedAt.UTC(), m.UpdatedAt.UTC()
+		return m, err
+	})
+}
+
+// Employments reads live employee id's live employments.
+func (r *PostgresRepository) Employments(ctx context.Context, id uuid.UUID) ([]Employment, error) {
+	return readJobs(ctx, r.pool, id)
+}
+
+// writeEmployment inserts m, or updates it when cur (its stored state) is
+// given. A new company, or a changed one, must be live: its row is share-locked
+// so Delete company cannot pass it.
+func writeEmployment(ctx context.Context, tx pgx.Tx, m Employment, cur *Employment) error {
+	if cur == nil || cur.CompanyID != m.CompanyID {
+		var ok bool
+		err := tx.QueryRow(ctx, `SELECT true FROM companies WHERE id = $1 AND deleted_at IS NULL FOR SHARE`, m.CompanyID).Scan(&ok)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrCompanyNotFound
+		}
+		if err != nil {
+			return err
+		}
+	}
+	if cur == nil {
+		_, err := tx.Exec(ctx, `
+			INSERT INTO employments (id, employee_id, company_id, started_on, ended_on, created_at, updated_at,
+				created_by_user_id, updated_by_user_id)
+			VALUES ($1, $2, $3, $4::date, $5::date, $6, $7, $8, $9)`,
+			m.ID, m.EmployeeID, m.CompanyID, m.StartedOn, m.EndedOn, m.CreatedAt, m.UpdatedAt, m.CreatedByUserID, m.UpdatedByUserID)
+		return err
+	}
+	_, err := tx.Exec(ctx, `
+		UPDATE employments SET company_id = $2, started_on = $3::date, ended_on = $4::date, updated_at = $5,
+			updated_by_user_id = $6, deleted_at = $7, deleted_by_user_id = $8
+		WHERE id = $1`,
+		m.ID, m.CompanyID, m.StartedOn, m.EndedOn, m.UpdatedAt, m.UpdatedByUserID, m.DeletedAt, m.DeletedByUserID)
+	return err
+}
+
+// UpdateEmployments locks live employee id, reads its employments, applies m
+// and writes what it returns and its events, then reads the employee back.
+func (r *PostgresRepository) UpdateEmployments(ctx context.Context, id uuid.UUID, m EmploymentMutation) (Employee, error) {
+	var out Employee
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		cur, err := scan(tx.QueryRow(ctx,
+			`SELECT `+columns+` FROM employees WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`, id))
+		if err != nil {
+			return err
+		}
+		jobs, err := readJobs(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		writes, evs, err := m(cur, jobs)
+		if err != nil {
+			return err
+		}
+		known := make(map[uuid.UUID]*Employment, len(jobs))
+		for i := range jobs {
+			known[jobs[i].ID] = &jobs[i]
+		}
+		// Ended and removed periods first, so a move never holds two open ones at once.
+		closing := func(w Employment) bool { return !w.Open() || w.DeletedAt != nil }
+		for _, first := range []bool{true, false} {
+			for _, w := range writes {
+				if closing(w) == first {
+					w.EmployeeID = id
+					if err := writeEmployment(ctx, tx, w, known[w.ID]); err != nil {
+						return err
+					}
+				}
+			}
+		}
+		if err := audit.InsertAll(ctx, tx, evs); err != nil {
+			return err
+		}
+		out, err = scan(tx.QueryRow(ctx, `SELECT `+columns+` FROM employees WHERE id = $1`, id))
+		return err
+	})
+	return out, translate(err)
 }
 
 // Get reads live employee id.
@@ -144,14 +272,6 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 	return out, translate(err)
 }
 
-// insertEvent writes ev in tx; nil writes nothing.
-func insertEvent(ctx context.Context, tx pgx.Tx, ev *audit.Event) error {
-	if ev == nil {
-		return nil
-	}
-	return audit.Insert(ctx, tx, *ev)
-}
-
 // escapeLike makes q match literally inside a LIKE pattern.
 func escapeLike(q string) string {
 	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(q)
@@ -168,6 +288,9 @@ func translate(err error) error {
 	}
 	switch pgErr.Code {
 	case "23505":
+		if pgErr.ConstraintName == "employments_open_idx" {
+			return ErrEmployed
+		}
 		return ErrCodeTaken
 	case "23503":
 		return ErrActorNotFound

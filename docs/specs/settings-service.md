@@ -7,8 +7,7 @@ currency) stay in config; `GET /api/v1/settings` returns both kinds together.
 
 | Route | Access |
 | --- | --- |
-| `GET /api/v1/settings` | any authenticated: `{timezone, currency, company_name, supplier_chat, sim_providers, default_sim_provider, default_sim_non_return_value_cents}`, `company_name` text or `null` when not set, `supplier_chat` being `{name, link}` or `null` when not set, `sim_providers` a list (empty when none) of `{name, email, default_plan}` (each `''` when not set), `default_sim_provider` the name of one of them or `null`, `default_sim_non_return_value_cents` cents or `null` |
-| `PUT /api/v1/settings/company` | `settings.manage` (administrators): body `{name}`, empty to clear; returns the settings |
+| `GET /api/v1/settings` | any authenticated: `{timezone, currency, supplier_chat, sim_providers, default_sim_provider, default_sim_non_return_value_cents}`, `supplier_chat` being `{name, link}` or `null` when not set, `sim_providers` a list (empty when none) of `{name, email, default_plan}` (each `''` when not set), `default_sim_provider` the name of one of them or `null`, `default_sim_non_return_value_cents` cents or `null` |
 | `PUT /api/v1/settings/supplier-chat` | `settings.manage` (administrators): body `{name, link}`, both set or both empty to clear; returns the settings |
 | `PUT /api/v1/settings/sim-providers` | `settings.manage` (administrators): body `{providers: [{name, email, default_plan}], default, default_non_return_value_cents}`, `email` and `default_plan` `''` (or absent) for none, `default` the name of one of `providers` or `''` for none, the value in cents or `null` (or absent) for none; returns the settings |
 
@@ -17,13 +16,11 @@ staff app's old `/settings` leads there.
 
 ## The company
 
-The company's name, which mail templates write where they use `{{company.name}}`
-([mail-template-service.md](mail-template-service.md)), as the SIM activation and
-blocking emails do. It is trimmed with inner spaces collapsed, at most 200 characters, or
-empty for none; a CHECK keeps the length. Unset, an email shows `[Company Name]` for the user
-to fill in, and the sheet says Settings has none. Stored in `app_settings.company_name`
-(migration 0039); a change records `settings.company_changed` with the old and new `{name}`.
-On the screen it is the **Company** card, first on Settings.
+Settings no longer holds the company's name. From migration 0039 to 0057 it was
+`app_settings.company_name` (the **Company** card on Settings, `PUT /api/v1/settings/company`);
+migration 0057 made it the first company, the default, and dropped the column. Mail templates'
+`{{company.name}}` is now the default company's name ([company-service.md](company-service.md)).
+The audit log keeps the old `settings.company_changed` events, which the apps still read.
 
 ## The supplier's WhatsApp group
 
@@ -110,5 +107,5 @@ SIM providers, their default or the default Non-return Value records `settings.s
 `{providers, default_provider, default_non_return_value_cents}`, each provider
 `{name, email, default_plan}` (events before migration 0039 list the providers by name with
 one `default_plan` for all, before 0034 lack the value, before 0035 the plan; older ones,
-`settings.default_sim_provider_changed`, hold `{provider}`); one that changes the company
-records `settings.company_changed` with `{name}`. An unchanged save writes nothing, and each save keeps the other settings.
+`settings.default_sim_provider_changed`, hold `{provider}`); until migration 0057 one that
+changed the company recorded `settings.company_changed` with `{name}`. An unchanged save writes nothing, and each save keeps the other settings.

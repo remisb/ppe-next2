@@ -48,7 +48,7 @@ test.afterAll(async () => {
 })
 
 /** Administration's sections: the staff app links there, and it links back. */
-const administrationTabs = ['Overview', 'Users', 'Roles & permissions', 'Audit log', 'Security', 'System', 'Usage', 'Settings', 'Mail Templates', 'Suppliers', 'Manage apps']
+const administrationTabs = ['Overview', 'Users', 'Roles & permissions', 'Audit log', 'Security', 'System', 'Usage', 'Settings', 'Mail Templates', 'Suppliers', 'Companies', 'Manage apps']
 
 /** Follows a link at the foot of the rail or sidebar, or under More on a phone, to the other app. */
 async function switchApp(linkName: string) {
@@ -445,13 +445,48 @@ test('Settings: an administrator lists the SIM providers, the default one, the d
   await expect(card.getByRole('button', { name: 'Save', exact: true })).toBeDisabled()
 })
 
-test('Settings: an administrator sets the company’s name, which mail templates write', async () => {
-  const card = page.getByRole('region', { name: 'Company', exact: true })
-  await expect(card.getByRole('status')).toHaveText('Not set: emails show [Company Name] for you to fill in.')
-  await card.getByLabel('Company name').fill('  UAB   Gavort ')
-  await card.getByRole('button', { name: 'Save', exact: true }).click()
-  await expect(card.getByRole('status')).toHaveText('Saved. Emails write UAB Gavort.')
-  await expect(card.getByLabel('Company name')).toHaveValue('UAB Gavort')
+test('Companies: an administrator adds companies; the first is the default, which Make Default moves and mail templates name', async () => {
+  // Settings no longer holds a company name: the default company is it.
+  await expect(page.getByRole('region', { name: 'Company', exact: true })).toHaveCount(0)
+  await openTab('Companies')
+  await expect(page.getByRole('heading', { name: 'Companies', exact: true })).toBeVisible()
+  await expect(page.getByText('No companies yet.')).toBeVisible()
+
+  // Only the name is required; the first company becomes the default.
+  await page.getByRole('button', { name: 'Add Company' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Add Company' })
+  await dialog.getByRole('button', { name: 'Add Company' }).click()
+  await expect(dialog.getByText('Enter the company’s name.')).toBeVisible()
+  await dialog.getByRole('textbox', { name: /^Name/ }).fill('  UAB   Gavort ')
+  await dialog.getByLabel('Internal code').fill('GV')
+  await dialog.getByLabel('Country').fill('lt')
+  await dialog.getByRole('button', { name: 'Add Company' }).click()
+  await expect(dialog).toHaveCount(0)
+  const gavort = page.getByRole('row', { name: /UAB Gavort/ })
+  await expect(gavort).toContainText('Default')
+  await expect(gavort).toContainText('LT')
+
+  await page.getByRole('button', { name: 'Add Company' }).click()
+  await dialog.getByRole('textbox', { name: /^Name/ }).fill('UAB Statyba')
+  await dialog.getByRole('button', { name: 'Add Company' }).click()
+  await expect(dialog).toHaveCount(0)
+  const statyba = page.getByRole('row', { name: /UAB Statyba/ })
+  await expect(statyba).not.toContainText('Default')
+
+  // Make Default moves it; the default is never deleted.
+  await statyba.getByRole('button', { name: 'More actions for UAB Statyba' }).click()
+  await page.getByRole('menuitem', { name: 'Make Default' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'UAB Statyba is now the default company.' })).toBeVisible()
+  await expect(statyba).toContainText('Default')
+  await expect(gavort).not.toContainText('Default')
+  await statyba.getByRole('button', { name: 'More actions for UAB Statyba' }).click()
+  await page.getByRole('menuitem', { name: 'Delete company…' }).click()
+  await expect(page.getByText('The default company cannot be deleted. Make another company the default first.')).toBeVisible()
+  // UAB Gavort again, for Add New Employee and the SIM emails later.
+  await gavort.getByRole('button', { name: 'More actions for UAB Gavort' }).click()
+  await page.getByRole('menuitem', { name: 'Make Default' }).click()
+  await expect(gavort).toContainText('Default')
+  await expect(statyba).not.toContainText('Default')
 })
 
 test('Mail Templates: an administrator edits the SIM activation email, with its fields and a preview', async () => {
@@ -1795,7 +1830,7 @@ test('Employees: the Missing sizes tile\'s address opens the list filtered', asy
   await missingTab.hover()
   await expect(page.locator('[data-slot=tooltip-content]')).toContainText('Add the sizes with Edit Sizes')
   await page.mouse.move(0, 0)
-  await expect(page.getByRole('button', { name: /^All/ })).toHaveAccessibleDescription(/^Every employee, with the sizes saved/)
+  await expect(page.getByRole('button', { name: /^Employees/ })).toHaveAccessibleDescription(/^People employed by one of the companies now/)
   await page.getByRole('button', { name: /^Missing a size/ }).click()
   await expect(page.getByRole('row', { name: /Ona Kazlauskienė/ })).toBeVisible()
 })
@@ -1857,8 +1892,11 @@ test('Employees: Export starts select mode; the ticked employees, with the colum
   const sheetXml = unzipStored(bytes).get('xl/worksheets/sheet1.xml') ?? ''
   const cells = [...sheetXml.matchAll(/<t xml:space="preserve">([^<]*)<\/t>/g)].map((m) => m[1])
   // The header row in the columns' order, then her row: numbers are <v> cells, text inline strings.
-  expect(cells.slice(0, 7)).toEqual(['Name', 'Code', 'Height (cm)', 'Clothing size', 'Shoe size', 'Preferred language', 'Notes'])
+  expect(cells.slice(0, 9)).toEqual(['Name', 'Status', 'Company', 'Code', 'Height (cm)', 'Clothing size', 'Shoe size', 'Preferred language', 'Notes'])
   expect(cells).toContain('Ona Kazlauskienė')
+  // Her status and the company she is employed by, the default one Add New Employee chose.
+  expect(cells).toContain('Employee')
+  expect(cells).toContain('UAB Gavort')
   expect(cells).toContain('Русский')
   expect(cells).toContain('Prefers Russian. Collects on Fridays.')
   // A finished export ends select mode: the checkboxes go, and a row opens again.
@@ -1994,6 +2032,8 @@ test('Employees: a possible duplicate is caught on Add and merged', async () => 
   await page.getByRole('button', { name: 'Add New Employee' }).click()
   await dialog.getByLabel('First name').fill('ONA')
   await dialog.getByLabel('Last name').fill('KAZLAUSKIENE')
+  // As a candidate: two records employed now are not merged (one employment is ended first).
+  await dialog.getByRole('button', { name: 'Candidate', exact: true }).click()
   await dialog.getByRole('button', { name: 'Add as New Employee' }).click()
   await expect(dialog).toBeHidden()
   const notice = page.getByRole('status').filter({ hasText: 'may be the same person' })
@@ -2032,6 +2072,61 @@ test('Employees: a possible duplicate is caught on Add and merged', async () => 
   await edit.getByLabel('Notes').fill('Prefers Russian. Collects on Fridays.')
   await edit.getByRole('button', { name: 'Save' }).click()
   await expect(edit).toBeHidden()
+})
+
+test('Employees: a candidate is employed, moved to another company and their employment ended; the tabs follow', async () => {
+  await openTab('Employees')
+  const tabs = page.getByRole('group', { name: 'Show' })
+  await expect(tabs.getByRole('button', { name: /^Employees/ })).toHaveAttribute('aria-pressed', 'true')
+
+  // Add New Employee chooses the default company first; a candidate needs none.
+  await page.getByRole('button', { name: 'Add New Employee' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Add New Employee' })
+  await expect(dialog.getByLabel('Company').locator('option:checked')).toHaveText('UAB Gavort')
+  await dialog.getByRole('button', { name: 'Candidate', exact: true }).click()
+  await expect(dialog.getByLabel('Company')).toHaveCount(0)
+  await dialog.getByLabel('First name').fill('Lukas')
+  await dialog.getByLabel('Last name').fill('Kandidatas')
+  await dialog.getByRole('button', { name: 'Save' }).click()
+  await expect(dialog).toBeHidden()
+  const row = page.getByRole('row', { name: /Lukas Kandidatas/ })
+  await expect(row).toHaveCount(0)
+  await tabs.getByRole('button', { name: /^Candidates/ }).click()
+  await row.getByRole('link', { name: 'Lukas Kandidatas' }).click()
+  const pane = page.getByRole('complementary', { name: 'Employee' })
+  const employment = pane.getByRole('region', { name: 'Employment' })
+  await expect(employment).toContainText('Not employed yet: a candidate')
+
+  // Employ at the other company, from today.
+  await employment.getByRole('button', { name: 'Employ…' }).click()
+  const employ = page.getByRole('dialog', { name: 'Employ Lukas Kandidatas' })
+  await employ.getByLabel('Company').selectOption({ label: 'UAB Statyba' })
+  await employ.getByRole('button', { name: 'Employ', exact: true }).click()
+  await expect(employ).toBeHidden()
+  await expect(employment).toContainText('Employed by')
+  await expect(employment).toContainText('UAB Statyba')
+
+  // Move to Another Company: the current employment ends the day the next starts.
+  await employment.getByRole('button', { name: 'Move to Another Company…' }).click()
+  const move = page.getByRole('dialog', { name: 'Move Lukas Kandidatas to Another Company' })
+  await expect(move.getByLabel('Company').locator('option')).not.toContainText(['UAB Statyba'])
+  await move.getByLabel('Company').selectOption({ label: 'UAB Gavort' })
+  await move.getByRole('button', { name: 'Move', exact: true }).click()
+  await expect(move).toBeHidden()
+  await expect(employment.getByRole('definition').first()).toHaveText('UAB Gavort')
+  await expect(employment.getByRole('listitem')).toContainText(['UAB Statyba'])
+
+  // End Employment: a former employee, the badge says so.
+  await employment.getByRole('button', { name: 'End Employment…' }).click()
+  const end = page.getByRole('dialog', { name: 'End Employment: Lukas Kandidatas' })
+  await end.getByRole('button', { name: 'End Employment', exact: true }).click()
+  await expect(end).toBeHidden()
+  await expect(employment).toContainText('Not employed now: a former employee.')
+  await expect(pane.getByText('Former employee', { exact: true })).toBeVisible()
+  await tabs.getByRole('button', { name: /^Former/ }).click()
+  await expect(row).toBeVisible()
+  await tabs.getByRole('button', { name: /^Employees/ }).click()
+  await expect(row).toHaveCount(0)
 })
 
 test('a reorder link starts the order with the item at the quantity given; the stepper changes it', async () => {

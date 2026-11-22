@@ -1,13 +1,17 @@
-import type { Employee, EmployeeInput, EmployeeMatch, Sizes } from '@ppe/api-client'
+import type { Company, Employee, EmployeeInput, EmployeeMatch, NewEmployeeInput, Sizes } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Field, Input, Select, Textarea, controlProps } from '@ppe/ui/components/field'
+import { DateInput } from '@ppe/ui/components/date-input'
 import { FormSheet, FormSheetActions } from '@ppe/ui/components/form-sheet'
-import { errorText } from '@ppe/ui/lib/use-load'
+import { Segmented } from '@ppe/ui/components/segmented'
+import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { type FormEvent, useEffect, useId, useState } from 'react'
 
 import { DuplicateWarning } from '@/components/duplicate-employees'
 import { isLang, languages, t } from '@/i18n'
+import { todayIn } from '@/lib/assets'
+import { defaultCompanyId } from '@/lib/employment'
 import { blankToNull, clothingBandValue, clothingBands } from '@/lib/utils'
 
 interface Props {
@@ -37,6 +41,10 @@ interface Draft {
   notes: string
   /** en, lt or ru; '' when not set. */
   preferred_language: string
+  /** Add New Employee's: an employee of companyId from startedOn, or a candidate. */
+  kind: 'employee' | 'candidate'
+  companyId: string
+  startedOn: string
 }
 
 function draftOf(e: Employee | undefined): Draft {
@@ -49,6 +57,9 @@ function draftOf(e: Employee | undefined): Draft {
     shoe_size: e?.shoe_size ?? '',
     notes: e?.notes ?? '',
     preferred_language: e?.preferred_language ?? '',
+    kind: 'employee',
+    companyId: '',
+    startedOn: todayIn(undefined),
   }
 }
 
@@ -66,15 +77,28 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
   const [error, setError] = useState<string | undefined>()
   const [busy, setBusy] = useState(false)
   const bands = clothingBands(sizes?.clothing ?? [])
+  // Adding: the companies, the default chosen first. None yet: only a candidate can be added.
+  const companies = useLoad(() => (open && !employee ? client.companies.list() : Promise.resolve<Company[]>([])), [open, employee])
+  const noCompanies = !employee && !companies.loading && companies.data !== undefined && companies.data.length === 0
+  const [startProblem, setStartProblem] = useState<string>()
 
   useEffect(() => {
     if (open) {
+      setStartProblem(undefined)
       setD(draftOf(employee))
       setError(undefined)
       setMatches([])
       setCodeOwner(undefined)
     }
   }, [open, employee])
+
+  // After the reset above: the default company chosen first, once the companies are read.
+  useEffect(() => {
+    if (open && !employee && companies.data) {
+      const first = defaultCompanyId(companies.data)
+      setD((cur) => ({ ...cur, companyId: cur.companyId || first }))
+    }
+  }, [open, employee, companies.data])
 
   // Adding: once both names are typed, the employees already here with names
   // like them (the same words in any order, accents or script, or a slip of a
@@ -109,10 +133,14 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
   const heightError =
     height !== null && (!Number.isInteger(height) || height < 100 || height > 250) ? t.employees.heightRange : undefined
 
+  const employing = !employee && d.kind === 'employee' && !noCompanies
+  const companyError = employing && !d.companyId && !companies.loading && companies.data ? t.employment.chooseCompany : undefined
+
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (managesSizes && heightError) return
-    const input: EmployeeInput = {
+    if (employing && (!d.companyId || startProblem)) return
+    const input: EmployeeInput & NewEmployeeInput = {
       first_name: d.first_name,
       last_name: d.last_name,
       code: blankToNull(d.code),
@@ -122,6 +150,7 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
       notes: d.notes,
       preferred_language: isLang(d.preferred_language) ? d.preferred_language : null,
     }
+    if (employing) input.employment = { company_id: d.companyId, started_on: d.startedOn || null }
     setBusy(true)
     setError(undefined)
     try {
@@ -148,7 +177,7 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
           form={formId}
           onCancel={onClose}
           busy={busy}
-          disabled={!first || !last}
+          disabled={!first || !last || Boolean(companyError)}
           // With a possible duplicate showing, saying what Save does.
           submitLabel={!employee && (matches.length > 0 || codeOwner) ? t.employees.duplicates.addAsNew : submitLabel}
         />
@@ -162,6 +191,55 @@ export function EmployeeForm({ open, employee, sizes, onClose, onSaved, submitLa
           {(p) => <Input {...controlProps(p)} value={d.last_name} onChange={set('last_name')} />}
         </Field>
         {employee ? null : <DuplicateWarning matches={matches} codeOwner={codeOwner} sizes={sizes} onUse={onUseExisting} />}
+        {employee ? null : (
+          // Adding: an employee of a company (the default chosen), or a candidate, employed later.
+          <fieldset className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
+            <legend className="mb-2 text-sm font-medium">{t.employment.addAs}</legend>
+            {noCompanies ? null : (
+              <Segmented
+                className="sm:col-span-2"
+                options={[
+                  { value: 'employee' as const, label: t.employment.asEmployee },
+                  { value: 'candidate' as const, label: t.employment.asCandidate },
+                ]}
+                value={d.kind}
+                onChange={(v) => setD((cur) => ({ ...cur, kind: v }))}
+              />
+            )}
+            {noCompanies ? (
+              <p className="text-sm text-muted-foreground sm:col-span-2">{t.employment.noCompanies}</p>
+            ) : d.kind === 'candidate' ? (
+              <p className="text-sm text-muted-foreground sm:col-span-2">{t.employment.candidateHint}</p>
+            ) : (
+              <>
+                <Field label={t.employment.company} required error={companyError}>
+                  {(p) => (
+                    <Select {...controlProps(p)} value={d.companyId} onChange={set('companyId')}>
+                      <option value="">{t.employment.chooseCompany}</option>
+                      {(companies.data ?? []).map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+                <Field label={t.employment.startedOn} error={startProblem}>
+                  {(p) => (
+                    <DateInput
+                      {...controlProps(p)}
+                      value={d.startedOn}
+                      onChange={(v, problem) => {
+                        setD((cur) => ({ ...cur, startedOn: v }))
+                        setStartProblem(problem)
+                      }}
+                    />
+                  )}
+                </Field>
+              </>
+            )}
+          </fieldset>
+        )}
         <Field label={t.employees.employeeCode}>{(p) => <Input {...controlProps(p)} value={d.code} onChange={set('code')} />}</Field>
         {managesSizes ? (
           <>

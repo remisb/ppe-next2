@@ -11,14 +11,9 @@ export const employees = {
   searchPlaceholder: 'Search by name or code',
   searchLabel: 'Search employees',
   show: 'Show',
-  allTab: 'All',
   missingTab: 'Missing a size',
   // The tabs' tooltips, as SIM Cards' tabs have: what each lists.
   tabHelp: {
-    all: {
-      body: 'Every employee, with the sizes saved for their next orders.',
-      note: 'Deleted employees are left out; their past orders are kept.',
-    },
     missing: {
       body: 'Employees Create Order would ask a size for: no shoe size, or no clothing size and no height to suggest one from.',
       note: 'Add the sizes with Edit Sizes, or Create Order asks for them and can save them to the employee.',
@@ -62,7 +57,7 @@ export const employees = {
   newOrder: 'New order',
   notes: 'Notes',
   // Export (lib/employee-export.ts): the file's columns beyond the screen's own words.
-  exportColumns: { birthDate: 'Date of birth', nationality: 'Nationality', sex: 'Sex', added: 'Added' },
+  exportColumns: { status: 'Status', birthDate: 'Date of birth', nationality: 'Nationality', sex: 'Sex', added: 'Added' },
   // Export of an employee's Items given (lib/items-given-export.ts).
   itemsExport: {
     file: (name: string) => `Items given – ${name}`,
@@ -141,11 +136,13 @@ export const employees = {
         ? plural(n, { one: '# company asset, held now', other: `# company assets, ${held} held now` })
         : plural(n, { one: '# company asset, returned', other: '# company assets, returned' }),
     photos: (n: number) => plural(n, { one: '# photo', other: '# photos' }),
+    employments: (n: number) => plural(n, { one: '# employment', other: '# employments' }),
     history: 'Changes',
     nothingMoves: 'Nothing else moves: the record has no orders, company assets or photos.',
     snapshotsKept: 'Receipts and signed forms keep the name they were signed with.',
     documentsKept: (name: string) => `${name} has identity documents, so that record is the one kept.`,
     bothHaveDocuments: 'Both records have identity documents, so they cannot be merged. Remove one record’s documents first.',
+    bothEmployed: (a: string, b: string) => `Both records are employed now (${a}, ${b}), so they cannot be merged. End one employment first, on the record that will be removed.`,
     submit: 'Merge Employees',
     confirm: (removed: string, kept: string) => `Merge ${removed} into ${kept}? This cannot be undone.`,
     merged: (removed: string, kept: string) => `${removed} merged into ${kept}.`,

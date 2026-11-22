@@ -14,6 +14,9 @@ export function employeeExportColumns(can: { sizes: boolean; profile: boolean })
     { key: 'name', label: t.employees.name, value: (e) => e.full_name, shown: true },
     { key: 'first_name', label: t.employees.firstName, value: (e) => e.first_name },
     { key: 'last_name', label: t.employees.lastName, value: (e) => e.last_name },
+    // Employment: everyone's who sees the employee.
+    { key: 'status', label: t.employees.exportColumns.status, value: (e) => t.employment.status[e.status], shown: true },
+    { key: 'company', label: t.employment.company, value: (e) => e.company?.name ?? null, shown: true },
     { key: 'code', label: t.employees.code, value: (e) => e.code, shown: true, needs: 'profile' },
     { key: 'height', label: t.employees.heightLabel, value: (e) => e.height_cm, shown: true, needs: 'sizes' },
     // The EU number as saved (46), so a spreadsheet sorts and counts it; the screen's "S (44–46)" is a label of it.

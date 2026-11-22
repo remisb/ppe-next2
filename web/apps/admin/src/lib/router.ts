@@ -61,10 +61,12 @@ export type Route =
   | { name: 'security'; tab: SecurityTab; filter: SecurityFilter }
   /** Who uses the system and how: activity, sign-ins, changes, devices, links, data quality. */
   | { name: 'usage' }
-  /** The organisation's settings (the company, the supplier's WhatsApp group, the SIM providers). */
+  /** The organisation's settings (the supplier's WhatsApp group, the SIM providers, AI). */
   | { name: 'settings' }
   /** The companies catalogue items are bought from. */
   | { name: 'suppliers' }
+  /** The companies employees are employed by, and the default one. */
+  | { name: 'companies' }
   /** The templates of the emails the app prepares; key is the one open (/mail-templates/<key>). */
   | { name: 'mailTemplates'; key?: MailTemplateKey }
   /** The API, the database, the error list (error: the one open beside it) and the backups. */
@@ -83,6 +85,7 @@ const paths: Record<Exclude<Route['name'], 'audit' | 'security' | 'system' | 'ma
   usage: '/usage',
   settings: '/settings',
   suppliers: '/suppliers',
+  companies: '/companies',
 }
 
 /** The permissions that open each screen (any one of them), in the Main navigation's order. */
@@ -97,6 +100,7 @@ export const screens: readonly { name: Screen; permissions: readonly Permission[
   { name: 'settings', permissions: ['settings.manage'] },
   { name: 'mailTemplates', permissions: ['mail_templates.manage'] },
   { name: 'suppliers', permissions: ['suppliers.manage'] },
+  { name: 'companies', permissions: ['companies.manage'] },
   { name: 'apps', permissions: ['apps.manage'] },
 ]
 

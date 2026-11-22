@@ -192,8 +192,10 @@ Rules for using it:
 ## 2. Employees and sizes
 
 ### Employee
-- **Brief:** a person workwear is ordered for and given to.
-- **Detail:** has a first and last name (required), an optional **employee code** (unique
+- **Brief:** a person workwear is ordered for and given to; one employed by a company now.
+- **Detail:** the employee record also keeps [candidates](#candidate) and [former
+  employees](#former-employee): its **status** says which, derived from its
+  [employments](#employment). Has a first and last name (required), an optional **employee code** (unique
   among live employees), size defaults (height, clothing size, shoe size), notes, and a
   preferred language. An employee does not sign in. Deleting one is a soft delete; their
   orders keep the name snapshot. Full name is derived, never stored. Planned: an employee
@@ -205,6 +207,43 @@ Rules for using it:
   beside the list, the employee's page (`/employees/<id>/page`, from anywhere else, and **Open
   page** beside the list), **Add New Employee**, **Edit details**, **Merge with…**, **Delete
   employee…**.
+
+### Company
+- **Brief:** one of the organisation's own companies, which employees are employed by.
+- **Detail:** a name (required), an optional internal code (unique among live companies),
+  company and VAT codes, an address and notes, managed on Administration's **Companies**
+  (**Manage Companies**, `companies.manage`). Not a [supplier](#supplier), a company items are
+  bought from. One that employs anyone now, and the default, are not deleted.
+- **Code:** `internal/domain/company`, table `companies` (migration 0057). **UI:** Companies,
+  **Add Company**, **Edit**, **Make Default**, **Delete company…**.
+
+### Default company
+- **Brief:** the company Add New Employee chooses first, and whose name emails write.
+- **Detail:** at most one; the first company added is it, and **Make Default** moves it. It
+  replaced Settings' [Company name](#company-name).
+- **Code:** `companies.is_default`; `company.Service.Default`. **UI:** a **Default** badge.
+
+### Employment
+- **Brief:** a period of a person at a company: from a day (the first day) to the day they
+  left, or open.
+- **Detail:** one open at a time, never overlapping. **Employ…**, **Move to Another
+  Company…** (ends the current one the day the next starts), **End Employment…**, and Edit or
+  Remove a period entered by mistake, on the employee's page. Not Personnel's **Mark Employment
+  Ended**, which keeps its own day for retention.
+- **Code:** `employee.Employment`, table `employments` (migration 0058). **UI:** the
+  **Employment** section, **Employed from**, **Employed until**, **Employed by**.
+
+### Candidate
+- **Brief:** a person kept who is not employed yet and may be employed later.
+- **Detail:** an employee record without any employment; added with Add New Employee's
+  **Candidate**. Orders and company assets may be given to a candidate. Not "applicant".
+- **Code:** `employee.StatusCandidate`. **UI:** the **Candidates** tab, a **Candidate** badge.
+
+### Former employee
+- **Brief:** a person whose employment has ended.
+- **Detail:** their orders and the assets they held stay on their record; Employ… takes them
+  on again.
+- **Code:** `employee.StatusFormer`. **UI:** the **Former** tab, a **Former employee** badge.
 
 ### Possible duplicate
 - **Brief:** two employee records whose names are alike, so they may be one person.
@@ -921,9 +960,10 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   was one default plan for all providers.
 
 ### Company name
-- **Brief:** the organisation's name as its emails write it, on Settings.
-- **Code:** `settings.CompanyName`, `company_name`; the mail template field
-  `{{company.name}}`. **UI:** **Company** on Settings, **Company name**.
+- **Brief:** the organisation's name as its emails write it: the [default company](#default-company)'s.
+- **Detail:** until migration 0057 it was a field on Settings (**Company**, **Company name**),
+  which became the first company.
+- **Code:** the mail template field `{{company.name}}`.
 
 ### Connection status
 - **Brief:** what the provider says about a SIM card's service: **Not Activated**, **Active**
@@ -1321,6 +1361,10 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Clear order | Išvalyti užsakymą | Очистить заказ |
 | Orders | Užsakymai | Заказы |
 | Employees | Darbuotojai | Сотрудники |
+| Employees / Candidates / Former (tabs) | Darbuotojai / Kandidatai / Buvę | Сотрудники / Кандидаты / Бывшие |
+| Candidate / Former employee | Kandidatas / Buvęs darbuotojas | Кандидат / Бывший сотрудник |
+| Employment / Employed by / Employed from / Employed until | Įdarbinimas / Dirba / Dirba nuo / Dirbo iki | Трудоустройство / Работает в / Работает с / Работал до |
+| Employ… / Move to Another Company… / End Employment… | Įdarbinti… / Perkelti į kitą įmonę… / Baigti darbą… | Принять на работу… / Перевести в другую компанию… / Завершить работу… |
 | Item Catalogue | Prekių katalogas | Каталог предметов |
 | Item Set / Item Sets | Prekių rinkinys / Prekių rinkiniai | Набор предметов / Наборы предметов |
 | Add Item Set | Pridėti rinkinį | Добавить набор |
@@ -1415,6 +1459,8 @@ screens are built):
 | Default plan | Numatytasis planas | Тариф по умолчанию |
 | E-mail (a provider's) | El. paštas | E-mail |
 | Company / Company name | Įmonė / Įmonės pavadinimas | Компания / Название компании |
+| Companies / Add Company / Delete company… | Įmonės / Pridėti įmonę / Ištrinti įmonę… | Компании / Добавить компанию / Удалить компанию… |
+| Default company / Default / Make Default | Numatytoji įmonė / Numatytoji / Padaryti numatytąja | Компания по умолчанию / По умолчанию / Сделать по умолчанию |
 | Not Activated / Active / Blocked | Neaktyvuota / Aktyvi / Užblokuota | Не активирована / Активна / Заблокирована |
 | Change Status | Keisti būseną | Изменить статус |
 | Office / With Employee / Unknown | Biure / Pas darbuotoją / Nežinoma | В офисе / У сотрудника / Неизвестно |
@@ -1493,6 +1539,9 @@ App Launcher (the source is `@ppe/launcher`'s `text.ts`):
 | SIM card, SIM Card (in the UI), SIM kortelė, SIM-карта | **SIM**, **SIMs** | Since 2026-10-10 the screens say SIM; the code and these docs may still say SIM card. |
 | ICCID (on screen) | **SIM No.** | The code checks an ICCID; people know the number on the card. |
 | "employee" for a user | **user**, **staff member**, **the employee role** | An Employee receives workwear and never signs in. |
+| applicant, recruit, prospect | **candidate** | The record of a person not employed yet; "applicant" suggests a hiring process the app does not have. |
+| employer, organisation, legal entity (for the employing company) | **company** | A supplier is a company too: say **supplier** for one items are bought from. |
+| hired, fired, dismissed | **Employ…**, **End Employment…** | Neutral words, the same for any reason a person starts or leaves. |
 | draft order, pending, partial, outstanding (as statuses) | **working order**; **Ordered** | Only ORDERED and GIVEN exist; a working order is not stored. |
 | delivered, received, completed, closed | **Given** | The status is GIVEN, set only by a confirmation. A SIM card's **Received Date** (from the provider) is the one exception. |
 | hand-over, issue, allocation (for an asset) | **assignment**; **Give SIM** / **Give Asset** | Hand-over mode is workwear's in-person confirmation. |

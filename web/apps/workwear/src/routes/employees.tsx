@@ -1,4 +1,4 @@
-import type { Employee, EmployeePair, Sizes } from '@ppe/api-client'
+import type { Employee, EmployeePair, EmployeeStatus, Sizes } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { Button } from '@ppe/ui/components/button'
@@ -31,6 +31,8 @@ import { EmployeeAvatar } from '@/components/employee-photo'
 import { addPhotos, photoRefusal, useRowFileDrop } from '@/lib/photo-drop'
 import { employeeActions } from '@/lib/employee-actions'
 import { employeeExportColumns } from '@/lib/employee-export'
+import { STATUSES, countByStatus } from '@/lib/employment'
+import { StatusBadge } from '@/components/employment-section'
 import { employeeFacts, missingLabel } from '@/lib/records'
 import { type NavigateOptions, type Route, linkOpening } from '@/lib/router'
 import { clothingBandValue, clothingBands, clothingSizeLabel, formatSize } from '@/lib/utils'
@@ -38,14 +40,16 @@ import { clothingBandValue, clothingBands, clothingSizeLabel, formatSize } from 
 /** An employee's key in the selection; a module constant, so the hook's memos hold. */
 const employeeId = (e: Employee) => e.id
 
-type EmployeeSort = 'name' | 'code' | 'height' | 'clothing' | 'shoes'
+type EmployeeSort = 'name' | 'company' | 'code' | 'height' | 'clothing' | 'shoes'
 
 /** Fixed column widths; the name takes the rest. */
-const employeeWidths: Partial<Record<EmployeeSort, string>> = { code: 'w-32', height: 'w-24', clothing: 'w-40', shoes: 'w-32' }
+// The company only where the table has the room (72rem): beside the sizes it would squeeze the names.
+const employeeWidths: Partial<Record<EmployeeSort, string>> = { company: 'hidden w-44 @6xl/table:table-cell', code: 'w-32', height: 'w-24', clothing: 'w-40', shoes: 'w-32' }
 
 // A function, so the labels are read in the language in use.
 const employeeColumns = (): SortColumn<EmployeeSort>[] => [
   { key: 'name', label: t.employees.name, kind: 'text' },
+  { key: 'company', label: t.employment.company, kind: 'text' },
   { key: 'code', label: t.employees.code, kind: 'text' },
   { key: 'height', label: t.employees.height, kind: 'number' },
   { key: 'clothing', label: t.employees.clothing, kind: 'size' },
@@ -77,10 +81,19 @@ export function Employees({
   const sizes = useLoad(() => client.sizes())
   // Clothing sizes are named as the pickers name them: 46 is "S (44–46)".
   const bands = useMemo(() => clothingBands(sizes.data?.clothing ?? []), [sizes.data])
-  const columns = employeeColumns().filter((c) => (c.key === 'code' ? seesProfile : c.key === 'name' || seesSizes))
+  // The companies, for the Company column and filter, shown when there is more than one.
+  const companies = useLoad(() => client.companies.list())
+  const severalCompanies = (companies.data?.length ?? 0) > 1
   const [filter, setFilter] = useState('')
-  // Only those Create Order would flag for a missing size.
-  const [onlyMissing, setOnlyMissing] = useState(missing && seesSizes)
+  // The status tab: Employees, Candidates or Former; or Missing a size (anyone not a former employee).
+  const [tab, setTab] = useState<EmployeeStatus | 'missing'>(missing && seesSizes ? 'missing' : 'employee')
+  const onlyMissing = tab === 'missing'
+  // A company chosen in the filter (the open employment's), '' for all; on the Employees and Missing tabs.
+  const [company, setCompany] = useState('')
+  const companyShown = severalCompanies && (tab === 'employee' || tab === 'missing')
+  const columns = employeeColumns().filter((c) =>
+    c.key === 'company' ? severalCompanies && tab !== 'candidate' && tab !== 'former' : c.key === 'code' ? seesProfile : c.key === 'name' || seesSizes,
+  )
   const [editing, setEditing] = useState<Employee | 'new' | null>(null)
   const [sizing, setSizing] = useState<Employee | null>(null)
   const action = useAction()
@@ -89,13 +102,18 @@ export function Employees({
   const shown = useMemo(() => {
     const q = filter.trim().toLowerCase()
     const matching = (employees.data ?? []).filter(
-      (e) => (!q || `${e.full_name} ${e.code ?? ''}`.toLowerCase().includes(q)) && (!onlyMissing || isMissingASize(e)),
+      (e) =>
+        (!q || `${e.full_name} ${e.code ?? ''}`.toLowerCase().includes(q)) &&
+        (onlyMissing ? e.status !== 'former' && isMissingASize(e) : e.status === tab) &&
+        (!companyShown || !company || e.company?.id === company),
     )
     // Clothing (EU) and shoe sizes are numbers, so they sort as numbers.
     return sortRows(matching, sort, (e, key) => {
       switch (key) {
         case 'name':
           return e.full_name
+        case 'company':
+          return e.company?.name ?? null
         case 'code':
           return e.code
         case 'height':
@@ -106,9 +124,10 @@ export function Employees({
           return e.shoe_size ? Number(e.shoe_size) : null
       }
     })
-  }, [employees.data, filter, onlyMissing, sort])
+  }, [employees.data, filter, tab, onlyMissing, company, companyShown, sort])
   const sortProps = { sort, onSort: setSort }
-  const missingCount = seesSizes ? (employees.data ?? []).filter(isMissingASize).length : 0
+  const missingCount = seesSizes ? (employees.data ?? []).filter((e) => e.status !== 'former' && isMissingASize(e)).length : 0
+  const counts = countByStatus(employees.data ?? [])
 
   const remove = (e: Employee) =>
     action.run(
@@ -173,29 +192,40 @@ export function Employees({
       />
       {/* As on every list: the tabs first, then the search. */}
       <div data-slot="filter-bar" className="mb-4 flex flex-col gap-3">
-        {missingCount > 0 || onlyMissing ? (
-          // The same tabs as Orders, each with its tooltip.
-          <Segmented
-            label={t.employees.show}
-            options={[
-              { value: 'all', label: t.employees.allTab, help: t.employees.tabHelp.all, count: employees.data?.length ?? 0 },
-              { value: 'missing', label: t.employees.missingTab, help: t.employees.tabHelp.missing, count: missingCount },
-            ]}
-            value={onlyMissing ? 'missing' : 'all'}
-            // Missing sizes again shows everyone, as before.
-            onChange={(v) => setOnlyMissing(v === 'missing' && !onlyMissing)}
-          />
-        ) : null}
-        <Input
-          type="search"
-          enterKeyHint="search"
-          placeholder={t.employees.searchPlaceholder}
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          aria-label={t.employees.searchLabel}
-          data-shortcut="search"
-          className="md:max-w-sm"
+        {/* The same tabs as Orders, each with its tooltip: the status, then Missing a size when anyone is; on a phone they scroll sideways. */}
+        <Segmented
+          layout="scroll"
+          label={t.employees.show}
+          options={[
+            ...STATUSES.map((s) => ({ value: s, label: t.employment.tabs[s], help: t.employment.tabHelp[s], count: counts[s] })),
+            ...(missingCount > 0 || onlyMissing ? [{ value: 'missing' as const, label: t.employees.missingTab, help: t.employees.tabHelp.missing, count: missingCount }] : []),
+          ]}
+          value={tab}
+          // Missing a size again goes back to Employees.
+          onChange={(v) => setTab(v === 'missing' && onlyMissing ? 'employee' : v)}
         />
+        <div className="flex flex-wrap gap-2">
+          <Input
+            type="search"
+            enterKeyHint="search"
+            placeholder={t.employees.searchPlaceholder}
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            aria-label={t.employees.searchLabel}
+            data-shortcut="search"
+            className="min-w-0 flex-1 md:max-w-sm"
+          />
+          {companyShown ? (
+            <Select aria-label={t.employment.companyFilter} value={company} onChange={(e) => setCompany(e.target.value)} className="w-auto max-w-full">
+              <option value="">{t.employment.allCompanies}</option>
+              {(companies.data ?? []).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+          ) : null}
+        </div>
       </div>
       {pairs.data && pairs.data.length > 0 ? (
         <DuplicatesNotice
@@ -215,7 +245,15 @@ export function Employees({
       <Loaded
         load={employees}
         empty={shown.length === 0}
-        emptyState={onlyMissing && !filter ? t.employees.everyoneHasSizes : filter ? t.employees.noMatch(filter.trim()) : t.employees.noneYet}
+        emptyState={
+          onlyMissing && !filter
+            ? t.employees.everyoneHasSizes
+            : filter
+              ? t.employees.noMatch(filter.trim())
+              : tab === 'candidate' || tab === 'former'
+                ? t.employment.noneInTab[tab]
+                : t.employees.noneYet
+        }
       >
         {() => (
           /*
@@ -282,6 +320,12 @@ export function Employees({
                           <a {...linkOpening({ name: 'employeePage', id: e.id }, () => open(e.id))} className={linkVariants()}>
                             {e.full_name}
                           </a>
+                          {/* On Missing a size a candidate says so; each tab is one status otherwise. */}
+                          {onlyMissing ? <StatusBadge status={e.status} className="ml-2 align-middle" /> : null}
+                          {/* The company under the name where its column has no room. */}
+                          {e.company && columns.some((c) => c.key === 'company') ? (
+                            <p className="truncate text-xs font-normal text-muted-foreground stacked:hidden @6xl/table:hidden">{e.company.name}</p>
+                          ) : null}
                           {/* The note on one line under the name, in full on hover and on the employee's page. */}
                           {e.notes ? (
                             <p title={e.notes} className="max-w-xs truncate text-xs font-normal text-muted-foreground stacked:hidden">
@@ -296,13 +340,16 @@ export function Employees({
                       ) : null}
                     </TableCell>
                     <TableCell className="hidden stacked:col-start-2 stacked:row-start-2 stacked:block stacked:text-xs stacked:text-muted-foreground">
-                      {employeeFacts(e, bands) || (seesSizes ? t.employees.noSizesSaved : null)}
+                      {[columns.some((c) => c.key === 'company') ? e.company?.name : null, employeeFacts(e, bands) || (seesSizes ? t.employees.noSizesSaved : null)]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </TableCell>
                     {e.notes ? (
                       <TableCell title={e.notes} className="hidden stacked:col-start-2 stacked:row-start-3 stacked:block stacked:truncate stacked:text-xs stacked:text-muted-foreground">
                         {e.notes}
                       </TableCell>
                     ) : null}
+                    {columns.some((c) => c.key === 'company') ? <TableCell className="hidden truncate @6xl/table:table-cell stacked:hidden">{e.company?.name ?? '–'}</TableCell> : null}
                     {seesProfile ? <TableCell className="stacked:hidden">{e.code ?? '–'}</TableCell> : null}
                     {seesSizes ? (
                       <>

@@ -1,5 +1,5 @@
 import { deviceText, sourceLabel } from '@ppe/audit'
-import type { ErrorEvent, LauncherApp, LiveSession, Role, Supplier, User } from '@ppe/api-client'
+import type { Company, ErrorEvent, LauncherApp, LiveSession, Role, Supplier, User } from '@ppe/api-client'
 import { languages } from '@ppe/i18n'
 import { appName, launcherText } from '@ppe/launcher'
 import { type ExportColumn, exportMoment } from '@ppe/ui/lib/table-export'
@@ -35,6 +35,24 @@ export function roleExportColumns(): ExportColumn<Role>[] {
     { key: 'description', label: t.roles.descriptionLabel, value: (r) => r.description || null },
     { key: 'permissions', label: t.roles.permissions, value: (r) => r.permissions.map(permissionLabel).join(', ') || null, shown: true },
     { key: 'users', label: t.roles.users, value: (r) => r.user_count, shown: true },
+  ]
+}
+
+/** Companies: every field of the record; the list's own (name, code, place, default, employees) ticked. */
+export function companyExportColumns(): ExportColumn<Company>[] {
+  const text = (v: string) => v || null
+  return [
+    { key: 'name', label: t.companies.name, value: (c) => c.name, shown: true },
+    { key: 'code', label: t.companies.code, value: (c) => text(c.code), shown: true },
+    { key: 'default', label: t.companies.defaultBadge, value: (c) => (c.is_default ? t.companies.defaultBadge : null), shown: true },
+    { key: 'company_code', label: t.companies.companyCode, value: (c) => text(c.company_code) },
+    { key: 'vat_code', label: t.companies.vatCode, value: (c) => text(c.vat_code) },
+    { key: 'address', label: t.companies.address, value: (c) => text(c.address) },
+    { key: 'city', label: t.companies.city, value: (c) => text(c.city), shown: true },
+    { key: 'postal_code', label: t.companies.postalCode, value: (c) => text(c.postal_code) },
+    { key: 'country', label: t.companies.country, value: (c) => text(c.country), shown: true },
+    { key: 'employees', label: t.companies.employees, value: (c) => c.employee_count, shown: true },
+    { key: 'notes', label: t.companies.notes, value: (c) => text(c.notes) },
   ]
 }
 

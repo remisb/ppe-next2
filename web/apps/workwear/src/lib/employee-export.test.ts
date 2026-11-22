@@ -20,6 +20,8 @@ const ruta: Employee = {
   sex: 'F',
   created_at: '2026-03-01T08:00:00Z',
   updated_at: '2026-03-01T08:00:00Z',
+  status: 'employee',
+  company: null,
 }
 
 describe('employeeExportColumns', () => {
@@ -29,6 +31,8 @@ describe('employeeExportColumns', () => {
       'name',
       'first_name',
       'last_name',
+      'status',
+      'company',
       'code',
       'height',
       'clothing',
@@ -40,15 +44,17 @@ describe('employeeExportColumns', () => {
       'sex',
       'added',
     ])
-    expect(cols.filter((c) => c.shown).map((c) => c.key)).toEqual(['name', 'code', 'height', 'clothing', 'shoes'])
+    expect(cols.filter((c) => c.shown).map((c) => c.key)).toEqual(['name', 'status', 'company', 'code', 'height', 'clothing', 'shoes'])
   })
 
   it('leaves out what the reader may not see', () => {
-    expect(employeeExportColumns({ sizes: false, profile: false }).map((c) => c.key)).toEqual(['name', 'first_name', 'last_name', 'added'])
+    expect(employeeExportColumns({ sizes: false, profile: false }).map((c) => c.key)).toEqual(['name', 'first_name', 'last_name', 'status', 'company', 'added'])
     expect(employeeExportColumns({ sizes: true, profile: false }).map((c) => c.key)).toEqual([
       'name',
       'first_name',
       'last_name',
+      'status',
+      'company',
       'height',
       'clothing',
       'shoes',
@@ -60,5 +66,7 @@ describe('employeeExportColumns', () => {
     const value = Object.fromEntries(employeeExportColumns({ sizes: true, profile: true }).map((c) => [c.key, c.value(ruta)]))
     expect(value).toMatchObject({ height: 168, clothing: 46, shoes: 38, notes: null, birth_date: '1990-04-02', sex: 'F', added: '2026-03-01' })
     expect(value.language).toBe('Lietuvių')
+    expect(value.status).toBe('Employee')
+    expect(value.company).toBeNull()
   })
 })

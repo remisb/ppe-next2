@@ -27,6 +27,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
+	"github.com/remisb/ppe-next2/internal/domain/company"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
@@ -118,6 +119,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		employeephoto.NewPostgresRepository(pool),
 		catalogue.NewPostgresRepository(pool),
 		supplier.NewPostgresRepository(pool),
+		company.NewPostgresRepository(pool),
 		itemset.NewPostgresRepository(pool),
 		order.NewPostgresRepository(pool),
 		asset.NewPostgresRepository(pool),
@@ -261,6 +263,7 @@ type services struct {
 	photos    *employeephoto.Service
 	catalogue *catalogue.Service
 	suppliers *supplier.Service
+	companies *company.Service
 	itemSets  *itemset.Service
 	orders    *order.Service
 	assets    *asset.Service
@@ -295,7 +298,7 @@ type services struct {
 
 // newServices builds every service from its repository and wires the
 // cross-domain adapters in checkers.go.
-func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, photos employeephoto.Repository, items catalogue.Repository, suppliers supplier.Repository, sets itemset.Repository, orders order.Repository, assets asset.Repository, store files.Store, codes asset.Sealer, board dashboard.Repository, prefs settings.Repository, templates mailtemplate.Repository, apps launcher.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
+func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, sessions *session.Service, sec *security.Service, roles *role.Service, users *user.Service, employees employee.Repository, photos employeephoto.Repository, items catalogue.Repository, suppliers supplier.Repository, companies company.Repository, sets itemset.Repository, orders order.Repository, assets asset.Repository, store files.Store, codes asset.Sealer, board dashboard.Repository, prefs settings.Repository, templates mailtemplate.Repository, apps launcher.Repository, backups backup.Repository, trail audit.Store, sys system.Store, use usage.Store, pool *pgxpool.Pool) services {
 	metrics := monitor.NewMetrics(pool)
 	s := services{
 		sessions:  sessions,
@@ -304,6 +307,7 @@ func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, s
 		users:     users,
 		assets:    asset.NewService(assets, asset.WithLocation(loc), asset.WithFiles(store), asset.WithSealer(codes)),
 		suppliers: supplier.NewService(suppliers),
+		companies: company.NewService(companies),
 		dashboard: dashboard.NewService(board, dashboard.WithLocation(loc)),
 		settings:  settings.NewService(prefs),
 		templates: mailtemplate.NewService(templates),
@@ -318,8 +322,8 @@ func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, s
 		jobs:      &jobRuns{},
 		usage:     usage.NewService(use, usage.WithLocation(loc)),
 	}
-	asset.WithMailer(assetMailer{templates: s.templates, settings: s.settings, users: s.users})(s.assets)
-	s.employees = employee.NewService(employees, employee.WithHoldings(s.assets))
+	asset.WithMailer(assetMailer{templates: s.templates, settings: s.settings, companies: s.companies, users: s.users})(s.assets)
+	s.employees = employee.NewService(employees, employee.WithHoldings(s.assets), employee.WithCompanies(employeeCompanies{s.companies}))
 	s.photos = employeephoto.NewService(photos, employeephoto.WithFiles(store))
 	s.catalogue = catalogue.NewService(items, catalogue.WithSuppliers(catalogueSuppliers{s.suppliers}))
 	s.itemSets = itemset.NewService(sets, catalogueChecker{s.catalogue})
@@ -347,6 +351,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerEmployeePhotoRoutes(rt, svc.photos)
 	registerCatalogueRoutes(rt, svc.catalogue)
 	registerSupplierRoutes(rt, svc.suppliers)
+	registerCompanyRoutes(rt, svc.companies)
 	registerItemSetRoutes(rt, svc.itemSets)
 	registerOrderRoutes(rt, svc.orders)
 	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)

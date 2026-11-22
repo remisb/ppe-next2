@@ -27,7 +27,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 }
 
 // columns are the app_settings columns read writes and scans, in its order.
-const columns = `company_name, supplier_chat_name, supplier_chat_link, default_sim_provider, default_sim_non_return_value_cents,
+const columns = `supplier_chat_name, supplier_chat_link, default_sim_provider, default_sim_non_return_value_cents,
 	updated_at, updated_by_user_id`
 
 // querier is what reading needs, the pool or a transaction.
@@ -44,7 +44,7 @@ func read(ctx context.Context, q querier, lock bool) (Settings, error) {
 		sql += ` FOR UPDATE`
 	}
 	var s Settings
-	err := q.QueryRow(ctx, sql).Scan(&s.CompanyName, &s.SupplierChat.Name, &s.SupplierChat.Link, &s.DefaultSIMProvider,
+	err := q.QueryRow(ctx, sql).Scan(&s.SupplierChat.Name, &s.SupplierChat.Link, &s.DefaultSIMProvider,
 		&s.DefaultSIMNonReturnValueCents, &s.UpdatedAt, &s.UpdatedByUserID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Settings{SIMProviders: []SIMProvider{}}, nil
@@ -88,13 +88,12 @@ func (r *PostgresRepository) Update(ctx context.Context, m Mutation) (Settings, 
 		}
 		// The first write inserts the row; two at once meet in the conflict clause.
 		if _, err := tx.Exec(ctx, `
-			INSERT INTO app_settings (`+columns+`) VALUES ($1, $2, $3, $4, $5, $6, $7)
-			ON CONFLICT (singleton) DO UPDATE SET company_name = EXCLUDED.company_name,
-				supplier_chat_name = EXCLUDED.supplier_chat_name, supplier_chat_link = EXCLUDED.supplier_chat_link,
+			INSERT INTO app_settings (`+columns+`) VALUES ($1, $2, $3, $4, $5, $6)
+			ON CONFLICT (singleton) DO UPDATE SET supplier_chat_name = EXCLUDED.supplier_chat_name, supplier_chat_link = EXCLUDED.supplier_chat_link,
 				default_sim_provider = EXCLUDED.default_sim_provider,
 				default_sim_non_return_value_cents = EXCLUDED.default_sim_non_return_value_cents,
 				updated_at = EXCLUDED.updated_at, updated_by_user_id = EXCLUDED.updated_by_user_id`,
-			next.CompanyName, next.SupplierChat.Name, next.SupplierChat.Link, next.DefaultSIMProvider, next.DefaultSIMNonReturnValueCents,
+			next.SupplierChat.Name, next.SupplierChat.Link, next.DefaultSIMProvider, next.DefaultSIMNonReturnValueCents,
 			next.UpdatedAt, next.UpdatedByUserID); err != nil {
 			return err
 		}

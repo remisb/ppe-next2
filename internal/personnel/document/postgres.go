@@ -148,6 +148,14 @@ func (r *PostgresRepository) Save(ctx context.Context, rec SaveRecord) error {
 				VALUES ($1, $2, $3, $4, '', $5, $5, $6, $6)`, e.ID, e.FirstName, e.LastName, e.Code, now, actor); err != nil {
 				return err
 			}
+			// Employed by the default company, from a day not recorded, as migration 0058 employed
+			// everyone kept before; without a company yet the person is a candidate.
+			if _, err := tx.Exec(ctx, `
+				INSERT INTO employments (id, employee_id, company_id, created_at, updated_at, created_by_user_id, updated_by_user_id)
+				SELECT gen_random_uuid(), $1, c.id, $2, $2, $3, $3 FROM companies c WHERE c.is_default AND c.deleted_at IS NULL`,
+				e.ID, now, actor); err != nil {
+				return err
+			}
 			cur = *e
 		} else {
 			cur.ID = rec.EmployeeID

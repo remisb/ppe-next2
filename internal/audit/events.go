@@ -13,7 +13,7 @@ const (
 	AreaItemSets  Area = "item_sets"
 	AreaOrders    Area = "orders"
 	AreaAssets    Area = "assets"   // Company Assets
-	AreaSettings  Area = "settings" // Settings, AI settings, mail templates and App Launcher's tiles
+	AreaSettings  Area = "settings" // Settings, AI settings, companies, mail templates and App Launcher's tiles
 	AreaSecurity  Area = "security" // the access review
 	AreaAudit     Area = "audit"    // the Audit log's own exports and purges
 )
@@ -42,7 +42,7 @@ var areas = []struct {
 	{AreaItemSets, []string{"item_set"}},
 	{AreaOrders, []string{"order"}},
 	{AreaAssets, []string{"asset"}},
-	{AreaSettings, []string{"settings", "mail_template", "app"}},
+	{AreaSettings, []string{"settings", "company", "mail_template", "app"}},
 	{AreaSecurity, []string{"access_review"}},
 	{AreaAudit, []string{EntityLog}},
 }
@@ -57,6 +57,7 @@ var events = []string{
 	"role.created", "role.updated", "role.deleted",
 	"employee.created", "employee.updated", "employee.sizes_changed", "employee.deleted",
 	"employee.merged", "employee.merged_away", "employee.marked_distinct",
+	"employee.employed", "employee.employment_changed", "employee.employment_ended", "employee.employment_removed",
 	"employee.photo_added", "employee.photo_uses_changed", "employee.photo_default_changed", "employee.photo_removed",
 	"personnel.document_recorded", "personnel.document_superseded", "personnel.document_updated", "personnel.document_shown",
 	"personnel.document_removed", "personnel.employment_ended", "personnel.employment_end_cleared",
@@ -73,6 +74,7 @@ var events = []string{
 	"asset.sim_codes_changed", "asset.sim_codes_shown",
 	"settings.company_changed", "settings.supplier_chat_changed", "settings.default_sim_provider_changed", "settings.sim_providers_changed",
 	"settings.ai_changed", "settings.ai_key_set", "settings.ai_key_removed",
+	"company.created", "company.updated", "company.made_default", "company.deleted",
 	"mail_template.changed",
 	"app.registered", "app.changed", "app.audience_changed", "app.moved",
 	"app.version_published", "app.channel_moved", "app.channel_changed", "app.versions_pruned",

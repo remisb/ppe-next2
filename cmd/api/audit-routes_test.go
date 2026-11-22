@@ -8,6 +8,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
+	"github.com/remisb/ppe-next2/internal/domain/company"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
@@ -33,6 +34,7 @@ func TestEveryDomainEventIsKnown(t *testing.T) {
 		role.EventCreated, role.EventUpdated, role.EventDeleted,
 		employee.EventCreated, employee.EventUpdated, employee.EventSizesChanged, employee.EventDeleted,
 		employee.EventMerged, employee.EventMergedAway, employee.EventMarkedDistinct,
+		employee.EventEmployed, employee.EventEmploymentChanged, employee.EventEmploymentEnded, employee.EventEmploymentRemoved,
 		employeephoto.EventAdded, employeephoto.EventUsesChanged, employeephoto.EventDefaultChanged, employeephoto.EventRemoved,
 		document.EventRecorded, document.EventSuperseded, document.EventUpdated, document.EventShown, document.EventRemoved,
 		document.EventEmploymentEnded, document.EventEmploymentCleared, document.EventHoldSet, document.EventHoldCleared, document.EventFileShredded,
@@ -49,6 +51,7 @@ func TestEveryDomainEventIsKnown(t *testing.T) {
 		asset.EventSIMCodesChanged, asset.EventSIMCodesShown,
 		settings.EventCompanyChanged, settings.EventSupplierChatChanged, settings.EventDefaultSIMProviderChanged, settings.EventSIMProvidersChanged,
 		aiusage.EventSettingsChanged, aiusage.EventKeySet, aiusage.EventKeyRemoved,
+		company.EventCreated, company.EventUpdated, company.EventMadeDefault, company.EventDeleted,
 		mailtemplate.EventChanged,
 		launcher.EventRegistered, launcher.EventChanged, launcher.EventAudienceChanged, launcher.EventMoved,
 		launcher.EventVersionPublished, launcher.EventChannelMoved, launcher.EventChannelChanged, launcher.EventVersionsPruned,

@@ -5,7 +5,7 @@ import "github.com/remisb/ppe-next2/internal/domain/role"
 // administration opens a screen of Administration (the web's
 // ADMINISTRATION_PERMISSIONS in @ppe/app-shell, the same list).
 var administration = []role.Permission{
-	role.UsersManage, role.RolesManage, role.SettingsManage, role.MailTemplatesManage, role.SuppliersManage, role.BackupsRead,
+	role.UsersManage, role.RolesManage, role.SettingsManage, role.MailTemplatesManage, role.SuppliersManage, role.CompaniesManage, role.BackupsRead,
 	role.AuditRead, role.SecurityRead, role.SystemRead, role.UsageRead, role.AppsManage,
 }
 

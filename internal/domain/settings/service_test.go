@@ -263,29 +263,3 @@ func TestUpdateSIMProvidersRejects(t *testing.T) {
 		t.Fatalf("a refused save recorded events: %+v", repo.events)
 	}
 }
-
-func TestUpdateCompany(t *testing.T) {
-	svc, repo := newTestService()
-	ctx := context.Background()
-	actor := uuid.New()
-	s, err := svc.UpdateCompany(ctx, CompanyParams{Name: "  UAB   Gavort "}, actor)
-	if err != nil || s.CompanyName != "UAB Gavort" || s.UpdatedByUserID != actor {
-		t.Fatalf("set: %+v, %v", s, err)
-	}
-	if len(repo.events) != 1 || repo.events[0].Event != EventCompanyChanged || string(repo.events[0].Before) != `{"name":""}` ||
-		string(repo.events[0].After) != `{"name":"UAB Gavort"}` {
-		t.Fatalf("events = %+v", repo.events)
-	}
-	if _, err := svc.UpdateCompany(ctx, CompanyParams{Name: "UAB Gavort"}, actor); err != nil || len(repo.events) != 1 {
-		t.Fatalf("unchanged: %v, %d events", err, len(repo.events))
-	}
-	if s, err := svc.UpdateCompany(ctx, CompanyParams{}, actor); err != nil || s.CompanyName != "" || len(repo.events) != 2 {
-		t.Fatalf("cleared: %+v, %v, %d events", s, err, len(repo.events))
-	}
-	if _, err := svc.UpdateCompany(ctx, CompanyParams{Name: strings.Repeat("a", maxCompanyNameLen+1)}, actor); !errors.Is(err, ErrInvalid) {
-		t.Fatalf("too long: err = %v", err)
-	}
-	if _, err := svc.UpdateCompany(ctx, CompanyParams{Name: "X"}, uuid.Nil); !errors.Is(err, ErrInvalid) {
-		t.Fatalf("no actor: err = %v", err)
-	}
-}

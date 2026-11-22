@@ -10,6 +10,7 @@ import (
 
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
+	"github.com/remisb/ppe-next2/internal/domain/company"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/mailtemplate"
@@ -41,6 +42,22 @@ func (c catalogueChecker) MissingItems(ctx context.Context, ids []uuid.UUID) ([]
 		}
 	}
 	return missing, nil
+}
+
+// employeeCompanies answers employee.Companies: a live company's name.
+type employeeCompanies struct{ companies *company.Service }
+
+var _ employee.Companies = employeeCompanies{}
+
+func (c employeeCompanies) CompanyName(ctx context.Context, id uuid.UUID) (string, bool, error) {
+	co, err := c.companies.Get(ctx, id)
+	switch {
+	case errors.Is(err, company.ErrNotFound):
+		return "", false, nil
+	case err != nil:
+		return "", false, err
+	}
+	return co.Name, true, nil
 }
 
 // catalogueSuppliers answers catalogue.Suppliers.
@@ -202,11 +219,12 @@ func (p personnelPeople) Pairs(ctx context.Context, ids []uuid.UUID) ([]document
 
 // assetMailer answers asset.Mailer: a SIM card's email from its mail
 // template, with the provider's e-mail, the provider's default plan for a card
-// without one, and the company's name from Settings, and the name and e-mail
-// of the user preparing it.
+// without one, the default company's name, and the name and e-mail of the
+// user preparing it.
 type assetMailer struct {
 	templates *mailtemplate.Service
 	settings  *settings.Service
+	companies *company.Service
 	users     *user.Service
 }
 
@@ -237,6 +255,11 @@ func (m assetMailer) SIMEmail(ctx context.Context, kind asset.EmailKind, card as
 	if err != nil && !errors.Is(err, user.ErrNotFound) {
 		return asset.Email{}, err
 	}
+	// No default company (none added yet) leaves the name to fill in.
+	org, err := m.companies.Default(ctx)
+	if err != nil && !errors.Is(err, company.ErrNotFound) {
+		return asset.Email{}, err
+	}
 	msg, err := m.templates.Render(ctx, key, map[string]string{
 		mailtemplate.FieldSIMNumber:       card.SIMNumber,
 		mailtemplate.FieldPhoneNumber:     card.PhoneNumber,
@@ -245,7 +268,7 @@ func (m assetMailer) SIMEmail(ctx context.Context, kind asset.EmailKind, card as
 		mailtemplate.FieldProviderName:    card.Provider,
 		mailtemplate.FieldProviderEmail:   provider.Email,
 		mailtemplate.FieldEmployeeName:    card.EmployeeName,
-		mailtemplate.FieldCompanyName:     prefs.CompanyName,
+		mailtemplate.FieldCompanyName:     org.Name,
 		mailtemplate.FieldUserName:        u.Name,
 		mailtemplate.FieldUserEmail:       u.Email,
 		mailtemplate.FieldToday:           card.Today,

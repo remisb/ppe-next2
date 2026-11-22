@@ -38,7 +38,7 @@ editor's preview fills in. Both SIM use cases have these fields:
 | `provider.name` | its provider, as the card records it | Provider |
 | `provider.email` | that provider's e-mail on Settings ([settings-service.md](settings-service.md)) | Provider E-mail |
 | `employee.name` | who holds it; empty when no one does | Employee |
-| `company.name` | the company's name on Settings | Company Name |
+| `company.name` | the default company's name ([company-service.md](company-service.md)); empty while there is no company | Company Name |
 | `user.name` | the signed-in user preparing the email | Your Name |
 | `user.email` | that user's e-mail, for a copy to themself | Your E-mail |
 | `today` | the day, in `API_ORG_TIMEZONE` (YYYY-MM-DD), from the asset service's clock | Date |
@@ -86,8 +86,8 @@ is saved.
 A domain that prepares an email declares the interface it needs. No domain imports
 another. The composition root adapts this service to that interface, adding values the
 domain does not hold. Company Assets declares `asset.Mailer`. `assetMailer` in
-`cmd/api/checkers.go` answers it with the provider's e-mail and the company's name from
-Settings, and the user's name and e-mail from the user service.
+`cmd/api/checkers.go` answers it with the provider's e-mail from Settings, the default company's
+name from the company service, and the user's name and e-mail from the user service.
 
 **Send Email** is `mailtoHref` in `web/apps/workwear/src/lib/assets.ts`, a `mailto:` link
 (RFC 6068). It puts the addresses of To in the path and those of Cc in `cc=`, then

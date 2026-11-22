@@ -3,12 +3,6 @@ import type { SettingsText } from '../en/settings'
 export const settings: SettingsText = {
   title: 'Настройки',
   description: 'Для всей организации. Меняют их только администраторы.',
-  company: 'Компания',
-  companyIntro: 'Шаблоны писем подставляют название компании там, где стоит {{company.name}}, например в письмах об активации и блокировке SIM.',
-  companyName: 'Название компании',
-  companyNameHint: 'Как его знают операторы, например UAB Gavort. Оставьте пустым, если его нет.',
-  companyIs: (name: string) => `В письмах пишется ${name}.`,
-  companyNotSet: 'Не задано: в письмах стоит [Company Name], которое вы впишете сами.',
   supplierChat: 'Группа поставщика в WhatsApp',
   supplierChatIntro:
     'Копировать для WhatsApp копирует сообщение о заказе и предлагает открыть эту группу, где его нужно вставить. WhatsApp не умеет открывать группу с уже набранным сообщением.',

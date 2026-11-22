@@ -134,8 +134,49 @@ export interface Employee {
   /** An ICAO code, as on the document (LTU). */
   nationality: string | null
   sex: 'M' | 'F' | 'X' | null
+  /** Derived from the employments: one open is an employee, only ended ones a former employee, none a candidate. */
+  status: EmployeeStatus
+  /** The open employment's company; null for a candidate or a former employee. */
+  company: { id: string; name: string } | null
+  /** The periods at companies, open first, then newest; GET /employees/{id} and the employment routes send them, lists leave them out. */
+  employments?: Employment[]
   created_at: string
   updated_at: string
+}
+
+/** Where a person stands, derived from their employments. */
+export type EmployeeStatus = 'employee' | 'candidate' | 'former'
+
+/**
+ * One period of an employee at a company. Dates are YYYY-MM-DD; started_on is
+ * null when not recorded (periods from before companies), ended_on null while
+ * open. ended_on is the day they left, so the next period may start that day.
+ */
+export interface Employment {
+  id: string
+  employee_id: string
+  company_id: string
+  /** The company's name now, deleted or not. */
+  company_name: string
+  started_on: string | null
+  ended_on: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** Body of POST /employees/{id}/employments (Employ; Move to Another Company with end_current). */
+export interface EmployInput {
+  company_id: string
+  started_on: string | null
+  /** Ends the open employment on started_on first; without it an open one is refused (409). */
+  end_current?: boolean
+}
+
+/** Body of PUT /employees/{id}/employments/{eid} (Edit Employment): every field is replaced. */
+export interface EmploymentInput {
+  company_id: string
+  started_on: string | null
+  ended_on: string | null
 }
 
 /** One photo of an employee; GET /employee-photos/{employee}/{id} sends the picture. */
@@ -164,6 +205,11 @@ export interface EmployeeInput {
   shoe_size: string | null
   notes: string
   preferred_language: Language | null
+}
+
+/** Body of POST /employees (Add New Employee): an employment for an employee, none for a candidate. */
+export interface NewEmployeeInput extends EmployeeInput {
+  employment?: { company_id: string; started_on: string | null }
 }
 
 /**
@@ -196,6 +242,10 @@ export interface EmployeeMergePreview {
     /** Of those, the ones still held. */
     open_assignments: number
     photos: string[]
+    /** Its employments, which move too. */
+    employments: string[]
+    /** Both are employed now: the merge is refused until one employment ends. */
+    both_employed: boolean
     keep_has_documents: boolean
     /** A record with identity documents cannot be the one removed: keep it instead. */
     remove_has_documents: boolean
@@ -310,6 +360,33 @@ export interface SupplierInput {
   website: string
   bank_account: string
   notes: string
+}
+
+/** The fields of a company a person sets (Add Company, Edit Company); every one is sent. */
+export interface CompanyInput {
+  /** Internal code, optional; unique among companies whatever the case when set. */
+  code: string
+  name: string
+  /** The company's registration number. */
+  company_code: string
+  vat_code: string
+  address: string
+  city: string
+  postal_code: string
+  /** ISO 3166-1 alpha-2 (LT), or empty. */
+  country: string
+  notes: string
+}
+
+/** One of the organisation's companies, which employees are employed by (GET /api/v1/companies). */
+export interface Company extends CompanyInput {
+  id: string
+  /** The default company: Add New Employee chooses it first, mail templates name it. One at most. */
+  is_default: boolean
+  /** The live employees employed by it now. */
+  employee_count: number
+  created_at: string
+  updated_at: string
 }
 
 /** A company catalogue items are bought from (GET /api/v1/suppliers). */
@@ -483,8 +560,6 @@ export interface HistoryQuery {
 export interface Settings {
   timezone: string
   currency: 'EUR'
-  /** The company's name, which mail templates write ({{company.name}}); null when not set. */
-  company_name: string | null
   /** The supplier's WhatsApp group, which Copy for WhatsApp opens for order messages; null when not set. */
   supplier_chat: SupplierChat | null
   /** The SIM providers Add SIM offers, in the administrator's order; empty when none are listed. */
@@ -903,6 +978,7 @@ export type AuditEntityType =
   | 'catalogue_item'
   | 'catalogue_picture'
   | 'supplier'
+  | 'company'
   | 'item_set'
   | 'order'
   | 'asset'

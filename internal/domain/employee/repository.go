@@ -15,15 +15,20 @@ import (
 // what the write replaced. A returned error aborts the write.
 type Mutation func(cur Employee) (Employee, []audit.Event, error)
 
+// EmploymentMutation computes the employments to write from the employee and
+// its live employments, locked, and the events to record.
+type EmploymentMutation func(cur Employee, jobs []Employment) ([]Employment, []audit.Event, error)
+
 // Repository is the persistence the employee service needs. Implementations
 // translate storage errors to this package's sentinels (ErrNotFound,
 // ErrCodeTaken, ErrActorNotFound, ErrInvalid) and never validate. Employees
 // read are live ones, with the derived DefaultPhotoID and the identity fields
 // filled; MergedInto and MergedFrom alone look at removed records.
 type Repository interface {
-	// Create inserts e and its event (none when ev is nil) in one transaction;
-	// ErrCodeTaken when a live employee has e's code.
-	Create(ctx context.Context, e Employee, ev *audit.Event) error
+	// Create inserts e, its Employments and evs in one transaction;
+	// ErrCodeTaken when a live employee has e's code, ErrCompanyNotFound when
+	// an employment's company is not live (checked under its row's share lock).
+	Create(ctx context.Context, e Employee, evs []audit.Event) error
 	// Get is live employee id; ErrNotFound when it is missing, deleted or
 	// merged away.
 	Get(ctx context.Context, id uuid.UUID) (Employee, error)
@@ -38,6 +43,16 @@ type Repository interface {
 	// (a soft delete included) and its events in one transaction; ErrNotFound
 	// when id is not live, and m's error as it is.
 	Update(ctx context.Context, id uuid.UUID, m Mutation) (Employee, error)
+	// Employments are live employee id's live employments, open first, then
+	// newest; [] for none.
+	Employments(ctx context.Context, id uuid.UUID) ([]Employment, error)
+	// UpdateEmployments locks live employee id FOR UPDATE (ErrNotFound), reads
+	// its live employments, applies m and writes each employment it returns
+	// (a new id inserted, a known one updated, its soft delete included) and
+	// its events in one transaction. A written employment whose company is new
+	// or changed needs that company live (ErrCompanyNotFound), checked under
+	// the company's row share lock. It returns the employee read back.
+	UpdateEmployments(ctx context.Context, id uuid.UUID, m EmploymentMutation) (Employee, error)
 	// IDByCode is the live employee with code (case-insensitive), if any.
 	IDByCode(ctx context.Context, code string) (uuid.UUID, bool, error)
 

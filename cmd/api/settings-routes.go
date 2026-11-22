@@ -20,20 +20,18 @@ type settingsHandler struct {
 func registerSettingsRoutes(rt *router, svc *settings.Service, timezone string) {
 	h := &settingsHandler{settings: svc, timezone: timezone}
 	rt.authenticated("GET /api/v1/settings", h.get)
-	rt.restricted("PUT /api/v1/settings/company", h.updateCompany, role.SettingsManage)
 	rt.restricted("PUT /api/v1/settings/supplier-chat", h.updateSupplierChat, role.SettingsManage)
 	rt.restricted("PUT /api/v1/settings/sim-providers", h.updateSIMProviders, role.SettingsManage)
 }
 
 // settingsJSON: timezone and currency come from config, the rest from the
-// settings service. company_name, supplier_chat, default_sim_provider and
+// settings service. supplier_chat, default_sim_provider and
 // default_sim_non_return_value_cents are null when not set; sim_providers is
 // a list, empty when there are none, each provider's email and default_plan
 // empty when not set.
 type settingsJSON struct {
 	Timezone                      string                 `json:"timezone"`
 	Currency                      string                 `json:"currency"`
-	CompanyName                   *string                `json:"company_name"`
 	SupplierChat                  *settings.SupplierChat `json:"supplier_chat"`
 	SIMProviders                  []settings.SIMProvider `json:"sim_providers"`
 	DefaultSIMProvider            *string                `json:"default_sim_provider"`
@@ -44,9 +42,6 @@ func (h *settingsHandler) toJSON(s settings.Settings) settingsJSON {
 	out := settingsJSON{Timezone: h.timezone, Currency: "EUR", SIMProviders: s.SIMProviders, DefaultSIMNonReturnValueCents: s.DefaultSIMNonReturnValueCents}
 	if out.SIMProviders == nil {
 		out.SIMProviders = []settings.SIMProvider{}
-	}
-	if n := s.CompanyName; n != "" {
-		out.CompanyName = &n
 	}
 	if s.SupplierChat.Set() {
 		chat := s.SupplierChat
@@ -60,30 +55,6 @@ func (h *settingsHandler) toJSON(s settings.Settings) settingsJSON {
 
 func (h *settingsHandler) get(w http.ResponseWriter, r *http.Request) {
 	s, err := h.settings.Get(r.Context())
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, h.toJSON(s))
-}
-
-// companyRequest sets the company's name; empty clears it.
-type companyRequest struct {
-	Name string `json:"name"`
-}
-
-func (h *settingsHandler) updateCompany(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	var req companyRequest
-	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, r, err)
-		return
-	}
-	s, err := h.settings.UpdateCompany(r.Context(), settings.CompanyParams{Name: req.Name}, actor)
 	if err != nil {
 		writeError(w, r, err)
 		return

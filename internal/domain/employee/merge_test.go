@@ -278,6 +278,10 @@ func TestMergeRefusals(t *testing.T) {
 	if _, err := svc.Merge(ctx, keep.ID, remove.ID, p, everything, testActor); !errors.Is(err, ErrMergePersonnel) {
 		t.Errorf("removed record with identity documents: err = %v", err)
 	}
+	repo.contents[remove.ID] = MergeContents{BothEmployed: true}
+	if _, err := svc.Merge(ctx, keep.ID, remove.ID, p, everything, testActor); !errors.Is(err, ErrBothEmployed) {
+		t.Errorf("both employed now: err = %v", err)
+	}
 	if _, err := svc.Get(ctx, remove.ID); err != nil {
 		t.Errorf("a refused merge removed the record: %v", err)
 	}

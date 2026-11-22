@@ -13,7 +13,7 @@ import (
 
 // Duplicates and merging (migration 0052): the code lookup a 409 names,
 // employee_distinct_pairs, and Merge Employees across employees, orders,
-// asset_assignments and employee_photos.
+// asset_assignments, employee_photos and employments.
 
 // IDByCode reads the live employee with code, compared as the unique index
 // does (lower); false when there is none.
@@ -106,7 +106,8 @@ func readPair(ctx context.Context, q querier, keepID, removeID uuid.UUID, lock b
 // contentsOf reads what moves from removeID to keepID (its orders, deleted
 // ones too, its assignments, open and returned, and its live photos, each
 // oldest first), how many of the assignments are open, and whether either
-// record has identity documents (personnel.subjects).
+// record has identity documents (personnel.subjects), its live employments,
+// and whether both are employed now.
 func contentsOf(ctx context.Context, q querier, keepID, removeID uuid.UUID) (MergeContents, error) {
 	c := MergeContents{}
 	ids := func(sql string) ([]uuid.UUID, error) {
@@ -136,11 +137,17 @@ func contentsOf(ctx context.Context, q querier, keepID, removeID uuid.UUID) (Mer
 	if c.Photos, err = ids(`SELECT id FROM employee_photos WHERE employee_id = $1 AND deleted_at IS NULL ORDER BY uploaded_at, id`); err != nil {
 		return c, err
 	}
+	if c.Employments, err = ids(`SELECT id FROM employments WHERE employee_id = $1 AND deleted_at IS NULL
+			ORDER BY started_on NULLS FIRST, created_at, id`); err != nil {
+		return c, err
+	}
 	err = q.QueryRow(ctx, `SELECT
 			(SELECT count(*) FROM asset_assignments WHERE employee_id = $2 AND returned_date IS NULL),
 			EXISTS (SELECT FROM personnel.subjects WHERE employee_id = $1),
-			EXISTS (SELECT FROM personnel.subjects WHERE employee_id = $2)`, keepID, removeID).
-		Scan(&c.OpenAssignments, &c.KeepHasDocuments, &c.RemoveHasDocuments)
+			EXISTS (SELECT FROM personnel.subjects WHERE employee_id = $2),
+			EXISTS (SELECT FROM employments WHERE employee_id = $1 AND ended_on IS NULL AND deleted_at IS NULL)
+				AND EXISTS (SELECT FROM employments WHERE employee_id = $2 AND ended_on IS NULL AND deleted_at IS NULL)`, keepID, removeID).
+		Scan(&c.OpenAssignments, &c.KeepHasDocuments, &c.RemoveHasDocuments, &c.BothEmployed)
 	return c, err
 }
 
@@ -186,6 +193,10 @@ func (r *PostgresRepository) Merge(ctx context.Context, keepID, removeID uuid.UU
 			return err
 		}
 		if _, err := tx.Exec(ctx, `UPDATE orders SET employee_id = $2 WHERE employee_id = $1`, removeID, keepID); err != nil {
+			return err
+		}
+		// Every period moves, removed ones too (Merge refuses two open ones).
+		if _, err := tx.Exec(ctx, `UPDATE employments SET employee_id = $2 WHERE employee_id = $1`, removeID, keepID); err != nil {
 			return err
 		}
 		// asset_assignments_guard lets whose an assignment is change only here (migration 0052).

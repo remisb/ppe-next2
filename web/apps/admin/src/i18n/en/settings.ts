@@ -1,13 +1,7 @@
-/** Settings: the organisation's settings an administrator changes (the company, the supplier's WhatsApp group, the SIM providers). */
+/** Settings: the organisation's settings an administrator changes (the supplier's WhatsApp group, the SIM providers, AI). */
 export const settings = {
   title: 'Settings',
   description: 'For the whole organisation. Only administrators change them.',
-  company: 'Company',
-  companyIntro: 'Mail templates write the company’s name where they use {{company.name}}, as in the SIM activation and blocking emails.',
-  companyName: 'Company name',
-  companyNameHint: 'As the providers know it, e.g. UAB Gavort. Leave it empty for none.',
-  companyIs: (name: string) => `Emails write ${name}.`,
-  companyNotSet: 'Not set: emails show [Company Name] for you to fill in.',
   supplierChat: "Supplier's WhatsApp group",
   supplierChatIntro:
     'Copy for WhatsApp copies an order message and offers to open this group, where you paste it. WhatsApp cannot open a group with the message already typed in.',

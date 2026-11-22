@@ -28,10 +28,11 @@ const (
 // check before Delete and, in merge.go, duplicates and merging. It is built
 // with NewService and stores through a Repository.
 type Service struct {
-	repo     Repository
-	now      func() time.Time
-	newID    func() uuid.UUID
-	holdings Holdings
+	repo      Repository
+	now       func() time.Time
+	newID     func() uuid.UUID
+	holdings  Holdings
+	companies Companies
 }
 
 // Holdings answers which company assets an employee holds now, by inventory
@@ -45,6 +46,10 @@ type Option func(*Service)
 
 // WithClock replaces the clock that stamps changes and events (tests).
 func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
+
+// WithCompanies lets employments name their companies; without it every
+// company is ErrCompanyNotFound.
+func WithCompanies(c Companies) Option { return func(s *Service) { s.companies = c } }
 
 // WithHoldings lets Delete refuse an employee who still holds company assets.
 func WithHoldings(h Holdings) Option { return func(s *Service) { s.holdings = h } }
@@ -111,7 +116,9 @@ func detailsChange(cur, next Employee) (before, after map[string]any) {
 	return before, after
 }
 
-// Create adds an employee. Only first and last name are required. It needs
+// Create adds an employee. Only first and last name are required. With
+// p.Employment the person is employed by its company from its day
+// (employee.employed besides employee.created); without, a candidate. It needs
 // may.Profile; without may.Sizes the employee starts with no size defaults,
 // whatever p says.
 func (s *Service) Create(ctx context.Context, p Params, may Rights, actor uuid.UUID) (Employee, error) {
@@ -138,17 +145,31 @@ func (s *Service) Create(ctx context.Context, p Params, may Rights, actor uuid.U
 	if err != nil {
 		return Employee{}, err
 	}
-	if err := s.repo.Create(ctx, e, ev); err != nil {
+	evs := []audit.Event{*ev}
+	e.Status, e.Employments = StatusCandidate, []Employment{}
+	if p.Employment != nil {
+		job, ev, err := s.employ(ctx, e, *p.Employment, actor, now)
+		if err != nil {
+			return Employee{}, err
+		}
+		e.Status, e.Company, e.Employments = StatusEmployee, &CompanyRef{ID: job.CompanyID, Name: job.CompanyName}, []Employment{job}
+		evs = append(evs, ev)
+	}
+	if err := s.repo.Create(ctx, e, evs); err != nil {
 		return Employee{}, s.codeErr(ctx, err, e.Code, e.ID)
 	}
 	return e, nil
 }
 
-// Get is a live employee. One merged into another is a MergedError naming it.
+// Get is a live employee with their employments. One merged into another is
+// a MergedError naming it.
 func (s *Service) Get(ctx context.Context, id uuid.UUID) (Employee, error) {
 	e, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return Employee{}, s.mergedErr(ctx, id, err)
+	}
+	if e.Employments, err = s.repo.Employments(ctx, id); err != nil {
+		return Employee{}, err
 	}
 	return e, nil
 }

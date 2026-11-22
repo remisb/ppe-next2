@@ -12,7 +12,9 @@ import (
 
 // The settings' audit events, all on AuditEntityID.
 const (
-	// EventCompanyChanged: the company's name, before and after as {name}.
+	// EventCompanyChanged was recorded when Settings held the company's name
+	// (migration 0039) and is no longer written: the name is the default
+	// company's since migration 0057. The audit log still reads the events.
 	EventCompanyChanged = "settings.company_changed"
 	// EventSupplierChatChanged: the supplier's group, before and after as
 	// {name, link}.
@@ -55,33 +57,6 @@ func NewService(repo Repository, opts ...Option) *Service {
 
 // Get is the settings, the defaults when none are stored.
 func (s *Service) Get(ctx context.Context) (Settings, error) { return s.repo.Get(ctx) }
-
-// UpdateCompany sets, changes or (empty) clears the company's name,
-// recording settings.company_changed when it differs.
-func (s *Service) UpdateCompany(ctx context.Context, p CompanyParams, actor uuid.UUID) (Settings, error) {
-	if actor == uuid.Nil {
-		return Settings{}, fieldError("actor", "is required")
-	}
-	if err := p.Validate(); err != nil {
-		return Settings{}, err
-	}
-	return s.repo.Update(ctx, func(cur Settings) (Settings, *audit.Event, error) {
-		if p.Name == cur.CompanyName {
-			return cur, nil, nil
-		}
-		now := s.now()
-		next := cur
-		next.CompanyName, next.UpdatedAt, next.UpdatedByUserID = p.Name, now, actor
-		type value struct {
-			Name string `json:"name"`
-		}
-		ev, err := audit.New(s.newID(), &actor, EventCompanyChanged, auditEntity, AuditEntityID, now, value{cur.CompanyName}, value{p.Name})
-		if err != nil {
-			return Settings{}, nil, err
-		}
-		return next, &ev, nil
-	})
-}
 
 // UpdateSupplierChat sets, changes or (both fields empty) clears the
 // supplier's WhatsApp group, recording settings.supplier_chat_changed when it differs.
