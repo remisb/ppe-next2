@@ -104,8 +104,8 @@ func (h *assetHandler) addSIMs(w http.ResponseWriter, r *http.Request) {
 
 // showSIMCodes is Show PIN and PUK. It records who saw them, so it is a
 // POST, and the answer is never stored by the browser or a proxy.
-func (h *assetHandler) showSIMCodes(w http.ResponseWriter, r *http.Request) {
-	id, actor, ok := idAndActor(w, r)
+func (h *assetHandler) showSIMCodes(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	actor, ok := actorOf(w, r)
 	if !ok {
 		return
 	}
@@ -119,8 +119,8 @@ func (h *assetHandler) showSIMCodes(w http.ResponseWriter, r *http.Request) {
 }
 
 // setSIMCodes keeps a SIM card's PIN and PUK in place of any it had.
-func (h *assetHandler) setSIMCodes(w http.ResponseWriter, r *http.Request) {
-	actor, id, req, ok := withAsset[simCodesBody](w, r)
+func (h *assetHandler) setSIMCodes(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	actor, req, ok := withBody[simCodesBody](w, r)
 	if !ok {
 		return
 	}
@@ -132,8 +132,8 @@ func (h *assetHandler) setSIMCodes(w http.ResponseWriter, r *http.Request) {
 }
 
 // clearSIMCodes forgets a SIM card's PIN and PUK.
-func (h *assetHandler) clearSIMCodes(w http.ResponseWriter, r *http.Request) {
-	id, actor, ok := idAndActor(w, r)
+func (h *assetHandler) clearSIMCodes(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
+	actor, ok := actorOf(w, r)
 	if !ok {
 		return
 	}
