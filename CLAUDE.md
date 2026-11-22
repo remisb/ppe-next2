@@ -297,7 +297,7 @@ make new-app SLUG=size-helper NAME='Size Helper' NAME_LT='…' NAME_RU='…'   #
 make backup-once      # back up the dev DB now (docker-compose.yml backup profile; volume ppe-next2-backups)
 make run              # go run ./cmd/api
 make vet
-make test             # go test -p 1 ./... — Postgres tests skip without API_TEST_DB_DSN
+make test             # go test -p 1 ./... with API_TEST_DB_DSN blanked, so Postgres tests skip
 make db-test-create   # create + migrate the <POSTGRES_DB>_test database
 make test-db          # all tests incl. Postgres ones (refuses if test DSN == main DSN)
 make e2e              # Playwright end-to-end; empties the _test DB, starts API :18090 + Vite :5181
