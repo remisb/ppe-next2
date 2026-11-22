@@ -181,7 +181,8 @@ the zip is kept `API_PERSONNEL_SCAN_DAYS` (3) days for its uploader alone, seale
 `personnel.scans` and `personnel-scans/{id}`, and erased by the upkeep (`PurgeExpired`).
 **Scan Documents** (`docs-scan`, built as a POC published app, device profile, `web/apps/docs-scan`: Scans, Camera, Details,
 Find Employee, Update, Merge, Add New, Saved, Adjust Corners as addresses (`lib/router.tsx`, one router in context), its rules
-`src/lib/flow.ts`, scans in progress in this tab's memory (`lib/sessions.tsx`); [plan](docs/apps/docs-scan-plan.md), every decision made 2026-11-21; ADR 0007's
+`src/lib/flow.ts`, scans in progress in this tab's memory (`lib/sessions.tsx`); the printed names offered and the date of issue
+taken after the MRZ (`@ppe/id-docs` `printed.ts`, `printed-reader.ts`: tesseract.js with `lit`, served from its `readers/`); [plan](docs/apps/docs-scan-plan.md), every decision made 2026-11-21; ADR 0007's
 amendment of that day) reads first, then finds the person (`POST …/personnel/documents/match`, built: `document/match.go`, its `People` port
 adapted in `cmd/api/checkers.go`), updates, merges or adds them; kept scans gain a state (`unread`/`read`/`saved`), `replaces`,
 a page route and a link to the saved document (migration 0056, built; `ppe_app` may update those three columns alone); its mockup is `docs/ux/mockups/docs-scan.html`. It replaces Import

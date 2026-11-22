@@ -1,4 +1,5 @@
 import type { DocumentCandidate, DocumentTake, IdentityDocumentKind, KeptScanState } from '@ppe/api-client'
+import type { PrintedName } from '@ppe/id-docs/printed'
 import type { PhotoReading, Turn } from '@ppe/mrz/reader'
 import type { Quad } from '@ppe/scan-kit/perspective'
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
@@ -31,6 +32,16 @@ export interface Saved {
   sides: Side[]
 }
 
+/** The printed text's reading: while it runs, and what it offered. */
+export interface Printed {
+  state: 'reading' | 'done' | 'failed'
+  /** The page the names were read on, and their printed lines. */
+  namesPage?: number
+  surname?: PrintedName
+  givenNames?: PrintedName
+  issuedOn?: string
+}
+
 /** A scan the app is working on: its kept scan's id, pages and draft. */
 export interface Session {
   id: string
@@ -41,6 +52,8 @@ export interface Session {
   saved?: Saved
   /** Find Employee's candidates, for Update to compare with. */
   candidates?: DocumentCandidate[]
+  /** The printed fields read after the MRZ (DS-14): names offered, the date of issue by its rule. */
+  printed?: Printed
   /** The two candidates Merge Employees joins, as Find Employee offered them. */
   pair?: { a: string; b: string }
   /** The employee a saved scan's document went to. */

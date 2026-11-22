@@ -335,6 +335,9 @@ importers:
       '@ppe/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@tesseract.js-data/lit':
+        specifier: 1.0.0
+        version: 1.0.0
       lucide-react:
         specifier: ^1.48.0
         version: 1.48.0(react@19.3.0)

@@ -17,6 +17,8 @@ export interface OcrWord {
   y0: number
   x1: number
   y1: number
+  /** Tesseract's confidence in the word, 0–100. */
+  confidence?: number
 }
 
 export interface TextRead {
@@ -24,6 +26,8 @@ export interface TextRead {
   /** Tesseract's confidence in the whole page, 0–100. */
   confidence: number
   words: OcrWord[]
+  /** The same words, line by line as the page lays them out (a printed field's value is a line). */
+  lines: { words: OcrWord[] }[]
 }
 
 export interface TextReaderOptions {
@@ -83,10 +87,10 @@ export function createTextReader(o: TextReaderOptions): TextReader {
     async read(image) {
       const w = await start()
       const { data } = await w.recognize(image, {}, { blocks: true, text: true })
-      const words: OcrWord[] = (data.blocks ?? []).flatMap((b) =>
-        b.paragraphs.flatMap((p) => p.lines.flatMap((l) => l.words.map((x) => ({ text: x.text, ...x.bbox })))),
+      const lines = (data.blocks ?? []).flatMap((b) =>
+        b.paragraphs.flatMap((p) => p.lines.map((l) => ({ words: l.words.map((x): OcrWord => ({ text: x.text, ...x.bbox, confidence: x.confidence })) }))),
       )
-      return { text: data.text, confidence: data.confidence, words }
+      return { text: data.text, confidence: data.confidence, words: lines.flatMap((l) => l.words), lines }
     },
     warmUp() {
       void start().catch(() => undefined)
