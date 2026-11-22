@@ -7,4 +7,5 @@ Norbert Schwarz's METAFONT sources. Its README says:
   without limitation."
 
 Used only to draw the synthetic specimen documents (make.ts) and the lines a
-Tesseract model is trained on (web/spikes/mrz/train); never served by an app.
+Tesseract model was trained on (web/spikes/mrz/train, removed on 2026-11-22;
+in git history at ee0fd074); never served by an app.
