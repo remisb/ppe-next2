@@ -2,7 +2,6 @@ package system
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -124,30 +123,20 @@ func (s *Service) VersionErrors(ctx context.Context, app string) (map[string]Ver
 // Errors is one page of the error list, last seen first; the first page also
 // counts the rows by kind.
 func (s *Service) Errors(ctx context.Context, f ErrorFilter) (ErrorPage, error) {
-	switch {
-	case f.Kind != "" && !IsKind(f.Kind):
+	if f.Kind != "" && !IsKind(f.Kind) {
 		return ErrorPage{}, fieldError("kind", "is not known")
-	case f.PageSize < 0 || f.PageSize > audit.MaxPageSize:
-		return ErrorPage{}, fieldError("page_size", fmt.Sprintf("must be between 1 and %d", audit.MaxPageSize))
 	}
-	limit := f.PageSize
-	if limit == 0 {
-		limit = audit.DefaultPageSize
+	limit, err := audit.PageLimit(f.PageSize, fieldError)
+	if err != nil {
+		return ErrorPage{}, err
 	}
+	// One more than the page shows tells whether another page follows.
 	rows, err := s.store.ListErrors(ctx, ErrorQuery{Kind: f.Kind, After: f.After, Limit: limit + 1})
 	if err != nil {
 		return ErrorPage{}, err
 	}
-	page := ErrorPage{Errors: rows}
-	if len(rows) > limit {
-		page.Errors = rows[:limit]
-		last := page.Errors[limit-1]
-		next := audit.Cursor{At: last.LastSeen, ID: last.ID}.String()
-		page.Next = &next
-	}
-	if page.Errors == nil {
-		page.Errors = make([]ErrorEvent, 0)
-	}
+	page := ErrorPage{}
+	page.Errors, page.Next = audit.NextPage(rows, limit, func(e ErrorEvent) audit.Cursor { return audit.Cursor{At: e.LastSeen, ID: e.ID} })
 	if f.After == nil {
 		counts, err := s.store.CountErrors(ctx)
 		if err != nil {

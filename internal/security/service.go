@@ -137,23 +137,15 @@ func (s *Service) List(ctx context.Context, f Filter) (Page, error) {
 	if err != nil {
 		return Page{}, err
 	}
+	// One more than the page shows tells whether another page follows.
 	limit := q.Limit
 	q.Limit++
 	rows, err := s.store.List(ctx, q)
 	if err != nil {
 		return Page{}, err
 	}
-	page := Page{Events: rows}
-	if len(rows) > limit {
-		page.Events = rows[:limit]
-		last := page.Events[limit-1]
-		next := audit.Cursor{At: last.OccurredAt, ID: last.ID}.String()
-		page.Next = &next
-	}
-	if page.Events == nil {
-		page.Events = make([]Entry, 0)
-	}
-	return page, nil
+	events, next := audit.NextPage(rows, limit, func(e Entry) audit.Cursor { return audit.Cursor{At: e.OccurredAt, ID: e.ID} })
+	return Page{Events: events, Next: next}, nil
 }
 
 // Sessions are every user's live sessions, last used first.

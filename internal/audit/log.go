@@ -133,7 +133,7 @@ type Page struct {
 
 // resolve checks f and turns it into a Query in loc.
 func (f Filter) resolve(loc *time.Location) (Query, error) {
-	q := Query{Event: f.Event, ActorID: f.ActorID, EntityID: f.EntityID, After: f.After, Limit: f.PageSize}
+	q := Query{Event: f.Event, ActorID: f.ActorID, EntityID: f.EntityID, After: f.After}
 	switch {
 	case f.Area != "" && entitiesOf(f.Area) == nil:
 		return Query{}, fieldError("area", "is not known")
@@ -145,11 +145,10 @@ func (f Filter) resolve(loc *time.Location) (Query, error) {
 		return Query{}, fieldError("entity_type", "is not known")
 	case f.Area != "" && f.EntityType != "" && AreaOf(f.EntityType) != f.Area:
 		return Query{}, fieldError("entity_type", "is not in area "+string(f.Area))
-	case f.PageSize < 0 || f.PageSize > MaxPageSize:
-		return Query{}, fieldError("page_size", fmt.Sprintf("must be between 1 and %d", MaxPageSize))
 	}
-	if q.Limit == 0 {
-		q.Limit = DefaultPageSize
+	var err error
+	if q.Limit, err = PageLimit(f.PageSize, fieldError); err != nil {
+		return Query{}, err
 	}
 	switch {
 	case f.EntityType != "":
@@ -157,23 +156,8 @@ func (f Filter) resolve(loc *time.Location) (Query, error) {
 	case f.Area != "":
 		q.EntityTypes = entitiesOf(f.Area)
 	}
-	if f.FromDate != "" {
-		d, err := time.ParseInLocation(dateLayout, f.FromDate, loc)
-		if err != nil {
-			return Query{}, fieldError("from", "must be a date YYYY-MM-DD")
-		}
-		q.From = &d
-	}
-	if f.ToDate != "" {
-		d, err := time.ParseInLocation(dateLayout, f.ToDate, loc)
-		if err != nil {
-			return Query{}, fieldError("to", "must be a date YYYY-MM-DD")
-		}
-		end := d.AddDate(0, 0, 1)
-		q.To = &end
-	}
-	if q.From != nil && q.To != nil && !q.From.Before(*q.To) {
-		return Query{}, fieldError("to", "must not be before from")
+	if q.From, q.To, err = DayRange(f.FromDate, f.ToDate, loc, fieldError); err != nil {
+		return Query{}, err
 	}
 	return q, nil
 }
