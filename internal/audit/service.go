@@ -87,17 +87,8 @@ func (s *Service) List(ctx context.Context, f Filter) (Page, error) {
 	if err != nil {
 		return Page{}, err
 	}
-	page := Page{Events: rows}
-	if len(rows) > limit {
-		page.Events = rows[:limit]
-		last := page.Events[limit-1]
-		next := Cursor{At: last.OccurredAt, ID: last.ID}.String()
-		page.Next = &next
-	}
-	if page.Events == nil {
-		page.Events = make([]Entry, 0)
-	}
-	return page, nil
+	events, next := NextPage(rows, limit, func(e Entry) Cursor { return Cursor{At: e.OccurredAt, ID: e.ID} })
+	return Page{Events: events, Next: next}, nil
 }
 
 // Get is one event, or ErrNotFound.

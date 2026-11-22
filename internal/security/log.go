@@ -73,39 +73,19 @@ type Page struct {
 	Next   *string `json:"next"`
 }
 
-// dateLayout is how from and to are written.
-const dateLayout = "2006-01-02"
-
 // resolve checks f and turns its days into instants in loc: From at the start
 // of its day, To at the start of the day after.
 func (f Filter) resolve(loc *time.Location) (Query, error) {
-	q := Query{Kind: f.Kind, UserID: f.UserID, After: f.After, Limit: f.PageSize}
-	switch {
-	case f.Kind != "" && !IsKind(f.Kind):
+	q := Query{Kind: f.Kind, UserID: f.UserID, After: f.After}
+	if f.Kind != "" && !IsKind(f.Kind) {
 		return Query{}, fieldError("kind", "is not known")
-	case f.PageSize < 0 || f.PageSize > audit.MaxPageSize:
-		return Query{}, fieldError("page_size", fmt.Sprintf("must be between 1 and %d", audit.MaxPageSize))
 	}
-	if q.Limit == 0 {
-		q.Limit = audit.DefaultPageSize
+	var err error
+	if q.Limit, err = audit.PageLimit(f.PageSize, fieldError); err != nil {
+		return Query{}, err
 	}
-	if f.FromDate != "" {
-		d, err := time.ParseInLocation(dateLayout, f.FromDate, loc)
-		if err != nil {
-			return Query{}, fieldError("from", "must be a date YYYY-MM-DD")
-		}
-		q.From = &d
-	}
-	if f.ToDate != "" {
-		d, err := time.ParseInLocation(dateLayout, f.ToDate, loc)
-		if err != nil {
-			return Query{}, fieldError("to", "must be a date YYYY-MM-DD")
-		}
-		end := d.AddDate(0, 0, 1)
-		q.To = &end
-	}
-	if q.From != nil && q.To != nil && !q.From.Before(*q.To) {
-		return Query{}, fieldError("to", "must not be before from")
+	if q.From, q.To, err = audit.DayRange(f.FromDate, f.ToDate, loc, fieldError); err != nil {
+		return Query{}, err
 	}
 	return q, nil
 }
