@@ -261,7 +261,7 @@ The workwear app is the reference.
   facts share a line.
 - **Orders** is the screen the code still calls History (`routes/history.tsx`, `t.history`,
   the route `history`): it was renamed for users only, so `t.orders` never sits beside
-  `t.order`. Its address is `/orders`; `/history` addresses still open it.
+  `t.order`. Its address is `/orders`.
 - **List and detail**: a row that has more to show opens it at its own address (Orders:
   `/orders/<id>`; Employees: `/employees/<id>`; SIM Cards and Equipment: `/assets/sim-cards/<id>`,
   `/assets/equipment/<id>`; Item Catalogue: `/catalogue/<id>`; Administration's Audit log and

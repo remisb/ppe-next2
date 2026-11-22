@@ -174,7 +174,7 @@ export function App() {
 
   // More closes when a section is chosen (any navigation) and on Escape.
   useEffect(() => setMoreOpen(false), [asked])
-  // Users, Settings and Backups are Administration's now: their old addresses, links and G then U go there.
+  // Users, Settings and Backups are Administration's: links and G then U go there.
   useEffect(() => {
     if (asked.name === 'administration') window.location.replace(adminHref(asked.path))
   }, [asked])

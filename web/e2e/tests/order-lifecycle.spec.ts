@@ -239,8 +239,8 @@ test('Administration shares the sign-in: signed in there at once, and Sign out t
   const staff = await signInElsewhere(browser, admin.email, admin.password)
   await throughLauncher(staff)
   await expect(staff.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
-  // The old addresses of its screens lead there.
-  await staff.goto(webURL + '/users')
+  // Its screens open signed in at once.
+  await staff.goto(webURL + '/admin/users')
   await expect(staff).toHaveURL(/\/admin\/users$/)
   await expect(staff.getByRole('heading', { name: 'Users' })).toBeVisible()
   const nav = staff.getByRole('navigation', { name: 'Main' })
@@ -2534,10 +2534,8 @@ test('Equipment & Furniture is for the Equipment Assignments role alone, an admi
   await expect(page.getByRole('heading', { name: 'SIM Cards', exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Equipment', exact: true })).toHaveCount(0)
   await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'SIM Cards' })).toHaveCount(0)
-  for (const address of ['/assets/equipment', '/assets?kind=equipment']) {
-    await page.goto(address)
-    await expect(page.getByRole('button', { name: 'Add SIM' })).toBeVisible()
-  }
+  await page.goto('/assets/equipment')
+  await expect(page.getByRole('button', { name: 'Add SIM' })).toBeVisible()
   await openTab('Dashboard')
   const assetsCard = page.getByRole('region', { name: 'Company Assets' })
   await expect(assetsCard.getByRole('link', { name: /Total SIMs/ })).toBeVisible()
@@ -3456,8 +3454,7 @@ test('Orders: only a manager deletes an order, after asking; it then leaves Orde
   const other = await signInElsewhere(browser, 'mia@example.com', 'mia-password-2')
   await throughLauncher(other)
   await expect(other.getByRole('heading', { name: 'Manager Dashboard' })).toBeVisible()
-  // The old address, from bookmarks and links already sent, opens the screen at its own.
-  await other.goto(webURL + '/history')
+  await other.goto(webURL + '/orders')
   await expect(other).toHaveURL(/\/orders$/)
   await other.getByRole('link', { name: paperRecord, exact: true }).click()
   const pane = other.getByRole('complementary', { name: 'Order' })

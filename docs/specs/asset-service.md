@@ -142,7 +142,7 @@ computer or phone is for the people given that role. Without it (`asset.Sight`, 
 - ⌘K Search (`by-number`) and the employee's assets (`by-employee`) leave equipment out;
 - the apps show no Equipment screen under Company Assets, no Equipment section on the
   employee page and no equipment figures on the dashboards' Company Assets card;
-  `/assets/equipment` (and the old `/assets?kind=equipment`) shows the SIM cards.
+  `/assets/equipment` shows the SIM cards.
 
 Giving, returning and editing equipment needs both `assets.manage` and `equipment.read`.
 Giving, returning and editing SIMs needs `sim_cards.manage` (with `sim_cards.read`). Delete employee still refuses an employee who holds any asset, and
@@ -537,8 +537,7 @@ The staff app's Company Assets, after Employees in the sidebar and rail and unde
 phone (G then A), opens its first screen, **SIM Cards** (`/assets/sim-cards`,
 `routes/assets.tsx`, rules in `lib/assets.ts`). With **Equipment** it is listed under
 Company Assets in the sidebar and in a phone's More panel; on the rail, which has no room
-for them, the screen switches between the two itself. The old address `/assets` (and `?kind=equipment`) opens the same screens and shows
-their own address:
+for them, the screen switches between the two itself:
 
 - **Tabs** (group "Status"), in place of tiles (§3's figures): All, Not Activated and
   Active, below the search and always in sight, a phone included. Blocked cards have no tab

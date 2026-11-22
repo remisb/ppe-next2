@@ -34,9 +34,6 @@ describe('router', () => {
     expect(parsePath(pathOf({ name: 'equipment', asset: 'e/1' }))).toEqual({ name: 'equipment', asset: 'e/1' })
     expect(pathOf({ name: 'equipment', tile: 'inOffice' })).toBe('/assets/equipment?show=in-office')
     expect(parsePath('/assets/equipment', '?show=in-office')).toEqual({ name: 'equipment', tile: 'inOffice' })
-    // The old address of the two registers, when they were tabs of one screen: bookmarks and links already sent.
-    expect(parsePath('/assets', '?show=in-office')).toEqual({ name: 'simCards', tile: 'inOffice' })
-    expect(parsePath('/assets', '?kind=equipment&show=not-returned')).toEqual({ name: 'equipment', tile: 'notReturned' })
     expect(parsePath(pathOf({ name: 'asset', id: 'a/1' }))).toEqual({ name: 'asset', id: 'a/1' })
     const draft = { name: 'assetForm', id: 'a1', draft: { employeeId: 'e1', givenDate: '2026-10-09', plan: 'Biz 10 GB', valueCents: 2500 }, print: true } as const
     expect(pathOf(draft)).toBe('/assets/a1/form?employee=e1&date=2026-10-09&plan=Biz+10+GB&value=2500&print=1')
@@ -55,17 +52,15 @@ describe('router', () => {
     expect(parsePath(pathOf({ name: 'confirm', token: 'Ab-_9' }))).toEqual({ name: 'confirm', token: 'Ab-_9' })
     expect(parsePath(pathOf({ name: 'history', order: 'o 1' }))).toEqual({ name: 'history', order: 'o 1' })
   })
-  it('sends the old addresses of Users, Settings and Backups on to Administration', () => {
-    expect(parsePath('/users')).toEqual({ name: 'administration', path: '/users' })
-    expect(parsePath('/settings/')).toEqual({ name: 'administration', path: '/settings' })
-    expect(parsePath('/backups')).toEqual({ name: 'administration', path: '/backups' })
+  it('opens retired addresses at the start screen, as any unknown one', () => {
+    for (const [path, search] of [['/history', ''], ['/history/o1', ''], ['/assets', '?kind=equipment'], ['/users', ''], ['/settings/', ''], ['/backups', '']] as const)
+      expect(parsePath(path, search)).toEqual({ name: 'home' })
   })
-  it('keeps the old History addresses, and tells an order from a new one and a record', () => {
+  it('tells an order from a new one and a record', () => {
     expect(pathOf({ name: 'history' })).toBe('/orders')
     expect(pathOf({ name: 'history', order: 'o1' })).toBe('/orders/o1')
-    expect(parsePath('/history')).toEqual({ name: 'history' })
-    expect(parsePath('/history', '?status=GIVEN')).toEqual({ name: 'history', status: 'GIVEN' })
-    expect(parsePath('/history/o1')).toEqual({ name: 'history', order: 'o1' })
+    expect(parsePath('/orders', '?status=GIVEN')).toEqual({ name: 'history', status: 'GIVEN' })
+    expect(parsePath('/orders/o1')).toEqual({ name: 'history', order: 'o1' })
     expect(parsePath('/orders/new')).toEqual({ name: 'createOrder' })
     expect(parsePath('/orders/o1/record')).toEqual({ name: 'record', id: 'o1' })
   })

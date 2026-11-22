@@ -118,8 +118,7 @@ with Use This Employee; Employees offers possible duplicates (Not the Same Perso
 **Merge Employees** (`employees.merge`, Administrator and Manager): one transaction moves the removed record's orders,
 asset assignments (`asset_assignments_guard` allows it only under `SET LOCAL ppe.employee_merge = on`) and photos,
 and removes it with `merged_into_id` (its reads answer 404 with `existing_id`); a record with identity documents is kept. Company Assets is two screens, listed under it in the rail, the sidebar and a phone's More panel: SIM Cards
-(`/assets/sim-cards`) and Equipment (`/assets/equipment`; the old `/assets?kind=…` still
-opens them). The SIM card register is on screen (`routes/assets.tsx`,
+(`/assets/sim-cards`) and Equipment (`/assets/equipment`). The SIM card register is on screen (`routes/assets.tsx`,
 `lib/assets.ts`: tabs with counts that filter, Add SIM, Change Status; a row opens the card
 beside the register at `/assets/sim-cards/<id>`, as Orders opens an order, and Equipment's at `/assets/equipment/<id>`) and the asset page (`/assets/<id>`, its detail
 `components/asset-detail.tsx` shared with that pane:
