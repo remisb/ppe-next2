@@ -360,20 +360,5 @@ func (h *personnelHandler) setHold(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ret)
 }
 
-// idAndActor reads the path's id and the signed-in actor, answering the error itself.
-func idAndActor(w http.ResponseWriter, r *http.Request) (uuid.UUID, uuid.UUID, bool) {
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
-		return uuid.Nil, uuid.Nil, false
-	}
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return uuid.Nil, uuid.Nil, false
-	}
-	return id, actor, true
-}
-
 // writeNoStore keeps an answer about a person's documents out of every cache.
 func writeNoStore(w http.ResponseWriter) { w.Header().Set("Cache-Control", "no-store") }

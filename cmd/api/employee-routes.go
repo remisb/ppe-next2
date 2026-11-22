@@ -149,14 +149,8 @@ func (h *employeeHandler) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *employeeHandler) update(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	var req employeeRequest
@@ -175,14 +169,8 @@ func (h *employeeHandler) update(w http.ResponseWriter, r *http.Request) {
 // updateSizes is Edit Sizes and Save as Employee Default. It replaces all three
 // size defaults; send the current values for any that should stay.
 func (h *employeeHandler) updateSizes(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	var req employeeSizesRequest
@@ -201,14 +189,8 @@ func (h *employeeHandler) updateSizes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *employeeHandler) delete(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	if err := h.employees.Delete(r.Context(), id, actor); err != nil {

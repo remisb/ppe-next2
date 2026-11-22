@@ -50,14 +50,8 @@ func registerSecurityRoutes(rt *router, svc services, sensitive func(role.Permis
 	}, role.SecurityRead)
 
 	rt.restricted("DELETE /api/v1/security/sessions/{id}", sensitive(role.UsersManage, func(w http.ResponseWriter, r *http.Request) {
-		actor, err := actorID(r)
-		if err != nil {
-			writeError(w, r, err)
-			return
-		}
-		id, err := parseUUIDPath(r, "id")
-		if err != nil {
-			writeError(w, r, err)
+		id, actor, ok := idAndActor(w, r)
+		if !ok {
 			return
 		}
 		s, err := svc.sessions.Live(r.Context(), id)

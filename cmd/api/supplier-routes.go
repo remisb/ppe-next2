@@ -95,14 +95,8 @@ func (h *supplierHandler) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *supplierHandler) update(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	var req supplierRequest
@@ -120,14 +114,8 @@ func (h *supplierHandler) update(w http.ResponseWriter, r *http.Request) {
 
 // delete soft-deletes the supplier; its items read as having none.
 func (h *supplierHandler) delete(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	if err := h.suppliers.Delete(r.Context(), id, actor); err != nil {

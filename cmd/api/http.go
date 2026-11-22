@@ -277,6 +277,21 @@ func parseUUIDPath(r *http.Request, key string) (uuid.UUID, error) {
 	return id, nil
 }
 
+// idAndActor reads the path's id and the signed-in actor, answering the error itself.
+func idAndActor(w http.ResponseWriter, r *http.Request) (uuid.UUID, uuid.UUID, bool) {
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return uuid.Nil, uuid.Nil, false
+	}
+	actor, err := actorID(r)
+	if err != nil {
+		writeError(w, r, err)
+		return uuid.Nil, uuid.Nil, false
+	}
+	return id, actor, true
+}
+
 // requireBool reads a required boolean field. Full-replace updates must not
 // turn an omitted flag into false.
 func requireBool(v *bool, field string, invalid error) (bool, error) {

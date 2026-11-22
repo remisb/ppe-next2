@@ -183,14 +183,8 @@ func (h *catalogueHandler) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *catalogueHandler) update(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	var req catalogueRequest
@@ -217,14 +211,8 @@ func (h *catalogueHandler) deactivate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *catalogueHandler) setActive(w http.ResponseWriter, r *http.Request, active bool) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	item, err := h.items.SetActive(r.Context(), id, active, actor)
@@ -238,14 +226,8 @@ func (h *catalogueHandler) setActive(w http.ResponseWriter, r *http.Request, act
 // move changes the item's place in the display order and answers every live
 // item in the new order.
 func (h *catalogueHandler) move(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	var req moveRequest
@@ -262,14 +244,8 @@ func (h *catalogueHandler) move(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *catalogueHandler) delete(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	if err := h.items.Delete(r.Context(), id, actor); err != nil {

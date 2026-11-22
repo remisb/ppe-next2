@@ -93,14 +93,8 @@ func (h *orderHandler) get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *orderHandler) delete(w http.ResponseWriter, r *http.Request) {
-	actor, err := actorID(r)
-	if err != nil {
-		writeError(w, r, err)
-		return
-	}
-	id, err := parseUUIDPath(r, "id")
-	if err != nil {
-		writeError(w, r, err)
+	id, actor, ok := idAndActor(w, r)
+	if !ok {
 		return
 	}
 	if err := h.orders.Delete(r.Context(), id, actor); err != nil {
