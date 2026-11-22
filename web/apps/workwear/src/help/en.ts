@@ -288,6 +288,9 @@ export const en: Guide = {
           p: '**Export** saves a list as a file for a spreadsheet: **Excel (.xlsx)** or **CSV**. It is at the top of **Orders**, **Employees**, **Item Catalogue**, **SIM Cards** and **Equipment**. On **Item Sets**, **Replacements due** and an employee\'s **Items given** it opens the **Export** window straight away, with every row.',
         },
         {
+          p: '**Export** is there only if one of your roles allows **Export data**. **Administrator**, **Manager** and **Employee** allow it, and an administrator can give it to other roles on **Roles & permissions**. Without it, no list shows **Export**.',
+        },
+        {
           p: 'Choose **Export** at the top of the list. Checkboxes appear beside the rows, and a bar above the list says what you are doing and how many rows are ticked, such as **Export Employees · 3 selected**. While it is there, clicking a row ticks it instead of opening it, and the row\'s own buttons are hidden. The box at the top of the column ticks every row shown.',
           devices: ['tablet', 'desktop'],
         },
@@ -306,7 +309,7 @@ export const en: Guide = {
         {
           p: 'The **Export** window names the rows you picked, such as **3 selected**; **Change** takes you back to the list to pick again. Tick the columns you want (those the screen shows are ticked already), choose **Excel (.xlsx)** or **CSV**, then **Export (3)**. The file, such as `Employees 2026-11-20.xlsx`, downloads with the rows in the list\'s order and the column names in your language. It holds only what you can see on the screen.',
         },
-        { p: 'In **Administration** the same **Export** is on **Users**, **Roles & permissions**, **Suppliers**, **Manage apps**, and on **Security**\'s **Signed-in devices** and **System**\'s **Errors**.', roles: ['admin'] },
+        { p: 'In **Administration** the same **Export** is on **Users**, **Roles & permissions**, **Suppliers**, **Companies**, **Manage apps**, and on **Security**\'s **Signed-in devices** and **System**\'s **Errors**.', roles: ['admin'] },
       ],
     },
     {
@@ -484,6 +487,7 @@ export const en: Guide = {
         {
           ul: [
             '**Administrator**, **Manager** and **Employee** are built in. **Administrator** can do everything and cannot be changed: **View** shows what it allows. You can change what **Manager** and **Employee** allow, but not their names or descriptions, and you cannot delete them.',
+            '**Export data** lets a role\'s users export lists. The built-in roles have it; a role you add has it only if you tick it. Untick it on **Manager** or **Employee** to stop them exporting. Exporting the **Audit log** is a permission of its own.',
             '**Add Role** makes a new one: a name, what it is for, and its permissions. Some permissions need another, which is ticked with them: **Manage users** needs **See users**.',
             'A change reaches the users who hold the role within minutes.',
             '**⋯ → Delete role…** deletes a role that no user holds. Take it from its users on **Users** first.',
