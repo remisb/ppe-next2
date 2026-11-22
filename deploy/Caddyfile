@@ -35,11 +35,6 @@ import sites/*.caddy
 	handle @probe {
 		reverse_proxy {$API_UPSTREAM:127.0.0.1:8090}
 	}
-	# Scan SIMs moved under /apps/ when it was published (ADR 0006, phase 3);
-	# its old addresses still open it.
-	redir /sim-scan /apps/sim-scan/ 308
-	@oldsimscan path_regexp oldsimscan ^/sim-scan/(.*)$
-	redir @oldsimscan /apps/sim-scan/{re.oldsimscan.1} 308
 	# App Launcher (ADR 0006), every app a user's roles open, on the same
 	# origin as the staff app, so they share the sign-in cookie: /apps/ and
 	# its files are the launcher's.
