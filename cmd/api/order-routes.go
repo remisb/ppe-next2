@@ -209,9 +209,11 @@ var historyParams = map[string]bool{"employee_id": true, "catalogue_item_id": tr
 //	    &sort=date|record|employee|status|usage|total&dir=asc|desc&page=&page_size=
 func (h *orderHandler) list(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	for k := range q {
-		if !historyParams[k] {
-			writeErrorMessage(w, http.StatusBadRequest, "unknown query parameter "+k)
+	// A filter given twice is refused, as every other list does, rather than
+	// silently taking its first value.
+	for k, v := range q {
+		if !historyParams[k] || len(v) > 1 {
+			writeErrorMessage(w, http.StatusBadRequest, "unknown or repeated query parameter "+k)
 			return
 		}
 	}

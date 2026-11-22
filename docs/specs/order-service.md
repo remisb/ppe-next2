@@ -84,7 +84,7 @@ or employee data. Newest activity first, where activity is `coalesce(given_at,
 ordered_at)`.
 
 Query parameters (an exception to the path-segment rule; see the domain contract), all
-optional; anything else is a 400:
+optional; anything else, or one given twice, is a 400 (as every list), naming it:
 
 | Parameter | Meaning |
 | --- | --- |
