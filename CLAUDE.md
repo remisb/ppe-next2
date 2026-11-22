@@ -357,9 +357,8 @@ The DigitalOcean droplet serves it at `https://workwear.gavort.nl` (an A record 
 gavort.nl's Hostinger DNS; the domain's own website stays at Hostinger) from
 `/opt/ppe-next2`, a git checkout of this repository with `.env.prod` (chmod 600, never
 committed or printed) beside it. Its Caddy also serves data-sync-ui at `sync.gavort.nl`
-(`deploy/sites/sync.caddy`, basic auth), and `deploy/sites/legacy.caddy` redirects the
-old `admin.`/`sync.<ip>.sslip.io` addresses, keeping the path so confirmation links sent
-before the move still work. Deploy a pushed commit on the droplet:
+(`deploy/sites/sync.caddy`, basic auth). The old `admin.`/`sync.<ip>.sslip.io` addresses
+were redirected until 2026-11-22 and no longer answer. Deploy a pushed commit on the droplet:
 
 ```bash
 cd /opt/ppe-next2 && git pull && make prod-build && make prod-up
