@@ -59,9 +59,6 @@ type Option func(*Service)
 // WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
 func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
 
-// WithIDGenerator replaces uuid.New for items and events.
-func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
-
 // WithSuppliers checks an item's supplier against the suppliers and names it
 // in the item's events. Without it the database's foreign key alone refuses
 // an unknown supplier, and events record no supplier's name.

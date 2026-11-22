@@ -37,9 +37,6 @@ type Option func(*Service)
 // WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
 func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
 
-// WithIDGenerator replaces uuid.New for sessions and security events.
-func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
-
 // NewService keeps sessions in repo, signing their tokens with key (at least
 // 32 bytes, kept secret like the JWT secret).
 func NewService(repo Repository, key []byte, limits Limits, opts ...Option) *Service {

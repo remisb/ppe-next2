@@ -73,7 +73,7 @@ func TestTokenRejections(t *testing.T) {
 	tok := testTokens(now)
 	valid := func() accessClaims {
 		return accessClaims{
-			Roles: []string{"admin"},
+			Perms: []string{"orders.delete"},
 			RegisteredClaims: jwt.RegisteredClaims{
 				Subject:   uuid.NewString(),
 				Issuer:    "ppe-next2",
@@ -128,7 +128,6 @@ func TestTokenDropsUnknownPermissions(t *testing.T) {
 	tok := testTokens(now)
 	raw := signClaims(t, jwt.SigningMethodHS256, []byte(testSecret), accessClaims{
 		Perms: []string{"orders.delete", "everything", "USERS.READ"},
-		Roles: []string{"admin"},
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject: uuid.NewString(), Issuer: "ppe-next2", ExpiresAt: jwt.NewNumericDate(now.Add(time.Minute)),
 		},
@@ -138,26 +137,25 @@ func TestTokenDropsUnknownPermissions(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !slices.Equal(c.Roles, []string{"orders.delete"}) {
-		t.Errorf("permissions = %v, want [orders.delete]: unknown keys dropped, roles ignored when perms is present", c.Roles)
+		t.Errorf("permissions = %v, want [orders.delete]: unknown keys dropped", c.Roles)
 	}
 }
 
-// A token issued before permissions existed carries only roles; until it
-// expires it grants its roles' built-in permissions.
-func TestTokenWithoutPermissionsUsesRoles(t *testing.T) {
+// A token carrying only role names (as before permissions existed) grants
+// nothing: no such token has been issued since, and each lived at most a day.
+func TestTokenWithOnlyRolesGrantsNothing(t *testing.T) {
 	now := time.Now()
-	tok := testTokens(now)
-	raw := signClaims(t, jwt.SigningMethodHS256, []byte(testSecret), accessClaims{
-		Roles: []string{"MANAGER", "superuser"},
-		RegisteredClaims: jwt.RegisteredClaims{
-			Subject: uuid.NewString(), Issuer: "ppe-next2", ExpiresAt: jwt.NewNumericDate(now.Add(time.Minute)),
-		},
-	})
-	c, err := tok.verify(context.Background(), raw)
+	raw, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"roles": []string{"admin"}, "sub": uuid.NewString(), "iss": "ppe-next2", "exp": now.Add(time.Minute).Unix(),
+	}).SignedString([]byte(testSecret))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := role.Strings(role.BuiltinPermissions([]string{role.KeyManager})); !slices.Equal(c.Roles, want) {
-		t.Errorf("permissions = %v, want %v", c.Roles, want)
+	c, err := testTokens(now).verify(context.Background(), raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Roles) != 0 {
+		t.Errorf("permissions = %v, want none", c.Roles)
 	}
 }

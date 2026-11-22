@@ -13,8 +13,6 @@ import (
 var (
 	// ErrInvalid wraps every refused filter or parameter, naming it.
 	ErrInvalid = errors.New("invalid security request")
-	// ErrNotFound: no live session with that id.
-	ErrNotFound = errors.New("not found")
 )
 
 // fieldError is ErrInvalid naming field and its problem.

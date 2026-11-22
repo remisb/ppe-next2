@@ -134,8 +134,7 @@ type Service struct {
 
 type Option func(*Service)
 
-func WithClock(now func() time.Time) Option       { return func(s *Service) { s.now = now } }
-func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
+func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
 
 // WithLocation is the organisation's timezone: the budget's month is its.
 func WithLocation(loc *time.Location) Option { return func(s *Service) { s.loc = loc } }

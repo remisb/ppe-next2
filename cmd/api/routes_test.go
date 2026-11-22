@@ -803,7 +803,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	roles := role.NewService(newMemRoles(userRepo))
 	users := user.NewService(userRepo,
 		user.WithHasher(func(p string) (string, error) { return "h:" + p, nil }, func(h, p string) bool { return h == "h:"+p }),
-		user.WithSessions(userSessions{sessions}), user.WithRoles(roles), user.WithGuardRole(role.AdminID))
+		user.WithSessions(sessions), user.WithRoles(roles), user.WithGuardRole(role.AdminID))
 	admin, err := users.Bootstrap(context.Background(), "admin@example.com", "Admin", "password123", []uuid.UUID{role.AdminID})
 	if err != nil {
 		t.Fatal(err)

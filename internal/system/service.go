@@ -57,9 +57,6 @@ type Option func(*Service)
 // WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
 func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
 
-// WithIDGenerator replaces uuid.New for the error list's rows.
-func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
-
 // WithRecorded calls f with the kind of every error recorded (the metrics).
 func WithRecorded(f func(Kind)) Option { return func(s *Service) { s.recorded = f } }
 

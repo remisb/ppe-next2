@@ -39,9 +39,6 @@ type Option func(*Service)
 // WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
 func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
 
-// WithIDGenerator replaces uuid.New for orders, lines, links and events.
-func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
-
 // WithLocation sets the organisation's timezone (API_ORG_TIMEZONE); UTC by default.
 func WithLocation(loc *time.Location) Option { return func(s *Service) { s.loc = loc } }
 

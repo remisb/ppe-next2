@@ -25,10 +25,8 @@ var errInvalidToken = errors.New("invalid token")
 // again, so a role change takes effect within minutes), sid the sign-in
 // (session) it was issued for, and auth_time when the password was last
 // entered in that sign-in, which sensitive actions check (requireRecentSignIn).
-// roles is only read: tokens issued before permissions carried role names.
 type accessClaims struct {
 	Perms     []string         `json:"perms"`
-	Roles     []string         `json:"roles,omitempty"`
 	SessionID string           `json:"sid,omitempty"`
 	AuthTime  *jwt.NumericDate `json:"auth_time,omitempty"`
 	jwt.RegisteredClaims
@@ -76,8 +74,8 @@ func (t *tokens) issue(u user.User, perms []role.Permission, sid uuid.UUID, auth
 
 // verify is the muxstack TokenVerifier. muxstack calls them roles, and its
 // Authorizer admits a request holding any of the route's; here they are the
-// token's permission keys, and every route names exactly one. Unknown keys
-// are dropped.
+// token's permission keys (a route names one, or several with restrictedAny).
+// Unknown keys are dropped.
 func (t *tokens) verify(_ context.Context, raw string) (*middleware.Claims, error) {
 	claims, err := t.parse(raw)
 	if err != nil {
@@ -86,30 +84,16 @@ func (t *tokens) verify(_ context.Context, raw string) (*middleware.Claims, erro
 	return &middleware.Claims{Subject: claims.Subject, Roles: role.Strings(claims.permissions())}, nil
 }
 
-// permissions are the token's known permissions. A token issued before
-// permissions existed has only role names; until it expires (API_JWT_TTL
-// after the upgrade) it is granted the built-in roles' installed permissions.
-func (c accessClaims) permissions() []role.Permission {
-	if c.Perms == nil && c.Roles != nil {
-		keys := make([]string, len(c.Roles))
-		for i, r := range c.Roles {
-			keys[i] = strings.ToLower(strings.TrimSpace(r))
-		}
-		return role.BuiltinPermissions(keys)
-	}
-	return role.Known(c.Perms)
-}
+// permissions are the token's known permissions.
+func (c accessClaims) permissions() []role.Permission { return role.Known(c.Perms) }
 
-// signedInAt is when the token's user last entered their password: auth_time,
-// or for a token issued before auth_time existed, its issue time.
+// signedInAt is when the token's user last entered their password (auth_time);
+// zero without it, which no recent-sign-in check accepts.
 func (c accessClaims) signedInAt() time.Time {
-	switch {
-	case c.AuthTime != nil:
-		return c.AuthTime.Time
-	case c.IssuedAt != nil:
-		return c.IssuedAt.Time
+	if c.AuthTime == nil {
+		return time.Time{}
 	}
-	return time.Time{}
+	return c.AuthTime.Time
 }
 
 // parse checks raw and returns its claims. The algorithm is pinned to HS256 so

@@ -120,26 +120,15 @@ func (o orderItemSets) ActiveSetLines(ctx context.Context, id uuid.UUID) ([]orde
 	return out, nil
 }
 
-// userSessions answers user.Sessions: the user service ends sign-ins when a
-// password changes or an account is deactivated or deleted. Its End* reasons
-// are the session service's.
-type userSessions struct{ sessions *session.Service }
-
-var _ user.Sessions = userSessions{}
-
-func (u userSessions) EndAll(ctx context.Context, userID, keep uuid.UUID, reason string) error {
-	return u.sessions.EndAll(ctx, userID, keep, reason)
-}
-
-// employeeHoldings answers employee.Holdings: Delete employee refuses an
-// employee who holds company assets.
-type employeeHoldings struct{ assets *asset.Service }
-
-var _ employee.Holdings = employeeHoldings{}
-
-func (e employeeHoldings) HeldBy(ctx context.Context, employeeID uuid.UUID) ([]string, error) {
-	return e.assets.HeldBy(ctx, employeeID)
-}
+// The session service answers user.Sessions (the user service ends sign-ins
+// when a password changes or an account is deactivated or deleted; its End*
+// reasons are the session service's), and the asset service answers
+// employee.Holdings (Delete employee refuses an employee who holds company
+// assets), as they are.
+var (
+	_ user.Sessions     = (*session.Service)(nil)
+	_ employee.Holdings = (*asset.Service)(nil)
+)
 
 // personnelPeople answers document.People: Scan Documents' Find Employee
 // offers employees whose names are alike (the employee service's rule), with

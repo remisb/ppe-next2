@@ -28,9 +28,6 @@ const (
 // uses is every use, in order.
 var uses = []string{UseProfile, UseIDBadge, UseSizing, UseReceipt}
 
-// Uses returns every use, in order.
-func Uses() []string { return slices.Clone(uses) }
-
 // Photo is one picture of an employee. The file is in the store under ObjectKey.
 type Photo struct {
 	ID               uuid.UUID `json:"id"`

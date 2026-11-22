@@ -46,9 +46,6 @@ type Option func(*Client)
 // WithRoots trusts only these roots; the default is Mozilla's (mozillaRoots).
 func WithRoots(p *x509.CertPool) Option { return func(c *Client) { c.roots = p } }
 
-// WithHTTPClient replaces the default client (30 s timeout).
-func WithHTTPClient(h *http.Client) Option { return func(c *Client) { c.http = h } }
-
 func New(url string, opts ...Option) *Client {
 	c := &Client{url: url, http: &http.Client{Timeout: 30 * time.Second}}
 	for _, o := range opts {

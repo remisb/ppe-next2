@@ -46,9 +46,6 @@ type Option func(*Service)
 // WithClock replaces the clock that stamps changes and events (tests).
 func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
 
-// WithIDGenerator replaces the generator of employee and event IDs (tests).
-func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
-
 // WithHoldings lets Delete refuse an employee who still holds company assets.
 func WithHoldings(h Holdings) Option { return func(s *Service) { s.holdings = h } }
 

@@ -101,9 +101,6 @@ type Option func(*Service)
 // WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
 func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
 
-// WithIDGenerator replaces uuid.New for users and events.
-func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
-
 // WithSessions ends a user's sign-ins when their password changes or the
 // account is deactivated or deleted. Without it nothing is ended.
 func WithSessions(sessions Sessions) Option { return func(s *Service) { s.sessions = sessions } }

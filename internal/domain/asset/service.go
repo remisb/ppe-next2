@@ -57,9 +57,6 @@ type Option func(*Service)
 // WithClock replaces the clock that stamps changes and events (tests).
 func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
 
-// WithIDGenerator replaces the generator of asset, assignment, copy and event IDs (tests).
-func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
-
 // WithLocation sets the organisation timezone: "today", and so the latest
 // given or return date and Days Held, are its calendar days.
 func WithLocation(loc *time.Location) Option { return func(s *Service) { s.loc = loc } }

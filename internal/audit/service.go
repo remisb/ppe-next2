@@ -52,9 +52,6 @@ func WithRetention(d time.Duration) Option { return func(s *Service) { s.retenti
 // WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
 func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
 
-// WithIDGenerator replaces uuid.New for the Audit log's own events and purges.
-func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
-
 // NewService is the Audit log over store, which also keeps its seals.
 func NewService(store Store, opts ...Option) *Service {
 	s := &Service{

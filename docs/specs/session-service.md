@@ -100,8 +100,8 @@ the `sign_in` event and `users.last_sign_in_at`, and `EndAll` writes one `sessio
 per session it ends (`docs/specs/security-service.md`). A refresh that only rotates writes
 nothing; a reused token writes `refresh_reused`.
 
-The user service calls `user.Sessions.EndAll` (answered by `userSessions` in
-`cmd/api/checkers.go`) after the change is written. An access token already issued stays
+The user service calls `user.Sessions.EndAll` (answered by the session
+service itself, `cmd/api/main.go`) after the change is written. An access token already issued stays
 valid until it expires (at most `API_JWT_TTL`); the next refresh is refused. A role change
 needs no ending: it reaches the user at their next refresh.
 

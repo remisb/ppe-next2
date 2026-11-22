@@ -119,7 +119,6 @@ var errorStatuses = []struct {
 	{audit.ErrNotFound, http.StatusNotFound},
 	{mailtemplate.ErrNotFound, http.StatusNotFound},
 	{launcher.ErrNotFound, http.StatusNotFound},
-	{security.ErrNotFound, http.StatusNotFound},
 	{asset.ErrNotFound, http.StatusNotFound},
 	{asset.ErrEmployeeNotFound, http.StatusNotFound},
 	{asset.ErrNoForm, http.StatusNotFound},

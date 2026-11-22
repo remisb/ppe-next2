@@ -48,9 +48,6 @@ type Option func(*Service)
 // WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
 func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
 
-// WithIDGenerator replaces uuid.New for scans and events.
-func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
-
 // WithDays is how many days a scan is kept (API_PERSONNEL_SCAN_DAYS).
 func WithDays(days int) Option { return func(s *Service) { s.days = days } }
 
