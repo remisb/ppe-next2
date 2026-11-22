@@ -68,7 +68,7 @@ offered); both are needed before the trial (phase 6), and neither blocks phase 2
 | `@ppe/mrz` | `web/packages/mrz` | the parser: TD1/TD2/TD3, check digits, FR-5's corrections, century rules, the Lithuanian personal code, `fold()` and `nameMatch()`, `readMrz()` from OCR text. Pure TypeScript, no DOM; 64 tests |
 | shared vectors | `testdata/mrz/vectors.json` | 30 cases (ICAO's three specimens, a long document number, corrections taken and refused, dates, codes), 8 read-from-text cases, LT codes, fold and name cases, for the Go parser of phase 2 too (NFR-7) |
 | specimens | `web/e2e/fixtures/documents` (`specimens.ts`, `make.ts`) | a TD3 passport page and TD1 ID card fronts and backs at ICAO sizes, made-up people, OCR-B (`ocrb10.otf`, CTAN *ocr-b-outline*: "freely use, modify, and/or distribute"), every page marked SPECIMEN; three with planted misreads (an `O` for a `0` in a number, an `I` for a `1` in a date, a `9` for a `4` in an expiry date) |
-| reading spike | `web/spikes/mrz` (throwaway, never in the image) | a bare page; the image work (grey, Sauvola, skew, the MRZ band, the cut-out at 32 px a character) in plain TypeScript in a worker (`image.worker.ts`, the `barcode.worker.ts` pattern, 9 tests); `createTextReader()`, the factory §6 asks for; scripts that make the test set, measure, simulate, and train a model |
+| reading spike | `web/spikes/mrz` (throwaway, never in the image; removed on 2026-11-22; in git history at `ee0fd074`) | a bare page; the image work (grey, Sauvola, skew, the MRZ band, the cut-out at 32 px a character) in plain TypeScript in a worker (`image.worker.ts`, the `barcode.worker.ts` pattern, 9 tests); `createTextReader()`, the factory §6 asks for; scripts that make the test set, measure, simulate, and train a model |
 
 ### The test set
 
@@ -97,7 +97,7 @@ it (keep the licence text beside it in `readers/`). Two cautions: its training d
 images from Google image, augmented with few synthetic data" (its README), so its provenance is
 weaker than its licence; and it was last changed in January 2020. `ppe_ocrb` is the fallback
 with a clean provenance (our lines, our font, Apache-2.0 `eng`) and is reproducible from
-`web/spikes/mrz/train`; but this first run (6 000 iterations on 8 000 drawn lines, 25 minutes in Docker, 0.02 % character error on its own lines) reads the photos far worse, misreading names above all, and is not a candidate. Training it on bands cut from photos by the reader itself, rather than on drawn lines, is the next step should the Doubango model ever have to go.
+`web/spikes/mrz/train` (removed on 2026-11-22; in git history at `ee0fd074`); but this first run (6 000 iterations on 8 000 drawn lines, 25 minutes in Docker, 0.02 % character error on its own lines) reads the photos far worse, misreading names above all, and is not a candidate. Training it on bands cut from photos by the reader itself, rather than on drawn lines, is the next step should the Doubango model ever have to go.
 
 ### Time and size (NFR-4)
 

@@ -7,8 +7,9 @@
  * codes with serial 000–999 on made-up dates); every page says SPECIMEN.
  * Never put a real document or a real person's data here.
  *
- * make.ts draws the flat images the e2e steps use; web/spikes/mrz draws
- * photo-like variants of the same documents for measuring the reader.
+ * make.ts draws the flat images the e2e steps use. The MRZ reading spike drew
+ * photo-like variants of them for measuring the reader (web/spikes/mrz,
+ * removed on 2026-11-22; in git history at ee0fd074).
  */
 import { readFileSync } from 'node:fs'
 
