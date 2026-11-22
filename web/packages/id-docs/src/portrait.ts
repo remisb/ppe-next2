@@ -7,8 +7,8 @@
  */
 import type { BandPlace } from '@ppe/mrz/reader'
 
-import { DOC_MM, PORTRAIT_MM, TD3_BAND } from './document-geometry'
-import type { Box, DocType } from './flow'
+import { DOC_MM, PORTRAIT_MM, TD3_BAND } from './document-geometry.ts'
+import type { Box, DocType } from './flow.ts'
 
 /** The portrait's width over its height, in pixels: ICAO's 35 × 45 mm, near enough 3:4. */
 export const PORTRAIT_RATIO = 3 / 4

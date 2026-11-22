@@ -17,7 +17,7 @@ import {
   titleCase,
   type Holder,
   type Photo,
-} from './flow'
+} from './flow.ts'
 
 const today = '2026-11-05'
 // testdata/mrz/vectors.json's made-up Lithuanian passport and ID card.

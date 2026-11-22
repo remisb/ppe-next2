@@ -20,6 +20,11 @@
       } catch (e) {}
     </script>
     <meta name="referrer" content="no-referrer" />
+    <!--
+      Without a nonce in the policy, ui-sdk's components (@ppe/ui: Drawer, Toast, Gallery…) add their CSS as
+      constructed style sheets only when this tag is here; else as <style>, which style-src 'self' blocks.
+    -->
+    <meta property="csp-nonce" />
     <title>Scan SIMs · Workwear &amp; Equipment</title>
   </head>
   <body>

@@ -3,8 +3,8 @@ import { Minus, Plus } from 'lucide-react'
 import { useRef, type KeyboardEvent, type PointerEvent } from 'react'
 
 import { t } from '@/i18n'
-import type { Box } from '@/lib/flow'
-import { moveBox, resizeBox } from '@/lib/portrait'
+import type { Box } from '@ppe/id-docs/flow'
+import { moveBox, resizeBox } from '@ppe/id-docs/portrait'
 
 /**
  * The portrait's crop box over the document's picture (FR-11): dragged to

@@ -1,6 +1,6 @@
 import type { BandPlace } from '@ppe/mrz/reader'
 
-import { aspectOf, pageQuad } from './page-box'
+import { aspectOf, pageQuad } from './page-box.ts'
 
 const near = (a: { x: number; y: number }, b: { x: number; y: number }, within: number) =>
   expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeLessThan(within)

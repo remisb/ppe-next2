@@ -15,8 +15,8 @@ import {
   type Holder,
   type Photo,
   type Photos,
-} from '@/lib/flow'
-import { loadReader, todayHere } from '@/lib/reader'
+} from '@ppe/id-docs/flow'
+import { loadReader, todayHere } from '@ppe/id-docs/reader'
 
 import { CaptureStep } from './capture-step'
 import { DoneStep } from './done-step'

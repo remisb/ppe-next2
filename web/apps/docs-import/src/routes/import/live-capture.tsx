@@ -7,8 +7,8 @@ import { Aperture, Square } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { t } from '@/i18n'
-import { COPY_MAX_SIDE, VIEW_RATIO, guideFor, type DocType } from '@/lib/flow'
-import { loadReader, todayHere } from '@/lib/reader'
+import { COPY_MAX_SIDE, VIEW_RATIO, guideFor, type DocType } from '@ppe/id-docs/flow'
+import { loadReader, todayHere } from '@ppe/id-docs/reader'
 
 /** A live frame is read smaller than a photo: sooner, and the code lines still a few dozen pixels tall. */
 const LIVE_SIDE = 1400

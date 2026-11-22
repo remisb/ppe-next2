@@ -7,7 +7,7 @@ import { UserPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { t } from '@/i18n'
-import type { Holder } from '@/lib/flow'
+import type { Holder } from '@ppe/id-docs/flow'
 
 /** Step 1 (FR-1): an employee on file, found by name or code, or a new one made from the document (D6). */
 export function PersonStep({ onChoose }: { onChoose: (holder: Holder) => void }) {

@@ -3,7 +3,7 @@ import { Button } from '@ppe/ui/components/button'
 import { CircleCheck, Crop, RotateCcw, RotateCw, Trash2, TriangleAlert } from 'lucide-react'
 
 import { t } from '@/i18n'
-import type { ScanPage } from '@/lib/scan'
+import type { ScanPage } from '@ppe/id-docs/scan'
 
 /**
  * One page of Scan Document, full width: the flattened page (or its state

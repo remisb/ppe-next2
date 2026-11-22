@@ -7,8 +7,8 @@
 import type { BandPlace } from '@ppe/mrz/reader'
 import type { Quad } from '@ppe/scan-kit/perspective'
 
-import { DOC_MM, FORMAT_MM } from './document-geometry'
-import type { DocType } from './flow'
+import { DOC_MM, FORMAT_MM } from './document-geometry.ts'
+import type { DocType } from './flow.ts'
 
 /** The document's 4 corners, in the pixels of a width × height picture the band was found in. */
 export function pageQuad(band: BandPlace, width: number, height: number): Quad {

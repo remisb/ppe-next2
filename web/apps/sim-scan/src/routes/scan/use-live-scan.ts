@@ -1,19 +1,13 @@
 import { Steady } from '@ppe/scan-kit'
-import { beep, buzz, eachFrame, guideCrop, startCamera, stopCamera, torchOf, type Torch } from '@ppe/scan-kit/camera'
+import { type Guide, useLiveCamera } from '@ppe/scan-kit/live-camera'
 import { type ScanCard, pickSimNo, simKey, simScanText } from '@ppe/sim-scan'
-import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
+import { type RefObject, useRef, useState } from 'react'
 
 import { loadReaders } from '@/lib/readers'
 
 import { newKey } from './scan-list'
 
-/** The guide frame over the camera picture, as fractions of the video element's box. */
-export interface Guide {
-  x: number
-  y: number
-  w: number
-  h: number
-}
+export type { Guide }
 
 export type Side = 'front' | 'back'
 
@@ -38,13 +32,19 @@ export interface LiveScan {
   torch: { available: boolean; on: boolean; toggle: () => void }
 }
 
+const readers = () =>
+  loadReaders().then((r) => {
+    r.warmUpReaders()
+    return r
+  })
+
 /**
  * The camera, card after card: the front's barcode, then the back's PIN and
  * PUK, each taken once read the same twice in a row (or at once after Read
  * Now: a photo is read once too, and the list checks what was read); No Back
  * adds the card without them. A front already in the list is not taken again.
- * The camera runs while the hook is mounted. `guide` is the frame's place in
- * the video's box, fixed or worked out from the box's size.
+ * The camera itself (started, stopped, the torch, Read Now, the flash) is
+ * @ppe/scan-kit's useLiveCamera; `guide` is the frame's place in the video's box.
  */
 export function useLiveScan({
   known,
@@ -57,116 +57,68 @@ export function useLiveScan({
   guide: Guide | ((width: number, height: number) => Guide)
 }): LiveScan {
   const t = simScanText()
-  const video = useRef<HTMLVideoElement>(null)
   const [step, setStep] = useState<{ side: 'front' } | { side: 'back'; simNo: string; front: Blob }>({ side: 'front' })
   const [status, setStatus] = useState<string>(t.aimFront)
-  const [problem, setProblem] = useState<string | null>(null)
-  const [denied, setDenied] = useState(false)
   const [duplicateOf, setDuplicateOf] = useState<number | null>(null)
-  const [justRead, setJustRead] = useState(false)
-  const [torch, setTorch] = useState<{ control: Torch; on: boolean }>({ control: torchOf(null), on: false })
   const stepRef = useRef(step)
   stepRef.current = step
   const knownRef = useRef(known)
   knownRef.current = known
-  // The parent's callback and guide change on each render; the camera must not restart with them.
-  const onCardRef = useRef(onCard)
-  onCardRef.current = onCard
-  const guideRef = useRef(guide)
-  guideRef.current = guide
-  const nowRef = useRef(false)
-  const readTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const fronts = useRef(new Steady<string>())
+  const backs = useRef(new Steady<{ pin: string; puk: string }>())
+  const snapshot = (canvas: HTMLCanvasElement) => new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b ?? new Blob()), 'image/jpeg', 0.7))
 
-  const read = useCallback(() => {
-    beep()
-    buzz()
-    setJustRead(true)
-    clearTimeout(readTimer.current)
-    readTimer.current = setTimeout(() => setJustRead(false), 650)
-  }, [])
-
-  useEffect(() => {
-    const el = video.current
-    if (!el) return
-    let stream: MediaStream | null = null
-    let stop = () => {}
-    const fronts = new Steady<string>()
-    const backs = new Steady<{ pin: string; puk: string }>()
-    const snapshot = (canvas: HTMLCanvasElement) => new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b ?? new Blob()), 'image/jpeg', 0.7))
-    let alive = true
-    void Promise.all([startCamera(el), loadReaders()]).then(
-      ([s, { LIVE_BARCODE_SIDE, barcodesIn, canvasOf, codesIn, imageDataOf, warmUpReaders }]) => {
-        if (!alive) return stopCamera(s)
-        stream = s
-        setTorch({ control: torchOf(s), on: false })
-        warmUpReaders()
-        stop = eachFrame(el, async () => {
-          if (!el.videoWidth) return
-          const cur = stepRef.current
-          const g = guideRef.current
-          const frame = typeof g === 'function' ? g(el.clientWidth || el.videoWidth, el.clientHeight || el.videoHeight) : g
-          // The front's barcode is read smaller, and so sooner; the back's digits at full size.
-          const canvas = canvasOf(el, guideCrop(el, frame), cur.side === 'front' ? LIVE_BARCODE_SIDE : undefined)
-          // Read Now takes this frame's reading as it is, once.
-          const now = nowRef.current
-          nowRef.current = false
-          if (cur.side === 'front') {
-            const seen = pickSimNo(await barcodesIn(imageDataOf(canvas)))
-            const simNo = now ? seen : fronts.see(seen, (v) => v)
-            if (!simNo) {
-              if (now) setStatus(t.readNothing)
-              return
-            }
-            const other = knownRef.current.indexOf(simKey(simNo))
-            if (other >= 0) {
-              setDuplicateOf(other)
-              return setStatus(t.aimNext)
-            }
-            read()
-            fronts.reset()
-            setDuplicateOf(null)
-            setStep({ side: 'back', simNo, front: await snapshot(canvas) })
-            setStatus(t.aimBack(simNo))
-            return
-          }
-          const codes = await codesIn(canvas)
-          const seen = codes.pin && codes.puk ? { pin: codes.pin, puk: codes.puk } : null
-          const got = now ? seen : backs.see(seen, (c) => `${c.pin} ${c.puk}`)
-          if (!got) {
-            if (now) setStatus(t.readNothing)
-            return
-          }
-          read()
-          backs.reset()
-          const front = newKey()
-          const back = newKey()
-          onCardRef.current({ key: front, simNo: cur.simNo, pin: got.pin, puk: got.puk, front, back }, cur.front, await snapshot(canvas))
-          setStep({ side: 'front' })
-          setStatus(t.readBack)
-        })
-      },
-      (e: unknown) => {
-        const refused = e instanceof DOMException && e.name === 'NotAllowedError'
-        setDenied(refused)
-        setProblem(refused ? t.cameraDenied : t.cameraFailed)
-      },
-    )
-    return () => {
-      alive = false
-      stop()
-      stopCamera(stream)
-      clearTimeout(readTimer.current)
-    }
-  }, [t, read])
+  const camera = useLiveCamera({
+    guide,
+    prepare: readers,
+    onFrame: async ({ video, crop, now }, { LIVE_BARCODE_SIDE, barcodesIn, canvasOf, codesIn, imageDataOf }) => {
+      const cur = stepRef.current
+      // The front's barcode is read smaller, and so sooner; the back's digits at full size.
+      const canvas = canvasOf(video, crop, cur.side === 'front' ? LIVE_BARCODE_SIDE : undefined)
+      if (cur.side === 'front') {
+        const seen = pickSimNo(await barcodesIn(imageDataOf(canvas)))
+        const simNo = now ? seen : fronts.current.see(seen, (v) => v)
+        if (!simNo) {
+          if (now) setStatus(t.readNothing)
+          return
+        }
+        const other = knownRef.current.indexOf(simKey(simNo))
+        if (other >= 0) {
+          setDuplicateOf(other)
+          return setStatus(t.aimNext)
+        }
+        camera.signal()
+        fronts.current.reset()
+        setDuplicateOf(null)
+        setStep({ side: 'back', simNo, front: await snapshot(canvas) })
+        setStatus(t.aimBack(simNo))
+        return
+      }
+      const codes = await codesIn(canvas)
+      const seen = codes.pin && codes.puk ? { pin: codes.pin, puk: codes.puk } : null
+      const got = now ? seen : backs.current.see(seen, (c) => `${c.pin} ${c.puk}`)
+      if (!got) {
+        if (now) setStatus(t.readNothing)
+        return
+      }
+      camera.signal()
+      backs.current.reset()
+      const front = newKey()
+      const back = newKey()
+      onCard({ key: front, simNo: cur.simNo, pin: got.pin, puk: got.puk, front, back }, cur.front, await snapshot(canvas))
+      setStep({ side: 'front' })
+      setStatus(t.readBack)
+    },
+  })
 
   return {
-    video,
+    video: camera.video,
     side: step.side,
     status,
-    problem,
-    denied,
+    problem: camera.problem === 'denied' ? t.cameraDenied : camera.problem === 'failed' ? t.cameraFailed : null,
+    denied: camera.problem === 'denied',
     duplicateOf,
-    justRead,
+    justRead: camera.justRead,
     noBack: () => {
       const cur = stepRef.current
       if (cur.side !== 'back') return
@@ -176,16 +128,9 @@ export function useLiveScan({
       setStatus(t.aimFront)
     },
     readNow: () => {
-      nowRef.current = true
+      camera.readNow()
       setStatus(t.readingNow)
     },
-    torch: {
-      available: torch.control.available,
-      on: torch.on,
-      toggle: () => {
-        const on = !torch.on
-        void torch.control.set(on).then((done) => done && setTorch((x) => ({ ...x, on })))
-      },
-    },
+    torch: camera.torch,
   }
 }

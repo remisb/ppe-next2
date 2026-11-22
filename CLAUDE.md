@@ -156,7 +156,7 @@ docs-import app: migration 0048 (schema `personnel`, the role Personnel Document
 a passport's or ID card's MRZ from photos or the live camera in the browser (`@ppe/mrz/reader`: an image worker and
 tesseract.js with the OCR-B model `mrz` committed in `web/packages/mrz/readers`, BSD-3), each photo read twice, a live
 reading taken when two frames agree, and saves it through the routes
-below; its rules are `src/lib/flow.ts`. The staff app's employee page has an **Identity** section
+below; its rules are `@ppe/id-docs` (`flow.ts` and the page, portrait and corner rules, moved from its `src/lib` for docs-scan). The staff app's employee page has an **Identity** section
 (`components/identity-section.tsx`): the "valid until" line for everyone, the documents, Show Document, Mark Employment
 Ended and Legal Hold for the personnel permissions. `internal/personnel/mrz` (the Go twin of `@ppe/mrz`) and `internal/personnel/document` (per-person data keys
 under `API_PERSONNEL_KEY`, blind indexes, Check and Save with sealed Document Copies, Show Document (a recent
@@ -565,7 +565,7 @@ in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TA
   their own), `@ppe/backups`, `@ppe/audit` (how recorded changes read: actions, changed
   fields, the Changes section), `@ppe/scan-kit` (reading with the camera or from photos: the
   camera, barcode and text readers in workers, pictures, the readers' files' Vite plugin) and
-  `@ppe/mrz` (passports' and ID cards' MRZ, for docs-import; its Go twin is `internal/personnel/mrz`, both tested on `testdata/mrz/vectors.json`). A screen shows controls by `session.can(...)`, never by role.
+  `@ppe/mrz` (passports' and ID cards' MRZ, for docs-import; its Go twin is `internal/personnel/mrz`, both tested on `testdata/mrz/vectors.json`), `@ppe/id-docs` (reading a document as rules: photo slots, the draft, Save's input, the page and portrait geometry; docs-import's, shared with docs-scan). `@ppe/ui` also wraps ui-sdk (`drawer.tsx` with the action sheet, `toast.tsx`, `gallery.tsx`, `image-cropper.tsx`); `@ppe/scan-kit`'s `live-camera` is the reading apps' camera hook. A screen shows controls by `session.can(...)`, never by role.
   A package with components of its own is named with `@source` in each app's `index.css`:
   Tailwind scans only the app's files and `@ppe/ui`, so its classes would be missing.
 - **The employee's page** (WARE-47, `docs/ux/employee-page.md`): the Employees list opens an employee
