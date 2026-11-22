@@ -58,3 +58,26 @@ func TestEditDistance(t *testing.T) {
 		}
 	}
 }
+
+// NameKey is SameName as a key: two names share one exactly when CompareNames
+// calls them the same name.
+func TestNameKey(t *testing.T) {
+	for _, n := range [][2][2]string{
+		{{"Yuriy", "Gild"}, {"", "Gild Yuriy"}},
+		{{"Karina", "Roškaitė"}, {"", "KARINA ROSKAITE"}},
+		{{"Anna-Maria", "Kim"}, {"Anna Maria", "Kim"}},
+		{{"Пётр", "Иванов"}, {"Petr", "Ivanov"}},
+		{{"Jonas", "Petraitis"}, {"Jonas", "Petraitė"}},
+		{{"Märt", "Tamm"}, {"Mart", "Tamm"}},
+	} {
+		a, b := n[0], n[1]
+		kind, alike := CompareNames(a[0], a[1], b[0], b[1])
+		same := alike && kind == SameName
+		if got := NameKey(a[0], a[1]) == NameKey(b[0], b[1]); got != same {
+			t.Errorf("%v and %v: one key %v, SameName %v", a, b, got, same)
+		}
+	}
+	if k := NameKey("Karina", "Roškaitė"); k != "KARINA ROSKAITE" {
+		t.Errorf("NameKey = %q", k)
+	}
+}

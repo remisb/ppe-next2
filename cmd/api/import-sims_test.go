@@ -123,3 +123,21 @@ func TestFormatPhone(t *testing.T) {
 		}
 	}
 }
+
+// Holders are found by the rule Duplicates calls the same name
+// (employee.NameKey): a hyphen as a space, Cyrillic as its Latin spelling.
+func TestParseSIMListFindsHoldersAsDuplicatesDo(t *testing.T) {
+	anna, petr := emp("Anna-Maria", "Kim", nil), emp("Пётр", "Иванов", nil)
+	data := "sim_no,phone_no,provider,employee_name,connection_status\n" +
+		"1237002240500235267F,,Bitė,Kim Anna Maria,Active\n" +
+		"1237002231100060288F,,Bitė,Petr Ivanov,Active\n"
+	rows, problems := parseSIMList([]byte(data), []employee.Employee{anna, petr})
+	if len(problems) > 0 || len(rows) != 2 {
+		t.Fatalf("rows %d, problems %v", len(rows), problems)
+	}
+	for i, want := range []employee.Employee{anna, petr} {
+		if rows[i].SIM.HolderID == nil || *rows[i].SIM.HolderID != want.ID {
+			t.Errorf("row %d holder = %v, want %s %s", i, rows[i].SIM.HolderID, want.FirstName, want.LastName)
+		}
+	}
+}
