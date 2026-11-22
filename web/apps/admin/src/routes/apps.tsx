@@ -1,5 +1,5 @@
 import { APP_ICONS, ApiError, type AppFeedback, type AppGroup, type AppKind, type AppStage, type AppTier, type LauncherApp, PERMISSIONS, type Permission } from '@ppe/api-client'
-import { useApi } from '@ppe/app-shell'
+import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
 import { TileIcon, appIcons, appName, launcherText } from '@ppe/launcher'
 import { Badge } from '@ppe/ui/components/badge'
@@ -51,6 +51,7 @@ const stages: readonly AppStage[] = ['live', 'pilot', 'poc', 'dev', 'retired']
 export function AppsPage({ route, navigate }: { route: Extract<Route, { name: 'apps' }>; navigate: Navigate }) {
   const { client } = useApi()
   const apps = useLoad(() => client.apps.list())
+  const canExport = useSession().can('data.export')
   const timeZone = useLoad(() => client.settings()).data?.timezone
   const [editing, setEditing] = useState<LauncherApp | 'new' | null>(null)
   const selected = route.app
@@ -93,11 +94,11 @@ export function AppsPage({ route, navigate }: { route: Extract<Route, { name: 'a
           title={t.apps.title}
           description={t.apps.description}
           // Export: in the header from md, in ⋯ below; it starts select mode (WARE-45), on a phone too.
-          secondary={[{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: list.length === 0 || selection.active }]}
+          secondary={canExport ? [{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: list.length === 0 || selection.active }] : []}
           primary={{ label: t.apps.register, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
         />
         {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
-        <ExportMode selection={selection} list={t.apps.title} columns={appExportColumns(list)} shown={list} />
+        {canExport ? <ExportMode selection={selection} list={t.apps.title} columns={appExportColumns(list)} shown={list} /> : null}
         <Loaded load={apps}>
           {(all) => (
             <Table stack="list" stackBelow={beside ? 'sm' : 'md'}>

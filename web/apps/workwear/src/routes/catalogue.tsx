@@ -111,7 +111,9 @@ export function Catalogue({
   navigate: (to: Route, options?: NavigateOptions) => void
 }) {
   const { client } = useApi()
-  const canManageItems = useSession().can('catalogue.manage')
+  const session = useSession()
+  const canManageItems = session.can('catalogue.manage')
+  const canExport = session.can('data.export')
   const items = useLoad(() => client.catalogue.list())
   const [editing, setEditing] = useState<CatalogueItem | 'new' | null>(null)
   const [picturesOpen, setPicturesOpen] = useState(false)
@@ -229,18 +231,22 @@ export function Catalogue({
           title={t.catalogue.title}
           description={t.catalogue.description}
           // Export starts select mode (WARE-45), on the whole table: an item open beside the list closes first.
-          secondary={[
-            {
-              label: t.common.export,
-              icon: Download,
-              onClick: () => {
-                if (beside) close()
-                selection.start(EXPORT_MODE)
-              },
-              showFrom: 'md',
-              disabled: shown.length === 0 || ticks,
-            },
-          ]}
+          secondary={
+            canExport
+              ? [
+                  {
+                    label: t.common.export,
+                    icon: Download,
+                    onClick: () => {
+                      if (beside) close()
+                      selection.start(EXPORT_MODE)
+                    },
+                    showFrom: 'md',
+                    disabled: shown.length === 0 || ticks,
+                  },
+                ]
+              : []
+          }
           primary={canManageItems ? { label: t.catalogue.addItem, short: t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
           // Set up once, so never a button: under ⋯ at every width.
           more={canManageItems ? <DropdownMenuItem onClick={() => setPicturesOpen(true)}>{t.catalogue.pictures}</DropdownMenuItem> : undefined}
@@ -263,7 +269,7 @@ export function Catalogue({
         <p aria-live="polite" className="sr-only">
           {moved}
         </p>
-        <ExportMode selection={selection} list={t.catalogue.title} columns={catalogueExportColumns(tz)} shown={rows} />
+        {canExport ? <ExportMode selection={selection} list={t.catalogue.title} columns={catalogueExportColumns(tz)} shown={rows} /> : null}
         <Loaded load={items} empty={shown.length === 0} emptyState={statusChips().find((c) => c.status === status)!.empty}>
           {() => (
             /*

@@ -34,7 +34,9 @@ export function Replacements({ navigate, onBack }: { navigate: (to: Route) => vo
   const settings = useLoad(() => client.settings())
   const [show, setShow] = useState<Show>('all')
   const [exporting, setExporting] = useState(false)
-  const seesProfile = useSession().can('employee_profiles.read')
+  const session = useSession()
+  const seesProfile = session.can('employee_profiles.read')
+  const canExport = session.can('data.export')
   const tz = settings.data?.timezone ?? 'UTC'
   const r = list.data
   const rows = (r?.next ?? []).filter((x) => show === 'all' || (show === 'overdue') === x.overdue)
@@ -52,8 +54,8 @@ export function Replacements({ navigate, onBack }: { navigate: (to: Route) => vo
         title={t.dashboard.replacementsDue}
         back={{ label: t.dashboard.title, onClick: onBack }}
         description={t.dashboard.replacementsDescription(r?.due_soon_days ?? 30, tz)}
-        // Export: what the tab shows, soonest first (grouped rows, so nothing to tick).
-        secondary={[{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: rows.length === 0 }]}
+        // Export (data.export): what the tab shows, soonest first (grouped rows, so nothing to tick).
+        secondary={canExport ? [{ label: t.common.export, icon: Download, onClick: () => setExporting(true), showFrom: 'md', disabled: rows.length === 0 }] : []}
       />
       <Loaded load={list}>
         {(r) => (
@@ -80,14 +82,16 @@ export function Replacements({ navigate, onBack }: { navigate: (to: Route) => vo
           </>
         )}
       </Loaded>
-      <ExportSheet
-        open={exporting}
-        onClose={() => setExporting(false)}
-        list={t.dashboard.replacementsDue}
-        columns={replacementExportColumns({ profile: seesProfile }, tz)}
-        // In the screen's order: each employee's together.
-        shown={byEmployee(rows).flat()}
-      />
+      {canExport ? (
+        <ExportSheet
+          open={exporting}
+          onClose={() => setExporting(false)}
+          list={t.dashboard.replacementsDue}
+          columns={replacementExportColumns({ profile: seesProfile }, tz)}
+          // In the screen's order: each employee's together.
+          shown={byEmployee(rows).flat()}
+        />
+      ) : null}
     </>
   )
 }

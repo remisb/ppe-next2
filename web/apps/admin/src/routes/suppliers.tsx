@@ -44,6 +44,7 @@ const columns = (): SortColumn<SupplierSort>[] => [
 export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
   const session = useSession()
+  const canExport = session.can('data.export')
   const allowed = session.can('suppliers.manage')
   const list = useLoad(() => (allowed ? client.suppliers.list() : Promise.resolve([])))
   const [filter, setFilter] = useState('')
@@ -89,7 +90,7 @@ export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
         title={t.suppliers.title}
         description={t.suppliers.description}
         // Export: in the header from md, in ⋯ below; it starts select mode (WARE-45), on a phone too.
-        secondary={[{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: shown.length === 0 || selection.active }]}
+        secondary={canExport ? [{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: shown.length === 0 || selection.active }] : []}
         primary={{ label: t.suppliers.addSupplier, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
       />
       <div className="mb-4 flex flex-wrap gap-2">
@@ -109,7 +110,7 @@ export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
         {saved}
       </p>
       {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
-      <ExportMode selection={selection} list={t.suppliers.title} columns={supplierExportColumns()} shown={shown} />
+      {canExport ? <ExportMode selection={selection} list={t.suppliers.title} columns={supplierExportColumns()} shown={shown} /> : null}
       <Loaded load={list} empty={shown.length === 0} emptyState={filter.trim() ? t.suppliers.noMatch(filter.trim()) : t.suppliers.noSuppliers}>
         {() => (
           // Where the table is narrow the suppliers are one list of rows: name, then code and place, with Edit and ⋯ beside them.

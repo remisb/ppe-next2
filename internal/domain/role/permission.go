@@ -15,6 +15,10 @@ const (
 	UsersRead   Permission = "users.read"
 	UsersManage Permission = "users.manage"
 	RolesManage Permission = "roles.manage"
+	// DataExport is Export on every list of both apps (WARE-43/44/45): the rows
+	// shown or ticked, as Excel or CSV, built in the browser (migration 0059).
+	// The Audit log's export is audit.export's.
+	DataExport Permission = "data.export"
 	// An employee's name is everyone's; their profile (code, notes, language,
 	// photos, identity document's details) and size defaults have a pair each
 	// since migration 0050.
@@ -107,6 +111,7 @@ var catalogue = []Info{
 	{AIUsageRead, GroupAdministration, nil},
 	{AppsManage, GroupLauncher, nil},
 	{AppsPreview, GroupLauncher, nil},
+	{DataExport, GroupWorkwear, nil},
 	{EmployeeProfilesRead, GroupWorkwear, nil},
 	{EmployeeProfilesManage, GroupWorkwear, []Permission{EmployeeProfilesRead}},
 	{EmployeeSizesRead, GroupWorkwear, nil},

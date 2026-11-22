@@ -322,6 +322,7 @@ const kindLabel = (k: string) => (errorKinds as string[]).includes(k) ? t.system
 /** The error list, newest occurrence first, one error open beside it (/system/errors/<id>). */
 function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefined; timeZone: string | undefined; navigate: Navigate }) {
   const { client } = useApi()
+  const canExport = useSession().can('data.export')
   const [kind, setKind] = useState<ErrorKind | ''>('')
   // The tabs' counts come with each first page, of every kind whatever the tab.
   const [counts, setCounts] = useState<Record<ErrorKind, number>>()
@@ -369,15 +370,17 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
         />
         {/* The tab's Export beside Refresh: System's header belongs to every tab. It exports the errors loaded. */}
         <div className="flex gap-2">
-          <Button variant="outline" disabled={errors.length === 0 || selection.active} onClick={() => selection.start(EXPORT_MODE)}>
-            <Download aria-hidden />
-            {t.common.export}
-          </Button>
+          {canExport ? (
+            <Button variant="outline" disabled={errors.length === 0 || selection.active} onClick={() => selection.start(EXPORT_MODE)}>
+              <Download aria-hidden />
+              {t.common.export}
+            </Button>
+          ) : null}
           <RefreshButton loading={pages.loading} onClick={reload} />
         </div>
       </div>
       {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
-      <ExportMode selection={selection} list={t.system.errors} columns={errorExportColumns(timeZone)} shown={errors} />
+      {canExport ? <ExportMode selection={selection} list={t.system.errors} columns={errorExportColumns(timeZone)} shown={errors} /> : null}
       {pages.error ? (
         <ErrorState error={pages.error} onRetry={reload} />
       ) : !pages.data ? (

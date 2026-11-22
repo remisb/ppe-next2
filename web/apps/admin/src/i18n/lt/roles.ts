@@ -79,6 +79,7 @@ export const roles: RolesText = {
     'ai_usage.read': { label: 'Matyti DI naudojimą', grants: 'Kiekvienas programos kreipimasis į DI modelį (spalvota nuotrauka), jo žetonai ir kaina, kas ir kada.' },
     'apps.manage': { label: 'Tvarkyti programas', grants: 'Programų sąrašo programos ir nuorodos: registruoti, keisti, kas kurią mato, tvarka ir atsiliepimai.' },
     'apps.preview': { label: 'Matyti bandomas programas', grants: 'Prototipai ir kuriamos programos programų sąraše, įjungus „Rodyti bandomas programas“.' },
+    'data.export': { label: 'Eksportuoti duomenis', grants: 'Atsisiųsti bet kurio matomo sąrašo eilutes, rodomas ar pažymėtas, kaip Excel ar CSV. Audito žurnalas turi savo.' },
     'employee_profiles.read': {
       label: 'Matyti darbuotojų profilius',
       grants: 'Darbuotojo kodą, pastabas, pageidaujamą kalbą ir nuotraukas, taip pat gimimo datą, pilietybę ir lytį iš asmens dokumento. Vardus mato visi.',

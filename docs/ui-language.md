@@ -587,7 +587,7 @@ Lithuanian or Russian label wraps rather than overflow.
 
 ### Select mode
 - **Brief:** a list's rows are ticked only while an action that needs several of them is under
-  way (WARE-45). The action's button starts the mode: **Export** (every list), **Change
+  way (WARE-45). The action's button starts the mode: **Export** (every list, with Export data), **Change
   Status…** (SIM Cards). There are no checkboxes while browsing.
 - **Detail:**
   - The **mode bar** names the action and counts the ticked rows ("Export Employees · 3 selected"),

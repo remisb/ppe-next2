@@ -71,6 +71,7 @@ export function Employees({
   // Names are everyone's; sizes take See employee sizes, the code, notes and photos See employee profiles (the API leaves them blank).
   const seesSizes = session.can('employee_sizes.read')
   const seesProfile = session.can('employee_profiles.read')
+  const canExport = session.can('data.export')
   const managesSizes = session.can('employee_sizes.manage')
   const managesProfile = session.can('employee_profiles.manage')
   const merges = session.can('employees.merge')
@@ -186,8 +187,8 @@ export function Employees({
       <PageHeader
         title={t.employees.title}
         description={t.employees.description}
-        // Export: in the header from md, in ⋯ below (a phone exports all shown: its list has no checkboxes).
-        secondary={[{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: shown.length === 0 || selection.active }]}
+        // Export (data.export): in the header from md, in ⋯ below (a phone exports all shown: its list has no checkboxes).
+        secondary={canExport ? [{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: shown.length === 0 || selection.active }] : []}
         primary={managesProfile ? { label: t.employees.addNew, short: t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
       />
       {/* As on every list: the tabs first, then the search. */}
@@ -241,7 +242,7 @@ export function Employees({
         </p>
       ) : null}
       {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
-      <ExportMode selection={selection} list={t.employees.title} columns={employeeExportColumns({ sizes: seesSizes, profile: seesProfile })} shown={shown} />
+      {canExport ? <ExportMode selection={selection} list={t.employees.title} columns={employeeExportColumns({ sizes: seesSizes, profile: seesProfile })} shown={shown} /> : null}
       <Loaded
         load={employees}
         empty={shown.length === 0}
