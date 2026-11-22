@@ -219,9 +219,12 @@ What it changes here:
   then points to the document and the employee: this is the one tie a scan has to a personnel
   file, and removing that document or shredding the file erases the scan in the same transaction.
   `ppe_app` gains UPDATE on those three columns alone.
-- **Printed fields** may be read from the document's printed text in the browser, without AI,
-  after a spike. A name is taken only when its letters, folded, equal the MRZ's. Every other
-  printed field is shown as printed, to be checked, as typing it was.
+- **Printed fields** may be read from the document's printed text in the browser, without AI.
+  The spike (phase 2, `web/spikes/viz`) found the OCR drops accents surely (EGLĖ read as EGLE),
+  which folding to the MRZ cannot see, so **names are offered, never taken**: prefilled only when
+  their letters, folded, equal the MRZ's, beside the picture of their printed line, for the user
+  to compare and confirm, as Import Documents asks for its code lines. The date of issue is taken
+  when it lies 5 or 10 years before the expiry; place of birth and authority are typed.
 - **Import Documents is retired after Scan Documents' trial** (its tile Retired); until then the
   two share their reading code in one package, so they cannot read differently.
 
