@@ -5,7 +5,7 @@
 --
 -- It reads and writes the business tables and uses their sequences; only
 -- INSERTs and SELECTs the trails (audit_events, auth_events, audit_seals, audit_seal_stamps,
--- audit_purges, order_lines, asset_numbers), which it purges only through the owner's
+-- audit_purges, order_lines, asset_numbers, asset_signed_copies, ai_usage), which it purges only through the owner's
 -- functions; never deletes an asset assignment; only changes the catalogue's
 -- fixed pictures (catalogue_pictures), never adds or deletes one; only reads what others write (schema_migrations, the backup
 -- agent's tables); reads the statistics System shows; truncates, alters and

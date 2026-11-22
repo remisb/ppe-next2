@@ -15,4 +15,8 @@ joins as an external network. After adding or changing a file, reload Caddy:
     docker compose -f docker-compose.prod.yml --env-file .env.prod exec caddy \
         caddy reload --config /etc/caddy/Caddyfile
 
-Current users: data-sync-ui (`sync.caddy`), see its `deploy/` directory.
+Current users: data-sync-ui (`sync.caddy`), see its `deploy/` directory, and
+`legacy.caddy`, which 301-redirects the old `admin.`/`sync.<ip>.sslip.io`
+addresses to the current hosts, keeping the path. Keep it: links in confirmation
+messages sent before the move still point there, and a given order's link never
+expires. As it is not in git, a rebuilt server needs it written again.

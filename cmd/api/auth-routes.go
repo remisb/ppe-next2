@@ -380,7 +380,8 @@ func (h *authHandler) signedIn(w http.ResponseWriter, r *http.Request) (actor uu
 var errPermissionWithdrawn = errors.New("forbidden: your roles no longer allow this")
 
 // requireSensitive wraps the handlers of sensitive routes (managing users,
-// roles and their sessions, Show PIN and PUK, Show Document, the AI key):
+// roles and their sessions, Show Document, the AI key; Show PIN and PUK needs
+// only sim_cards.read since migration 0055):
 // besides the permission in the token (the route's Authorizer), the password
 // must have been entered recently (requireRecentSignIn), and the user's roles
 // must still grant perm now, read from the database, so a demoted

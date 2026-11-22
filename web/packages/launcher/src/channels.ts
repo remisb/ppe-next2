@@ -5,9 +5,9 @@ import { launcherText } from './text.ts'
 
 /**
  * Published apps' channels (ADR 0006, phase 3): names that point at one
- * version of an app, Stable for everyone the tile is for, Beta, Preview and
- * named variants for testers or a chosen audience. The list the API gave holds
- * the ones each user sees and the one they chose.
+ * version of an app, Stable for everyone the tile is for, Beta and Preview for
+ * testers (named variants were removed, migration 0047). The list the API gave
+ * holds the ones each user sees and the one they chose.
  */
 
 /** An app's channels: Stable for whoever sees its tile, Beta and Preview for testers. */

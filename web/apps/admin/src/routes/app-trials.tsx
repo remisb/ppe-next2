@@ -14,7 +14,7 @@ import { t } from '@/i18n'
  * A published app's Trials view (ADR 0006, phase 5): each version beside the
  * others, with the channels opening it, how many people used it (over Usage's
  * window), the errors last seen on it and the feedback given on it, so a
- * Beta or a variant is judged on what happened rather than by asking around.
+ * Beta or Preview is judged on what happened rather than by asking around.
  */
 export function AppTrials({ app, timeZone, revision = 0 }: { app: LauncherApp; timeZone: string | undefined; revision?: number }) {
   const { client } = useApi()
