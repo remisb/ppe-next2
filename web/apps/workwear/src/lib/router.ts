@@ -1,7 +1,7 @@
 import type { OrderStatus, Permission } from '@ppe/api-client'
 import { type Router, linkWith, useAddressRouter } from '@ppe/app-shell'
-import { adminHref, basePath, stripBase } from '@ppe/routing'
-import { type MouseEvent, useEffect } from 'react'
+import { adminHref, basePath } from '@ppe/routing'
+import type { MouseEvent } from 'react'
 import type { ItemStatus } from './records'
 
 export type Route =
@@ -54,8 +54,8 @@ export type Route =
   | { name: 'catalogue'; item?: string; status?: ItemStatus }
   | { name: 'itemSets' }
   /**
-   * An old address of a screen that moved to Administration (/users,
-   * /settings, /backups): the app sends the browser on to path there.
+   * A screen in Administration, at path there (a link or G then U): the app
+   * sends the browser on to it.
    */
   | { name: 'administration'; path: string }
   /** Replacements due: every item due for replacement, reached from a dashboard's tile. */
@@ -107,9 +107,6 @@ const fixed = {
   help: '/help',
 } as const
 
-/** Screens that moved to Administration, at their old addresses here, which are their addresses there too. */
-const movedToAdministration = ['/users', '/settings', '/backups']
-
 /** Unknown paths (stale bookmarks) land on the start screen, as the root does. */
 export function parsePath(pathname: string, search = ''): Route {
   const path = pathname.replace(/\/+$/, '') || '/'
@@ -118,16 +115,13 @@ export function parsePath(pathname: string, search = ''): Route {
     const prefill = parsePrefill(query)
     return prefill ? { name: 'createOrder', prefill } : { name: 'createOrder' }
   }
-  // /history is the screen's old address (it was called History), kept for bookmarks and links already sent.
-  if (path === fixed.history || path === '/history') {
+  if (path === fixed.history) {
     const status = query.get('status')
     return status === 'ORDERED' || status === 'GIVEN' ? { name: 'history', status } : { name: 'history' }
   }
-  // /assets and /assets?kind=equipment are the registers' old address, when they were one screen's two tabs.
-  if (path === fixed.simCards || path === fixed.equipment || path === '/assets') {
+  if (path === fixed.simCards || path === fixed.equipment) {
     const tile = (Object.keys(assetTiles) as AssetTile[]).find((k) => assetTiles[k] === query.get('show'))
-    const equipment = path === fixed.equipment || (path === '/assets' && query.get('kind') === 'equipment')
-    return { name: equipment ? 'equipment' : 'simCards', ...(tile ? { tile } : {}) }
+    return { name: path === fixed.equipment ? 'equipment' : 'simCards', ...(tile ? { tile } : {}) }
   }
   if (path === fixed.employees) return query.get('missing') === '1' ? { name: 'employees', missing: true } : { name: 'employees' }
   // The catalogue opens on a status tab from a link (the Manager Dashboard's readiness: Incomplete).
@@ -135,11 +129,10 @@ export function parsePath(pathname: string, search = ''): Route {
     const status = query.get('status')
     return status === 'active' || status === 'incomplete' || status === 'inactive' ? { name: 'catalogue', status } : { name: 'catalogue' }
   }
-  if (movedToAdministration.includes(path)) return { name: 'administration', path }
   for (const [name, p] of Object.entries(fixed)) {
     if (p === path) return { name } as Route
   }
-  const order = /^\/(?:orders|history)\/([^/]+)$/.exec(path)
+  const order = /^\/orders\/([^/]+)$/.exec(path)
   if (order?.[1]) return { name: 'history', order: decodeURIComponent(order[1]) }
   const employee = /^\/employees\/([^/]+)$/.exec(path)
   if (employee?.[1]) return { name: 'employee', id: decodeURIComponent(employee[1]) }
@@ -258,14 +251,7 @@ const fromOf = (route: Route) => (route.name === 'employeePage' ? route.from : u
 const addresses = { parse: parsePath, pathOf, fromOf }
 
 export function useRouter(): Router<Route> {
-  const router = useAddressRouter(addresses)
-
-  useEffect(() => {
-    // An old /history or /assets address shows as the screen's own, /orders or /assets/…; once, for the address the page opened at.
-    if (/^\/(history(\/|$)|assets\/?$)/.test(stripBase(window.location.pathname))) window.history.replaceState(window.history.state, '', basePath + pathOf(router.route))
-  }, [])
-
-  return router
+  return useAddressRouter(addresses)
 }
 
 /**
