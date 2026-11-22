@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -139,14 +138,7 @@ func (h *personnelHandler) save(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, saveLimit)
-	if err := r.ParseMultipartForm(1 << 20); err != nil {
-		var tooBig *http.MaxBytesError
-		if errors.As(err, &tooBig) {
-			writeError(w, r, document.ErrCopyTooLarge)
-			return
-		}
-		writeErrorMessage(w, http.StatusBadRequest, saveShape)
+	if !parseMultipart(w, r, saveLimit, document.ErrCopyTooLarge, saveShape) {
 		return
 	}
 	defer r.MultipartForm.RemoveAll()

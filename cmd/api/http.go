@@ -292,6 +292,42 @@ func idAndActor(w http.ResponseWriter, r *http.Request) (uuid.UUID, uuid.UUID, b
 	return id, actor, true
 }
 
+// parseMultipart reads a multipart/form-data body of at most bodyLimit bytes,
+// keeping 1 MiB of it in memory. A larger body answers tooLarge, any other
+// failure 400 with shape, which says what the route expects. The caller
+// removes the form's files: defer r.MultipartForm.RemoveAll().
+func parseMultipart(w http.ResponseWriter, r *http.Request, bodyLimit int64, tooLarge error, shape string) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, bodyLimit)
+	if err := r.ParseMultipartForm(1 << 20); err != nil {
+		var tooBig *http.MaxBytesError
+		if errors.As(err, &tooBig) {
+			writeError(w, r, tooLarge)
+			return false
+		}
+		writeErrorMessage(w, http.StatusBadRequest, shape)
+		return false
+	}
+	return true
+}
+
+// formFile reads the parsed form's file part named field, at most limit+1
+// bytes so that the domain refuses a larger file, and its file name. A missing
+// part answers 400 with shape.
+func formFile(w http.ResponseWriter, r *http.Request, field string, limit int64, shape string) ([]byte, string, bool) {
+	f, header, err := r.FormFile(field)
+	if err != nil {
+		writeErrorMessage(w, http.StatusBadRequest, shape)
+		return nil, "", false
+	}
+	defer f.Close()
+	data, err := io.ReadAll(io.LimitReader(f, limit+1))
+	if err != nil {
+		writeError(w, r, err)
+		return nil, "", false
+	}
+	return data, header.Filename, true
+}
+
 // requireBool reads a required boolean field. Full-replace updates must not
 // turn an omitted flag into false.
 func requireBool(v *bool, field string, invalid error) (bool, error) {
