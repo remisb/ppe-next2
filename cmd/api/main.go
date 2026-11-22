@@ -112,7 +112,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		sessions,
 		security.NewService(security.NewPostgresStore(pool), securityConfig(cfg), security.WithLocation(loc)),
 		roles,
-		user.NewService(user.NewPostgresRepository(pool), user.WithSessions(userSessions{sessions}),
+		user.NewService(user.NewPostgresRepository(pool), user.WithSessions(sessions),
 			user.WithRoles(roles), user.WithGuardRole(role.AdminID)),
 		employee.NewPostgresRepository(pool),
 		employeephoto.NewPostgresRepository(pool),
@@ -140,10 +140,6 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	if personnel.Master == nil {
 		logger.Info("personnel files are off: API_PERSONNEL_KEY and API_PERSONNEL_INDEX_KEY are not set")
 	}
-	var documentStore document.Store
-	if store != nil {
-		documentStore = store
-	}
 	// AI usage and Settings → AI (ADR 0007): the OpenAI key sealed under API_SECRETS_KEY, when it is set.
 	secrets, err := secretsKeyring(cfg)
 	if err != nil {
@@ -161,10 +157,10 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		openAI.Base = cfg.OpenAIBaseURL
 	}
 	svc.ai = &aiHandler{settings: aiSettings, ledger: aiLedger, report: aiStore, checker: openAI, colour: colour.NewService(aiSettings, aiLedger, openAI)}
-	svc.documents = document.NewService(document.NewPostgresRepository(pool), personnel, documentStore, document.WithLocation(loc),
+	svc.documents = document.NewService(document.NewPostgresRepository(pool), personnel, store, document.WithLocation(loc),
 		document.WithAIUsage(aiStore), document.WithPeople(peopleOf(svc)))
 	svc.personnelRetentionMonths = cfg.PersonnelRetentionMonths
-	svc.scans = scan.NewService(scan.NewPostgresRepository(pool), personnel, documentStore, scan.WithDays(cfg.PersonnelScanDays),
+	svc.scans = scan.NewService(scan.NewPostgresRepository(pool), personnel, store, scan.WithDays(cfg.PersonnelScanDays),
 		scan.WithLocation(loc))
 	// App Launcher's default tiles, put back should the registry have been
 	// emptied, and its apps' slugs, which tell requests' apps apart.
@@ -323,7 +319,7 @@ func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, s
 		usage:     usage.NewService(use, usage.WithLocation(loc)),
 	}
 	asset.WithMailer(assetMailer{templates: s.templates, settings: s.settings, users: s.users})(s.assets)
-	s.employees = employee.NewService(employees, employee.WithHoldings(employeeHoldings{s.assets}))
+	s.employees = employee.NewService(employees, employee.WithHoldings(s.assets))
 	s.photos = employeephoto.NewService(photos, employeephoto.WithFiles(store))
 	s.catalogue = catalogue.NewService(items, catalogue.WithSuppliers(catalogueSuppliers{s.suppliers}))
 	s.itemSets = itemset.NewService(sets, catalogueChecker{s.catalogue})

@@ -30,15 +30,6 @@ func (s Sight) Show(e Employee) Employee {
 	return e
 }
 
-// ShowAll is Show for each of es.
-func (s Sight) ShowAll(es []Employee) []Employee {
-	out := make([]Employee, len(es))
-	for i, e := range es {
-		out[i] = s.Show(e)
-	}
-	return out
-}
-
 // profileDetails are employee.updated's keys that are the profile's; the
 // name's are everyone's.
 var profileDetails = []string{"code", "preferred_language", "notes_changed"}

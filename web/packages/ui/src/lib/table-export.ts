@@ -21,8 +21,6 @@ export interface ExportColumn<T> {
 
 export type ExportFormat = 'xlsx' | 'csv'
 
-export const exportFormats: readonly ExportFormat[] = ['xlsx', 'csv']
-
 const mimeTypes: Record<ExportFormat, string> = {
   xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   csv: 'text/csv;charset=utf-8',

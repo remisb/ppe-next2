@@ -36,9 +36,6 @@ type Option func(*Service)
 // WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
 func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
 
-// WithIDGenerator replaces uuid.New for suppliers and events.
-func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
-
 // NewService is the supplier service over repo.
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}

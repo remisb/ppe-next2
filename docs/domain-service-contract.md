@@ -67,7 +67,8 @@ Never let a storage error reach the client.
 `uuid.New`. The truncation matters: Postgres stores microseconds, so without it a service
 returns timestamps that differ from what it stored — invisible on macOS, whose clock is
 already microsecond-grained, and a test failure on Linux CI. `WithClock`
-and `WithIDGenerator` make tests deterministic; production callers pass no options.
+makes tests deterministic; production callers pass no options. Add an ID option
+only when a test needs fixed IDs (none does today).
 
 ## Actor attribution
 

@@ -471,7 +471,7 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   (interface), `service.go`, `postgres.go` (pgx). `internal/domain/user` is the reference.
 - **Domain never imports `net/http`**. Interfaces are declared by the consumer; assert with
   `var _ Repository = (*PostgresRepository)(nil)`.
-- **Service owns policy** (validation, UUIDs, timestamps via `WithClock`/`WithIDGenerator`);
+- **Service owns policy** (validation, UUIDs, timestamps via `WithClock`);
   **repository is dumb** except translating storage errors to sentinels
   (`pgx.ErrNoRows`→`ErrNotFound`, `23505`→conflict, `23503` on actor FK→`ErrActorNotFound`).
 - **Errors**: `fieldError(field, problem)` wraps `ErrInvalid`. `writeError` in

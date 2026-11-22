@@ -46,10 +46,6 @@ type Option func(*Service)
 // WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
 func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
 
-// WithIDGenerator replaces uuid.New for new tiles, versions, channels,
-// feedback and events.
-func WithIDGenerator(gen func() uuid.UUID) Option { return func(s *Service) { s.newID = gen } }
-
 // NewService is the registry over repo; IsApp knows no slug until Refresh.
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}

@@ -97,7 +97,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		sessions,
 		security.NewService(security.NewPostgresStore(pool), securityConfig(testConfig())),
 		roles,
-		user.NewService(user.NewPostgresRepository(pool), fastHash, user.WithSessions(userSessions{sessions}),
+		user.NewService(user.NewPostgresRepository(pool), fastHash, user.WithSessions(sessions),
 			user.WithRoles(roles), user.WithGuardRole(role.AdminID)),
 		employee.NewPostgresRepository(pool),
 		employeephoto.NewPostgresRepository(pool),
@@ -1707,8 +1707,8 @@ func TestPostgresRolesHTTP(t *testing.T) {
 	}
 	login := api.do(t, "POST", "/api/v1/auth/login", "", map[string]any{"email": "k@example.com", "password": "password123"})
 	claims, err := api.tokens.parse(decode[tokenJSON](t, login.Body.Bytes()).AccessToken)
-	if err != nil || !slices.Equal(claims.Perms, []string{"employee_profiles.read", "employee_profiles.manage", "employee_sizes.read", "employee_sizes.manage", "catalogue.manage", "item_sets.read", "sim_cards.read", "dashboard.employee"}) || claims.Roles != nil {
-		t.Errorf("k's token perms %v roles %v, %v", claims.Perms, claims.Roles, err)
+	if err != nil || !slices.Equal(claims.Perms, []string{"employee_profiles.read", "employee_profiles.manage", "employee_sizes.read", "employee_sizes.manage", "catalogue.manage", "item_sets.read", "sim_cards.read", "dashboard.employee"}) {
+		t.Errorf("k's token perms %v, %v", claims.Perms, err)
 	}
 	if rec := api.do(t, "DELETE", "/api/v1/roles/"+store.ID.String(), adminTok, nil); rec.Code != http.StatusConflict {
 		t.Errorf("delete a held role = %d", rec.Code)

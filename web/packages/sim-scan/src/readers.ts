@@ -58,12 +58,6 @@ export async function codesIn(image: HTMLCanvasElement): Promise<Codes> {
   return codesFromWords(words)
 }
 
-/** Stops both readers' workers, freeing their memory; the next read starts them again. */
-export async function stopReaders(): Promise<void> {
-  barcodes?.stop()
-  await text?.stop()
-}
-
 /**
  * What one photo shows: its SIM No. when the barcode is on it, else the PIN
  * and PUK. A photo the browser cannot open (HEIC outside Safari) reads as
