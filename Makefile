@@ -36,8 +36,10 @@ vet: ## go vet
 # run holds it (cmd/testlock; web/e2e's pnpm e2e and pnpm guide take it too).
 TESTLOCK = go run ./cmd/testlock
 
-test: ## Unit tests; Postgres tests skip unless API_TEST_DB_DSN is set
-	$(TESTLOCK) -- go test -p 1 ./...
+test: ## Unit tests; Postgres tests skip (make test-db runs them)
+# API_TEST_DB_DSN is blanked: .env sets it and is exported, so the Postgres tests
+# would otherwise run and empty the test database without test-db's checks.
+	API_TEST_DB_DSN= $(TESTLOCK) -- go test -p 1 ./...
 
 test-db: ## All tests including Postgres ones against API_TEST_DB_DSN
 	@test -n "$(API_TEST_DB_DSN)" || { echo "API_TEST_DB_DSN is not set"; exit 1; }

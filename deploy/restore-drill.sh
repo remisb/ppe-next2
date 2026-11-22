@@ -103,7 +103,10 @@ docker run --rm --network "$NET" -e API_DB_DSN="$APP_DSN" -e API_ORG_TIMEZONE="$
 	fail "the restored Audit log does not match its seals"
 
 say "starting the API on it, as ppe_app"
+# The API refuses to start without a SIM codes key. /ready never opens a sealed
+# code, so a throwaway key does, and the real one stays in the deployment alone.
 docker run -d --name "$API" --network "$NET" -e API_DB_DSN="$APP_DSN" -e API_JWT_SECRET="$(openssl rand -hex 32)" \
+	-e API_SIM_CODES_KEY="$(openssl rand -hex 32)" \
 	-e API_ORG_TIMEZONE="$(envval API_ORG_TIMEZONE Europe/Vilnius)" -e API_PUBLIC_BASE_URL=https://drill.invalid \
 	-e API_ALLOWED_ORIGINS= "ppe-next2-api:$IMAGE_TAG" >/dev/null
 for i in $(seq 1 60); do

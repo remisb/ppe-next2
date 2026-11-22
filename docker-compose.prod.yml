@@ -83,6 +83,8 @@ services:
       # The least-privilege role ppe_app once API_DB_USER and API_DB_PASSWORD
       # are set in .env.prod (docs/monitoring.md); the owner until then.
       API_DB_DSN: postgres://${API_DB_USER:-${POSTGRES_USER}}:${API_DB_PASSWORD:-${POSTGRES_PASSWORD}}@db:5432/${POSTGRES_DB}?sslmode=disable
+      # An empty value is the API's own default (cmd/api/config.go).
+      API_DB_MAX_CONNS: ${API_DB_MAX_CONNS:-}
       API_JWT_SECRET: ${API_JWT_SECRET:?set API_JWT_SECRET in .env.prod (at least 32 bytes)}
       API_SIM_CODES_KEY: ${API_SIM_CODES_KEY:?set API_SIM_CODES_KEY in .env.prod (openssl rand -hex 32)}
       # Only while the key is changed (docs/backups.md "Changing the SIM codes key").
@@ -100,13 +102,19 @@ services:
       API_SECRETS_PREVIOUS_KEYS: ${API_SECRETS_PREVIOUS_KEYS:-}
       API_OPENAI_BASE_URL: ${API_OPENAI_BASE_URL:-https://api.openai.com}
       API_JWT_TTL: ${API_JWT_TTL:-15m}
+      API_JWT_ISSUER: ${API_JWT_ISSUER:-}
       API_SESSION_MAX_AGE: ${API_SESSION_MAX_AGE:-12h}
       API_SESSION_KEEP_MAX_AGE: ${API_SESSION_KEEP_MAX_AGE:-720h}
       API_SESSION_KEEP_IDLE: ${API_SESSION_KEEP_IDLE:-336h}
       API_RECENT_SIGN_IN: ${API_RECENT_SIGN_IN:-12h}
+      # Sign-in attempts per client address within the interval.
+      API_LOGIN_RATE_LIMIT: ${API_LOGIN_RATE_LIMIT:-}
+      API_LOGIN_RATE_INTERVAL: ${API_LOGIN_RATE_INTERVAL:-}
       # Failed sign-ins per email before that email waits out the interval.
       API_LOGIN_EMAIL_FAILURES: ${API_LOGIN_EMAIL_FAILURES:-10}
       API_LOGIN_EMAIL_INTERVAL: ${API_LOGIN_EMAIL_INTERVAL:-15m}
+      API_REQUEST_TIMEOUT: ${API_REQUEST_TIMEOUT:-}
+      API_SHUTDOWN_TIMEOUT: ${API_SHUTDOWN_TIMEOUT:-}
       # Security events (sign-ins with their addresses) are deleted after this.
       API_AUTH_EVENTS_RETENTION: ${API_AUTH_EVENTS_RETENTION:-4320h}
       # Prometheus /metrics on the compose network only (no port is published):
