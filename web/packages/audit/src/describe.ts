@@ -79,6 +79,13 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['display_rank', 'text'],
   // A catalogue item's supplier by its name then (supplier_id is hidden), and a supplier's details (supplier.created …).
   ['supplier', 'text'],
+  // An employee's employment (employee.employed …): the company's name then, and the period's days.
+  ['company', 'text'],
+  ['started_on', 'text'],
+  ['ended_on', 'text'],
+  // A company's (company.created …, company.made_default).
+  ['is_default', 'bool'],
+  ['previous_default', 'text'],
   ['company_code', 'text'],
   ['vat_code', 'text'],
   ['address', 'text'],
@@ -97,6 +104,7 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['orders', 'count'],
   ['assignments', 'count'],
   ['photos', 'count'],
+  ['employments', 'count'],
   ['record_number', 'text'],
   ['status', 'status'],
   ['total_cents', 'money'],
@@ -212,6 +220,8 @@ const hidden = new Set([
   'merged_into_id',
   'other_employee_id',
   'supplier_id',
+  'employment_id',
+  'company_id',
 ])
 
 /** Events from before migration 0021 hold the accounting price under this key. */

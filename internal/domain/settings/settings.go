@@ -1,6 +1,6 @@
 // Package settings holds the organisation's settings that administrators
-// change in the app, one set for the whole organisation: the company's name,
-// which mail templates use; the supplier's WhatsApp group, which Copy for
+// change in the app, one set for the whole organisation: the supplier's
+// WhatsApp group, which Copy for
 // WhatsApp opens for the order message; and the SIM providers, which Add SIM
 // offers, the default one chosen, with the Non-return Value it fills in, each
 // with the e-mail address its activation and blocking emails go to and the
@@ -23,8 +23,7 @@ import (
 
 // Limits of the settings' fields, in characters unless they say otherwise.
 const (
-	maxChatNameLen    = 100
-	maxCompanyNameLen = 200
+	maxChatNameLen = 100
 	// maxProviderLen is a SIM card's provider's limit (asset.maxTextLen).
 	maxProviderLen = 100
 	maxProviders   = 50
@@ -43,9 +42,6 @@ var inviteCode = regexp.MustCompile(`^[A-Za-z0-9]{10,40}$`)
 // Settings is the organisation's one set. The zero value is the defaults,
 // what a database with no settings row reads as.
 type Settings struct {
-	// CompanyName is the organisation's name as mail templates write it
-	// ({{company.name}}); empty when not set.
-	CompanyName  string
 	SupplierChat SupplierChat
 	// SIMProviders are the providers Add SIM offers, in the administrator's
 	// order; never nil once read.
@@ -88,23 +84,6 @@ func (s Settings) ProviderNames() []string {
 		names[i] = p.Name
 	}
 	return names
-}
-
-// CompanyParams set the company's name, or empty to clear it.
-type CompanyParams struct {
-	Name string
-}
-
-// Normalize trims the name and collapses its inner spaces.
-func (p *CompanyParams) Normalize() { p.Name = strings.Join(strings.Fields(p.Name), " ") }
-
-// Validate normalizes p and checks the name's length.
-func (p *CompanyParams) Validate() error {
-	p.Normalize()
-	if utf8.RuneCountInString(p.Name) > maxCompanyNameLen {
-		return fieldError("name", "is too long")
-	}
-	return nil
 }
 
 // SupplierChat is the supplier's WhatsApp group. WhatsApp has no link that

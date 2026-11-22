@@ -8,6 +8,7 @@ import {
   Activity,
   ArrowLeft,
   BarChart3,
+  Building2,
   Ellipsis,
   Gauge,
   Grip,
@@ -35,6 +36,7 @@ import { RolesPage } from './routes/roles'
 import { SecurityPage } from './routes/security'
 import { SettingsPage } from './routes/settings'
 import { SuppliersPage } from './routes/suppliers'
+import { CompaniesPage } from './routes/companies'
 import { SystemPage } from './routes/system'
 import { UsagePage } from './routes/usage'
 import { UsersPage } from './routes/users'
@@ -60,6 +62,7 @@ const sections = (): Record<Screen, Section> => ({
   settings: { name: 'settings', label: t.shell.settings, short: t.shell.shortSettings, icon: SettingsIcon, inMore: true },
   mailTemplates: { name: 'mailTemplates', label: t.shell.mailTemplates, short: t.shell.shortMailTemplates, icon: Mail, inMore: true },
   suppliers: { name: 'suppliers', label: t.shell.suppliers, short: t.shell.shortSuppliers, icon: Truck, inMore: true },
+  companies: { name: 'companies', label: t.shell.companies, short: t.shell.shortCompanies, icon: Building2, inMore: true },
   apps: { name: 'apps', label: t.shell.manageApps, short: t.shell.shortManageApps, icon: LayoutGrid, inMore: true },
 })
 
@@ -70,7 +73,7 @@ const phoneColumns = ['grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4'
  * Administration's frame, the staff app's in look (@ppe/ui main-nav): a
  * bottom bar on a phone, a rail on a tablet, a sidebar on a desktop. Its
  * sections are the screens the user's permissions open; on a phone, Roles,
- * System, Usage, Settings, Mail Templates, Suppliers and Manage apps are in More, so the bar holds at most four and More. More and the
+ * System, Usage, Settings, Mail Templates, Suppliers, Companies and Manage apps are in More, so the bar holds at most four and More. More and the
  * rail and sidebar's foot hold the way back to the staff app, Account (the
  * staff app's) and Sign out. Both apps share one sign-in, so signing in
  * or out here does so there too.
@@ -212,6 +215,7 @@ export function App() {
         {route.name === 'settings' ? <SettingsPage /> : null}
         {route.name === 'mailTemplates' ? <MailTemplatesPage route={route} navigate={navigate} /> : null}
         {route.name === 'suppliers' ? <SuppliersPage navigate={navigate} /> : null}
+        {route.name === 'companies' ? <CompaniesPage navigate={navigate} /> : null}
         {route.name === 'apps' ? <AppsPage route={route} navigate={navigate} /> : null}
         {route.name === 'system' ? <SystemPage route={route} navigate={navigate} /> : null}
         {route.name === 'usage' ? <UsagePage navigate={navigate} /> : null}

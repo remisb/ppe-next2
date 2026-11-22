@@ -13,6 +13,7 @@ import (
 
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
+	"github.com/remisb/ppe-next2/internal/domain/company"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
@@ -74,7 +75,9 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 	start := time.Now()
 	clock.daysAgo(start, loc, 150)
 	var (
-		employees = employee.NewService(employee.NewPostgresRepository(pool), employee.WithClock(clock.now))
+		companies = company.NewService(company.NewPostgresRepository(pool), company.WithClock(clock.now))
+		employees = employee.NewService(employee.NewPostgresRepository(pool), employee.WithClock(clock.now),
+			employee.WithCompanies(employeeCompanies{companies}))
 		suppliers = supplier.NewService(supplier.NewPostgresRepository(pool), supplier.WithClock(clock.now))
 		items     = catalogue.NewService(catalogue.NewPostgresRepository(pool), catalogue.WithClock(clock.now))
 		sets      = itemset.NewService(itemset.NewPostgresRepository(pool), catalogueChecker{items}, itemset.WithClock(clock.now))
@@ -98,7 +101,19 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 		return fmt.Errorf("refusing to seed: the database already has %d catalogue items and %d employees", len(existingItems), len(existingEmployees))
 	}
 
-	s := seeder{ctx: ctx, actor: admin.ID, suppliers: suppliers, items: items, employees: employees, sets: sets, orders: orders, assets: assets,
+	// The companies employees are employed by; the first is the default.
+	home, err := companies.Create(ctx, company.Params{Code: "PV", Name: "UAB Pavyzdys", CompanyCode: "300000100", VATCode: "LT100000001017",
+		Address: "Gedimino pr. 1", City: "Vilnius", PostalCode: "01103", Country: "LT"}, admin.ID)
+	if err != nil {
+		return fmt.Errorf("company: %w", err)
+	}
+	other, err := companies.Create(ctx, company.Params{Code: "PVS", Name: "UAB Pavyzdys Statyba", CompanyCode: "300000200",
+		City: "Kaunas", Country: "LT"}, admin.ID)
+	if err != nil {
+		return fmt.Errorf("company: %w", err)
+	}
+
+	s := seeder{ctx: ctx, actor: admin.ID, employer: &home.ID, suppliers: suppliers, items: items, employees: employees, sets: sets, orders: orders, assets: assets,
 		today: func() string { return clock.now().In(loc).Format(time.DateOnly) }}
 
 	// Suppliers, made-up companies; each item below names the one chosen before it.
@@ -147,7 +162,18 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 	tomas := s.employee("Tomas", "Jankauskas", "W-003", 190, 0, "45", "", "")
 	rasa := s.employee("Rasa", "Stankevičiūtė", "W-004", 171, 50, "", "", "")
 	mindaugas := s.employee("Mindaugas", "Vasiliauskas", "", 178, 54, "44", "", "")
+	s.employer = &other.ID
 	aleksandr := s.employee("Aleksandr", "Ivanov", "W-006", 189, 62, "46", "Prefers Russian", "ru")
+	// A candidate, who may be employed later, and a former employee.
+	s.employer = nil
+	s.employee("Lukas", "Kandidatas", "", 180, 52, "44", "Interview in December", "lt")
+	s.employer = &home.ID
+	former := s.employee("Inga", "Buvusi", "W-007", 168, 44, "38", "", "")
+	if s.err == nil && len(former.Employments) > 0 {
+		_, err := employees.EndEmployment(ctx, former.ID, former.Employments[0].ID, clock.now().In(loc).AddDate(0, 0, 30).Format(time.DateOnly),
+			employee.Rights{Profile: true}, admin.ID)
+		s.fail("former employee", err)
+	}
 	if s.err != nil {
 		return s.err
 	}
@@ -191,9 +217,6 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 		{Name: "Tele2"},
 	}, Default: "Telia"}, admin.ID); err != nil {
 		return fmt.Errorf("SIM providers: %w", err)
-	}
-	if _, err := prefs.UpdateCompany(ctx, settings.CompanyParams{Name: "UAB Pavyzdys"}, admin.ID); err != nil {
-		return fmt.Errorf("company: %w", err)
 	}
 	sim1 := s.sim("SIM-000001", "8937 0011 2233 4455 667", "+370 612 40118", "Telia", "Biz 10 GB", asset.StatusActive)
 	sim2 := s.sim("SIM-000002", "8937 0011 2233 4455 668", "+370 612 40119", "Telia", "Biz 10 GB", asset.StatusActive)
@@ -248,8 +271,11 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 // seeder makes each call as the admin and keeps the first error, so the
 // script reads as a list of data rather than of error checks.
 type seeder struct {
-	ctx       context.Context
-	actor     uuid.UUID
+	ctx   context.Context
+	actor uuid.UUID
+	// employer is the company the next employees are employed by, from the
+	// clock's day; nil adds candidates.
+	employer  *uuid.UUID
 	suppliers *supplier.Service
 	// supplier is the one the next items name; nil for none.
 	supplier   *uuid.UUID
@@ -311,16 +337,21 @@ func (s *seeder) set(name, description string, pairs ...any) uuid.UUID {
 	return set.ID
 }
 
-// employee adds an employee; a clothing size of 0, an empty shoe size and an
+// employee adds an employee, employed by s.employer from the clock's day (a
+// candidate without one); a clothing size of 0, an empty shoe size and an
 // empty language are not recorded.
 func (s *seeder) employee(first, last, code string, heightCm, clothing int, shoe, notes, lang string) employee.Employee {
 	if s.err != nil {
 		return employee.Employee{}
 	}
-	e, err := s.employees.Create(s.ctx, employee.Params{
+	p := employee.Params{
 		FirstName: first, LastName: last, Code: optional(code), HeightCm: &heightCm,
 		ClothingSize: optionalInt(clothing), ShoeSize: optional(shoe), Notes: notes, PreferredLanguage: optional(lang),
-	}, employee.Rights{Sizes: true, Profile: true}, s.actor)
+	}
+	if s.employer != nil {
+		p.Employment = &employee.EmployParams{CompanyID: *s.employer, StartedOn: optional(s.today())}
+	}
+	e, err := s.employees.Create(s.ctx, p, employee.Rights{Sizes: true, Profile: true}, s.actor)
 	s.fail("employee "+first+" "+last, err)
 	return e
 }

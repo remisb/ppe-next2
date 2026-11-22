@@ -12,13 +12,8 @@ export const employees: EmployeesText = {
   searchPlaceholder: 'Ieškoti pagal vardą ar kodą',
   searchLabel: 'Ieškoti darbuotojų',
   show: 'Rodyti',
-  allTab: 'Visi',
   missingTab: 'Trūksta dydžio',
   tabHelp: {
-    all: {
-      body: 'Visi darbuotojai su dydžiais, išsaugotais kitiems užsakymams.',
-      note: 'Ištrinti darbuotojai neįtraukiami; jų ankstesni užsakymai išsaugomi.',
-    },
     missing: {
       body: 'Darbuotojai, kurių dydžio paklaus „Kurti užsakymą“: nėra avalynės dydžio arba nėra nei drabužių dydžio, nei ūgio, pagal kurį jį pasiūlyti.',
       note: 'Įrašykite dydžius per „Keisti dydžius“, arba „Kurti užsakymą“ jų paklaus ir galės išsaugoti darbuotojui.',
@@ -58,7 +53,7 @@ export const employees: EmployeesText = {
   codeIs: (code: string) => `Kodas ${code}`,
   newOrder: 'Naujas užsakymas',
   notes: 'Pastabos',
-  exportColumns: { birthDate: 'Gimimo data', nationality: 'Pilietybė', sex: 'Lytis', added: 'Pridėta' },
+  exportColumns: { status: 'Būsena', birthDate: 'Gimimo data', nationality: 'Pilietybė', sex: 'Lytis', added: 'Pridėta' },
   itemsExport: {
     file: (name: string) => `Išduotos prekės – ${name}`,
     details: 'Aprašymas',
@@ -140,11 +135,13 @@ export const employees: EmployeesText = {
         ? plural(n, { one: '# įmonės turtas, dabar turimas', few: `# įmonės turto vienetai, ${held} dabar turimi`, other: `# įmonės turto vienetų, ${held} dabar turimi` })
         : plural(n, { one: '# įmonės turtas, grąžintas', few: '# įmonės turto vienetai, grąžinti', other: '# įmonės turto vienetų, grąžinti' }),
     photos: (n: number) => plural(n, { one: '# nuotrauka', few: '# nuotraukos', other: '# nuotraukų' }),
+    employments: (n: number) => plural(n, { one: '# įdarbinimas', few: '# įdarbinimai', other: '# įdarbinimų' }),
     history: 'Pakeitimai',
     nothingMoves: 'Daugiau niekas nepereina: įrašas neturi užsakymų, įmonės turto ar nuotraukų.',
     snapshotsKept: 'Kvituose ir pasirašytose formose lieka vardas, su kuriuo jie pasirašyti.',
     documentsKept: (name: string) => `${name} turi asmens dokumentų, todėl paliekamas šis įrašas.`,
     bothHaveDocuments: 'Abu įrašai turi asmens dokumentų, todėl jų sujungti negalima. Pirma pašalinkite vieno įrašo dokumentus.',
+    bothEmployed: (a: string, b: string) => `Abu įrašai šiuo metu įdarbinti (${a}, ${b}), todėl jų sujungti negalima. Pirmiausia baikite vieną darbą – įraše, kuris bus pašalintas.`,
     submit: 'Sujungti darbuotojus',
     confirm: (removed: string, kept: string) => `Sujungti ${removed} su ${kept}? To atšaukti negalima.`,
     merged: (removed: string, kept: string) => `${removed} sujungtas su ${kept}.`,

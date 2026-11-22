@@ -3,6 +3,7 @@ import { apps } from './apps'
 import { audit } from './audit'
 import { backups } from './backups'
 import { common } from './common'
+import { companies } from './companies'
 import { mailTemplates } from './mail-templates'
 import { overview } from './overview'
 import { roles } from './roles'
@@ -14,4 +15,4 @@ import { system } from './system'
 import { usage } from './usage'
 import { users } from './users'
 
-export const lt = { common, shell, overview, users, roles, audit, security, system, usage, account, settings, mailTemplates, suppliers, apps, backups }
+export const lt = { common, shell, overview, users, roles, audit, security, system, usage, account, settings, mailTemplates, suppliers, companies, apps, backups }

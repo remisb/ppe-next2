@@ -271,7 +271,6 @@ export const assets = {
   sendEmailHint: 'Opens your mail app with the email filled in; you send it from there.',
   emailFailed: 'The email could not be prepared',
   missingProviderEmail: 'The provider has no e-mail on Settings: type the address yourself, or ask an administrator to add it.',
-  missingCompany: 'Settings has no company name: replace [Company Name] before sending, or ask an administrator to add it.',
   missingFields: 'Replace each [ … ] with the right value before sending.',
   optional: 'Optional.',
   close: 'Close',

@@ -20,7 +20,7 @@ func TestAssetMailerFillsInSettings(t *testing.T) {
 	}, api.admin.ID); err != nil {
 		t.Fatal(err)
 	}
-	mailer := assetMailer{templates: api.svc.templates, settings: api.svc.settings, users: api.svc.users}
+	mailer := assetMailer{templates: api.svc.templates, settings: api.svc.settings, companies: api.svc.companies, users: api.svc.users}
 	card := asset.EmailCard{SIMNumber: "00200", Provider: "bitė", Actor: api.admin.ID}
 
 	m, err := mailer.SIMEmail(ctx, asset.EmailActivation, card)

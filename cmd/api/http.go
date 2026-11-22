@@ -15,6 +15,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
+	"github.com/remisb/ppe-next2/internal/domain/company"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
@@ -94,6 +95,7 @@ var errorStatuses = []struct {
 	{employee.ErrActorNotFound, http.StatusUnauthorized},
 	{catalogue.ErrActorNotFound, http.StatusUnauthorized},
 	{supplier.ErrActorNotFound, http.StatusUnauthorized},
+	{company.ErrActorNotFound, http.StatusUnauthorized},
 	{itemset.ErrActorNotFound, http.StatusUnauthorized},
 	{order.ErrActorNotFound, http.StatusUnauthorized},
 	{settings.ErrActorNotFound, http.StatusUnauthorized},
@@ -109,8 +111,10 @@ var errorStatuses = []struct {
 	{role.ErrNotFound, http.StatusNotFound},
 	{session.ErrNotFound, http.StatusNotFound},
 	{employee.ErrNotFound, http.StatusNotFound},
+	{employee.ErrEmploymentNotFound, http.StatusNotFound},
 	{catalogue.ErrNotFound, http.StatusNotFound},
 	{supplier.ErrNotFound, http.StatusNotFound},
+	{company.ErrNotFound, http.StatusNotFound},
 	{catalogue.ErrPictureNotFound, http.StatusNotFound},
 	{itemset.ErrNotFound, http.StatusNotFound},
 	{order.ErrNotFound, http.StatusNotFound},
@@ -163,12 +167,20 @@ var errorStatuses = []struct {
 	{employee.ErrCodeTaken, http.StatusConflict},
 	{catalogue.ErrNameTaken, http.StatusConflict},
 	{supplier.ErrCodeTaken, http.StatusConflict},
+	{company.ErrCodeTaken, http.StatusConflict},
+	{company.ErrDefaultTaken, http.StatusConflict},
+	{company.ErrIsDefault, http.StatusConflict},
+	{company.ErrInUse, http.StatusConflict},
 	{itemset.ErrNameTaken, http.StatusConflict},
 	{order.ErrPriceMissing, http.StatusConflict},
 	{order.ErrItemUnavailable, http.StatusConflict},
 	{order.ErrNotOrdered, http.StatusConflict},
 	{employee.ErrHoldsAssets, http.StatusConflict},
 	{employee.ErrMergePersonnel, http.StatusConflict},
+	{employee.ErrBothEmployed, http.StatusConflict},
+	{employee.ErrEmployed, http.StatusConflict},
+	{employee.ErrEnded, http.StatusConflict},
+	{employee.ErrOverlap, http.StatusConflict},
 	{asset.ErrInventoryNoTaken, http.StatusConflict},
 	{asset.ErrSIMNoTaken, http.StatusConflict},
 	{asset.ErrAlreadyGiven, http.StatusConflict},
@@ -184,8 +196,10 @@ var errorStatuses = []struct {
 	{role.ErrInvalid, http.StatusBadRequest},
 	{session.ErrInvalid, http.StatusBadRequest},
 	{employee.ErrInvalid, http.StatusBadRequest},
+	{employee.ErrCompanyNotFound, http.StatusBadRequest},
 	{catalogue.ErrInvalid, http.StatusBadRequest},
 	{supplier.ErrInvalid, http.StatusBadRequest},
+	{company.ErrInvalid, http.StatusBadRequest},
 	{itemset.ErrInvalid, http.StatusBadRequest},
 	{itemset.ErrUnknownItem, http.StatusBadRequest},
 	{order.ErrInvalid, http.StatusBadRequest},

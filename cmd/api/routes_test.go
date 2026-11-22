@@ -22,6 +22,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
+	"github.com/remisb/ppe-next2/internal/domain/company"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
@@ -461,7 +462,13 @@ func (stubPhotos) Apply(context.Context, uuid.UUID, employeephoto.Change) error 
 
 type stubEmployees struct{}
 
-func (stubEmployees) Create(context.Context, employee.Employee, *audit.Event) error { return nil }
+func (stubEmployees) Create(context.Context, employee.Employee, []audit.Event) error { return nil }
+func (stubEmployees) Employments(context.Context, uuid.UUID) ([]employee.Employment, error) {
+	return []employee.Employment{}, nil
+}
+func (stubEmployees) UpdateEmployments(context.Context, uuid.UUID, employee.EmploymentMutation) (employee.Employee, error) {
+	return employee.Employee{}, employee.ErrNotFound
+}
 func (stubEmployees) Get(context.Context, uuid.UUID) (employee.Employee, error) {
 	return employee.Employee{}, employee.ErrNotFound
 }
@@ -525,6 +532,27 @@ func (stubCatalogue) UpdatePicture(context.Context, catalogue.Icon, catalogue.Pi
 }
 
 type stubSuppliers struct{}
+
+type stubCompanies struct{}
+
+func (stubCompanies) Create(_ context.Context, c company.Company, _ audit.Event) (company.Company, error) {
+	return c, nil
+}
+func (stubCompanies) Get(context.Context, uuid.UUID) (company.Company, error) {
+	return company.Company{}, company.ErrNotFound
+}
+func (stubCompanies) Default(context.Context) (company.Company, error) {
+	return company.Company{}, company.ErrNotFound
+}
+func (stubCompanies) List(context.Context) ([]company.Company, error) {
+	return []company.Company{}, nil
+}
+func (stubCompanies) Update(context.Context, uuid.UUID, company.Mutation) (company.Company, error) {
+	return company.Company{}, company.ErrNotFound
+}
+func (stubCompanies) MakeDefault(context.Context, uuid.UUID, func(company.Company, *company.Company) (company.Company, []audit.Event, error)) (company.Company, error) {
+	return company.Company{}, company.ErrNotFound
+}
 
 func (stubSuppliers) Create(_ context.Context, s supplier.Supplier, _ audit.Event) (supplier.Supplier, error) {
 	return s, nil
@@ -808,7 +836,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubPhotos{}, stubCatalogue{}, stubSuppliers{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, testCodes(t), stubDashboard{}, &stubSettings{}, stubTemplates{}, stubLauncher{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
+	svc := newServices(time.UTC, time.Hour, 0, sessions, security.NewService(log, securityConfig(testConfig())), roles, users, stubEmployees{}, stubPhotos{}, stubCatalogue{}, stubSuppliers{}, stubCompanies{}, stubItemSets{}, stubOrders{}, stubAssets{}, nil, testCodes(t), stubDashboard{}, &stubSettings{}, stubTemplates{}, stubLauncher{}, stubBackups{}, stubAudit{}, errs, memUsage{}, nil)
 	svc.ready = stubReady{}
 	svc.documents = document.NewService(stubDocuments{}, document.Keys{}, nil)
 	svc.scans = scan.NewService(nil, document.Keys{}, nil)
@@ -921,18 +949,22 @@ var policy = map[string]rule{
 	"PUT /api/v1/roles/{id}":    {role.RolesManage, "admins"},
 	"DELETE /api/v1/roles/{id}": {role.RolesManage, "admins"},
 
-	"GET /api/v1/employees":                      {"", "any"},
-	"GET /api/v1/employees/{id}":                 {"", "any"},
-	"GET /api/v1/employees/by-name/{q}":          {"", "any"},
-	"POST /api/v1/employees":                     {role.EmployeeProfilesManage, "staff"},
-	"PUT /api/v1/employees/{id}":                 {role.EmployeeProfilesManage, "staff"},
-	"PUT /api/v1/employees/{id}/sizes":           {role.EmployeeSizesManage, "staff"},
-	"DELETE /api/v1/employees/{id}":              {role.EmployeesDelete, "managers"},
-	"POST /api/v1/employees/similar":             {role.EmployeeProfilesManage, "staff"},
-	"GET /api/v1/employees/possible-duplicates":  {role.EmployeesMerge, "managers"},
-	"POST /api/v1/employees/distinct-pairs":      {role.EmployeesMerge, "managers"},
-	"GET /api/v1/employees/{id}/merge/{remove}":  {role.EmployeesMerge, "managers"},
-	"POST /api/v1/employees/{id}/merge/{remove}": {role.EmployeesMerge, "managers"},
+	"GET /api/v1/employees":                             {"", "any"},
+	"GET /api/v1/employees/{id}":                        {"", "any"},
+	"GET /api/v1/employees/by-name/{q}":                 {"", "any"},
+	"POST /api/v1/employees":                            {role.EmployeeProfilesManage, "staff"},
+	"PUT /api/v1/employees/{id}":                        {role.EmployeeProfilesManage, "staff"},
+	"POST /api/v1/employees/{id}/employments":           {role.EmployeeProfilesManage, "staff"},
+	"PUT /api/v1/employees/{id}/employments/{eid}":      {role.EmployeeProfilesManage, "staff"},
+	"POST /api/v1/employees/{id}/employments/{eid}/end": {role.EmployeeProfilesManage, "staff"},
+	"DELETE /api/v1/employees/{id}/employments/{eid}":   {role.EmployeeProfilesManage, "staff"},
+	"PUT /api/v1/employees/{id}/sizes":                  {role.EmployeeSizesManage, "staff"},
+	"DELETE /api/v1/employees/{id}":                     {role.EmployeesDelete, "managers"},
+	"POST /api/v1/employees/similar":                    {role.EmployeeProfilesManage, "staff"},
+	"GET /api/v1/employees/possible-duplicates":         {role.EmployeesMerge, "managers"},
+	"POST /api/v1/employees/distinct-pairs":             {role.EmployeesMerge, "managers"},
+	"GET /api/v1/employees/{id}/merge/{remove}":         {role.EmployeesMerge, "managers"},
+	"POST /api/v1/employees/{id}/merge/{remove}":        {role.EmployeesMerge, "managers"},
 
 	"GET /api/v1/employee-photos/{id}":                   {role.EmployeeProfilesRead, "staff"},
 	"POST /api/v1/employee-photos/{id}":                  {"", "staff+personnel"},
@@ -972,11 +1004,17 @@ var policy = map[string]rule{
 	"DELETE /api/v1/catalogue/{id}":            {role.CatalogueManage, "managers"},
 	"POST /api/v1/catalogue/{id}/move":         {role.CatalogueManage, "managers"},
 
-	"GET /api/v1/suppliers":         {"", "any"},
-	"GET /api/v1/suppliers/{id}":    {"", "any"},
-	"POST /api/v1/suppliers":        {role.SuppliersManage, "admins"},
-	"PUT /api/v1/suppliers/{id}":    {role.SuppliersManage, "admins"},
-	"DELETE /api/v1/suppliers/{id}": {role.SuppliersManage, "admins"},
+	"GET /api/v1/suppliers":              {"", "any"},
+	"GET /api/v1/suppliers/{id}":         {"", "any"},
+	"POST /api/v1/suppliers":             {role.SuppliersManage, "admins"},
+	"PUT /api/v1/suppliers/{id}":         {role.SuppliersManage, "admins"},
+	"DELETE /api/v1/suppliers/{id}":      {role.SuppliersManage, "admins"},
+	"GET /api/v1/companies":              {"", "any"},
+	"GET /api/v1/companies/{id}":         {"", "any"},
+	"POST /api/v1/companies":             {role.CompaniesManage, "admins"},
+	"PUT /api/v1/companies/{id}":         {role.CompaniesManage, "admins"},
+	"PUT /api/v1/companies/{id}/default": {role.CompaniesManage, "admins"},
+	"DELETE /api/v1/companies/{id}":      {role.CompaniesManage, "admins"},
 
 	"GET /api/v1/item-sets":                         {role.ItemSetsRead, "staff"},
 	"GET /api/v1/item-sets/active":                  {"", "any"},
@@ -990,7 +1028,6 @@ var policy = map[string]rule{
 	"POST /api/v1/orders":                           {"", "any"},
 	"GET /api/v1/orders":                            {"", "any"},
 	"GET /api/v1/settings":                          {"", "any"},
-	"PUT /api/v1/settings/company":                  {role.SettingsManage, "admins"},
 	// Settings → AI and AI Usage (ADR 0007); colouring is given to no built-in role.
 	"GET /api/v1/settings/ai":                                                   {role.SettingsManage, "admins"},
 	"PUT /api/v1/settings/ai":                                                   {role.SettingsManage, "admins"},

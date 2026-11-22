@@ -3,12 +3,6 @@ import type { SettingsText } from '../en/settings'
 export const settings: SettingsText = {
   title: 'Nustatymai',
   description: 'Visai organizacijai. Juos keičia tik administratoriai.',
-  company: 'Įmonė',
-  companyIntro: 'Laiškų šablonai įrašo įmonės pavadinimą ten, kur naudoja {{company.name}}, pvz., SIM aktyvavimo ir blokavimo laiškuose.',
-  companyName: 'Įmonės pavadinimas',
-  companyNameHint: 'Kaip jį žino tiekėjai, pvz., UAB Gavort. Palikite tuščią, jei jo nėra.',
-  companyIs: (name: string) => `Laiškuose rašoma ${name}.`,
-  companyNotSet: 'Nenustatyta: laiškuose rodoma [Company Name], kurį įrašote patys.',
   supplierChat: 'Tiekėjo WhatsApp grupė',
   supplierChatIntro:
     'Kopijuoti į WhatsApp nukopijuoja užsakymo žinutę ir pasiūlo atidaryti šią grupę, kur ją įklijuojate. WhatsApp negali atidaryti grupės su jau įrašyta žinute.',

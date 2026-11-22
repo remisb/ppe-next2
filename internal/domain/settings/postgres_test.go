@@ -94,13 +94,10 @@ func TestPostgresSIMProviders(t *testing.T) {
 	if _, err := svc.UpdateSupplierChat(ctx, SupplierChatParams{Name: "Supplier", Link: link}, actor); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.UpdateCompany(ctx, CompanyParams{Name: "UAB Gavort"}, actor); err != nil {
-		t.Fatal(err)
-	}
 	// Each save keeps the other settings, and the providers' order.
 	s, err = svc.Get(ctx)
 	if err != nil || !slices.Equal(s.SIMProviders, list) || s.DefaultSIMProvider != "Telia" || s.SupplierChat.Link != link ||
-		s.DefaultSIMNonReturnValueCents == nil || *s.DefaultSIMNonReturnValueCents != 2500 || s.CompanyName != "UAB Gavort" {
+		s.DefaultSIMNonReturnValueCents == nil || *s.DefaultSIMNonReturnValueCents != 2500 {
 		t.Fatalf("Get = %+v, %v", s, err)
 	}
 	// Renamed, reordered and one removed: the list is what was saved.

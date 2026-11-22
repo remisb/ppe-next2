@@ -1,11 +1,14 @@
 # Employee service
 
-People workwear is ordered for, and their reusable size defaults. Package
+The people the organisation keeps (employees, candidates who may be employed later, and former
+employees), the companies they are employed by, and their reusable size defaults. Package
 `internal/domain/employee`, routes in `cmd/api/employee-routes.go`, table from migration
 `0003_employees` (clothing size made numeric by `0012_numeric_clothing_size`, preferred
 language added by `0017_employee_language`, access split into profile and sizes by 0050,
-`merged_into_id` and `employee_distinct_pairs` added by 0052). Manual §3.2
-and §4.1.
+`merged_into_id` and `employee_distinct_pairs` added by 0052, `employments` by 0058). Manual §3.2
+and §4.1. The names stay `employee` (the table, the package, the routes, the permissions and
+the sealed audit trail's `employee.*` events) although a record may be a candidate's: renaming
+them to People is ADR 0001's later step.
 
 ## Entity
 
@@ -20,6 +23,9 @@ and §4.1.
 | `preferred_language` | Optional: `en`, `lt` or `ru`, the languages the app speaks (else 400); `null` when not recorded. A CHECK in migration `0017_employee_language` holds it too. Update replaces every field, so a PUT without it clears it. The confirmation page and hand-over mode open in it when it is `en` or `ru` (order records carry it as `employee_language`) |
 | `birth_date`, `nationality`, `sex` | Response only, `null` until an identity document saved with Add to Employee Record fills them (Personnel files, [personnel-service.md](personnel-service.md); migration 0048). The employee's routes never accept or change them |
 | `full_name` | Derived, response only |
+| `status` | Derived from the employments, response only: `employee`, `candidate` or `former` (Employment, below) |
+| `company` | The open employment's company `{id, name}`, or `null`; response only |
+| `employments` | The periods, open first, then newest; response only, on `GET /employees/{id}` and the employment routes (lists leave it out) |
 
 There is no glove size: gloves and similar PPE are no-size items.
 
@@ -60,12 +66,16 @@ every role but the add-on roles Equipment Assignments, Testers and Personnel Doc
 
 | Route | Access | Kind |
 | --- | --- | --- |
-| `GET /api/v1/employees` | any authenticated | list, each as the reader may see it |
+| `GET /api/v1/employees` | any authenticated | list, each as the reader may see it; `?status=employee\|candidate\|former` and `?company=<id>` (the open employment's) narrow it, an unknown status is 400 |
 | `GET /api/v1/employees/{id}` | any authenticated | 404 on miss; as the reader may see it |
 | `GET /api/v1/employees/by-name/{q}` | any authenticated | **filter** (the employee picker's search, ⌘K, Import Documents' person step): matches first, last, full name or code, case-insensitive substring, max 50; no match is `200 []` |
-| `POST /api/v1/employees` | `employee_profiles.manage` | body: all entity fields except derived; the sizes only with `employee_sizes.manage` |
+| `POST /api/v1/employees` | `employee_profiles.manage` | body: all entity fields except derived; the sizes only with `employee_sizes.manage`; `employment: {company_id, started_on?}` adds an employee, without it a candidate |
 | `PUT /api/v1/employees/{id}` | `employee_profiles.manage` | full replace of the same body; the sizes kept without `employee_sizes.manage` |
 | `PUT /api/v1/employees/{id}/sizes` | `employee_sizes.manage` | Edit Sizes / the **Save** button of Create Order's size pop-up (`item-set-service.md`): `{height_cm, clothing_size, shoe_size}`, all three replaced |
+| `POST /api/v1/employees/{id}/employments` | `employee_profiles.manage` | Employ, and Move to Another Company with `end_current: true`: `{company_id, started_on?, end_current?}`; answers with the employee and their employments; 409 while employed (without `end_current`) or for an overlap, 400 for a company not live |
+| `PUT /api/v1/employees/{id}/employments/{eid}` | `employee_profiles.manage` | Edit Employment: `{company_id, started_on, ended_on}`, all replaced; 409 for an overlap or a second open period |
+| `POST /api/v1/employees/{id}/employments/{eid}/end` | `employee_profiles.manage` | End Employment: `{ended_on}`, the day they left; 409 when it has ended |
+| `DELETE /api/v1/employees/{id}/employments/{eid}` | `employee_profiles.manage` | removes a period entered by mistake (soft); answers with the employee |
 | `DELETE /api/v1/employees/{id}` | `employees.delete` | soft delete; 409 (`employee.ErrHoldsAssets`, naming them) while they hold company assets, checked under the employee's row lock, which giving an asset share-locks |
 | `POST /api/v1/employees/similar` | `employee_profiles.manage` | Add New Employee's check (and Merge with…'s, which passes the employee being merged as `except_id`), body `{first_name, last_name, except_id?}` (names in the body, out of the address and logs): `[{employee, kind}]`, at most 5, `same_name` first |
 | `GET /api/v1/employees/possible-duplicates` | `employees.merge` | `[{a, b, kind}]`, the older record as `a`; pairs marked Not the Same Person left out |
@@ -83,10 +93,66 @@ employee has is a 409 whose `existing_id` is that employee.
 and preferred language before/after, and `notes_changed: true` when the notes changed, never
 their text), `employee.sizes_changed` (before/after sizes, only when a size default actually
 changes, from either PUT), `employee.deleted`; `employee.merged`, `employee.merged_away`,
-`employee.marked_distinct` and, on orders, `order.employee_merged` (Duplicates and merging). One PUT that changes both details and sizes
+`employee.marked_distinct` and, on orders, `order.employee_merged` (Duplicates and merging);
+`employee.employed`, `employee.employment_changed`, `employee.employment_ended` and
+`employee.employment_removed` (Employment). One PUT that changes both details and sizes
 records both events. Each is written in the same transaction as the change, from the row read
 under `FOR UPDATE`. They read on the Audit log and the employee's Changes
 ([audit-service.md](audit-service.md)).
+
+## Employment
+
+A person is employed by one of the organisation's companies ([company-service.md](company-service.md))
+for **periods** (`employments`, migration 0058), a child of the employee: each period is
+changed only through the employee, under the employee's row lock.
+
+| Column | Notes |
+| --- | --- |
+| `company_id` | A company, live when the period is opened or moved to it (checked under the company's row share lock, so Delete company cannot pass it); a company deleted since keeps being named |
+| `started_on` | The first day, `YYYY-MM-DD`; `null` when not recorded (the periods migration 0058 opened) |
+| `ended_on` | The day the person left; `null` while open. Not before `started_on` (`employments_dates_check`) |
+
+- **Status**, derived and never stored: an open period is an **employee**, only ended ones a
+  **former employee**, none a **candidate**. The reads take it with the open period's company
+  (`status`, `company`).
+- **One open period** at a time (`employments_open_idx`); periods never **overlap**, read as
+  `[started_on, ended_on)` with a missing start reaching back and a missing end forward, so the
+  next period may start the day the last ended (checked by the service, `ErrOverlap`).
+- **Add New Employee** adds an employee of a company (the default company chosen first) from a
+  day (today), or a candidate (`employment` left out). **Employ…** opens a period for a candidate
+  or a former employee; one employed now is refused (`ErrEmployed`). **Move to Another
+  Company…** (`end_current`) ends the open period on the new one's first day, which must not be
+  before the open one's start, and opens the next, in one transaction. **End Employment…** ends
+  the open period. **Edit** corrects a period's company and days; **Remove** is for one entered
+  by mistake (a soft delete), and removing the only one makes a candidate again.
+- Everyone who sees employees sees their employment; changing it takes **Manage employee
+  profiles** (`employee.Rights.Profile`). No permission of its own.
+- **Candidates may receive orders and company assets** like employees; the pickers say Candidate.
+- **A person Personnel files adds** (Import Documents, Scan Documents' Add New:
+  `document/postgres.go`) is employed by the default company from a day not recorded, in the
+  document's transaction and without an `employee.employed` event, as before companies everyone
+  was an employee; with no company yet they are a candidate.
+- **From before companies** (migration 0058): every live employee got one open period at the
+  default company with `started_on` not recorded; where Personnel's Mark Employment Ended had a
+  day (`personnel.subjects.employment_ended_on`) it closed the period. Mark Employment Ended
+  itself still keeps its own day for retention (ADR 0007); reading it from the employment is a
+  later change.
+
+Events, on the employee (each names the period, `employment_id`, and its company then):
+
+| Event | Payload |
+| --- | --- |
+| `employee.employed` | after: `company`, `company_id`, `started_on` |
+| `employee.employment_changed` | the changed `company`/`company_id`, `started_on`, `ended_on`, before and after |
+| `employee.employment_ended` | after: the period with its `ended_on` |
+| `employee.employment_removed` | before: the period |
+
+On screen: the Employees list's tabs **Employees**, **Candidates** and **Former** (with counts;
+**Missing a size** counts anyone not a former employee), a **Company** column and filter when
+there is more than one company, and Status and Company in Export
+(`web/apps/workwear/src/routes/employees.tsx`, `lib/employee-export.ts`); the employee's page has
+the **Employment** section (`components/employment-section.tsx`, rules `lib/employment.ts`) and a
+Candidate or Former employee badge under the name.
 
 ## Duplicates and merging
 
@@ -133,6 +199,9 @@ Ordered share-lock the employee, so neither passes a merge):
   change of `employee_id` only under `SET LOCAL ppe.employee_merge = on`, set for that one
   statement; the signed form keeps its name and hash, and the asset now names the one kept;
 - its photos move, no longer the default when the one kept has one;
+- its employments move, removed ones too; when both records are employed now the merge is
+  refused (409, `employee.ErrBothEmployed`: end one employment first), which the review says
+  (`contents.both_employed`);
 - its Not the Same Person marks go; `ai_usage` and the audit trail stay as they are (append-only);
 - the one kept is written with the chosen values; `employee.merged` on it (the fields changed,
   as `employee.updated` and `employee.sizes_changed` record them, the record merged in, and the

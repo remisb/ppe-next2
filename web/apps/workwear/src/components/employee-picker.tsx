@@ -4,6 +4,7 @@ import { Input } from '@ppe/ui/components/field'
 import { Search, UserPlus } from 'lucide-react'
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
 
+import { StatusBadge } from '@/components/employment-section'
 import { t } from '@/i18n'
 
 /** The minimum a picker needs to show the chosen employee. */
@@ -157,7 +158,11 @@ export function EmployeePicker({
                   onSelect(e)
                 }}
               >
-                <span>{e.full_name}</span>
+                {/* A candidate or former employee says so: orders and assets may go to them too. */}
+                <span className="flex min-w-0 items-center gap-2">
+                  <span>{e.full_name}</span>
+                  <StatusBadge status={e.status} />
+                </span>
                 {e.code ? <span className="text-muted-foreground">{e.code}</span> : null}
               </button>
             </li>

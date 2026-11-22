@@ -56,6 +56,7 @@ export const roles = {
     'settings.manage': { label: 'Change Settings', grants: 'The company, the supplier’s WhatsApp group and the SIM providers.' },
     'mail_templates.manage': { label: 'Change Mail Templates', grants: 'The text of the emails the app prepares, such as the SIM activation and blocking emails.' },
     'suppliers.manage': { label: 'Manage Suppliers', grants: 'Add, change and delete the suppliers that catalogue items are bought from.' },
+    'companies.manage': { label: 'Manage Companies', grants: 'Add, change and delete the companies employees are employed by, and choose the default one.' },
     'backups.read': { label: 'See Backups', grants: 'Whether the database is backed up, and the recent backups.' },
     'audit.read': { label: 'See the Audit log', grants: 'Every recorded change, who made it and when, across all records.' },
     'audit.export': {

@@ -42,6 +42,8 @@ const employee: Employee = {
   sex: null,
   created_at: '',
   updated_at: '',
+  status: 'employee',
+  company: null,
 }
 const onFile: Holder = { kind: 'existing', employee }
 const photo = (over: Partial<Photo> = {}): Photo => ({ id: 'p', found: true, mrz: m, agreed: true, ...over })

@@ -46,6 +46,9 @@ const (
 	// SuppliersManage is Administration's Suppliers: the companies catalogue
 	// items are bought from (migration 0054). Everyone sees them.
 	SuppliersManage Permission = "suppliers.manage"
+	// CompaniesManage is Administration's Companies: the companies employees
+	// are employed by, and which is the default (migration 0057). Everyone sees them.
+	CompaniesManage Permission = "companies.manage"
 	BackupsRead     Permission = "backups.read"
 	AuditRead       Permission = "audit.read"
 	AuditExport     Permission = "audit.export"
@@ -94,6 +97,7 @@ var catalogue = []Info{
 	{SettingsManage, GroupAdministration, nil},
 	{MailTemplatesManage, GroupAdministration, nil},
 	{SuppliersManage, GroupAdministration, nil},
+	{CompaniesManage, GroupAdministration, nil},
 	{BackupsRead, GroupAdministration, nil},
 	{AuditRead, GroupAdministration, nil},
 	{AuditExport, GroupAdministration, []Permission{AuditRead}},

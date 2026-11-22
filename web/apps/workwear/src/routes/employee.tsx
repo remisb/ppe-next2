@@ -20,6 +20,7 @@ import { OrderStatusBadge } from '@/components/order-status'
 import { formatDate } from '@/components/dashboard'
 import { EmployeePhotos, useEmployeePhotos } from '@/components/employee-photos'
 import { IdentitySection } from '@/components/identity-section'
+import { EmploymentSection, StatusBadge } from '@/components/employment-section'
 import { useFileDrop } from '@/lib/photo-drop'
 import { employeeActions } from '@/lib/employee-actions'
 import { EmployeeForm } from '@/components/employee-form'
@@ -231,7 +232,12 @@ export function EmployeeDetail({ id, place, navigate }: { id: string; place: Emp
               )}
               moreLabel={t.common.moreActions(e.full_name)}
             >
-              {e.code ? <p className="mt-1 text-sm text-muted-foreground">{t.employees.codeIs(e.code)}</p> : null}
+              {/* Where the person stands: the company they work for, or a Candidate or Former employee badge. */}
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <StatusBadge status={e.status} />
+                {e.company ? <span>{e.company.name}</span> : null}
+                {e.code ? <span>{t.employees.codeIs(e.code)}</span> : null}
+              </p>
             </RecordHeader>
             {/*
               One column in this order where the record is narrow (beside the list, a tablet's page): the two groups'
@@ -378,6 +384,16 @@ export function EmployeeDetail({ id, place, navigate }: { id: string; place: Emp
               </div>
             ) : null}
 
+            <div className="order-1">
+              <EmploymentSection
+                employee={e}
+                timeZone={tz}
+                onChanged={() => {
+                  employee.reload()
+                  onChanged()
+                }}
+              />
+            </div>
             {seesProfile ? (
               <div className="order-3">
                 <EmployeePhotos employee={e} state={photos} rememberAs={photosKey} />

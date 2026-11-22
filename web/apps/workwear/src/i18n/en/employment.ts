@@ -1,0 +1,72 @@
+/** Employment: the companies a person is employed by, and their status (lib/employment.ts, components/employment-section.tsx). */
+export const employment = {
+  status: { employee: 'Employee', candidate: 'Candidate', former: 'Former employee' },
+  // The Employees screen's status tabs.
+  tabs: { employee: 'Employees', candidate: 'Candidates', former: 'Former' },
+  tabHelp: {
+    employee: { body: 'People employed by one of the companies now.', note: 'Deleted employees are left out; their past orders are kept.' },
+    candidate: { body: 'People not employed yet, who may be employed later.', note: 'Orders and company assets may be given to a candidate too.' },
+    former: { body: 'People whose employment has ended.', note: 'Their orders and the assets they held stay on their record.' },
+  },
+  // Empty tabs.
+  noneInTab: { candidate: 'No candidates. Add one with Add New Employee.', former: 'No former employees.' },
+  company: 'Company',
+  allCompanies: 'All companies',
+  companyFilter: 'Filter by company',
+  noCompany: 'No company',
+  // The Employment section.
+  title: 'Employment',
+  employedBy: 'Employed by',
+  earlier: 'Earlier',
+  since: (day: string) => `from ${day}`,
+  until: (day: string) => `until ${day}`,
+  datesNotRecorded: 'Dates not recorded',
+  candidateNote: 'Not employed yet: a candidate, who may be employed later.',
+  formerNote: 'Not employed now: a former employee.',
+  employ: 'Employ…',
+  move: 'Move to Another Company…',
+  end: 'End Employment…',
+  editPeriod: (company: string) => `Edit employment at ${company}`,
+  removePeriod: (company: string) => `Remove employment at ${company}`,
+  confirmRemove: (company: string, period: string) => `Remove the employment at ${company} (${period})? Use this only for one entered by mistake.`,
+  employTitle: (name: string) => `Employ ${name}`,
+  employDescription: 'The company they are employed by, and from which day.',
+  moveTitle: (name: string) => `Move ${name} to Another Company`,
+  moveDescription: 'The current employment ends on the day the new one starts.',
+  endTitle: (name: string) => `End Employment: ${name}`,
+  endDescription: (company: string) => `At ${company}. They become a former employee; their orders and assets stay on their record.`,
+  editTitle: (company: string) => `Edit Employment at ${company}`,
+  editDescription: 'Correct the company or the days. Leave Employed until empty while they work there.',
+  startedOn: 'Employed from',
+  endedOn: 'Employed until',
+  endedOnHint: 'The day they left',
+  employButton: 'Employ',
+  moveButton: 'Move',
+  endButton: 'End Employment',
+  // Add New Employee.
+  addAs: 'Add as',
+  asEmployee: 'Employee',
+  asCandidate: 'Candidate',
+  candidateHint: 'A candidate is not employed yet. Employ them later from their page.',
+  noCompanies: 'No companies yet, so only a candidate can be added. An administrator adds companies on Administration’s Companies.',
+  // Problems.
+  chooseCompany: 'Choose a company.',
+  enterStart: 'Enter the day the new employment starts.',
+  enterEnd: 'Enter the day they left.',
+  endBeforeStart: 'The end cannot be before the start.',
+  moveBeforeStart: (day: string) => `The current employment started on ${day}: choose that day or later.`,
+  sameCompany: 'They are employed by this company already. Choose another.',
+  alreadyEmployed: (company: string) => `Employed by ${company} already: use Move to Another Company.`,
+  anotherOpen: 'Another employment is open: enter the day this one ended.',
+  overlaps: (company: string, period: string) => `Overlaps the employment at ${company} (${period}).`,
+  // Done.
+  employed: (name: string, company: string) => `${name} employed by ${company}.`,
+  moved: (name: string, company: string) => `${name} moved to ${company}.`,
+  ended: (name: string) => `${name}’s employment ended.`,
+  saved: 'Employment saved.',
+  removed: 'Employment removed.',
+  // The SIM and equipment emails' company (components/asset-sheets.tsx).
+  missingCompany: 'There is no default company: replace [Company Name] before sending, or ask an administrator to add a company.',
+}
+
+export type EmploymentText = typeof employment

@@ -29,6 +29,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/catalogue"
+	"github.com/remisb/ppe-next2/internal/domain/company"
 	"github.com/remisb/ppe-next2/internal/domain/dashboard"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
@@ -103,6 +104,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		employeephoto.NewPostgresRepository(pool),
 		catalogue.NewPostgresRepository(pool),
 		supplier.NewPostgresRepository(pool),
+		company.NewPostgresRepository(pool),
 		itemset.NewPostgresRepository(pool),
 		order.NewPostgresRepository(pool),
 		asset.NewPostgresRepository(pool),
@@ -295,8 +297,8 @@ func TestPostgresAssetsHTTPFlow(t *testing.T) {
 	if rec := api.do(t, "POST", "/api/v1/assets/"+id+"/emails/blocking/copied", mgr, nil); rec.Code != http.StatusNoContent {
 		t.Errorf("blocking email = %d %s", rec.Code, rec.Body)
 	}
-	// The blocking email from its template: Settings' provider e-mail and
-	// company, the card's numbers and the user's name; a field without a value in brackets.
+	// The blocking email from its template: Settings' provider e-mail, the
+	// default company, the card's numbers and the user's name; a field without a value in brackets.
 	rec = api.do(t, "GET", "/api/v1/assets/"+id+"/emails/blocking", mgr, nil)
 	if m := decode[asset.Email](t, rec.Body.Bytes()); rec.Code != http.StatusOK || m.To != "[Provider E-mail]" ||
 		m.Subject != "SIM blocking request - +370 612 40118" || !strings.Contains(m.Body, "SIM number: 0089370011") ||
@@ -307,7 +309,8 @@ func TestPostgresAssetsHTTPFlow(t *testing.T) {
 	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", templateAdmin, map[string]any{"providers": []map[string]any{{"name": "Telia", "email": "sim@telia.lt"}}}); rec.Code != http.StatusOK {
 		t.Fatalf("providers = %d %s", rec.Code, rec.Body)
 	}
-	if rec := api.do(t, "PUT", "/api/v1/settings/company", templateAdmin, map[string]any{"name": "UAB Gavort"}); rec.Code != http.StatusOK {
+	// The first company is the default, whose name {{company.name}} writes.
+	if rec := api.do(t, "POST", "/api/v1/companies", templateAdmin, map[string]any{"name": "UAB Gavort"}); rec.Code != http.StatusCreated {
 		t.Fatalf("company = %d %s", rec.Code, rec.Body)
 	}
 	edited := map[string]any{"to": "{{provider.email}}", "cc": "{{user.email}}", "subject": "Block {{sim.number}} ({{employee.name}})", "body": "{{company.name}}: block {{sim.phone_number}}."}
@@ -1264,13 +1267,12 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 	}
 	type settingsBody struct {
 		Timezone           string                 `json:"timezone"`
-		CompanyName        *string                `json:"company_name"`
 		SIMProviders       []settings.SIMProvider `json:"sim_providers"`
 		DefaultSIMProvider *string                `json:"default_sim_provider"`
 		DefaultValueCents  *int64                 `json:"default_sim_non_return_value_cents"`
 	}
 	rec = api.do(t, "GET", "/api/v1/settings", staff, nil)
-	if s := decode[settingsBody](t, rec.Body.Bytes()); s.Timezone != "Europe/Vilnius" || s.SIMProviders == nil || s.DefaultSIMProvider != nil || s.DefaultValueCents != nil || s.CompanyName != nil {
+	if s := decode[settingsBody](t, rec.Body.Bytes()); s.Timezone != "Europe/Vilnius" || s.SIMProviders == nil || s.DefaultSIMProvider != nil || s.DefaultValueCents != nil {
 		t.Errorf("settings = %s", rec.Body)
 	}
 	// An administrator lists the SIM providers (as ppe_app); everyone reads them for Add SIM.
@@ -1289,13 +1291,10 @@ func TestPostgresHistoryHTTP(t *testing.T) {
 	if rec := api.do(t, "PUT", "/api/v1/settings/sim-providers", settingsAdmin, map[string]any{"providers": []map[string]any{{"name": "Telia", "email": "telia"}}}); rec.Code != http.StatusBadRequest {
 		t.Errorf("a provider's e-mail that is none = %d, want 400", rec.Code)
 	}
-	if rec := api.do(t, "PUT", "/api/v1/settings/company", settingsAdmin, map[string]any{"name": "UAB Gavort"}); rec.Code != http.StatusOK {
-		t.Errorf("company = %d %s", rec.Code, rec.Body)
-	}
 	rec = api.do(t, "GET", "/api/v1/settings", staff, nil)
 	want := []settings.SIMProvider{{Name: "Telia", Email: "sim@telia.lt", DefaultPlan: "Biz 10 GB"}, {Name: "Bitė"}}
 	if s := decode[settingsBody](t, rec.Body.Bytes()); !slices.Equal(s.SIMProviders, want) || s.DefaultSIMProvider == nil || *s.DefaultSIMProvider != "Telia" ||
-		s.DefaultValueCents == nil || *s.DefaultValueCents != 2500 || s.CompanyName == nil || *s.CompanyName != "UAB Gavort" {
+		s.DefaultValueCents == nil || *s.DefaultValueCents != 2500 {
 		t.Errorf("settings = %s", rec.Body)
 	}
 }
@@ -2613,5 +2612,126 @@ func TestPostgresPublishedAppsHTTP(t *testing.T) {
 	err := pruneApps(ctx, api.svc, cfg, &out)
 	if err == nil || !strings.Contains(out.String(), "sim-scan: stable opens 2026.11.12-v12, whose files are missing; publish it again: make prod-publish APP=sim-scan REF=abc1234") {
 		t.Errorf("prune with Stable's files missing = %v, %s", err, out.String())
+	}
+}
+
+// TestPostgresCompaniesAndEmploymentHTTP: an administrator adds companies and
+// moves the default; Add New Employee adds a candidate or an employee; Employ,
+// Move to Another Company and End Employment change the status the list
+// filters by; a company employing anyone is not deleted.
+func TestPostgresCompaniesAndEmploymentHTTP(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	_, manager := api.userWith(t, role.KeyManager)
+	_, adminTok := api.userWith(t, role.KeyAdmin)
+	type companyJSON struct {
+		ID            string `json:"id"`
+		Name          string `json:"name"`
+		IsDefault     bool   `json:"is_default"`
+		EmployeeCount int    `json:"employee_count"`
+	}
+	type employeeJSON struct {
+		ID      string `json:"id"`
+		Status  string `json:"status"`
+		Company *struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		} `json:"company"`
+		Employments []struct {
+			ID        string  `json:"id"`
+			StartedOn *string `json:"started_on"`
+			EndedOn   *string `json:"ended_on"`
+		} `json:"employments"`
+	}
+
+	if rec := api.do(t, "POST", "/api/v1/companies", manager, map[string]string{"name": "X"}); rec.Code != http.StatusForbidden {
+		t.Fatalf("manager POST = %d, want 403", rec.Code)
+	}
+	rec := api.do(t, "POST", "/api/v1/companies", adminTok, map[string]string{"code": "GV", "name": "UAB Gavort", "country": "lt"})
+	a := decode[companyJSON](t, rec.Body.Bytes())
+	if rec.Code != http.StatusCreated || !a.IsDefault {
+		t.Fatalf("first company = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "POST", "/api/v1/companies", adminTok, map[string]string{"name": "UAB Kitas"})
+	b := decode[companyJSON](t, rec.Body.Bytes())
+	if rec.Code != http.StatusCreated || b.IsDefault {
+		t.Fatalf("second company = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/companies", adminTok, map[string]any{"name": "Y", "is_default": true}); rec.Code != http.StatusBadRequest {
+		t.Fatalf("is_default in the body = %d, want 400", rec.Code)
+	}
+
+	// Add New Employee: a candidate, and an employee of the default company.
+	rec = api.do(t, "POST", "/api/v1/employees", manager, map[string]any{"first_name": "Lukas", "last_name": "Kandidatas"})
+	cand := decode[employeeJSON](t, rec.Body.Bytes())
+	if rec.Code != http.StatusCreated || cand.Status != "candidate" || cand.Company != nil {
+		t.Fatalf("candidate = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "POST", "/api/v1/employees", manager, map[string]any{"first_name": "Ona", "last_name": "Darbuotoja",
+		"employment": map[string]any{"company_id": a.ID, "started_on": "2026-01-10"}})
+	emp := decode[employeeJSON](t, rec.Body.Bytes())
+	if rec.Code != http.StatusCreated || emp.Status != "employee" || emp.Company == nil || emp.Company.Name != "UAB Gavort" {
+		t.Fatalf("employee = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/employees", manager, map[string]any{"first_name": "A", "last_name": "B",
+		"employment": map[string]any{"company_id": uuid.NewString()}}); rec.Code != http.StatusBadRequest {
+		t.Fatalf("an unknown company = %d %s", rec.Code, rec.Body)
+	}
+
+	// Employ the candidate; someone without Manage employee profiles may not.
+	_, nobody := api.userWith(t, role.KeyTesters)
+	if rec := api.do(t, "POST", "/api/v1/employees/"+cand.ID+"/employments", nobody, map[string]any{"company_id": b.ID}); rec.Code != http.StatusForbidden {
+		t.Fatalf("Employ without the permission = %d, want 403", rec.Code)
+	}
+	rec = api.do(t, "POST", "/api/v1/employees/"+cand.ID+"/employments", manager, map[string]any{"company_id": b.ID, "started_on": "2026-11-01"})
+	if got := decode[employeeJSON](t, rec.Body.Bytes()); rec.Code != http.StatusOK || got.Status != "employee" || len(got.Employments) != 1 {
+		t.Fatalf("Employ = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/employees/"+cand.ID+"/employments", manager, map[string]any{"company_id": a.ID, "started_on": "2026-11-05"}); rec.Code != http.StatusConflict {
+		t.Fatalf("a second open employment = %d, want 409", rec.Code)
+	}
+	// Move Ona to the other company, then end it.
+	rec = api.do(t, "POST", "/api/v1/employees/"+emp.ID+"/employments", manager, map[string]any{"company_id": b.ID, "started_on": "2026-06-01", "end_current": true})
+	moved := decode[employeeJSON](t, rec.Body.Bytes())
+	if rec.Code != http.StatusOK || moved.Company == nil || moved.Company.ID != b.ID || len(moved.Employments) != 2 {
+		t.Fatalf("Move = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "GET", "/api/v1/companies/"+b.ID, staff, nil)
+	if got := decode[companyJSON](t, rec.Body.Bytes()); got.EmployeeCount != 2 {
+		t.Fatalf("b's employees = %s", rec.Body)
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/companies/"+b.ID, adminTok, nil); rec.Code != http.StatusConflict {
+		t.Fatalf("delete a company employing people = %d, want 409", rec.Code)
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/companies/"+a.ID, adminTok, nil); rec.Code != http.StatusConflict {
+		t.Fatalf("delete the default = %d, want 409", rec.Code)
+	}
+	rec = api.do(t, "POST", "/api/v1/employees/"+emp.ID+"/employments/"+moved.Employments[0].ID+"/end", manager, map[string]string{"ended_on": "2026-09-30"})
+	if got := decode[employeeJSON](t, rec.Body.Bytes()); rec.Code != http.StatusOK || got.Status != "former" || got.Company != nil {
+		t.Fatalf("End = %d %s", rec.Code, rec.Body)
+	}
+
+	// The list filters by status and company.
+	for q, want := range map[string]int{"": 2, "?status=employee": 1, "?status=former": 1, "?status=candidate": 0, "?company=" + b.ID: 1, "?company=" + a.ID: 0} {
+		rec := api.do(t, "GET", "/api/v1/employees"+q, staff, nil)
+		if list := decode[[]employeeJSON](t, rec.Body.Bytes()); rec.Code != http.StatusOK || len(list) != want {
+			t.Errorf("list%s = %d %s, want %d", q, rec.Code, rec.Body, want)
+		}
+	}
+	if rec := api.do(t, "GET", "/api/v1/employees?status=hired", staff, nil); rec.Code != http.StatusBadRequest {
+		t.Errorf("an unknown status = %d, want 400", rec.Code)
+	}
+
+	// Make Default, then the old default may go.
+	rec = api.do(t, "PUT", "/api/v1/companies/"+b.ID+"/default", adminTok, nil)
+	if got := decode[companyJSON](t, rec.Body.Bytes()); rec.Code != http.StatusOK || !got.IsDefault {
+		t.Fatalf("Make Default = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/companies/"+a.ID, adminTok, nil); rec.Code != http.StatusNoContent {
+		t.Fatalf("delete the old default = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "GET", "/api/v1/employees/"+emp.ID, staff, nil)
+	if got := decode[employeeJSON](t, rec.Body.Bytes()); len(got.Employments) != 2 {
+		t.Fatalf("periods at a deleted company = %s", rec.Body)
 	}
 }

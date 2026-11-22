@@ -25,11 +25,16 @@ type fakeRepo struct {
 	distinct   map[[2]uuid.UUID]bool
 	mergedInto map[uuid.UUID]uuid.UUID
 	contents   map[uuid.UUID]MergeContents
+	// Employments (employment_test.go): each employee's live periods, and
+	// the companies that are live, by id, with their names.
+	jobs      map[uuid.UUID][]Employment
+	companies map[uuid.UUID]string
 }
 
 func newFakeRepo() *fakeRepo {
 	return &fakeRepo{rows: map[uuid.UUID]Employee{}, distinct: map[[2]uuid.UUID]bool{},
-		mergedInto: map[uuid.UUID]uuid.UUID{}, contents: map[uuid.UUID]MergeContents{}}
+		mergedInto: map[uuid.UUID]uuid.UUID{}, contents: map[uuid.UUID]MergeContents{},
+		jobs: map[uuid.UUID][]Employment{}, companies: map[uuid.UUID]string{}}
 }
 
 func (f *fakeRepo) codeTaken(code *string, except uuid.UUID) bool {
@@ -44,20 +49,22 @@ func (f *fakeRepo) codeTaken(code *string, except uuid.UUID) bool {
 	return false
 }
 
-func (f *fakeRepo) record(ev *audit.Event) {
-	if ev != nil {
-		f.events = append(f.events, *ev)
-	}
-}
-
-func (f *fakeRepo) Create(_ context.Context, e Employee, ev *audit.Event) error {
+func (f *fakeRepo) Create(_ context.Context, e Employee, evs []audit.Event) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.codeTaken(e.Code, e.ID) {
 		return ErrCodeTaken
 	}
+	for _, m := range e.Employments {
+		if !f.companyLive(m.CompanyID) {
+			return ErrCompanyNotFound
+		}
+	}
+	f.jobs[e.ID] = append([]Employment{}, e.Employments...)
+	e.Employments = nil
 	f.rows[e.ID] = e
-	f.record(ev)
+	f.refresh(e.ID)
+	f.events = append(f.events, evs...)
 	return nil
 }
 
@@ -129,7 +136,7 @@ func sp2(s string) *string { return &s }
 
 func newTestService() (*Service, *fakeRepo) {
 	repo := newFakeRepo()
-	return NewService(repo, WithClock(func() time.Time { return testNow })), repo
+	return NewService(repo, WithClock(func() time.Time { return testNow }), WithCompanies(repo)), repo
 }
 
 func TestCreateRecordsEvent(t *testing.T) {

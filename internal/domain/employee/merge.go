@@ -61,12 +61,16 @@ func (e *CodeTakenError) ExistingID() uuid.UUID { return e.Existing }
 // MergeContents is what the record removed has that moves to the one kept,
 // and whether either has identity documents.
 type MergeContents struct {
-	Orders             []uuid.UUID `json:"orders"`
-	Assignments        []uuid.UUID `json:"assignments"`
-	OpenAssignments    int         `json:"open_assignments"`
-	Photos             []uuid.UUID `json:"photos"`
-	KeepHasDocuments   bool        `json:"keep_has_documents"`
-	RemoveHasDocuments bool        `json:"remove_has_documents"`
+	Orders          []uuid.UUID `json:"orders"`
+	Assignments     []uuid.UUID `json:"assignments"`
+	OpenAssignments int         `json:"open_assignments"`
+	Photos          []uuid.UUID `json:"photos"`
+	Employments     []uuid.UUID `json:"employments"`
+	// BothEmployed: both records have an open employment; Merge refuses
+	// (ErrBothEmployed) until one is ended.
+	BothEmployed       bool `json:"both_employed"`
+	KeepHasDocuments   bool `json:"keep_has_documents"`
+	RemoveHasDocuments bool `json:"remove_has_documents"`
 }
 
 // MergeMutation computes the record kept, and the events, from both locked
@@ -207,7 +211,8 @@ func (s *Service) MergePreview(ctx context.Context, keepID, removeID uuid.UUID) 
 // Merge is Merge Employees: one person's two records made one. The record
 // kept takes p (the values chosen on the review, as Update takes them); the
 // removed one's orders, company assets (its assignments, open or returned)
-// and photos move to it, and it is removed, pointing at the one kept. Orders'
+// photos and employments move to it, and it is removed, pointing at the one
+// kept; two records employed now are refused (ErrBothEmployed). Orders'
 // and signed forms' snapshots keep the name they were made with. A removed
 // record with identity documents is refused (ErrMergePersonnel). The route's
 // employees.merge needs employee_profiles.manage and employee_sizes.manage
@@ -229,6 +234,9 @@ func (s *Service) Merge(ctx context.Context, keepID, removeID uuid.UUID, p Param
 	return s.repo.Merge(ctx, keepID, removeID, func(keep, remove Employee, c MergeContents) (Employee, []audit.Event, error) {
 		if c.RemoveHasDocuments {
 			return keep, nil, ErrMergePersonnel
+		}
+		if c.BothEmployed {
+			return keep, nil, ErrBothEmployed
 		}
 		next := keep
 		next.FirstName, next.LastName, next.Code, next.Notes = p.FirstName, p.LastName, p.Code, p.Notes
@@ -256,6 +264,9 @@ func (s *Service) mergeEvents(keep, next, remove Employee, c MergeContents, acto
 	after["merged_employee_id"] = remove.ID
 	after["merged_employee_name"] = remove.FullName()
 	after["orders"], after["assignments"], after["photos"] = c.Orders, c.Assignments, c.Photos
+	if len(c.Employments) > 0 {
+		after["employments"] = c.Employments
+	}
 	var evs []audit.Event
 	add := func(name, entity string, id uuid.UUID, before, after any) error {
 		ev, err := audit.New(s.newID(), &actor, name, entity, id, at, before, after)

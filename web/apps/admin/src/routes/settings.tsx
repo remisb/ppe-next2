@@ -35,7 +35,7 @@ import { AISettingsCard } from './settings-ai'
 
 /**
  * Settings (/settings, administrators only): the organisation's settings. The
- * company's name, which mail templates write; the supplier's WhatsApp group,
+ * supplier's WhatsApp group,
  * which Copy for WhatsApp opens for an order message; and the SIM providers,
  * which Add SIM offers, with the Non-return Value it fills in, each with its
  * e-mail and default plan.
@@ -50,7 +50,6 @@ export function SettingsPage() {
       <Loaded load={settings}>
         {(data) => (
           <div className="flex flex-col gap-6">
-            <CompanyCard settings={data} onSaved={settings.reload} />
             <SupplierChatCard settings={data} onSaved={settings.reload} />
             <SimProvidersCard settings={data} onSaved={settings.reload} />
             <AISettingsCard timeZone={data.timezone} />
@@ -58,73 +57,6 @@ export function SettingsPage() {
         )}
       </Loaded>
     </>
-  )
-}
-
-/** The company's name, as mail templates write it ({{company.name}}). Saving it empty removes it. */
-function CompanyCard({ settings, onSaved }: { settings: Settings; onSaved: () => void }) {
-  const { client } = useApi()
-  const titleId = useId()
-  const saved = settings.company_name ?? ''
-  const [name, setName] = useState(saved)
-  const [serverError, setServerError] = useState<string>()
-  const [busy, setBusy] = useState(false)
-  const [done, setDone] = useState(false)
-  const dirty = name.trim().replace(/\s+/g, ' ') !== saved
-
-  // The form starts from what is saved, and again after each save.
-  useEffect(() => setName(saved), [saved])
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
-    setBusy(true)
-    setServerError(undefined)
-    try {
-      await client.updateCompany(name.trim())
-      setDone(true)
-      onSaved()
-    } catch (err) {
-      setServerError(errorText(err))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <Card role="region" aria-labelledby={titleId} className="md:max-w-xl">
-      <CardHeader>
-        <CardTitle id={titleId}>{t.settings.company}</CardTitle>
-        <CardDescription>{t.settings.companyIntro}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-4" noValidate>
-          <p role="status" className="text-sm">
-            {done && !dirty ? `${t.settings.saved} ` : null}
-            {saved ? t.settings.companyIs(saved) : t.settings.companyNotSet}
-          </p>
-          <Field label={t.settings.companyName} hint={t.settings.companyNameHint} error={serverError}>
-            {(p) => (
-              <Input
-                {...controlProps(p)}
-                autoComplete="organization"
-                maxLength={200}
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value)
-                  setDone(false)
-                  setServerError(undefined)
-                }}
-              />
-            )}
-          </Field>
-          <div>
-            <Button type="submit" disabled={busy || !dirty}>
-              {busy ? t.settings.saving : t.settings.save}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
   )
 }
 

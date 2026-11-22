@@ -1,4 +1,6 @@
-// Package employee holds the people workwear is ordered for and their reusable
+// Package employee holds the people the organisation keeps: employees,
+// candidates who may be employed later and former employees (Status, derived
+// from their employments at companies, migration 0058), and their reusable
 // size defaults. Changing a size affects future order resolution only: orders
 // snapshot the sizes they used. Who may see and change an employee's profile
 // and sizes is Sight and Rights (migration 0050); alike names, Not the Same
@@ -46,15 +48,23 @@ type Employee struct {
 	// from an identity document saved with Add to Employee Record (ADR 0007,
 	// Personnel files); reads fill them, the employee's own routes never
 	// accept or change them.
-	BirthDate       *string    `json:"birth_date"`
-	Nationality     *string    `json:"nationality"`
-	Sex             *string    `json:"sex"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-	DeletedAt       *time.Time `json:"deleted_at,omitempty"`
-	CreatedByUserID uuid.UUID  `json:"created_by_user_id"`
-	UpdatedByUserID uuid.UUID  `json:"updated_by_user_id"`
-	DeletedByUserID *uuid.UUID `json:"deleted_by_user_id,omitempty"`
+	BirthDate   *string `json:"birth_date"`
+	Nationality *string `json:"nationality"`
+	Sex         *string `json:"sex"`
+	// Status is derived from the employments; reads fill it.
+	Status Status `json:"status"`
+	// Company is the open employment's company; nil for a candidate or a
+	// former employee. Reads fill it.
+	Company *CompanyRef `json:"company"`
+	// Employments are the live periods, open first, then newest; Get fills
+	// them (Create the one it opens), lists leave them out.
+	Employments     []Employment `json:"employments,omitempty"`
+	CreatedAt       time.Time    `json:"created_at"`
+	UpdatedAt       time.Time    `json:"updated_at"`
+	DeletedAt       *time.Time   `json:"deleted_at,omitempty"`
+	CreatedByUserID uuid.UUID    `json:"created_by_user_id"`
+	UpdatedByUserID uuid.UUID    `json:"updated_by_user_id"`
+	DeletedByUserID *uuid.UUID   `json:"deleted_by_user_id,omitempty"`
 }
 
 // Deleted says whether e is soft-deleted (deleted or merged away).
@@ -80,6 +90,9 @@ type Params struct {
 	Notes        string
 	// PreferredLanguage: en, lt or ru; blank is not set.
 	PreferredLanguage *string
+	// Employment is Add New Employee's: the company the person is employed
+	// by, and from when; nil adds a candidate. Update ignores it.
+	Employment *EmployParams
 }
 
 // Normalize trims every text, and a blank code, shoe size or language becomes nil.
@@ -111,6 +124,11 @@ func (p *Params) Validate() error {
 		return fieldError("notes", "is too long")
 	case p.PreferredLanguage != nil && !languages[*p.PreferredLanguage]:
 		return fieldError("preferred_language", "must be en, lt or ru")
+	}
+	if p.Employment != nil {
+		if err := p.Employment.Validate(); err != nil {
+			return err
+		}
 	}
 	s := SizesParams{HeightCm: p.HeightCm, ClothingSize: p.ClothingSize, ShoeSize: p.ShoeSize}
 	return s.Validate()

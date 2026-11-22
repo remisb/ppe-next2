@@ -55,6 +55,12 @@ import type {
   CataloguePicture,
   Supplier,
   SupplierInput,
+  Company,
+  CompanyInput,
+  EmployeeStatus,
+  EmployInput,
+  EmploymentInput,
+  NewEmployeeInput,
   CataloguePictureInput,
   ClientErrorReport,
   ConfirmationLink,
@@ -290,7 +296,6 @@ export function createClient(options: ClientOptions) {
     sizes: () => request<Sizes>('GET', '/api/v1/sizes'),
     settings: () => request<Settings>('GET', '/api/v1/settings'),
     /** Set or (empty) clear the company's name; administrators only. Returns the settings. */
-    updateCompany: (name: string) => request<Settings>('PUT', '/api/v1/settings/company', { name }),
     /** Set or clear the supplier's WhatsApp group; administrators only. Returns the settings. */
     updateSupplierChat: (input: SupplierChatInput) => request<Settings>('PUT', '/api/v1/settings/supplier-chat', input),
     /** Replace the SIM providers, each with its e-mail and plan, and the default one; administrators only. Returns the settings. */
@@ -411,14 +416,33 @@ export function createClient(options: ClientOptions) {
     },
 
     employees: {
-      list: () => request<Employee[]>('GET', '/api/v1/employees'),
+      /** Every live employee; status and company (an id) narrow it. */
+      list: (filter: { status?: EmployeeStatus; company?: string } = {}) => {
+        const q = new URLSearchParams()
+        if (filter.status) q.set('status', filter.status)
+        if (filter.company) q.set('company', filter.company)
+        const qs = q.toString()
+        return request<Employee[]>('GET', `/api/v1/employees${qs ? `?${qs}` : ''}`)
+      },
       get: (id: string) => request<Employee>('GET', `/api/v1/employees/${seg(id)}`),
       search: (q: string) => request<Employee[]>('GET', `/api/v1/employees/by-name/${seg(q)}`),
-      create: (input: EmployeeInput) => request<Employee>('POST', '/api/v1/employees', input),
+      create: (input: NewEmployeeInput) => request<Employee>('POST', '/api/v1/employees', input),
       update: (id: string, input: EmployeeInput) => request<Employee>('PUT', `/api/v1/employees/${seg(id)}`, input),
       updateSizes: (id: string, input: EmployeeSizesInput) =>
         request<Employee>('PUT', `/api/v1/employees/${seg(id)}/sizes`, input),
       remove: (id: string) => request<void>('DELETE', `/api/v1/employees/${seg(id)}`),
+      /** Employ, or with end_current Move to Another Company; answers with the employee and their employments. */
+      employ: (id: string, input: EmployInput) =>
+        request<Employee>('POST', `/api/v1/employees/${seg(id)}/employments`, input),
+      /** Edit Employment: corrects a period's company and dates. */
+      updateEmployment: (id: string, employmentId: string, input: EmploymentInput) =>
+        request<Employee>('PUT', `/api/v1/employees/${seg(id)}/employments/${seg(employmentId)}`, input),
+      /** End Employment: ended_on is the day they left. */
+      endEmployment: (id: string, employmentId: string, endedOn: string) =>
+        request<Employee>('POST', `/api/v1/employees/${seg(id)}/employments/${seg(employmentId)}/end`, { ended_on: endedOn }),
+      /** Removes a period entered by mistake. */
+      removeEmployment: (id: string, employmentId: string) =>
+        request<Employee>('DELETE', `/api/v1/employees/${seg(id)}/employments/${seg(employmentId)}`),
       /** Add New Employee's check: live employees whose names are alike (employee_profiles.manage). */
       similar: (firstName: string, lastName: string, exceptId?: string) =>
         request<EmployeeMatch[]>('POST', '/api/v1/employees/similar', {
@@ -564,6 +588,20 @@ export function createClient(options: ClientOptions) {
       pictures: () => request<CataloguePicture[]>('GET', '/api/v1/catalogue/pictures'),
       updatePicture: (icon: CatalogueIcon, input: CataloguePictureInput) =>
         request<CataloguePicture>('PUT', `/api/v1/catalogue/pictures/${seg(icon)}`, input),
+    },
+
+    /** The organisation's companies employees are employed by: everyone reads, companies.manage changes them. */
+    companies: {
+      /** The default first, then by name. */
+      list: () => request<Company[]>('GET', '/api/v1/companies'),
+      get: (id: string) => request<Company>('GET', `/api/v1/companies/${seg(id)}`),
+      /** The first company becomes the default. */
+      create: (input: CompanyInput) => request<Company>('POST', '/api/v1/companies', input),
+      update: (id: string, input: CompanyInput) => request<Company>('PUT', `/api/v1/companies/${seg(id)}`, input),
+      /** Make Default: the previous default stops being it. */
+      makeDefault: (id: string) => request<Company>('PUT', `/api/v1/companies/${seg(id)}/default`),
+      /** Refused (409) for the default and for a company employing anyone. */
+      remove: (id: string) => request<void>('DELETE', `/api/v1/companies/${seg(id)}`),
     },
 
     /** The companies catalogue items are bought from: everyone reads, suppliers.manage changes them. */

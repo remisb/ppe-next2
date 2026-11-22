@@ -250,7 +250,6 @@ export const assets: AssetsText = {
   sendEmailHint: 'Atidaro jūsų pašto programą su užpildytu laišku; išsiunčiate iš jos.',
   emailFailed: 'Laiško paruošti nepavyko',
   missingProviderEmail: 'Tiekėjas nustatymuose neturi el. pašto: įrašykite adresą patys arba paprašykite administratoriaus jį pridėti.',
-  missingCompany: 'Nustatymuose nėra įmonės pavadinimo: prieš siųsdami pakeiskite [Company Name] arba paprašykite administratoriaus jį pridėti.',
   missingFields: 'Prieš siųsdami kiekvieną [ … ] pakeiskite tikra reikšme.',
   optional: 'Neprivaloma.',
   close: 'Uždaryti',

@@ -96,11 +96,13 @@ export function MergeEmployeesSheet({
   }, [keepId, removeId, client])
 
   const bothHaveDocuments = preview ? preview.contents.keep_has_documents && preview.contents.remove_has_documents : false
+  // Both employed now: one employment is ended first (the API refuses too).
+  const bothEmployed = preview?.contents.both_employed ?? false
   const keepLocked = preview ? preview.contents.keep_has_documents : false
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    if (!preview || !choices || bothHaveDocuments) return
+    if (!preview || !choices || bothHaveDocuments || bothEmployed) return
     const input: EmployeeInput = mergedInput(preview.keep, preview.remove, choices)
     void action.run(
       async () => {
@@ -147,6 +149,7 @@ export function MergeEmployeesSheet({
         contents.orders.length > 0 ? t.employees.merge.orders(contents.orders.length) : null,
         contents.assignments.length > 0 ? t.employees.merge.assets(contents.assignments.length, contents.open_assignments) : null,
         contents.photos.length > 0 ? t.employees.merge.photos(contents.photos.length) : null,
+        contents.employments.length > 0 ? t.employees.merge.employments(contents.employments.length) : null,
       ].filter((x): x is string => x !== null)
     : []
 
@@ -161,7 +164,7 @@ export function MergeEmployeesSheet({
           form={formId}
           onCancel={onClose}
           busy={action.pending}
-          disabled={!preview || !choices || bothHaveDocuments}
+          disabled={!preview || !choices || bothHaveDocuments || bothEmployed}
           submitLabel={t.employees.merge.submit}
         />
       }
@@ -256,6 +259,11 @@ export function MergeEmployeesSheet({
         {bothHaveDocuments ? (
           <p role="alert" className="text-sm text-destructive">
             {t.employees.merge.bothHaveDocuments}
+          </p>
+        ) : null}
+        {bothEmployed && preview ? (
+          <p role="alert" className="text-sm text-destructive">
+            {t.employees.merge.bothEmployed(preview.keep.company?.name ?? '', preview.remove.company?.name ?? '')}
           </p>
         ) : null}
         <ActionError error={action.error} />
