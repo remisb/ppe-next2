@@ -1174,7 +1174,8 @@ The front door of the company's apps (ADR 0006; rules in
 
 A person's identity documents, kept sealed (ADR 0007; rules in
 [personnel-service.md](specs/personnel-service.md) and [ai-usage-service.md](specs/ai-usage-service.md)).
-Decided, being built; the app that reads them is **Import Documents** (docs-import).
+Decided, being built; the app that reads them is **Import Documents** (docs-import), to be
+replaced by **Scan Documents** (docs-scan, decided 2026-11-21, to build).
 
 ### Personnel files
 - **Brief:** the context that owns a person's identity documents and how long they are kept.
@@ -1257,6 +1258,30 @@ Decided, being built; the app that reads them is **Import Documents** (docs-impo
 - **Detail:** the corners are dragged, or moved with the arrow keys; the page is flattened
   again from them. A page is marked **Check corners** when its edges were weakly found.
 - **UI:** Adjust Corners, Check corners; Turn Left, Turn Right.
+
+### Scan Documents, Scans, Find Employee, Update Employee
+- **Brief:** the phone app that reads a passport or ID card first and then finds the person; its
+  home, the user's recent scans; and its steps.
+- **Detail:** **Scans** shows the user's kept scans as a photo grid, each marked saved, not saved
+  or MRZ not read. **Scan Document** opens the camera; **Find Employee** offers the employees with
+  the **Same name** or a **Similar name**, or holding the document's personal code or number, each
+  compared field by field, with **Use This Employee**, **Merge Employees…** for two records of one
+  person, and **Add as New Employee**. **Update Employee** lists what the record would **take from
+  the document**, field by field, under **Add to Employee Record** (on by default in this app);
+  **Save Document** files it. **Scan Next Document** starts again. Not "Scan Document" for the app:
+  that is the action, and Import Documents' screen until it is retired.
+- **Code:** `web/apps/docs-scan`, `POST /api/v1/personnel/documents/match`. **UI:** Scan
+  Documents, Scans, Not saved, Saved, MRZ not read, Find Employee, Choose Another Employee…,
+  Update Employee, Take from the document, Already the same, Save Document, Scan Next Document.
+
+### MRZ, Printed, MRZ agrees, Check, Typed (a field's source)
+- **Brief:** the mark beside each field Scan Documents read, saying where its value came from.
+- **Detail:** **MRZ**: from the MRZ, its check digits right. **Printed · MRZ agrees**: a name read
+  from the printed text whose letters, folded, equal the MRZ's (the MRZ has no accents).
+  **Printed**: from the printed text alone (issued on, authority, place of birth). **Check**: a
+  doubtful reading to compare with the document. **Typed**: corrected by the user. When the MRZ
+  cannot be read, **Retake** or **Type the MRZ**.
+- **UI:** MRZ, Printed, MRZ agrees, Check, Typed; Retake, Type the MRZ.
 
 ### Mark Employment Ended, Legal Hold, retention
 - **Brief:** when the person's employment ended, which starts the clock; and a stop on it.
@@ -1445,6 +1470,11 @@ App Launcher (the source is `@ppe/launcher`'s `text.ts`):
 | Show Document | Rodyti dokumentą | Показать документ |
 | Import to Personnel / Scan Document / Recent scans | Importuoti į asmens bylas / Nuskaityti dokumentą / Naujausi nuskaitymai | Импорт в личное дело / Сканировать документ / Недавние сканы |
 | Download Archive / Save to Personnel | Atsisiųsti archyvą / Išsaugoti asmens bylose | Скачать архив / Сохранить в личном деле |
+| Scan Documents (app) / Scans / Not saved / Saved / MRZ not read | Dokumentų skenavimas / Nuskaitymai / Neišsaugota / Išsaugota / MRZ neperskaityta | Сканирование документов / Сканы / Не сохранено / Сохранено / MRZ не прочитана |
+| Find Employee / Choose Another Employee… / Update Employee / Take from the document / Already the same | Rasti darbuotoją / Pasirinkti kitą darbuotoją… / Atnaujinti darbuotoją / Paimti iš dokumento / Jau sutampa | Найти сотрудника / Выбрать другого сотрудника… / Обновить сотрудника / Взять из документа / Уже совпадает |
+| Save Document / Scan Next Document | Išsaugoti dokumentą / Nuskaityti kitą dokumentą | Сохранить документ / Сканировать следующий документ |
+| MRZ / Printed / MRZ agrees / Check / Typed | MRZ / Atspausdinta / MRZ sutampa / Patikrinkite / Įvesta | MRZ / Напечатано / MRZ совпадает / Проверьте / Введено |
+| Retake / Type the MRZ | Fotografuoti iš naujo / Įvesti MRZ | Переснять / Ввести MRZ |
 | Adjust Corners / Check corners / Turn Left / Turn Right | Pataisyti kampus / Patikrinkite kampus / Pasukti kairėn / Pasukti dešinėn | Поправить углы / Проверьте углы / Повернуть влево / Повернуть вправо |
 | Mark Employment Ended / Employment ended / Legal Hold | Pažymėti darbo pabaigą / Darbas baigtas / Draudimas naikinti | Отметить окончание работы / Работа окончена / Запрет удаления |
 | Make Colour Photo (AI) / AI-coloured / AI colour photos | Sukurti spalvotą nuotrauką (DI) / Spalvinta DI / DI spalvotos nuotraukos | Сделать цветное фото (ИИ) / Раскрашено ИИ / Цветные фото с ИИ |

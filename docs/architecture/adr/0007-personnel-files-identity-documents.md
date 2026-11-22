@@ -2,7 +2,8 @@
 
 - **Status:** accepted (decisions made 2026-11-05); being built: the Go MRZ parser
   (`internal/personnel/mrz`) is done, the rest is phase 2 onwards of the
-  [docs-import plan](../../apps/docs-import-plan.md)
+  [docs-import plan](../../apps/docs-import-plan.md); amended 2026-11-13 (kept scans) and 2026-11-21
+  (Scan Documents, the [docs-scan plan](../../apps/docs-scan-plan.md))
 - **Date:** 2026-11-05
 - **Scope:** backend (Go API, Postgres, files store), frontend (`web/apps/docs-import`,
   `@ppe/scan-kit`, `@ppe/mrz`, the staff app's employee page, Administration), deployment
@@ -190,3 +191,40 @@ The same permission as Save (`personnel.documents.manage`) covers it, and withou
 files' keys it answers 503 like Save. The DPIA (Consequences) covers the kept scans too: the
 purpose is not redoing the scanning, the period is days. Rules in
 [personnel-service.md](../../specs/personnel-service.md), "Kept scans".
+
+## Amendment (2026-11-21): Scan Documents
+
+A second app, **Scan Documents** (`docs-scan`, a published app with the device profile), reads the
+document **first** and then finds the person, where Import Documents asks for the person first.
+Decided with the [docs-scan plan](../../apps/docs-scan-plan.md) (its D1–D11, all as recommended).
+What it changes here:
+
+- **Match.** A read-only route, `POST /api/v1/personnel/documents/match`, under
+  `personnel.documents.manage`, offers up to five employees for a reading: the same or a similar
+  name (`employee.CompareNames`, reached through a port Personnel files declares, as other contexts
+  are), and whoever holds the document's personal code or number (the blind indexes). It answers
+  with what the role already writes (name, code, birth date, nationality, sex) and counts of
+  orders and company assets, so this role needs no employee permission to find a person. Two
+  candidates that may be one person are named as a pair; merging them stays `employees.merge`'s,
+  and the API still refuses to remove a record holding identity documents.
+- **Add to Employee Record is on by default in Scan Documents** (amends decision 4's default
+  for this app only): updating the record is the app's purpose. It stays a switch, chosen per
+  document and saved with it; Import Documents keeps off. A field differing from the record
+  starts ticked only when the record lacks it or a name differs by accents alone.
+- **Every scan is kept, and a saved one is linked** (extends the kept-scans amendment). In Scan
+  Documents a scan goes to the server, sealed, once its pages are taken, read or not, so the
+  app's home, **Scans**, can list it; nothing stays on the phone or goes to its photo library.
+  The kept-scans rules hold: `API_PERSONNEL_SCAN_DAYS`, the uploader alone, a key per scan. Two
+  things are new. A scan has a state (`unread`, `read`, `saved`). Save may name the scan, which
+  then points to the document and the employee: this is the one tie a scan has to a personnel
+  file, and removing that document or shredding the file erases the scan in the same transaction.
+  `ppe_app` gains UPDATE on those three columns alone.
+- **Printed fields** may be read from the document's printed text in the browser, without AI,
+  after a spike. A name is taken only when its letters, folded, equal the MRZ's. Every other
+  printed field is shown as printed, to be checked, as typing it was.
+- **Import Documents is retired after Scan Documents' trial** (its tile Retired); until then the
+  two share their reading code in one package, so they cannot read differently.
+
+The DPIA covers it as it covers Import Documents: the same data, the same keys, and a kept scan
+for days. Rules in [personnel-service.md](../../specs/personnel-service.md), "Match" and "Kept
+scans".

@@ -1,0 +1,1204 @@
+<title>Scan Documents Mockup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a control bar over a grey stage holding one scaled iPhone; the journey beside it (below on narrow screens).
+   The page chrome uses --c-*; the phone uses its own iOS-like --p-* tokens, light or dark per the Phone control. */
+:root {
+  --c-bg: #f3f3f6; --c-panel: #ffffff; --c-fg: #16152b; --c-mut: #5d5c72; --c-line: #dcdbe6;
+  --c-acc: #110f36; --c-acc-fg: #ffffff; --c-stage: #e6e5ee; --c-soft: #ecebf6; --c-hl: #3d39b8; --c-ok: #1d7a43;
+  --c-font: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --c-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --p-font: -apple-system, 'SF Pro Text', Inter, system-ui, sans-serif;
+  --mrz-font: 'OCR-B', 'OCR B', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --c-bg: #0d0d16; --c-panel: #16162a; --c-fg: #ecebf7; --c-mut: #a3a2bb; --c-line: #2b2a44;
+    --c-acc: #c9c7ff; --c-acc-fg: #110f36; --c-stage: #08080f; --c-soft: #1f1e38; --c-hl: #a9a6ff; --c-ok: #5fd08c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --c-bg: #0d0d16; --c-panel: #16162a; --c-fg: #ecebf7; --c-mut: #a3a2bb; --c-line: #2b2a44;
+  --c-acc: #c9c7ff; --c-acc-fg: #110f36; --c-stage: #08080f; --c-soft: #1f1e38; --c-hl: #a9a6ff; --c-ok: #5fd08c; color-scheme: dark;
+}
+body { background: var(--c-bg); color: var(--c-fg); font-family: var(--c-font); }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; max-width: 1500px; margin-inline: auto; display: flex; flex-direction: column; gap: 18px; }
+@media (min-width: 900px) { .wrap { padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px)); } }
+
+/* ---------- Review chrome ---------- */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.eyebrow { font-family: var(--c-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--c-mut); }
+.top h1 { margin: 4px 0 6px; font-size: clamp(24px, 3vw, 32px); font-weight: 600; letter-spacing: -.01em; text-wrap: balance; }
+.top p { margin: 0; max-width: 70ch; color: var(--c-mut); line-height: 1.5; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; padding: 12px 14px; background: var(--c-panel); border: 1px solid var(--c-line); border-radius: 12px; }
+.ctl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.ctl-l { font-family: var(--c-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--c-mut); }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; background: var(--c-soft); padding: 3px; border-radius: 9px; }
+.seg button { font: inherit; font-size: 13px; border: 0; background: transparent; color: var(--c-fg); padding: 6px 10px; border-radius: 7px; cursor: pointer; }
+.seg button[aria-checked="true"] { background: var(--c-acc); color: var(--c-acc-fg); }
+.seg button:focus-visible, .jlist button:focus-visible, .tog input:focus-visible { outline: 2px solid var(--c-hl); outline-offset: 2px; }
+.tog { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--c-mut); cursor: pointer; }
+.main { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 980px) { .main { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; } }
+.stage { background: var(--c-stage); border-radius: 14px; padding: 24px 12px; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.stage-meta { font-family: var(--c-mono); font-size: 12px; color: var(--c-mut); text-align: center; }
+.fw { position: relative; }
+.journey { background: var(--c-panel); border: 1px solid var(--c-line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.journey h2, .notes h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.journey > p { margin: 0; font-size: 13px; color: var(--c-mut); line-height: 1.45; }
+.jlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.jlist button { width: 100%; text-align: left; font: inherit; color: inherit; background: transparent; border: 1px solid var(--c-line); border-radius: 10px; padding: 10px 12px; display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 2px 10px; cursor: pointer; }
+.jlist button[aria-current="step"] { border-color: var(--c-hl); background: var(--c-soft); }
+.jn { grid-row: span 2; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--c-line); font-family: var(--c-mono); font-size: 11px; display: grid; place-items: center; color: var(--c-mut); }
+.jlist .seen .jn { background: var(--c-ok); border-color: var(--c-ok); color: var(--c-panel); }
+.jt { font-weight: 600; font-size: 14px; }
+.jq { font-size: 12.5px; color: var(--c-mut); line-height: 1.4; }
+.notes { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .notes { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.note { background: var(--c-panel); border: 1px solid var(--c-line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.note p, .note li { margin: 0; font-size: 14px; line-height: 1.55; color: var(--c-fg); }
+.note ol, .note ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+.note .mut { color: var(--c-mut); }
+.note b { font-weight: 600; }
+.foot { margin: 0; font-size: 13px; color: var(--c-mut); line-height: 1.5; max-width: 90ch; }
+
+/* ---------- Phone ---------- */
+.phone {
+  --p-bg: #f2f2f7; --p-card: #ffffff; --p-fg: #000000; --p-mut: #6e6e73; --p-sep: rgba(60,60,67,.18);
+  --p-blue: #007aff; --p-green: #248a3d; --p-green-b: #34c759; --p-orange: #c93400; --p-orange-b: #ff9500; --p-red: #d70015; --p-red-b: #ff3b30; --p-yellow: #ffd60a;
+  --p-fill: rgba(120,120,128,.12); --p-glass: rgba(250,250,252,.78); --p-glass-line: rgba(0,0,0,.08); --p-tile: #d9d6cf; --p-shadow: 0 10px 30px rgba(0,0,0,.18);
+  --p-okbg: rgba(52,199,89,.14); --p-warnbg: rgba(255,149,0,.14); --p-errbg: rgba(255,59,48,.12); --p-bluebg: rgba(0,122,255,.1);
+  position: relative; width: 390px; height: 844px; border-radius: 56px; overflow: hidden; background: var(--p-bg); color: var(--p-fg);
+  font-family: var(--p-font); font-size: 17px; letter-spacing: -.01em; -webkit-font-smoothing: antialiased;
+  box-shadow: 0 0 0 11px #1b1b1f, 0 0 0 12.5px #3a3a40, 0 30px 70px rgba(0,0,0,.35); transform-origin: top left; isolation: isolate;
+}
+.phone.dark {
+  --p-bg: #000000; --p-card: #1c1c1e; --p-fg: #ffffff; --p-mut: #98989f; --p-sep: rgba(84,84,88,.55);
+  --p-blue: #0a84ff; --p-green: #30d158; --p-green-b: #30d158; --p-orange: #ff9f0a; --p-orange-b: #ff9f0a; --p-red: #ff453a; --p-red-b: #ff453a;
+  --p-fill: rgba(120,120,128,.24); --p-glass: rgba(28,28,30,.74); --p-glass-line: rgba(255,255,255,.08); --p-tile: #2c2b29; --p-shadow: 0 10px 30px rgba(0,0,0,.6);
+  --p-okbg: rgba(48,209,88,.16); --p-warnbg: rgba(255,159,10,.16); --p-errbg: rgba(255,69,58,.16); --p-bluebg: rgba(10,132,255,.16);
+}
+.phone, .phone *, .phone *::before, .phone *::after { box-sizing: border-box; }
+:where(.phone) button { font: inherit; color: inherit; letter-spacing: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+.phone button:focus-visible, .phone input:focus-visible, .phone [tabindex]:focus-visible { outline: 2px solid var(--p-blue); outline-offset: 2px; }
+.phone.hints [data-act] { outline: 2px dashed #ff2d95 !important; outline-offset: -2px; }
+.island { position: absolute; top: 11px; left: 50%; width: 124px; height: 36px; margin-left: -62px; background: #000; border-radius: 20px; z-index: 60; }
+.sbar { position: absolute; top: 0; left: 0; right: 0; height: 54px; padding: 18px 30px 0 44px; display: flex; justify-content: space-between; font-size: 16px; font-weight: 600; z-index: 55; pointer-events: none; }
+.sbar.light { color: #fff; }
+.sbar .ic { display: flex; gap: 6px; align-items: center; }
+.homebar { position: absolute; bottom: 8px; left: 50%; width: 136px; height: 5px; margin-left: -68px; border-radius: 3px; background: var(--p-fg); z-index: 55; opacity: .85; pointer-events: none; }
+.homebar.light { background: #fff; }
+.scr { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
+.scroll { flex: 1; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+svg.i { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+svg.i.s { width: 16px; height: 16px; stroke-width: 2.2; }
+svg.i.l { width: 26px; height: 26px; }
+
+/* nav bars */
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 58px 12px 8px; min-height: 104px; }
+.nav .t { text-align: center; min-width: 0; flex: 1; }
+.nav .t b { display: block; font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav .t small { display: block; font-size: 12px; color: var(--p-mut); }
+.nbtn { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; gap: 2px; color: var(--p-blue); font-size: 17px; }
+.nbtn.r { justify-content: flex-end; }
+.glassbtn { height: 40px; min-width: 40px; padding: 0 14px; border-radius: 20px; background: var(--p-glass); border: 1px solid var(--p-glass-line); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 15px; font-weight: 600; }
+.glassbtn.round { padding: 0; width: 40px; }
+
+/* lists (inset grouped) */
+.sec { padding: 0 16px; margin-top: 22px; }
+.sec-h { font-size: 13px; color: var(--p-mut); text-transform: uppercase; letter-spacing: .02em; padding: 0 16px 7px; }
+.sec-f { font-size: 13px; color: var(--p-mut); padding: 7px 16px 0; line-height: 1.38; }
+.grp { background: var(--p-card); border-radius: 12px; overflow: hidden; }
+.row { display: flex; align-items: center; gap: 12px; padding: 11px 16px; min-height: 44px; position: relative; text-align: left; width: 100%; }
+.row + .row::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--p-sep); }
+.row .lbl { font-size: 13px; color: var(--p-mut); }
+.row .val { font-size: 17px; }
+.row .col { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.row .end { margin-left: auto; display: flex; align-items: center; gap: 6px; color: var(--p-mut); flex: none; }
+.chip { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 600; border-radius: 7px; padding: 2px 7px; white-space: nowrap; }
+.chip.ok { background: var(--p-okbg); color: var(--p-green); }
+.chip.ocr { background: var(--p-fill); color: var(--p-mut); }
+.chip.warn { background: var(--p-warnbg); color: var(--p-orange); }
+.chip.err { background: var(--p-errbg); color: var(--p-red); }
+.chip.blue { background: var(--p-bluebg); color: var(--p-blue); }
+.btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 50px; border-radius: 25px; font-size: 17px; font-weight: 600; }
+.btn.pri { background: var(--p-blue); color: #fff; }
+.btn.sec2 { background: var(--p-fill); color: var(--p-blue); }
+.btn.plain { color: var(--p-blue); min-height: 44px; }
+.btn.red { color: var(--p-red); }
+.btn[disabled] { opacity: .4; cursor: default; }
+.bottom { padding: 10px 16px 34px; display: flex; flex-direction: column; gap: 8px; background: linear-gradient(to top, var(--p-bg) 75%, transparent); }
+.lt { font-size: 34px; font-weight: 700; letter-spacing: .01em; }
+.h2 { font-size: 22px; font-weight: 700; letter-spacing: -.01em; text-wrap: balance; }
+.p { font-size: 15px; color: var(--p-mut); line-height: 1.38; }
+.sw { width: 51px; height: 31px; border-radius: 16px; background: var(--p-fill); position: relative; flex: none; transition: background .2s; }
+.sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,.2); transition: transform .2s; }
+.sw.on { background: var(--p-green-b); }
+.sw.on::after { transform: translateX(20px); }
+.tick { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--p-sep); display: grid; place-items: center; flex: none; color: #fff; }
+.tick.on { background: var(--p-blue); border-color: var(--p-blue); }
+.avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(140deg, #8e8e93, #636366); color: #fff; display: grid; place-items: center; font-size: 16px; font-weight: 600; flex: none; }
+.avatar.b { background: linear-gradient(140deg, #64a6ff, #2b6fd6); }
+.avatar.g { background: linear-gradient(140deg, #6ed58d, #2f9a52); }
+
+/* library */
+.lib-h { padding: 58px 16px 4px; display: flex; align-items: center; gap: 8px; }
+.lib-h .lt { flex: 1; }
+.lib-sub { padding: 0 16px; font-size: 14px; color: var(--p-mut); }
+.chips { display: flex; gap: 8px; padding: 14px 16px 4px; }
+.fchip { height: 34px; padding: 0 14px; border-radius: 17px; background: var(--p-fill); font-size: 15px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+.fchip[aria-pressed="true"] { background: var(--p-fg); color: var(--p-bg); }
+.day { padding: 18px 16px 8px; font-size: 20px; font-weight: 700; display: flex; justify-content: space-between; align-items: baseline; }
+.day small { font-size: 14px; font-weight: 400; color: var(--p-mut); }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+.tile { aspect-ratio: 1; position: relative; overflow: hidden; background: var(--p-tile); display: grid; place-items: center; }
+.tile .docw { width: 84%; transform: rotate(-3deg); box-shadow: 0 3px 8px rgba(0,0,0,.25); border-radius: 3px; }
+.tile .docw.pass { width: 88%; }
+.tile .cap { position: absolute; inset: auto 0 0 0; padding: 18px 7px 6px; background: linear-gradient(to top, rgba(0,0,0,.6), transparent); color: #fff; font-size: 11.5px; font-weight: 600; text-align: left; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile .bdg { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.bdg.ok { background: var(--p-green-b); } .bdg.warn { background: var(--p-orange-b); } .bdg.err { background: var(--p-red-b); }
+.lib-foot { padding: 22px 28px 140px; text-align: center; font-size: 13px; color: var(--p-mut); line-height: 1.4; }
+.fab-bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 0 30px; display: flex; justify-content: center; align-items: center; pointer-events: none; }
+.fab { pointer-events: auto; height: 60px; padding: 0 26px 0 20px; border-radius: 30px; background: var(--p-blue); color: #fff; display: inline-flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; box-shadow: 0 8px 24px rgba(0,122,255,.35); }
+
+/* camera */
+.cam { background: #000; color: #fff; }
+.cam-top { display: flex; align-items: center; justify-content: space-between; padding: 56px 14px 8px; height: 104px; }
+.cam-ic { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.12); }
+.cam-ic.on { color: var(--p-yellow); }
+.autop { height: 30px; padding: 0 12px; border-radius: 15px; font-size: 13px; font-weight: 700; letter-spacing: .04em; background: rgba(255,255,255,.14); display: inline-flex; align-items: center; gap: 5px; }
+.autop.on { background: var(--p-yellow); color: #000; }
+.vf { position: relative; height: 520px; overflow: hidden; background: radial-gradient(120% 90% at 40% 30%, #6b5a48 0%, #4a3d31 55%, #2d251e 100%); }
+.vf::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(97deg, rgba(255,255,255,.025) 0 2px, transparent 2px 11px); }
+.vf .scene { position: absolute; left: 50%; top: 52%; width: 300px; margin-left: -150px; transform: translateY(-50%); perspective: 900px; }
+.vf .scene.pass { width: 330px; margin-left: -165px; }
+.vf .holder { transform: rotateX(16deg) rotateZ(-5deg); transform-style: preserve-3d; transition: transform .6s; position: relative; animation: drift 3.2s ease-in-out infinite alternate; }
+.vf .holder.flip { animation: flipcard .9s ease-in-out; }
+@keyframes drift { from { translate: -4px 2px; } to { translate: 5px -3px; } }
+@keyframes flipcard { 0% { transform: rotateX(16deg) rotateZ(-5deg) rotateY(0); } 50% { transform: rotateX(16deg) rotateZ(-5deg) rotateY(90deg); } 100% { transform: rotateX(16deg) rotateZ(-5deg) rotateY(0); } }
+.vf .docw { box-shadow: 0 18px 30px rgba(0,0,0,.45); border-radius: 4px; }
+.quad { position: absolute; inset: -3px; border: 2.5px solid var(--p-yellow); border-radius: 6px; background: rgba(255,214,10,.16); animation: qin .25s ease-out; pointer-events: none; }
+.quad.ok { border-color: #30d158; background: rgba(48,209,88,.14); }
+@keyframes qin { from { opacity: 0; transform: scale(1.06); } to { opacity: 1; transform: none; } }
+.mrzscan { position: absolute; left: 3%; right: 3%; pointer-events: none; border-radius: 3px; outline: 2px solid rgba(48,209,88,.9); background: rgba(48,209,88,.12); overflow: hidden; }
+.mrzscan::after { content: ""; position: absolute; top: 0; bottom: 0; width: 22%; background: linear-gradient(90deg, transparent, rgba(48,209,88,.6), transparent); animation: sweep 1s linear infinite; }
+.mrzscan.done::after { display: none; }
+.mrzscan.bad { outline-color: rgba(255,159,10,.95); background: rgba(255,159,10,.12); }
+.mrzscan.bad::after { background: linear-gradient(90deg, transparent, rgba(255,159,10,.55), transparent); }
+@keyframes sweep { from { left: -22%; } to { left: 100%; } }
+.guide { position: absolute; left: 50%; top: 52%; width: 316px; height: 202px; margin: -101px 0 0 -158px; pointer-events: none; }
+.guide.pass { width: 340px; height: 240px; margin: -120px 0 0 -170px; }
+.guide i { position: absolute; width: 26px; height: 26px; border: 3px solid rgba(255,255,255,.85); }
+.guide i:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 10px; }
+.guide i:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 10px; }
+.guide i:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 10px; }
+.guide i:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 10px; }
+.status { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); max-width: 330px; padding: 8px 14px; border-radius: 18px; background: rgba(0,0,0,.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 15px; font-weight: 600; display: flex; gap: 7px; align-items: center; white-space: nowrap; z-index: 3; }
+.status.ok { background: rgba(36,138,61,.9); }
+.status.warn { background: rgba(255,214,10,.95); color: #000; }
+.sides { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 3; }
+.side { white-space: nowrap; height: 28px; padding: 0 11px; border-radius: 14px; background: rgba(0,0,0,.55); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; color: rgba(255,255,255,.75); }
+.side.now { background: rgba(255,255,255,.92); color: #000; }
+.side.done { color: #30d158; }
+.glare { position: absolute; width: 46%; height: 70%; left: 30%; bottom: -8%; background: radial-gradient(closest-side, rgba(255,255,255,.95), rgba(255,255,255,.55) 45%, transparent); pointer-events: none; mix-blend-mode: screen; }
+.flash { position: absolute; inset: 0; background: #fff; animation: flash .35s ease-out forwards; pointer-events: none; z-index: 20; }
+@keyframes flash { from { opacity: .95; } to { opacity: 0; } }
+.modes { display: flex; justify-content: center; gap: 22px; padding: 14px 0 10px; font-size: 13px; font-weight: 600; letter-spacing: .06em; }
+.modes button { color: rgba(255,255,255,.7); min-height: 30px; }
+.modes button[aria-pressed="true"] { color: var(--p-yellow); }
+.shut-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 6px 30px 0; }
+.thumb { width: 52px; height: 52px; border-radius: 9px; overflow: hidden; background: #222; border: 1.5px solid rgba(255,255,255,.35); display: grid; place-items: center; position: relative; }
+.thumb .docw { width: 92%; }
+.thumb .n { position: absolute; top: -7px; right: -7px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--p-yellow); color: #000; font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.shutter { width: 76px; height: 76px; border-radius: 50%; border: 4px solid #fff; display: grid; place-items: center; }
+.shutter::after { content: ""; width: 62px; height: 62px; border-radius: 50%; background: #fff; transition: transform .1s; }
+.shutter:active::after { transform: scale(.9); }
+.cam-r { justify-self: end; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; color: rgba(255,255,255,.75); }
+.review-pill { position: absolute; right: 14px; top: 60px; height: 36px; padding: 0 16px; border-radius: 18px; background: var(--p-yellow); color: #000; font-weight: 700; font-size: 15px; display: inline-flex; align-items: center; gap: 4px; animation: pulse 1.3s ease-in-out infinite; z-index: 5; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(255,214,10,.25); } }
+
+/* viewer */
+.viewer .stagebox { flex: 1; min-height: 150px; display: grid; place-items: center; padding: 6px 22px; overflow: hidden; }
+.viewer.withinfo .stagebox .docw { max-width: 260px; }
+.viewer .stagebox .docw { width: 100%; max-width: 340px; box-shadow: var(--p-shadow); border-radius: 5px; }
+.viewer .stagebox .docw.pass { max-width: 346px; }
+.strip { display: flex; justify-content: center; gap: 6px; padding: 6px 0 10px; }
+.strip button { width: 54px; height: 40px; border-radius: 6px; overflow: hidden; background: var(--p-tile); display: grid; place-items: center; opacity: .55; border: 2px solid transparent; }
+.strip button[aria-current="true"] { opacity: 1; border-color: var(--p-blue); }
+.strip .docw { width: 88%; }
+.strip .lbl2 { font-size: 10px; }
+.info { max-height: 330px; overflow-y: auto; scrollbar-width: none; background: var(--p-bg); border-top: .5px solid var(--p-sep); padding-bottom: 6px; }
+.info::-webkit-scrollbar { display: none; }
+.info.big { max-height: 520px; }
+.banner { margin: 12px 16px 0; padding: 12px 14px; border-radius: 12px; display: flex; gap: 10px; align-items: flex-start; font-size: 15px; line-height: 1.35; }
+.banner.ok { background: var(--p-okbg); }
+.banner.warn { background: var(--p-warnbg); }
+.banner.err { background: var(--p-errbg); }
+.banner.blue { background: var(--p-bluebg); }
+.banner b { display: block; font-weight: 600; }
+.banner .ico { margin-top: 1px; }
+.banner.ok .ico { color: var(--p-green); } .banner.warn .ico { color: var(--p-orange); } .banner.err .ico { color: var(--p-red); } .banner.blue .ico { color: var(--p-blue); }
+.banner .acts { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.mini { height: 34px; padding: 0 14px; border-radius: 17px; font-size: 15px; font-weight: 600; background: var(--p-card); color: var(--p-blue); display: inline-flex; align-items: center; gap: 5px; }
+.mini.pri { background: var(--p-blue); color: #fff; }
+.who { display: flex; align-items: center; gap: 12px; padding: 14px 16px 2px; }
+.who .nm { font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+.who .sub { font-size: 14px; color: var(--p-mut); }
+.portrait { width: 52px; height: 66px; border-radius: 6px; overflow: hidden; background: #cfd3d6; flex: none; }
+.mrzbox { font-family: var(--mrz-font); font-size: 11.4px; letter-spacing: .02em; line-height: 1.55; padding: 12px 14px; white-space: pre; overflow-x: auto; }
+.mrzbox .k { color: var(--p-green); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.mrzbox .x { color: var(--p-orange); font-weight: 700; }
+.vinput { font: inherit; font-size: 17px; color: var(--p-fg); background: var(--p-fill); border: 0; border-radius: 8px; padding: 6px 9px; width: 100%; }
+.toolbar { display: flex; justify-content: space-around; align-items: center; padding: 6px 12px 30px; border-top: .5px solid var(--p-sep); background: var(--p-glass); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.toolbar button { width: 48px; height: 44px; display: grid; place-items: center; color: var(--p-blue); }
+.toolbar button[aria-pressed="true"] { color: var(--p-fg); }
+.toolbar .on { position: relative; }
+.toolbar .on::after { content: ""; position: absolute; bottom: 3px; width: 4px; height: 4px; border-radius: 2px; background: var(--p-blue); }
+.actbar { padding: 10px 16px 8px; background: var(--p-bg); }
+.why { font-size: 13px; color: var(--p-mut); text-align: center; padding-top: 6px; line-height: 1.35; }
+
+/* match + update */
+.dochead { margin: 4px 16px 0; padding: 12px; border-radius: 14px; background: var(--p-card); display: flex; gap: 12px; align-items: center; }
+.dochead .nm { font-weight: 600; font-size: 17px; }
+.dochead .sub { font-size: 13px; color: var(--p-mut); }
+.cand { background: var(--p-card); border-radius: 14px; overflow: hidden; }
+.cand-h { display: flex; align-items: center; gap: 12px; padding: 14px 16px 10px; }
+.cand-h .nm { font-size: 18px; font-weight: 600; }
+.cand-h .sub { font-size: 13px; color: var(--p-mut); }
+.cmp { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 10px; padding: 4px 16px 12px; font-size: 14px; align-items: center; }
+.cmp .k { color: var(--p-mut); }
+.cmp .m { display: inline-flex; color: var(--p-green); }
+.cmp .m.d { color: var(--p-orange); }
+.cmp .m.n { color: var(--p-mut); }
+.cand .use { border-top: .5px solid var(--p-sep); display: flex; }
+.cand .use button { flex: 1; min-height: 48px; color: var(--p-blue); font-weight: 600; font-size: 16px; }
+.cands { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
+.searchf { display: flex; align-items: center; gap: 8px; height: 38px; border-radius: 10px; background: var(--p-fill); padding: 0 10px; color: var(--p-mut); }
+.searchf input { flex: 1; border: 0; background: transparent; font: inherit; font-size: 17px; color: var(--p-fg); min-width: 0; outline: none; }
+.chg { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.chg .from { font-size: 14px; color: var(--p-mut); }
+.chg .from s { text-decoration-thickness: 1px; }
+.chg .to { font-size: 17px; font-weight: 600; }
+.chg .to.off { font-weight: 400; color: var(--p-mut); }
+.copies { display: flex; gap: 10px; padding: 12px 16px; }
+.copy { width: 86px; display: flex; flex-direction: column; gap: 5px; align-items: center; font-size: 12px; color: var(--p-mut); }
+.copy .f { width: 86px; height: 58px; border-radius: 7px; background: var(--p-tile); display: grid; place-items: center; overflow: hidden; position: relative; }
+.copy .f .docw { width: 88%; }
+.copy .lock { position: absolute; right: 4px; bottom: 4px; width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,.6); color: #fff; display: grid; place-items: center; }
+.radio { display: flex; gap: 8px; padding: 0 16px 12px; }
+.radio button { flex: 1; min-height: 44px; border-radius: 10px; background: var(--p-fill); font-size: 15px; padding: 8px 10px; text-align: left; display: flex; gap: 8px; align-items: center; }
+.radio button[aria-pressed="true"] { background: var(--p-bluebg); color: var(--p-blue); font-weight: 600; outline: 1.5px solid var(--p-blue); }
+.radio .dot { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--p-sep); flex: none; }
+.radio button[aria-pressed="true"] .dot { border: 5px solid var(--p-blue); }
+.mrow { padding: 12px 16px 2px; }
+.mrow .k { font-size: 13px; color: var(--p-mut); display: flex; justify-content: space-between; gap: 8px; }
+.keep { display: flex; gap: 10px; padding: 0 16px; }
+.keep button { flex: 1; border-radius: 14px; background: var(--p-card); padding: 14px 12px; text-align: left; display: flex; flex-direction: column; gap: 6px; border: 2px solid transparent; }
+.keep button[aria-pressed="true"] { border-color: var(--p-blue); }
+.keep .nm { font-weight: 600; font-size: 16px; }
+.keep .sub { font-size: 13px; color: var(--p-mut); line-height: 1.3; }
+.keep .tag { font-size: 12px; font-weight: 700; color: var(--p-blue); text-transform: uppercase; letter-spacing: .04em; }
+.keep .tag.off { color: var(--p-mut); }
+.field { display: flex; flex-direction: column; gap: 3px; padding: 9px 16px; position: relative; }
+.field + .field::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--p-sep); }
+.field label { font-size: 13px; color: var(--p-mut); display: flex; justify-content: space-between; }
+.field input { border: 0; background: transparent; font: inherit; font-size: 17px; color: var(--p-fg); padding: 2px 0; outline: none; min-width: 0; }
+.field input::placeholder { color: var(--p-mut); opacity: .7; }
+
+/* saved */
+.done-ic { width: 92px; height: 92px; border-radius: 50%; background: var(--p-green-b); color: #fff; display: grid; place-items: center; margin: 18px auto 14px; animation: pop .5s cubic-bezier(.2,1.4,.4,1); }
+.done-ic svg { width: 48px; height: 48px; stroke-width: 2.6; }
+@keyframes pop { from { transform: scale(.3); opacity: 0; } }
+
+/* overlays */
+.dim { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 40; animation: fadein .2s; }
+@keyframes fadein { from { opacity: 0; } }
+.asheet { position: absolute; left: 8px; right: 8px; bottom: 30px; z-index: 41; display: flex; flex-direction: column; gap: 8px; animation: up .25s ease-out; }
+@keyframes up { from { transform: translateY(40px); opacity: 0; } }
+.asheet .g { background: var(--p-glass); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 14px; overflow: hidden; }
+.asheet .ttl { padding: 14px 16px; text-align: center; font-size: 13px; color: var(--p-mut); line-height: 1.35; border-bottom: .5px solid var(--p-sep); }
+.asheet .ttl b { display: block; font-size: 14px; color: var(--p-fg); margin-bottom: 2px; }
+.asheet button { display: block; width: 100%; min-height: 56px; font-size: 19px; color: var(--p-blue); }
+.asheet .g button + button { border-top: .5px solid var(--p-sep); }
+.asheet button.red { color: var(--p-red); }
+.asheet button.cancel { font-weight: 600; background: var(--p-card); border-radius: 14px; }
+.toast { position: absolute; top: 58px; left: 50%; transform: translateX(-50%); z-index: 50; max-width: 340px; padding: 10px 16px; border-radius: 22px; background: var(--p-glass); border: 1px solid var(--p-glass-line); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 6px 20px rgba(0,0,0,.18); font-size: 15px; font-weight: 600; display: flex; gap: 8px; align-items: center; animation: tdrop .3s ease-out; }
+@keyframes tdrop { from { transform: translate(-50%, -16px); opacity: 0; } }
+.picker { position: absolute; left: 0; right: 0; bottom: 0; top: 64px; z-index: 41; background: var(--p-bg); color: var(--p-fg); border-radius: 14px 14px 0 0; display: flex; flex-direction: column; animation: up .3s ease-out; }
+.picker .ph { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; }
+.picker .ph b { font-size: 17px; }
+.pgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+.pgrid button { aspect-ratio: 1; position: relative; overflow: hidden; display: grid; place-items: center; }
+.pgrid .docw { width: 80%; transform: rotate(-6deg); }
+.pgrid .sel { position: absolute; right: 6px; bottom: 6px; width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid #fff; background: rgba(0,0,0,.2); display: grid; place-items: center; color: #fff; font-size: 13px; font-weight: 700; }
+.pgrid button[aria-pressed="true"] .sel { background: var(--p-blue); }
+.pgrid button[aria-pressed="true"]::after { content: ""; position: absolute; inset: 0; background: rgba(255,255,255,.18); }
+.reading { position: absolute; inset: 0; z-index: 45; background: rgba(0,0,0,.72); color: #fff; display: grid; place-items: center; text-align: center; font-size: 17px; font-weight: 600; }
+.spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(255,255,255,.25); border-top-color: #fff; animation: rot .8s linear infinite; margin: 0 auto 12px; }
+@keyframes rot { to { transform: rotate(360deg); } }
+
+/* adjust */
+.adj { background: #000; color: #fff; }
+.adj-top { display: flex; justify-content: space-between; align-items: center; padding: 56px 16px 6px; }
+.adj-top .y { height: 34px; padding: 0 16px; border-radius: 17px; background: var(--p-yellow); color: #000; font-weight: 700; font-size: 15px; }
+.adj-area { position: relative; flex: 1; margin: 10px 0; background: radial-gradient(120% 90% at 40% 30%, #6b5a48 0%, #4a3d31 55%, #2d251e 100%); overflow: hidden; touch-action: none; }
+.adj-area .scene { position: absolute; left: 50%; top: 50%; width: 300px; margin-left: -150px; transform: translateY(-50%); perspective: 900px; }
+.adj-area .scene.pass { width: 330px; margin-left: -165px; }
+.adj-area .holder { transform: rotateX(16deg) rotateZ(-5deg); }
+.adj-area svg.ov { position: absolute; inset: 0; width: 100%; height: 100%; }
+.adj-area .h { fill: #fff; stroke: var(--p-yellow); stroke-width: .6; cursor: grab; }
+.adj-bot { display: flex; justify-content: space-around; padding: 8px 20px 36px; }
+.adj-bot button { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: rgba(255,255,255,.85); min-width: 70px; min-height: 44px; }
+.adj-note { text-align: center; font-size: 13px; color: rgba(255,255,255,.65); padding: 0 24px; }
+
+/* ---------- Document artwork (specimen; sized by its own width) ---------- */
+.docw { container-type: inline-size; position: relative; }
+.doc { position: relative; width: 100%; overflow: hidden; color: #1d2a33; font-family: Inter, Arial, sans-serif; border-radius: 4cqw; }
+.doc.card { aspect-ratio: 85.6 / 54; }
+.doc.pass { aspect-ratio: 125 / 88; border-radius: 2cqw; }
+.doc.card.back { background: linear-gradient(160deg, #e9f2ee 0%, #f3e9ee 55%, #e6eef5 100%); }
+.doc.card.front { background: linear-gradient(150deg, #f6efe3 0%, #e7eff0 50%, #f1e4ea 100%); }
+.doc.pass { background: linear-gradient(155deg, #eef1e6 0%, #f4ece6 50%, #e5edf2 100%); }
+.doc.ukr { background: linear-gradient(155deg, #e9eef6 0%, #f3f0e2 55%, #e8eef6 100%); }
+.doc::before { content: ""; position: absolute; inset: 0; background: repeating-radial-gradient(circle at 70% 40%, rgba(40,90,110,.06) 0 .6cqw, transparent .6cqw 1.8cqw); }
+.doc .hd { position: absolute; left: 4cqw; right: 4cqw; top: 3cqw; font-size: 3cqw; font-weight: 700; letter-spacing: .03em; color: #2c4a5a; display: flex; justify-content: space-between; }
+.doc .hd span:last-child { font-weight: 500; }
+.doc .pt { position: absolute; left: 4cqw; top: 11cqw; width: 26cqw; height: 33cqw; border-radius: 1.2cqw; overflow: hidden; background: #c9cfd3; }
+.doc.pass .pt { top: 10cqw; width: 23cqw; height: 29cqw; }
+.doc .flds { position: absolute; left: 33cqw; right: 3cqw; top: 10cqw; display: grid; grid-template-columns: 1fr 1fr; gap: 1.1cqw 3cqw; }
+.doc.pass .flds { left: 30cqw; top: 9cqw; gap: .7cqw 3cqw; }
+.doc .f { display: flex; flex-direction: column; min-width: 0; }
+.doc .f.w { grid-column: span 2; }
+.doc .f s { text-decoration: none; font-size: 1.9cqw; color: #5a7380; text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; }
+.doc .f b { font-size: 3.5cqw; font-weight: 600; white-space: nowrap; letter-spacing: .01em; }
+.doc.pass .f b { font-size: 2.9cqw; }
+.doc .chipg { position: absolute; right: 6cqw; top: 13cqw; width: 11cqw; height: 9cqw; border-radius: 1.6cqw; background: linear-gradient(135deg, #e7c66d, #b88d2e); opacity: .9; }
+.doc .spec { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%) rotate(-18deg); font-size: 9cqw; font-weight: 800; color: rgba(190,40,60,.13); letter-spacing: .12em; pointer-events: none; }
+.doc .mrz { position: absolute; left: 0; right: 0; bottom: 0; padding: 1.6cqw 3.5cqw 2.2cqw; background: rgba(255,255,255,.72); font-family: var(--mrz-font); color: #111; line-height: 1.32; white-space: pre; letter-spacing: 0; overflow: hidden; }
+.doc .mrz.td1 { font-size: 4.75cqw; }
+.doc .mrz.td3 { font-size: 3.28cqw; }
+.doc .backf { position: absolute; left: 4cqw; right: 4cqw; top: 10cqw; display: grid; grid-template-columns: 1fr 1fr; gap: 1.6cqw 3cqw; }
+.doc .sig { position: absolute; left: 33cqw; top: 40cqw; width: 24cqw; height: 4cqw; border-bottom: .3cqw solid #5a7380; }
+.doc .sig::after { content: ""; position: absolute; left: 2cqw; bottom: .4cqw; width: 18cqw; height: 3cqw; border-top: .4cqw solid #2a3d6a; border-radius: 50% 40% 0 0; transform: rotate(-4deg); }
+.doc .glare { left: 30%; bottom: -12%; width: 50%; height: 60%; }
+.doc .portrait-only { position: absolute; inset: 0; }
+@media (prefers-reduced-motion: reduce) { .phone *, .phone *::before, .phone *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Workwear &amp; Equipment · playable mockup · round 1</div>
+      <h1>Scan Documents</h1>
+      <p>A phone app that photographs a passport or ID card, reads it (the MRZ and the printed fields), finds the person among the employees and updates, merges or adds them, then files the photos in the personnel file. It looks and moves like the iPhone's Camera and Photos. Everything inside the phone can be tapped. The people and documents are invented specimens.</p>
+    </div>
+  </header>
+
+  <div class="controls" role="group" aria-label="Mockup controls">
+    <div class="ctl"><span class="ctl-l" id="l-scn">Document in the camera</span><div class="seg" id="seg-scn" role="radiogroup" aria-labelledby="l-scn"></div></div>
+    <div class="ctl"><span class="ctl-l" id="l-thm">Phone</span><div class="seg" id="seg-thm" role="radiogroup" aria-labelledby="l-thm"></div></div>
+    <label class="tog"><input type="checkbox" id="hints"> Show what can be tapped</label>
+  </div>
+
+  <div class="main">
+    <section class="stage" id="stage" aria-label="Phone preview">
+      <div class="fw" id="fw"><div class="phone" id="phone"></div></div>
+      <div class="stage-meta" id="meta"></div>
+    </section>
+    <aside class="journey" aria-labelledby="j-h">
+      <h2 id="j-h">The journey</h2>
+      <p>Steps tick off as you go. Jump to any step to see its screen for the document chosen above.</p>
+      <ol class="jlist" id="jlist"></ol>
+    </aside>
+  </div>
+
+  <section class="notes" aria-label="About this screen and open questions">
+    <div class="note" id="note-scr"></div>
+    <div class="note" id="note-q"></div>
+  </section>
+  <p class="foot">Built on what the project already has: Scan SIMs' full-screen phone camera, Import Documents' MRZ reading (two reads that agree, check digits, names typed with their accents), Kept scans (3 days, for their maker alone), the employees' Possible duplicates and Merge Employees, and Add to Employee Record. English only in this round; the app would be in English, Lithuanian and Russian.</p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- MRZ (ICAO 9303) built from the specimen data, with real check digits ---------- */
+  function cdg(s) { var w = [7, 3, 1], t = 0; for (var i = 0; i < s.length; i++) { var c = s[i]; var v = c === '<' ? 0 : /\d/.test(c) ? +c : c.charCodeAt(0) - 55; t += v * w[i % 3]; } return String(t % 10); }
+  function pad(s, n) { s = (s || '').replace(/[ -]/g, '<'); while (s.length < n) s += '<'; return s.slice(0, n); }
+  function plain(s) { return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase(); }
+  function ymd(d) { return d.slice(2, 4) + d.slice(5, 7) + d.slice(8, 10); }
+  function td1(d) {
+    var num = pad(d.number, 9), l1 = 'I<' + d.state + num + cdg(num) + pad(d.personal, 15);
+    var b = ymd(d.birth), e = ymd(d.expiry);
+    var l2 = b + cdg(b) + d.sex + e + cdg(e) + d.nat + pad('', 11);
+    l2 += cdg(l1.slice(5, 30) + l2.slice(0, 7) + l2.slice(8, 15) + l2.slice(18, 29));
+    var l3 = pad(plain(d.surname) + '<<' + plain(d.given), 30);
+    return { lines: [l1, l2, l3], checks: [[14], [6, 14, 29], []] };
+  }
+  function td3(d) {
+    var l1 = pad('P<' + d.state + plain(d.surname) + '<<' + plain(d.given), 44);
+    var num = pad(d.number, 9), b = ymd(d.birth), e = ymd(d.expiry), pc = pad(d.personal, 14);
+    var l2 = num + cdg(num) + d.nat + b + cdg(b) + d.sex + e + cdg(e) + pc + cdg(pc);
+    l2 += cdg(l2.slice(0, 10) + l2.slice(13, 20) + l2.slice(21, 43));
+    return { lines: [l1, l2], checks: [[], [9, 19, 27, 42, 43]] };
+  }
+
+  /* ---------- Demo data (invented) ---------- */
+  var DOCS = {
+    rz: { kind: 'ID card', type: 'card', state: 'LTU', country: 'Lithuania', surname: 'ŽUKAUSKAITĖ', given: 'RŪTA', number: '39012345', personal: '49103140123', birth: '1991-03-14', sex: 'F', nat: 'LTU', expiry: '2031-05-20', issued: '2021-05-20', authority: 'Migracijos departamentas', place: null, hair: '#6b4a32' },
+    av: { kind: 'Passport', type: 'pass', state: 'UKR', country: 'Ukraine', surname: 'VOLKOV', given: 'ANDRII', number: 'GT482915', personal: '', birth: '1985-07-02', sex: 'M', nat: 'UKR', expiry: '2030-09-11', issued: '2020-09-11', authority: '8031', place: 'Kharkiv', hair: '#3b3633' },
+    tj: { kind: 'Passport', type: 'pass', state: 'LTU', country: 'Lithuania', surname: 'JANKAUSKAS', given: 'TOMAS', number: '24680135', personal: '39811050456', birth: '1998-11-05', sex: 'M', nat: 'LTU', expiry: '2033-02-01', issued: '2023-02-01', authority: 'Migracijos departamentas', place: 'Vilnius', hair: '#8a6a45' },
+    ip: { kind: 'ID card', type: 'card', state: 'LTU', country: 'Lithuania', surname: 'PETRAUSKIENĖ', given: 'IEVA', number: '38877221', personal: '48702220311', birth: '1987-02-22', sex: 'F', nat: 'LTU', expiry: '2029-08-30', issued: '2019-08-30', authority: 'Migracijos departamentas', place: null, hair: '#a5683b' },
+    jk: { kind: 'Passport', type: 'pass', state: 'LTU', country: 'Lithuania', surname: 'KAZLAUSKAS', given: 'JONAS', number: '23315790', personal: '38006120218', birth: '1980-06-12', sex: 'M', nat: 'LTU', expiry: '2028-04-17', issued: '2018-04-17', authority: 'Migracijos departamentas', place: 'Šiauliai', hair: '#55504a' }
+  };
+  Object.keys(DOCS).forEach(function (k) { var d = DOCS[k]; d.mrz = d.type === 'card' ? td1(d) : td3(d); });
+  var NAT = { LTU: 'Lithuanian', UKR: 'Ukrainian' };
+  var EMP = {
+    e1042: { name: 'Ruta Zukauskaite', code: '1042', birth: null, nat: null, sex: null, lang: 'Lithuanian', what: 'Warehouse · since 2019', orders: 6, assets: '1 SIM card', c: '' },
+    e1187: { name: 'Andrei Volkov', code: '1187', birth: '1985-07-02', nat: null, sex: 'M', lang: 'Russian', what: 'Site crew · since 2022', orders: 4, assets: '1 SIM card', c: 'b' },
+    e2201: { name: 'Andrej Volkov', code: null, birth: null, nat: null, sex: null, lang: 'Lithuanian', what: 'Added from Create Order, Oct 2026', orders: 2, assets: 'none', c: '' },
+    e1150: { name: 'Marius Jankauskas', code: '1150', birth: '1979-01-30', nat: 'LTU', sex: 'M', lang: 'Lithuanian', what: 'Drivers · since 2017', orders: 9, assets: 'none', c: 'g' },
+    e1120: { name: 'Ieva Petrauskienė', code: '1120', birth: '1987-02-22', nat: 'LTU', sex: 'F', lang: 'Lithuanian', what: 'Office · since 2020', orders: 3, assets: '1 laptop', c: 'g' },
+    e1003: { name: 'Jonas Kazlauskas', code: '1003', birth: '1980-06-12', nat: 'LTU', sex: 'M', lang: 'Lithuanian', what: 'Site crew · since 2016', orders: 14, assets: '1 SIM card', c: 'b' }
+  };
+  var EMP0 = JSON.stringify(EMP);
+  var SCEN = {
+    A: { doc: 'rz', label: 'ID card · one alike', cands: [{ id: 'e1042', kind: 'Same name' }], decide: 'update' },
+    B: { doc: 'av', label: 'Passport · two alike', cands: [{ id: 'e1187', kind: 'Similar name' }, { id: 'e2201', kind: 'Similar name' }], pair: true, decide: 'merge' },
+    C: { doc: 'tj', label: 'Passport · new person', cands: [], decide: 'newemp' },
+    D: { doc: 'rz', label: 'ID card · glare on the MRZ', cands: [{ id: 'e1042', kind: 'Same name' }], glare: true, decide: 'update' }
+  };
+  var CANDS0 = JSON.stringify(SCEN.B.cands);
+  var STEPS = [
+    { id: 'library', t: 'Scans', q: 'Your recent scans, as Photos shows photos. Is this the right home, or should the app open in the camera?' },
+    { id: 'camera', t: 'Take the document', q: 'It takes the photo by itself once two frames read the same MRZ. Keep auto, the shutter, or both?' },
+    { id: 'viewer', t: 'Check what was read', q: 'Each field says where it came from: the MRZ with its check digits, or the printed text. Enough to trust it?' },
+    { id: 'match', t: 'Find the person', q: 'Employees with the same or a similar name are offered, compared field by field.' },
+    { id: 'decide', t: 'Update, merge or add', q: 'The record is updated field by field; two records of one person are merged first; nobody alike adds a new employee.' },
+    { id: 'saved', t: 'Saved', q: 'The document goes to the personnel file, sealed. What should Scan Next do?' }
+  ];
+
+  /* ---------- Icons ---------- */
+  var P = {
+    back: '<path d="M15 18l-6-6 6-6"/>', chev: '<path d="M9 18l6-6-6-6"/>', x: '<path d="M18 6L6 18M6 6l12 12"/>',
+    check: '<path d="M20 6L9 17l-5-5"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+    alert: '<path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17h.01"/>', trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+    share: '<path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11v9h12v-9"/>', crop: '<path d="M6 2v14h14"/><path d="M2 6h14v14"/>',
+    cam: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>', bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+    photo: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
+    rl: '<path d="M3 4v6h6"/><path d="M3.5 15a9 9 0 1 0 2.1-9.4L3 10"/>', rr: '<path d="M21 4v6h-6"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L21 10"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>', merge: '<path d="M6 3v6a6 6 0 0 0 6 6h6"/><path d="M6 21v-6"/><path d="M15 12l3 3-3 3"/>',
+    lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', dot: '<circle cx="12" cy="12" r="4" fill="currentColor"/>',
+    reset: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>', archive: '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v11h14V9M10 13h4"/>',
+    open: '<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v6H4V6h6"/>', keyb: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
+    eq: '<path d="M5 9h14M5 15h14"/>', approx: '<path d="M5 9c2.5-2 4.5-2 7 0s4.5 2 7 0M5 15c2.5-2 4.5-2 7 0s4.5 2 7 0"/>', ne: '<path d="M5 9h14M5 15h14M16 5L8 19"/>', minus: '<path d="M6 12h12"/>'
+  };
+  function ic(n, cls) { return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + P[n] + '</svg>'; }
+
+  /* ---------- Helpers ---------- */
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function fmt(d) { return d ? (+d.slice(8, 10)) + ' ' + MON[+d.slice(5, 7) - 1] + ' ' + d.slice(0, 4) : null; }
+  function dots(d) { return d.slice(8, 10) + ' ' + d.slice(5, 7) + ' ' + d.slice(0, 4); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function title(s) { return s.toLocaleLowerCase('lt').replace(/(^|[\s-])(\p{L})/gu, function (_, a, b) { return a + b.toLocaleUpperCase('lt'); }); }
+  function fullName(d) { return title(d.given) + ' ' + title(d.surname); }
+  function initials(n) { return n.split(' ').map(function (w) { return w[0]; }).join('').slice(0, 2); }
+  function sexWord(s) { return s === 'F' ? 'Female' : s === 'M' ? 'Male' : null; }
+  function kl(d) { return d.kind === 'ID card' ? 'ID card' : d.kind.toLowerCase(); }
+  function sameLetters(a, b) { return plain(a) === plain(b); }
+
+  /* ---------- Document artwork ---------- */
+  function face(hair, sex) {
+    var long = sex === 'F';
+    return '<svg viewBox="0 0 60 76" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
+      '<rect width="60" height="76" fill="#c9d0d4"/>' +
+      (long ? '<path d="M14 34 Q12 12 30 10 Q48 12 46 34 L48 56 L12 56Z" fill="' + hair + '"/>' : '') +
+      '<path d="M6 76 Q8 56 30 54 Q52 56 54 76Z" fill="#45525c"/>' +
+      '<rect x="25" y="44" width="10" height="12" fill="#d9b59a"/>' +
+      '<ellipse cx="30" cy="32" rx="12" ry="15" fill="#e3c0a4"/>' +
+      (long ? '<path d="M18 28 Q20 14 30 15 Q40 14 42 28 Q36 20 30 21 Q24 20 18 28Z" fill="' + hair + '"/>' : '<path d="M17 30 Q16 15 30 15 Q44 15 43 30 Q40 21 30 21 Q20 21 17 30Z" fill="' + hair + '"/>') +
+      '<circle cx="25.5" cy="32" r="1.3" fill="#3a2d26"/><circle cx="34.5" cy="32" r="1.3" fill="#3a2d26"/><path d="M26.5 40 Q30 42 33.5 40" stroke="#a5735c" stroke-width="1.2" fill="none"/></svg>';
+  }
+  function mrzHTML(d, cls) { return '<div class="mrz ' + cls + '">' + d.mrz.lines.map(esc).join('\n') + '</div>'; }
+  function docArt(key, side, opt) {
+    opt = opt || {}; var d = DOCS[key];
+    var glare = opt.glare ? '<div class="glare"></div>' : '';
+    var spec = '<div class="spec">SPECIMEN</div>';
+    if (d.type === 'card' && side === 'back') {
+      return '<div class="docw"><div class="doc card back">' +
+        '<div class="hd"><span>LIETUVOS RESPUBLIKA</span><span>ATK · ID</span></div>' +
+        '<div class="backf">' +
+        '<div class="f"><s>Asmens kodas / Personal code</s><b>' + d.personal + '</b></div>' +
+        '<div class="f"><s>Išdavimo data / Date of issue</s><b>' + dots(d.issued) + '</b></div>' +
+        '<div class="f w"><s>Išdavė / Authority</s><b>' + esc(d.authority) + '</b></div></div>' +
+        spec + mrzHTML(d, 'td1') + glare + '</div></div>';
+    }
+    if (d.type === 'card') {
+      return '<div class="docw"><div class="doc card front">' +
+        '<div class="hd"><span>LIETUVOS RESPUBLIKA</span><span>ASMENS TAPATYBĖS KORTELĖ</span></div>' +
+        '<div class="pt">' + face(d.hair, d.sex) + '</div><div class="chipg"></div>' +
+        '<div class="flds" style="top:24cqw">' +
+        '<div class="f w"><s>Pavardė / Surname</s><b>' + esc(d.surname) + '</b></div>' +
+        '<div class="f w"><s>Vardas / Given name(s)</s><b>' + esc(d.given) + '</b></div>' +
+        '<div class="f"><s>Pilietybė / Nationality</s><b>' + d.nat + '</b></div>' +
+        '<div class="f"><s>Lytis / Sex</s><b>' + (d.sex === 'F' ? 'M/F' : 'V/M') + '</b></div>' +
+        '<div class="f"><s>Gimimo data / Birth</s><b>' + dots(d.birth) + '</b></div>' +
+        '<div class="f"><s>Dok. Nr. / Doc. No.</s><b>' + d.number + '</b></div>' +
+        '<div class="f"><s>Galioja iki / Expiry</s><b>' + dots(d.expiry) + '</b></div></div>' +
+        '<div class="sig" style="top:46cqw;left:4cqw;width:26cqw"></div>' + spec + glare + '</div></div>';
+    }
+    var ukr = d.state === 'UKR';
+    return '<div class="docw pass"><div class="doc pass' + (ukr ? ' ukr' : '') + '">' +
+      '<div class="hd"><span>' + (ukr ? 'UKRAINE · PASSPORT' : 'LIETUVOS RESPUBLIKA · PASAS') + '</span><span>P · ' + d.state + '</span></div>' +
+      '<div class="pt">' + face(d.hair, d.sex) + '</div>' +
+      '<div class="flds">' +
+      '<div class="f w"><s>Surname</s><b>' + esc(d.surname) + '</b></div>' +
+      '<div class="f w"><s>Given names</s><b>' + esc(d.given) + '</b></div>' +
+      '<div class="f"><s>Nationality</s><b>' + (NAT[d.nat] || d.nat).toUpperCase() + '</b></div>' +
+      '<div class="f"><s>Passport No.</s><b>' + d.number + '</b></div>' +
+      '<div class="f"><s>Date of birth</s><b>' + dots(d.birth) + '</b></div>' +
+      '<div class="f"><s>Sex</s><b>' + d.sex + '</b></div>' +
+      '<div class="f"><s>Place of birth</s><b>' + esc(d.place || '').toUpperCase() + '</b></div>' +
+      '<div class="f"><s>Personal No.</s><b>' + (d.personal || '—') + '</b></div>' +
+      '<div class="f"><s>Date of issue</s><b>' + dots(d.issued) + '</b></div>' +
+      '<div class="f"><s>Date of expiry</s><b>' + dots(d.expiry) + '</b></div>' +
+      '<div class="f w"><s>Authority</s><b>' + esc(d.authority).toUpperCase() + '</b></div></div>' +
+      spec + mrzHTML(d, 'td3') + glare + '</div></div>';
+  }
+  function portraitHTML(key) { var d = DOCS[key]; return '<div class="portrait">' + face(d.hair, d.sex) + '</div>'; }
+
+  /* ---------- State ---------- */
+  var S = {
+    scen: 'A', screen: 'library', theme: 'auto', hints: false,
+    pages: [], view: 0, info: true, edits: {}, editing: null, typed: false, glareDone: false,
+    cam: null, tok: 0, flash: false, picker: null, reading: false,
+    target: null, take: {}, addRec: true, photo: false, keep: 'e1187', pick: {}, merged: false, notSame: false,
+    searchOpen: false, q: '', nw: null,
+    filter: 'all', sheet: null, toast: null, adjust: null, ro: null, savedTo: null,
+    seen: {},
+    scans: [
+      { id: 's1', doc: 'av', scen: 'B', status: 'open', day: 'Today', time: '08:12' },
+      { id: 's2', doc: 'rz', scen: 'D', status: 'bad', day: 'Today', time: '07:55' },
+      { id: 's3', doc: 'ip', status: 'saved', who: 'e1120', day: 'Yesterday', time: '16:40' },
+      { id: 's4', doc: 'jk', status: 'saved', who: 'e1003', day: 'Yesterday', time: '11:03' }
+    ]
+  };
+  var sc = function () { return SCEN[S.scen]; };
+  var dk = function () { return S.ro ? S.ro.doc : sc().doc; };
+  var doc = function () { return DOCS[dk()]; };
+  function sidesOf(d) { return d.type === 'card' ? ['back', 'front'] : ['page']; }
+  function sideName(s) { return s === 'back' ? 'Back' : s === 'front' ? 'Front' : 'Data page'; }
+  function readOK() { if (S.ro) return true; if (S.typed) return true; return S.pages.some(function (p) { return (p.side === 'back' || p.side === 'page') && !p.glare; }); }
+
+  var phone = document.getElementById('phone');
+  var timers = [];
+  function later(ms, fn) { var t = S.tok; timers.push(setTimeout(function () { if (t === S.tok) fn(); }, ms)); }
+  function clearTimers() { S.tok++; timers.forEach(clearTimeout); timers = []; }
+  var toastT;
+  function toast(msg, icn) { S.toast = { msg: msg, ic: icn || 'check' }; clearTimeout(toastT); toastT = setTimeout(function () { S.toast = null; render(); }, 2600); render(); }
+
+  function go(screen) { clearTimers(); S.screen = screen; S.sheet = null; S.editing = null; if (screen === 'camera') startCamera(); render(); var sc0 = phone.querySelector('.scroll'); if (sc0) sc0.scrollTop = 0; }
+
+  /* ---------- Camera behaviour ---------- */
+  function startCamera() {
+    clearTimers();
+    var d = DOCS[sc().doc];
+    var need = sidesOf(d).filter(function (s) { return !S.pages.some(function (p) { return p.side === s; }); });
+    var auto = S.cam ? S.cam.auto : true;
+    if (!need.length) { S.cam = { side: sidesOf(d)[sidesOf(d).length - 1], phase: 'complete', mode: d.type, auto: auto, flip: false }; return; }
+    S.cam = { side: need[0], phase: 'search', mode: d.type, auto: auto, flip: false };
+    runPhases();
+  }
+  function runPhases() {
+    var c = S.cam, glare = sc().glare && !S.glareDone;
+    var mrzSide = c.side === 'back' || c.side === 'page';
+    later(c.flip ? 1300 : 900, function () { c.phase = 'found'; c.flip = false; render(); });
+    if (mrzSide) {
+      later(c.flipDelay || 1700, function () { c.phase = 'reading'; render(); });
+      if (glare) { later(2700, function () { c.phase = 'glare'; render(); }); return; }
+      later(2900, function () { c.phase = 'read'; render(); });
+      later(3500, function () { if (S.cam.auto) capture(); });
+    } else {
+      later(2100, function () { c.phase = 'steady'; render(); });
+      later(2900, function () { c.phase = 'ready'; render(); });
+      later(3300, function () { if (S.cam.auto) capture(); });
+    }
+  }
+  function capture() {
+    var c = S.cam; if (!c || c.phase === 'complete') return;
+    clearTimers();
+    var mrzSide = c.side === 'back' || c.side === 'page';
+    S.pages = S.pages.filter(function (p) { return p.side !== c.side; });
+    S.pages.push({ side: c.side, glare: mrzSide && c.phase !== 'read' });
+    S.flash = true; setTimeout(function () { S.flash = false; render(); }, 380);
+    var d = DOCS[sc().doc];
+    var next = sidesOf(d).filter(function (s) { return !S.pages.some(function (p) { return p.side === s; }); })[0];
+    if (next) {
+      c.phase = 'turn'; render();
+      later(900, function () { c.side = next; c.phase = 'search'; c.flip = true; render(); runPhases(); });
+    } else { c.phase = 'complete'; render(); }
+  }
+  function camStatus(c) {
+    var d = DOCS[sc().doc];
+    switch (c.phase) {
+      case 'search': return { t: c.flip ? 'Turn the card over' : 'Looking for the ' + (d.type === 'card' ? 'card' : 'passport'), k: '' };
+      case 'found': return { t: c.side === 'front' ? 'Front found' : 'Hold still', k: '' };
+      case 'reading': return { t: 'Reading the MRZ…', k: '' };
+      case 'glare': return { t: 'Glare on the MRZ · tilt it a little', k: 'warn', ic: 'alert' };
+      case 'read': return { t: 'MRZ read · two frames agree', k: 'ok', ic: 'check' };
+      case 'steady': return { t: 'Hold still', k: '' };
+      case 'ready': return { t: 'Front is sharp', k: 'ok', ic: 'check' };
+      case 'turn': return { t: d.type === 'card' ? 'Back taken · now the front' : 'Taken', k: 'ok', ic: 'check' };
+      case 'complete': return { t: d.type === 'card' ? 'Both sides taken' : 'Data page taken', k: 'ok', ic: 'check' };
+    }
+    return { t: '', k: '' };
+  }
+
+  /* ---------- Screens ---------- */
+  function sbar(light) {
+    return '<div class="sbar' + (light ? ' light' : '') + '"><span>9:41</span><span class="ic">' +
+      '<svg width="18" height="12" viewBox="0 0 18 12" aria-hidden="true"><g fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></g></svg>' +
+      '<svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M8 2.5c2.3 0 4.4.9 6 2.4l1.1-1.2C13.2 1.8 10.7.8 8 .8S2.8 1.8.9 3.7L2 4.9c1.6-1.5 3.7-2.4 6-2.4zm0 3.4c1.4 0 2.6.5 3.6 1.4l1.1-1.2C11.5 4.9 9.8 4.2 8 4.2s-3.5.7-4.7 1.9l1.1 1.2c1-.9 2.2-1.4 3.6-1.4zM8 9.3l2-2.1c-.5-.5-1.2-.8-2-.8s-1.5.3-2 .8z" fill="currentColor"/></svg>' +
+      '<svg width="27" height="13" viewBox="0 0 27 13" aria-hidden="true"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="2" fill="currentColor"/><rect x="25" y="4.5" width="1.5" height="4" rx=".7" fill="currentColor" opacity=".4"/></svg>' +
+      '</span></div>';
+  }
+
+  function scrLibrary() {
+    var list = S.scans.filter(function (s) { return S.filter === 'all' || (S.filter === 'saved' ? s.status === 'saved' : s.status !== 'saved'); });
+    var days = [];
+    list.forEach(function (s) { var g = days.filter(function (x) { return x.d === s.day; })[0]; if (!g) { g = { d: s.day, items: [] }; days.push(g); } g.items.push(s); });
+    var open = S.scans.filter(function (s) { return s.status !== 'saved'; }).length;
+    var h = '<div class="scr"><div class="scroll">' +
+      '<div class="lib-h"><span class="lt">Scans</span><button class="glassbtn round" data-act="toast" data-arg="Search by name, document number or kind" aria-label="Search">' + ic('search') + '</button><button class="glassbtn" data-act="toast" data-arg="Select scans to delete or download">Select</button></div>' +
+      '<div class="lib-sub">' + S.scans.length + ' scans · ' + open + ' not saved yet</div>' +
+      '<div class="chips" role="group" aria-label="Show">' +
+      ['all:All', 'open:Not saved', 'saved:Saved'].map(function (x) { var p = x.split(':'); return '<button class="fchip" data-act="filter" data-arg="' + p[0] + '" aria-pressed="' + (S.filter === p[0]) + '">' + p[1] + '</button>'; }).join('') + '</div>';
+    days.forEach(function (g) {
+      h += '<div class="day">' + g.d + '<small>' + g.items.length + (g.items.length === 1 ? ' scan' : ' scans') + '</small></div><div class="grid">';
+      g.items.forEach(function (s) {
+        var d = DOCS[s.doc];
+        var b = s.status === 'saved' ? '<span class="bdg ok" title="Saved">' + ic('check', 's') + '</span>' : s.status === 'bad' ? '<span class="bdg err" title="MRZ not read">' + ic('alert', 's') + '</span>' : '<span class="bdg warn" title="Not saved">' + ic('dot', 's') + '</span>';
+        var cap = s.status === 'bad' ? 'MRZ not read' : fullName(d);
+        h += '<button class="tile" data-act="openscan" data-arg="' + s.id + '" aria-label="' + esc(cap + ', ' + d.kind + ', ' + s.time) + '">' + docArt(s.doc, d.type === 'card' ? 'back' : 'page', { glare: s.status === 'bad' }) + b + '<span class="cap">' + esc(cap) + '</span></button>';
+      });
+      h += '</div>';
+    });
+    if (!list.length) h += '<div class="lib-foot">Nothing here.</div>';
+    h += '<div class="lib-foot">Scans are kept 3 days for you alone, then deleted. A saved document stays in the person\'s personnel file.</div></div>' +
+      '<div class="fab-bar"><button class="fab" data-act="go" data-arg="camera">' + ic('cam', 'l') + 'Scan Document</button></div></div>';
+    return h;
+  }
+
+  function scrCamera() {
+    var c = S.cam, d = DOCS[sc().doc], st = camStatus(c);
+    var mrzSide = c.side === 'back' || c.side === 'page';
+    var glareOn = sc().glare && !S.glareDone && mrzSide;
+    var art = docArt(sc().doc, c.side, { glare: glareOn });
+    var quad = (c.phase !== 'search' && c.phase !== 'turn') ? '<div class="quad' + (c.phase === 'read' || c.phase === 'ready' || c.phase === 'complete' ? ' ok' : '') + '"></div>' : '';
+    var mrzTop = d.type === 'card' ? 'top:auto;bottom:2%;height:30%' : 'top:auto;bottom:2%;height:17%';
+    var scan = mrzSide && /reading|glare|read/.test(c.phase) ? '<div class="mrzscan' + (c.phase === 'read' ? ' done' : '') + (c.phase === 'glare' ? ' bad' : '') + '" style="' + mrzTop + '"></div>' : '';
+    var last = S.pages[S.pages.length - 1];
+    var sides = d.type === 'card' ? '<div class="sides">' + ['back', 'front'].map(function (s) {
+      var done = S.pages.some(function (p) { return p.side === s; });
+      return '<span class="side' + (done ? ' done' : c.side === s && c.phase !== 'complete' ? ' now' : '') + '">' + (done ? ic('check', 's') : '') + (s === 'back' ? 'Back · MRZ' : 'Front · photo') + '</span>';
+    }).join('') + '</div>' : '';
+    var h = '<div class="scr cam">' +
+      '<div class="cam-top"><button class="cam-ic" data-act="go" data-arg="library" aria-label="Close">' + ic('x') + '</button>' +
+      '<button class="autop' + (c.auto ? ' on' : '') + '" data-act="auto" aria-pressed="' + c.auto + '">AUTO</button>' +
+      '<button class="cam-ic" data-act="toast" data-arg="Torch on" aria-label="Torch">' + ic('bolt') + '</button></div>' +
+      (c.phase === 'complete' ? '<button class="review-pill" data-act="review">Review' + ic('chev', 's') + '</button>' : '') +
+      '<div class="vf"><div class="guide' + (c.mode === 'pass' ? ' pass' : '') + '"><i></i><i></i><i></i><i></i></div>' +
+      '<div class="scene' + (d.type === 'pass' ? ' pass' : '') + '"><div class="holder' + (c.flip ? ' flip' : '') + '">' + art + quad + scan + '</div></div>' +
+      '<div class="status ' + st.k + '" role="status">' + (st.ic ? ic(st.ic, 's') : '') + esc(st.t) + '</div>' + sides +
+      (S.flash ? '<div class="flash"></div>' : '') + '</div>' +
+      '<div class="modes" role="group" aria-label="Document"><button data-act="mode" data-arg="card" aria-pressed="' + (c.mode === 'card') + '">ID CARD</button><button data-act="mode" data-arg="pass" aria-pressed="' + (c.mode === 'pass') + '">PASSPORT</button></div>' +
+      '<div class="shut-row"><button class="thumb" data-act="' + (last ? 'review' : 'noop') + '" aria-label="Review the photos">' + (last ? docArt(sc().doc, last.side, { glare: last.glare }) + '<span class="n">' + S.pages.length + '</span>' : '') + '</button>' +
+      '<button class="shutter" data-act="shutter" aria-label="Take photo"></button>' +
+      '<span class="cam-r"><button class="cam-ic" data-act="picker" aria-label="Choose Photos">' + ic('photo') + '</button>Photos</span></div>';
+    if (S.picker) h += pickerHTML();
+    if (S.reading) h += '<div class="reading"><div><div class="spin"></div>Reading ' + S.picker_n + (S.picker_n === 1 ? ' photo…' : ' photos…') + '</div></div>';
+    return h + '</div>';
+  }
+  function pickerHTML() {
+    var d = DOCS[sc().doc], key = sc().doc;
+    var items = [];
+    sidesOf(d).forEach(function (s) { items.push({ id: s, art: docArt(key, s, { glare: sc().glare && !S.glareDone && s !== 'front' }), bg: '#5b4b3d' }); });
+    items.push({ id: 'x1', bg: 'linear-gradient(160deg,#9fc3a0,#4f7b5a)' }, { id: 'x2', bg: 'linear-gradient(160deg,#cfd8e3,#7d8ea3)' }, { id: 'x3', bg: 'linear-gradient(160deg,#e8c9a0,#a8774a)' }, { id: 'x4', bg: 'linear-gradient(160deg,#b6b1d9,#5f5a99)' });
+    var n = Object.keys(S.picker.sel).filter(function (k) { return S.picker.sel[k]; }).length;
+    return '<div class="dim" data-act="pickerclose"></div><div class="picker" role="dialog" aria-label="Choose Photos">' +
+      '<div class="ph"><button class="nbtn" data-act="pickerclose">Cancel</button><b>Recents</b><button class="nbtn r" data-act="pickeradd" ' + (n ? '' : 'disabled style="opacity:.4"') + '><b>Add' + (n ? ' (' + n + ')' : '') + '</b></button></div>' +
+      '<div class="scroll"><div class="pgrid">' + items.map(function (it, i) {
+        var on = !!S.picker.sel[it.id];
+        return '<button data-act="pickersel" data-arg="' + it.id + '" aria-pressed="' + on + '" style="background:' + it.bg + '" aria-label="' + (it.art ? 'Photo of the document' : 'Other photo') + '">' + (it.art || '') + '<span class="sel">' + (on ? Object.keys(S.picker.sel).filter(function (k) { return S.picker.sel[k]; }).indexOf(it.id) + 1 : '') + '</span></button>';
+      }).join('') + '</div><p class="sec-f" style="padding:14px 18px">Photos chosen here are read the same way. A photo that is not a document is left out with a word why.</p></div></div>';
+  }
+
+  function fieldRows() {
+    var d = doc(), ok = readOK(), e = S.edits;
+    var nm = function (k, v) { return e[k] != null ? e[k] : v; };
+    var rows = [];
+    function R(k, label, val, src) { rows.push({ k: k, label: label, val: nm(k, val), src: e[k] != null ? 'typed' : src }); }
+    var mrzOr = ok ? (S.typed ? 'typedmrz' : 'mrz') : 'check';
+    R('surname', 'Surname', title(d.surname), ok ? 'agrees' : 'ocr');
+    R('given', 'Given names', title(d.given), ok ? 'agrees' : 'ocr');
+    R('birth', 'Birth date', fmt(d.birth), ok ? mrzOr : 'ocr');
+    R('sex', 'Sex', sexWord(d.sex), ok ? mrzOr : 'ocr');
+    R('nat', 'Nationality', NAT[d.nat], ok ? mrzOr : 'ocr');
+    if (d.personal) R('personal', 'Personal code', ok ? d.personal : d.personal.slice(0, 7) + '?' + d.personal.slice(8), ok ? mrzOr : 'check');
+    var person = rows; rows = [];
+    R('kind', 'Kind', d.kind + ' · ' + d.country, ok ? mrzOr : 'ocr');
+    R('number', 'Number', ok ? d.number : d.number.replace('0', 'O'), ok ? mrzOr : 'check');
+    R('expiry', 'Valid until', fmt(d.expiry), ok ? mrzOr : 'ocr');
+    R('issued', 'Issued on', fmt(d.issued), 'ocr');
+    R('authority', 'Issued by', d.authority, 'ocr');
+    if (d.place) R('place', 'Place of birth', d.place, 'ocr');
+    return { person: person, docu: rows };
+  }
+  function srcChip(s) {
+    if (s === 'mrz') return '<span class="chip ok">' + ic('check', 's') + 'MRZ</span>';
+    if (s === 'typedmrz') return '<span class="chip ok">' + ic('check', 's') + 'Typed MRZ</span>';
+    if (s === 'agrees') return '<span class="chip ok">' + ic('check', 's') + 'Printed · MRZ agrees</span>';
+    if (s === 'typed') return '<span class="chip blue">Typed</span>';
+    if (s === 'check') return '<span class="chip warn">' + ic('alert', 's') + 'Check</span>';
+    return '<span class="chip ocr">Printed</span>';
+  }
+  function rowsHTML(list) {
+    return '<div class="grp">' + list.map(function (r) {
+      if (S.editing === r.k) return '<div class="row"><div class="col"><span class="lbl">' + r.label + '</span><input class="vinput" id="edit-' + r.k + '" data-edit="' + r.k + '" value="' + esc(r.val) + '"></div></div>';
+      return '<button class="row" data-act="' + (S.ro ? 'noop' : 'edit') + '" data-arg="' + r.k + '"><div class="col"><span class="lbl">' + r.label + '</span><span class="val">' + esc(r.val) + '</span></div><span class="end">' + srcChip(r.src) + '</span></button>';
+    }).join('') + '</div>';
+  }
+  function mrzBox() {
+    var d = doc(), ok = readOK();
+    return d.mrz.lines.map(function (l, li) {
+      return l.split('').map(function (ch, i) {
+        if (!ok && li === d.mrz.lines.length - (d.type === 'card' ? 3 : 1) && i > 8 && i < 22) return '<span class="x">' + (i % 3 ? '?' : esc(ch)) + '</span>';
+        return d.mrz.checks[li].indexOf(i) >= 0 && ok ? '<span class="k">' + esc(ch) + '</span>' : esc(ch);
+      }).join('');
+    }).join('\n');
+  }
+
+  function scrViewer() {
+    var d = doc(), key = dk(), ok = readOK();
+    var pages = S.ro ? sidesOf(d).map(function (s) { return { side: s }; }) : S.pages.slice().sort(function (a, b) { return sidesOf(d).indexOf(a.side) - sidesOf(d).indexOf(b.side); });
+    if (!pages.length) pages = sidesOf(d).map(function (s) { return { side: s }; });
+    var cur = pages[Math.min(S.view, pages.length - 1)];
+    var f = fieldRows();
+    var nChecks = d.mrz.checks.reduce(function (a, c) { return a + c.length; }, 0);
+    var h = '<div class="scr viewer' + (S.info ? ' withinfo' : '') + '">' +
+      '<div class="nav"><button class="nbtn" data-act="go" data-arg="' + (S.ro ? 'library' : 'camera') + '">' + ic('back') + (S.ro ? 'Scans' : 'Camera') + '</button>' +
+      '<div class="t"><b>' + d.kind + ' · ' + sideName(cur.side).toLowerCase() + '</b><small>' + (S.ro ? S.ro.day + ' ' + S.ro.time : 'Today 09:41') + '</small></div>' +
+      '<button class="nbtn r" data-act="' + (S.ro ? 'toast' : 'adjust') + '" data-arg="Saved scans cannot be changed">Adjust</button></div>' +
+      (S.info ? '' : '<div style="flex:1"></div>') +
+      '<div class="stagebox"' + (S.info ? '' : ' style="flex:3"') + '>' + docArt(key, cur.side, { glare: cur.glare }) + '</div>' +
+      '<div class="strip">' + pages.map(function (p, i) { return '<button data-act="view" data-arg="' + i + '" aria-current="' + (p === cur) + '" aria-label="' + sideName(p.side) + '">' + docArt(key, p.side, { glare: p.glare }) + '</button>'; }).join('') + '</div>';
+    if (S.info) {
+      h += '<div class="info">';
+      if (S.ro) h += '<div class="banner ok"><span class="ico">' + ic('check') + '</span><div><b>Saved to ' + esc(S.ro.name) + '\'s personnel file</b>' + S.ro.day + ' at ' + S.ro.time + '. The scan is deleted from here after 3 days.</div></div>';
+      else if (ok) h += '<div class="banner ok"><span class="ico">' + ic('check') + '</span><div><b>' + (S.typed ? 'MRZ typed and checked' : 'MRZ read twice, the same both times') + '</b>All ' + nChecks + ' check digits are right. The printed names agree with it.</div></div>';
+      else h += '<div class="banner err"><span class="ico">' + ic('alert') + '</span><div><b>The MRZ could not be read</b>Glare covers part of it. The fields below are from the printed text and may be wrong.<div class="acts"><button class="mini pri" data-act="retake">' + ic('cam', 's') + 'Retake</button><button class="mini" data-act="typecode">' + ic('keyb', 's') + 'Type the MRZ</button></div></div></div>';
+      h += '<div class="who">' + portraitHTML(key) + '<div><div class="nm">' + esc((S.edits.given || title(d.given)) + ' ' + (S.edits.surname || title(d.surname))) + '</div><div class="sub">Born ' + fmt(d.birth) + ' · ' + NAT[d.nat] + '</div></div></div>' +
+        '<div class="sec"><div class="sec-h">Person</div>' + rowsHTML(f.person) + (S.ro ? '' : '<div class="sec-f">Tap a field to correct it. The MRZ has no accents, so the names are taken from the printed text and checked against it.</div>') + '</div>' +
+        '<div class="sec"><div class="sec-h">Document</div>' + rowsHTML(f.docu) + '</div>' +
+        '<div class="sec"><div class="sec-h">MRZ</div><div class="grp"><div class="mrzbox">' + mrzBox() + '</div></div>' + (ok ? '<div class="sec-f">Underlined: the check digits, all right.</div>' : '') + '</div><div style="height:14px"></div></div>';
+    }
+    if (S.ro) h += '<div class="actbar"><button class="btn sec2" data-act="openemp" data-arg="' + S.ro.who + '">' + ic('open', 's') + 'Open Employee Page</button></div>';
+    else h += '<div class="actbar"><button class="btn pri" data-act="go" data-arg="match" ' + (ok ? '' : 'disabled') + '>' + ic('search', 's') + 'Find Employee</button>' + (ok ? '' : '<div class="why">Retake or type the MRZ first: saving needs it.</div>') + '</div>';
+    h += '<div class="toolbar"><button data-act="share" aria-label="Download Archive">' + ic('share') + '</button><button data-act="info" aria-pressed="' + S.info + '" class="' + (S.info ? 'on' : '') + '" aria-label="Details">' + ic('info') + '</button><button data-act="' + (S.ro ? 'toast' : 'adjust') + '" data-arg="Saved scans cannot be changed" aria-label="Adjust Corners">' + ic('crop') + '</button><button data-act="del" aria-label="Delete Scan">' + ic('trash') + '</button></div></div>';
+    return h;
+  }
+
+  function cmpRow(label, onFile, docVal) {
+    var m = !onFile ? '<span class="m n" title="not on file">' + ic('minus', 's') + '</span>' : onFile === docVal ? '<span class="m" title="the same">' + ic('eq', 's') + '</span>' : sameLetters(onFile, docVal) ? '<span class="m" title="the same but for accents">' + ic('approx', 's') + '</span>' : '<span class="m d" title="differs">' + ic('ne', 's') + '</span>';
+    return '<span class="k">' + label + '</span><span>' + esc(onFile || 'not on file') + '</span>' + m;
+  }
+  function scrMatch() {
+    var d = doc(), s = sc(), key = dk();
+    var h = '<div class="scr"><div class="nav"><button class="nbtn" data-act="go" data-arg="viewer">' + ic('back') + 'Details</button><div class="t"><b>Find Employee</b></div><span class="nbtn"></span></div><div class="scroll">' +
+      '<div class="dochead">' + portraitHTML(key) + '<div><div class="nm">' + esc(fullName(d)) + '</div><div class="sub">' + d.kind + ' · born ' + fmt(d.birth) + ' · ' + NAT[d.nat] + '</div></div></div>';
+    if (s.cands.length) {
+      h += '<div class="sec" style="margin-top:20px"><div class="h2" style="padding:0 4px 6px">This person may already be an employee</div><div class="p" style="padding:0 4px">' + (s.cands.length > 1 ? 'Two records have a name like the document\'s.' : 'One record has the same name, accents aside.') + '</div></div>';
+      if (s.pair && !S.merged && !S.notSame) h += '<div class="banner blue" style="margin-top:14px"><span class="ico">' + ic('merge') + '</span><div><b>Andrei Volkov and Andrej Volkov may be one person</b>Merge them first, so this passport goes to one record. Their orders and company assets move to the one you keep.<div class="acts"><button class="mini pri" data-act="go" data-arg="merge">Merge Employees…</button><button class="mini" data-act="notsame">Not the Same Person</button></div></div></div>';
+      if (S.notSame) h += '<div class="banner ok" style="margin-top:14px"><span class="ico">' + ic('check') + '</span><div>Marked as not the same person. Employees stops offering this pair.</div></div>';
+      h += '<div class="cands" style="margin-top:14px">';
+      s.cands.forEach(function (c) {
+        var e = EMP[c.id];
+        h += '<div class="cand"><div class="cand-h"><span class="avatar ' + e.c + '">' + initials(e.name) + '</span><div style="min-width:0;flex:1"><div class="nm">' + esc(e.name) + '</div><div class="sub">' + (e.code ? 'Code ' + e.code + ' · ' : 'No code · ') + esc(e.what) + '</div></div><span class="chip ' + (c.kind === 'Same name' ? 'ok' : 'warn') + '">' + c.kind + '</span></div>' +
+          '<div class="cmp">' + cmpRow('Name', e.name, fullName(d)) + cmpRow('Birth date', fmt(e.birth), fmt(d.birth)) + cmpRow('Nationality', NAT[e.nat], NAT[d.nat]) + cmpRow('Sex', sexWord(e.sex), sexWord(d.sex)) +
+          '<span class="k">Holds</span><span>' + e.orders + ' orders · ' + esc(e.assets) + '</span><span></span></div>' +
+          '<div class="use"><button data-act="use" data-arg="' + c.id + '">Use This Employee</button></div></div>';
+      });
+      h += '</div>';
+    } else {
+      h += '<div class="sec" style="margin-top:20px"><div class="h2" style="padding:0 4px 6px">No employee with this name</div><div class="p" style="padding:0 4px">Nobody on file has a name like Tomas Jankauskas. Marius Jankauskas shares only the surname, so he is not offered.</div></div>';
+    }
+    h += '<div class="sec"><div class="grp">' +
+      (S.searchOpen ? '<div class="row"><label class="searchf" style="flex:1">' + ic('search', 's') + '<input id="q" data-q="1" placeholder="Name or code" value="' + esc(S.q) + '" aria-label="Search employees"></label><button class="nbtn r" data-act="searchclose">Cancel</button></div>' + searchResults() :
+        '<button class="row" data-act="searchopen"><span class="col"><span class="val" style="color:var(--p-blue)">Choose Another Employee…</span></span><span class="end">' + ic('search', 's') + '</span></button>') +
+      '</div></div><div style="height:16px"></div></div>' +
+      '<div class="bottom"><button class="btn ' + (s.cands.length ? 'sec2' : 'pri') + '" data-act="newemp">' + ic('plus', 's') + 'Add as New Employee</button></div></div>';
+    return h;
+  }
+  function searchResults() {
+    var q = plain(S.q.trim());
+    if (!q) return '<div class="row"><span class="p">Type a name or an employee code.</span></div>';
+    var hits = Object.keys(EMP).filter(function (k) { var e = EMP[k]; return plain(e.name).indexOf(q) >= 0 || (e.code || '').indexOf(q) >= 0; });
+    if (!hits.length) return '<div class="row"><span class="p">No employee matches.</span></div>';
+    return hits.map(function (k) { var e = EMP[k]; return '<button class="row" data-act="use" data-arg="' + k + '"><span class="avatar ' + e.c + '" style="width:34px;height:34px;font-size:13px">' + initials(e.name) + '</span><span class="col"><span class="val">' + esc(e.name) + '</span><span class="lbl">' + (e.code ? 'Code ' + e.code : 'No code') + '</span></span><span class="end">' + ic('chev', 's') + '</span></button>'; }).join('');
+  }
+
+  function diffs(id) {
+    var e = EMP[id], d = doc(), out = [], same = [];
+    var name = (S.edits.given || title(d.given)) + ' ' + (S.edits.surname || title(d.surname));
+    function add(k, label, cur, val) {
+      if (!val) return;
+      if (cur === val) { same.push(label); return; }
+      var def = !cur || (k === 'name' && sameLetters(cur, val));
+      out.push({ k: k, label: label, cur: cur, val: val, def: def, why: !cur ? 'Not on file' : k === 'name' && sameLetters(cur, val) ? 'Accents added' : 'Differs' });
+    }
+    add('name', 'Name', e.name, name);
+    add('birth', 'Birth date', fmt(e.birth), fmt(d.birth));
+    add('nat', 'Nationality', NAT[e.nat], NAT[d.nat]);
+    add('sex', 'Sex', sexWord(e.sex), sexWord(d.sex));
+    return { out: out, same: same };
+  }
+  function copiesHTML() {
+    var d = doc(), key = dk();
+    return '<div class="grp"><div class="copies">' + sidesOf(d).map(function (s) { return '<div class="copy"><div class="f">' + docArt(key, s) + '<span class="lock">' + ic('lock', 's') + '</span></div>' + sideName(s) + '</div>'; }).join('') +
+      '<div class="copy"><div class="f" style="width:46px;margin:0 20px">' + face(d.hair, d.sex) + '<span class="lock">' + ic('lock', 's') + '</span></div>Portrait</div></div></div>';
+  }
+  function scrUpdate() {
+    var id = S.target, e = EMP[id], d = doc(), df = diffs(id);
+    df.out.forEach(function (r) { if (S.take[r.k] == null) S.take[r.k] = r.def; });
+    var nTake = df.out.filter(function (r) { return S.take[r.k]; }).length;
+    var h = '<div class="scr"><div class="nav"><button class="nbtn" data-act="go" data-arg="match">' + ic('back') + 'Back</button><div class="t"><b>Update Employee</b></div><span class="nbtn"></span></div><div class="scroll">' +
+      (S.merged ? '<div class="banner ok" style="margin-top:0"><span class="ico">' + ic('check') + '</span><div><b>Merged</b>Andrej Volkov\'s 2 orders moved to Andrei Volkov.</div></div>' : '') +
+      '<div class="dochead"><span class="avatar ' + e.c + '">' + initials(e.name) + '</span><div style="flex:1;min-width:0"><div class="nm">' + esc(e.name) + '</div><div class="sub">' + (e.code ? 'Code ' + e.code + ' · ' : '') + esc(e.what) + '</div></div></div>' +
+      '<div class="sec"><div class="grp"><button class="row" data-act="addrec" role="switch" aria-checked="' + S.addRec + '"><span class="col"><span class="val">Add to Employee Record</span></span><span class="sw' + (S.addRec ? ' on' : '') + '"></span></button></div>' +
+      '<div class="sec-f">' + (S.addRec ? 'The employee page\'s Identity section shows this ' + kl(d) + ', and the fields ticked below go onto the record.' : 'The document is filed only. The employee page says “valid until ' + fmt(d.expiry) + '” and nothing else changes.') + '</div></div>';
+    if (df.out.length) {
+      h += '<div class="sec"' + (S.addRec ? '' : ' style="opacity:.45;pointer-events:none"') + '><div class="sec-h">Take from the ' + kl(d) + '</div><div class="grp">' + df.out.map(function (r) {
+        var on = S.addRec && S.take[r.k];
+        return '<button class="row" data-act="take" data-arg="' + r.k + '" role="checkbox" aria-checked="' + !!on + '"><span class="tick' + (on ? ' on' : '') + '">' + (on ? ic('check', 's') : '') + '</span><span class="chg"><span class="lbl" style="font-size:13px;color:var(--p-mut)">' + r.label + ' · ' + r.why + '</span><span class="from">' + (r.cur ? '<s>' + esc(r.cur) + '</s>' : 'empty') + '</span><span class="to' + (on ? '' : ' off') + '">' + esc(r.val) + '</span></span></button>';
+      }).join('') + '</div><div class="sec-f">Ticked at first: what the record lacks, and a name that differs only by accents. A real difference starts unticked.</div></div>';
+    }
+    if (df.same.length) h += '<div class="sec"><div class="grp"><div class="row"><span class="m" style="color:var(--p-green);display:flex">' + ic('check') + '</span><span class="col"><span class="val">Already the same</span><span class="lbl">' + df.same.join(', ') + '</span></span></div></div></div>';
+    h += '<div class="sec"><div class="sec-h">Document Copies</div>' + copiesHTML() + '<div class="sec-f">Kept sealed in ' + esc(e.name.split(' ')[0]) + '\'s personnel file, re-encoded without the camera\'s data. Opening one needs Show Document.</div></div>' +
+      '<div class="sec"><div class="grp"><button class="row" data-act="photo" role="switch" aria-checked="' + S.photo + '"><span class="col"><span class="val">Make a Photo from the Portrait</span><span class="lbl">Grey, as printed. For the employee\'s photos.</span></span><span class="sw' + (S.photo ? ' on' : '') + '"></span></button></div></div><div style="height:16px"></div></div>' +
+      '<div class="bottom"><button class="btn pri" data-act="save">Save Document' + (S.addRec && nTake ? ' and Update' : '') + '</button></div></div>';
+    return h;
+  }
+
+  function scrMerge() {
+    var a = EMP.e1187, b = EMP.e2201, d = doc();
+    var keep = S.keep, other = keep === 'e1187' ? 'e2201' : 'e1187';
+    var rows = [
+      { k: 'name', label: 'Name', a: a.name, b: b.name, doc: fullName(d) },
+      { k: 'code', label: 'Code', a: a.code, b: b.code },
+      { k: 'birth', label: 'Birth date', a: fmt(a.birth), b: fmt(b.birth), doc: fmt(d.birth) },
+      { k: 'lang', label: 'Language', a: a.lang, b: b.lang }
+    ];
+    rows.forEach(function (r) { if (!S.pick[r.k]) S.pick[r.k] = r.a ? 'a' : 'b'; });
+    var h = '<div class="scr"><div class="nav"><button class="nbtn" data-act="go" data-arg="match">Cancel</button><div class="t"><b>Merge Employees</b></div><span class="nbtn"></span></div><div class="scroll">' +
+      '<div class="p" style="padding:0 20px 14px">Choose the record to keep and, row by row, the value it keeps. The other record\'s orders, company assets and photos move to it, and the other record is removed.</div>' +
+      '<div class="sec-h" style="padding-left:32px">Keep record</div><div class="keep">' + ['e1187', 'e2201'].map(function (id) {
+        var e = EMP[id], on = keep === id;
+        return '<button data-act="keep" data-arg="' + id + '" aria-pressed="' + on + '"><span class="tag' + (on ? '' : ' off') + '">' + (on ? 'Keep' : 'Remove') + '</span><span class="nm">' + esc(e.name) + '</span><span class="sub">' + (e.code ? 'Code ' + e.code : 'No code') + '<br>' + e.orders + ' orders · ' + esc(e.assets) + '</span></button>';
+      }).join('') + '</div>' +
+      '<div class="sec"><div class="grp" style="padding-bottom:4px">' + rows.map(function (r) {
+        var opt = function (w, v) { return '<button data-act="pickv" data-arg="' + r.k + ':' + w + '" aria-pressed="' + (S.pick[r.k] === w) + '"' + (v ? '' : ' disabled style="opacity:.5"') + '><span class="dot"></span>' + esc(v || 'empty') + '</button>'; };
+        return '<div class="mrow"><div class="k"><span>' + r.label + '</span>' + (r.doc ? '<span>' + d.kind + ': ' + esc(r.doc) + '</span>' : '') + '</div></div><div class="radio">' + opt('a', r.a) + opt('b', r.b) + '</div>';
+      }).join('') + '</div><div class="sec-f">The passport\'s values can be taken onto the kept record on the next screen.</div></div>' +
+      '<div class="sec"><div class="grp"><div class="row"><span class="m" style="color:var(--p-blue);display:flex">' + ic('merge') + '</span><span class="col"><span class="val">' + EMP[other].orders + ' orders move to ' + esc(EMP[keep].name) + '</span><span class="lbl">Company assets: ' + esc(EMP[other].assets) + '. Signed records keep the name they were signed with.</span></span></div></div></div><div style="height:16px"></div></div>' +
+      '<div class="bottom"><button class="btn pri" data-act="mergeask">Merge Employees</button></div></div>';
+    return h;
+  }
+
+  function scrNew() {
+    var d = doc();
+    if (!S.nw) S.nw = { first: title(d.given), last: title(d.surname), code: '' };
+    var f = function (id, label, val, hint, ph) { return '<div class="field"><label for="nw-' + id + '"><span>' + label + '</span>' + (hint || '') + '</label><input id="nw-' + id + '" data-nw="' + id + '" value="' + esc(val) + '"' + (ph ? ' placeholder="' + ph + '"' : '') + '></div>'; };
+    var ok = '<span class="chip ok" style="font-size:11px">' + ic('check', 's') + 'MRZ</span>';
+    return '<div class="scr"><div class="nav"><button class="nbtn" data-act="go" data-arg="match">' + ic('back') + 'Back</button><div class="t"><b>Add New Employee</b></div><span class="nbtn"></span></div><div class="scroll">' +
+      '<div class="dochead">' + portraitHTML(dk()) + '<div><div class="nm">From the ' + kl(d) + '</div><div class="sub">Check the names: they are typed as printed, with their accents.</div></div></div>' +
+      '<div class="sec"><div class="grp">' + f('first', 'First name', S.nw.first, '<span class="chip ok" style="font-size:11px">' + ic('check', 's') + 'MRZ agrees</span>') + f('last', 'Last name', S.nw.last, '<span class="chip ok" style="font-size:11px">' + ic('check', 's') + 'MRZ agrees</span>') + f('code', 'Code', S.nw.code, '', 'Optional') + '</div></div>' +
+      '<div class="sec"><div class="grp"><div class="row"><span class="col"><span class="lbl">Birth date</span><span class="val">' + fmt(d.birth) + '</span></span><span class="end">' + ok + '</span></div><div class="row"><span class="col"><span class="lbl">Sex</span><span class="val">' + sexWord(d.sex) + '</span></span><span class="end">' + ok + '</span></div><div class="row"><span class="col"><span class="lbl">Nationality</span><span class="val">' + NAT[d.nat] + '</span></span><span class="end">' + ok + '</span></div><button class="row" data-act="toast" data-arg="Language: English, Lithuanian or Russian"><span class="col"><span class="lbl">Language</span><span class="val">Lithuanian</span></span><span class="end">' + ic('chev', 's') + '</span></button></div></div>' +
+      '<div class="sec"><div class="grp"><button class="row" data-act="addrec" role="switch" aria-checked="' + S.addRec + '"><span class="col"><span class="val">Add to Employee Record</span></span><span class="sw' + (S.addRec ? ' on' : '') + '"></span></button></div><div class="sec-f">' + (S.addRec ? 'Birth date, sex and nationality go onto the new record, and its Identity section shows this passport.' : 'Only the name goes onto the new record; the passport is filed.') + '</div></div>' +
+      '<div class="sec"><div class="sec-h">Document Copies</div>' + copiesHTML() + '</div><div style="height:16px"></div></div>' +
+      '<div class="bottom"><button class="btn pri" data-act="savenew" ' + (S.nw.last.trim() && S.nw.first.trim() ? '' : 'disabled') + '>Add Employee and Save Document</button></div></div>';
+  }
+
+  function scrSaved() {
+    var d = doc(), r = S.savedTo || { name: '—', changed: [] };
+    return '<div class="scr"><div class="scroll" style="padding-top:80px">' +
+      '<div class="done-ic">' + ic('check') + '</div><div class="h2" style="text-align:center;padding:0 24px">Saved</div>' +
+      '<div class="p" style="text-align:center;padding:6px 32px 0">' + d.kind + ' saved to ' + esc(r.name) + '\'s personnel file.</div>' +
+      '<div class="sec"><div class="grp">' +
+      '<div class="row"><span class="m" style="color:var(--p-green);display:flex">' + ic('lock') + '</span><span class="col"><span class="val">Document Copies</span><span class="lbl">' + sidesOf(d).map(sideName).join(' and ') + ', and the portrait, sealed</span></span></div>' +
+      (r.created ? '<div class="row"><span class="m" style="color:var(--p-green);display:flex">' + ic('user') + '</span><span class="col"><span class="val">New employee added</span><span class="lbl">' + esc(r.name) + '</span></span></div>' : '<div class="row"><span class="m" style="color:var(--p-green);display:flex">' + ic('user') + '</span><span class="col"><span class="val">Employee record</span><span class="lbl">' + (r.changed.length ? 'Updated: ' + r.changed.join(', ').toLowerCase() : 'Not changed') + '</span></span></div>') +
+      (r.merged ? '<div class="row"><span class="m" style="color:var(--p-green);display:flex">' + ic('merge') + '</span><span class="col"><span class="val">Merged</span><span class="lbl">Andrej Volkov\'s 2 orders moved</span></span></div>' : '') +
+      (r.photo ? '<div class="row"><span class="m" style="color:var(--p-green);display:flex">' + ic('photo') + '</span><span class="col"><span class="val">Photo added</span><span class="lbl">From the portrait, grey</span></span></div>' : '') +
+      '</div><div class="sec-f">Recorded on the audit log. This scan stays in Scans for 3 days.</div></div></div>' +
+      '<div class="bottom"><button class="btn pri" data-act="next">' + ic('cam', 's') + 'Scan Next Document</button><button class="btn sec2" data-act="openemp" data-arg="' + (r.id || '') + '">' + ic('open', 's') + 'Open Employee Page</button><button class="btn plain" data-act="go" data-arg="library">Back to Scans</button></div></div>';
+  }
+
+  function scrAdjust() {
+    var d = doc(), a = S.adjust, pts = a.pts;
+    return '<div class="scr adj"><div class="adj-top"><button class="nbtn" style="color:#fff" data-act="adjcancel">Cancel</button><b style="font-size:15px;letter-spacing:.04em">ADJUST CORNERS</b><button class="y" data-act="adjdone">Done</button></div>' +
+      '<div class="adj-area" id="adjarea"><div class="scene' + (d.type === 'pass' ? ' pass' : '') + '"><div class="holder" style="transform:rotateX(16deg) rotateZ(' + (-5 + a.rot) + 'deg)">' + docArt(dk(), a.side) + '</div></div>' +
+      '<svg class="ov" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Corners"><polygon points="' + pts.map(function (p) { return p.join(','); }).join(' ') + '" fill="rgba(255,214,10,.12)" stroke="#ffd60a" stroke-width=".5" vector-effect="non-scaling-stroke"/>' +
+      pts.map(function (p, i) { return '<ellipse class="h" data-h="' + i + '" cx="' + p[0] + '" cy="' + p[1] + '" rx="3.4" ry="2.4"/>'; }).join('') + '</svg></div>' +
+      '<div class="adj-note">Drag a corner onto the document\'s corner. The page is flattened again from them.</div>' +
+      '<div class="adj-bot"><button data-act="rot" data-arg="-90">' + ic('rl') + 'Turn Left</button><button data-act="adjreset">' + ic('reset') + 'Reset</button><button data-act="rot" data-arg="90">' + ic('rr') + 'Turn Right</button></div></div>';
+  }
+
+  function sheetHTML() {
+    var s = S.sheet;
+    return '<div class="dim" data-act="sheetclose"></div><div class="asheet" role="dialog" aria-label="' + esc(s.title || 'Actions') + '"><div class="g">' + (s.title ? '<div class="ttl"><b>' + esc(s.title) + '</b>' + esc(s.msg || '') + '</div>' : '') +
+      s.items.map(function (it) { return '<button class="' + (it.red ? 'red' : '') + '" data-act="' + it.act + '" data-arg="' + (it.arg || '') + '">' + esc(it.label) + '</button>'; }).join('') +
+      '</div><button class="cancel" data-act="sheetclose">Cancel</button></div>';
+  }
+
+  /* ---------- Render ---------- */
+  var SCREENS = { library: scrLibrary, camera: scrCamera, viewer: scrViewer, match: scrMatch, update: scrUpdate, merge: scrMerge, newemp: scrNew, saved: scrSaved, adjust: scrAdjust };
+  function stepOf(scr) { return scr === 'update' || scr === 'merge' || scr === 'newemp' ? 'decide' : scr === 'adjust' ? 'viewer' : scr; }
+  function render() {
+    var focusId = document.activeElement && phone.contains(document.activeElement) ? document.activeElement.id : null;
+    var caret = focusId && document.activeElement.selectionStart;
+    var scrollEl = phone.querySelector('.scroll, .info'), scrollTop = scrollEl ? scrollEl.scrollTop : 0, prevScreen = phone.dataset.screen;
+    var dark = isDark();
+    phone.className = 'phone' + (dark ? ' dark' : '') + (S.hints ? ' hints' : '');
+    var lightBar = S.screen === 'camera' || S.screen === 'adjust' || dark;
+    phone.innerHTML = '<div class="island"></div>' + sbar(lightBar) + SCREENS[S.screen]() +
+      (S.sheet ? sheetHTML() : '') + (S.toast ? '<div class="toast" role="status">' + ic(S.toast.ic, 's') + esc(S.toast.msg) + '</div>' : '') +
+      '<div class="homebar' + (lightBar ? ' light' : '') + '"></div>';
+    phone.dataset.screen = S.screen;
+    if (prevScreen === S.screen) { var n = phone.querySelector('.scroll, .info'); if (n) n.scrollTop = scrollTop; }
+    if (focusId) { var el = document.getElementById(focusId); if (el) { el.focus(); if (caret != null && el.setSelectionRange) try { el.setSelectionRange(caret, caret); } catch (e) {} } }
+    if (S.editing) { var inp = document.getElementById('edit-' + S.editing); if (inp && document.activeElement !== inp) { inp.focus(); inp.select(); } }
+    S.seen[stepOf(S.screen)] = true;
+    renderChrome();
+  }
+
+  /* ---------- Actions ---------- */
+  function resetFlow() { EMP = JSON.parse(EMP0); SCEN.B.cands = JSON.parse(CANDS0); S.pages = []; S.view = 0; S.edits = {}; S.typed = false; S.glareDone = false; S.target = null; S.take = {}; S.merged = false; S.notSame = false; S.pick = {}; S.keep = 'e1187'; S.nw = null; S.ro = null; S.searchOpen = false; S.q = ''; S.info = true; S.addRec = true; S.photo = false; }
+  function fillPages(glare) { var d = DOCS[sc().doc]; S.pages = sidesOf(d).map(function (s) { return { side: s, glare: glare && s !== 'front' }; }); }
+  function setScen(k) { S.scen = k; resetFlow(); S.cam = null; }
+  function doSave(created) {
+    var d = doc(), id = S.target;
+    if (created) {
+      S.savedTo = { name: S.nw.first + ' ' + S.nw.last, created: true, changed: [], photo: S.photo, id: 'new' };
+    } else {
+      var df = diffs(id), changed = S.addRec ? df.out.filter(function (r) { return S.take[r.k]; }).map(function (r) { return r.label; }) : [];
+      var nm = EMP[id].name;
+      if (S.addRec && S.take.name) { var row = df.out.filter(function (r) { return r.k === 'name'; })[0]; if (row) nm = row.val; }
+      S.savedTo = { name: nm, changed: changed, merged: S.merged, photo: S.photo, id: id };
+    }
+    S.scans = S.scans.filter(function (s) { return s.scen !== S.scen; });
+    S.scans.unshift({ id: 'n' + Date.now(), doc: sc().doc, status: 'saved', who: created ? null : id, whoName: S.savedTo.name, day: 'Today', time: '09:42' });
+    go('saved');
+  }
+  var ACT = {
+    noop: function () {},
+    go: function (a) { if (a === 'camera' && S.screen !== 'camera') { if (S.screen === 'library' || S.screen === 'saved') { resetFlow(); } } go(a); },
+    toast: function (a) { toast(a, 'info'); },
+    filter: function (a) { S.filter = a; render(); },
+    openscan: function (id) {
+      var s = S.scans.filter(function (x) { return x.id === id; })[0];
+      if (s.status === 'saved') {
+        resetFlow();
+        var who = s.who || null;
+        if (!who) { EMP.enew = EMP.enew || { name: s.whoName, code: null, what: 'Added today', c: 'g' }; who = 'enew'; }
+        S.ro = { doc: s.doc, who: who, name: s.whoName || EMP[who].name, day: s.day, time: s.time }; go('viewer'); return;
+      }
+      setScen(s.scen); fillPages(s.status === 'bad'); go('viewer');
+    },
+    auto: function () { S.cam.auto = !S.cam.auto; if (S.cam.auto && /read|ready/.test(S.cam.phase)) capture(); else render(); },
+    mode: function (a) { S.cam.mode = a; var t = DOCS[sc().doc].type; if (a !== t) toast(t === 'card' ? 'This looks like an ID card: the MRZ has 3 lines' : 'This looks like a passport: the MRZ has 2 lines', 'info'); render(); later(1400, function () { S.cam.mode = t; render(); }); },
+    shutter: function () { capture(); },
+    review: function () { clearTimers(); S.view = 0; go('viewer'); },
+    picker: function () { S.picker = { sel: {} }; render(); },
+    pickerclose: function () { S.picker = null; render(); },
+    pickersel: function (id) { S.picker.sel[id] = !S.picker.sel[id]; render(); },
+    pickeradd: function () {
+      var sel = S.picker.sel, d = DOCS[sc().doc];
+      var chosen = Object.keys(sel).filter(function (k) { return sel[k]; });
+      if (!chosen.length) return;
+      S.picker_n = chosen.length; S.picker = null; S.reading = true; clearTimers(); render();
+      later(1500, function () {
+        S.reading = false;
+        sidesOf(d).forEach(function (s) { if (chosen.indexOf(s) >= 0) { S.pages = S.pages.filter(function (p) { return p.side !== s; }); S.pages.push({ side: s, glare: sc().glare && !S.glareDone && s !== 'front' }); } });
+        var others = chosen.filter(function (k) { return k[0] === 'x'; }).length;
+        if (others) toast(others + (others === 1 ? ' photo is' : ' photos are') + ' not a document and ' + (others === 1 ? 'was' : 'were') + ' left out', 'info');
+        if (!S.pages.length) { render(); return; }
+        S.view = 0; S.screen = 'viewer'; render();
+      });
+    },
+    view: function (i) { S.view = +i; render(); },
+    info: function () { S.info = !S.info; render(); },
+    edit: function (k) { S.editing = k; render(); },
+    retake: function () { S.glareDone = true; S.pages = S.pages.filter(function (p) { return p.side === 'front'; }); S.cam = null; go('camera'); },
+    typecode: function () { S.typed = true; toast('MRZ typed: all check digits right'); },
+    share: function () { S.sheet = { title: 'Download Archive', msg: 'The pages as one zip, named after the person and the kind. Kept 3 days in Scans for you alone.', items: [{ label: 'Download Archive', act: 'dl' }] }; render(); },
+    dl: function () { S.sheet = null; toast(plain(doc().surname).charAt(0) + plain(doc().surname).slice(1).toLowerCase() + '_' + title(plain(doc().given)) + '_' + doc().kind.toLowerCase().replace(' ', '_') + '.zip downloaded'); },
+    del: function () { S.sheet = { title: 'Delete this scan?', msg: 'Its photos are deleted from Scans. A document already saved stays in the personnel file.', items: [{ label: 'Delete Scan', act: 'delok', red: true }] }; render(); },
+    delok: function () {
+      if (S.ro) S.scans = S.scans.filter(function (s) { return !(s.doc === S.ro.doc && s.status === 'saved'); });
+      else S.scans = S.scans.filter(function (s) { return s.scen !== S.scen; });
+      resetFlow(); go('library'); toast('Scan deleted', 'trash');
+    },
+    sheetclose: function () { S.sheet = null; render(); },
+    adjust: function () {
+      var d = doc(), pages = S.pages.length ? S.pages : sidesOf(d).map(function (s) { return { side: s }; });
+      var side = (pages[S.view] || pages[0]).side;
+      var init = d.type === 'card' ? [[13, 37], [87, 31], [89, 63], [11, 69]] : [[9, 32], [91, 26], [93, 68], [7, 74]];
+      S.adjust = { side: side, pts: init.map(function (p) { return p.slice(); }), init: init, rot: 0 }; go('adjust');
+    },
+    adjcancel: function () { go('viewer'); },
+    adjdone: function () { go('viewer'); toast('Page flattened again'); },
+    adjreset: function () { S.adjust.pts = S.adjust.init.map(function (p) { return p.slice(); }); S.adjust.rot = 0; render(); },
+    rot: function (a) { toast(+a < 0 ? 'Turned left' : 'Turned right', 'info'); },
+    notsame: function () { S.notSame = true; render(); },
+    use: function (id) { S.target = id; S.take = {}; S.searchOpen = false; go('update'); },
+    searchopen: function () { S.searchOpen = true; render(); var q = document.getElementById('q'); if (q) q.focus(); },
+    searchclose: function () { S.searchOpen = false; S.q = ''; render(); },
+    newemp: function () { S.nw = null; go('newemp'); },
+    addrec: function () { S.addRec = !S.addRec; render(); },
+    photo: function () { S.photo = !S.photo; render(); },
+    take: function (k) { S.take[k] = !S.take[k]; render(); },
+    keep: function (id) { S.keep = id; var a = id === 'e1187' ? 'a' : 'b'; S.pick = { name: a, code: EMP[id].code ? a : (a === 'a' ? 'b' : 'a'), birth: EMP[id].birth ? a : (a === 'a' ? 'b' : 'a'), lang: a }; render(); },
+    pickv: function (a) { var p = a.split(':'); S.pick[p[0]] = p[1]; render(); },
+    mergeask: function () { var other = S.keep === 'e1187' ? 'e2201' : 'e1187'; S.sheet = { title: 'Merge ' + EMP[other].name + ' into ' + EMP[S.keep].name + '?', msg: 'This cannot be undone. ' + EMP[other].name + '\'s record is removed and points to the one kept.', items: [{ label: 'Merge Employees', act: 'mergeok' }] }; render(); },
+    mergeok: function () {
+      var keep = S.keep, other = keep === 'e1187' ? 'e2201' : 'e1187';
+      var src = function (k) { return S.pick[k] === 'a' ? EMP.e1187 : EMP.e2201; };
+      var merged = { name: src('name').name, code: src('code').code, birth: src('birth').birth, lang: src('lang').lang };
+      EMP[keep] = Object.assign({}, EMP[keep], merged, { orders: EMP.e1187.orders + EMP.e2201.orders });
+      S.merged = true; S.target = keep; S.take = {}; S.sheet = null;
+      SCEN.B.cands = SCEN.B.cands.filter(function (c) { return c.id === keep; });
+      go('update');
+    },
+    save: function () { doSave(false); },
+    savenew: function () { doSave(true); },
+    openemp: function () { toast('Opens the employee\'s page in the staff app', 'open'); },
+    next: function () { resetFlow(); go('camera'); }
+  };
+  phone.addEventListener('click', function (ev) {
+    var t = ev.target.closest('[data-act]'); if (!t || !phone.contains(t) || t.disabled) return;
+    var f = ACT[t.dataset.act]; if (f) f(t.dataset.arg);
+  });
+  phone.addEventListener('input', function (ev) {
+    var t = ev.target;
+    if (t.dataset.q) { S.q = t.value; render(); }
+    if (t.dataset.nw) { S.nw[t.dataset.nw] = t.value; var b = phone.querySelector('[data-act="savenew"]'); if (b) b.disabled = !(S.nw.first.trim() && S.nw.last.trim()); }
+  });
+  function commitEdit(t) { if (!t || !t.dataset.edit) return; var k = t.dataset.edit, v = t.value.trim(); if (v) S.edits[k] = v; S.editing = null; render(); }
+  phone.addEventListener('keydown', function (ev) {
+    if (ev.target.dataset && ev.target.dataset.edit) { if (ev.key === 'Enter') commitEdit(ev.target); if (ev.key === 'Escape') { S.editing = null; render(); } }
+    if (ev.key === 'Escape' && (S.sheet || S.picker)) { S.sheet = null; S.picker = null; render(); }
+  });
+  phone.addEventListener('focusout', function (ev) {
+    var t = ev.target; if (!t.dataset || !t.dataset.edit) return;
+    var k = t.dataset.edit, v = t.value.trim(); if (v) S.edits[k] = v;
+    setTimeout(function () { if (S.editing === k) { S.editing = null; render(); } }, 0);
+  });
+  /* corner dragging */
+  var drag = null;
+  phone.addEventListener('pointerdown', function (ev) { var h = ev.target.closest && ev.target.closest('[data-h]'); if (!h) return; drag = +h.dataset.h; ev.preventDefault(); });
+  window.addEventListener('pointermove', function (ev) {
+    if (drag == null || S.screen !== 'adjust') return;
+    var area = document.getElementById('adjarea'); if (!area) return; var r = area.getBoundingClientRect();
+    var x = Math.max(2, Math.min(98, (ev.clientX - r.left) / r.width * 100)), y = Math.max(2, Math.min(98, (ev.clientY - r.top) / r.height * 100));
+    S.adjust.pts[drag] = [+x.toFixed(1), +y.toFixed(1)];
+    var svg = area.querySelector('svg'); svg.querySelector('polygon').setAttribute('points', S.adjust.pts.map(function (p) { return p.join(','); }).join(' '));
+    var e = svg.querySelector('[data-h="' + drag + '"]'); e.setAttribute('cx', x); e.setAttribute('cy', y);
+  });
+  window.addEventListener('pointerup', function () { drag = null; });
+
+  /* ---------- Chrome ---------- */
+  function isDark() {
+    if (S.theme === 'dark') return true; if (S.theme === 'light') return false;
+    var a = document.documentElement.getAttribute('data-theme');
+    if (a) return a === 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function seg(el, opts, cur, on) {
+    el.innerHTML = opts.map(function (o) { return '<button role="radio" aria-checked="' + (o[0] === cur) + '" data-v="' + o[0] + '">' + esc(o[1]) + '</button>'; }).join('');
+    el.onclick = function (ev) { var b = ev.target.closest('button'); if (b) on(b.dataset.v); };
+  }
+  var NOTES = {
+    library: ['Scans', 'Your recent scans as a photo grid, newest first, grouped by day. A badge says what each needs: <b>saved</b> (green), <b>not saved</b> (orange) or <b>MRZ not read</b> (red). Tap one to open it where you left off. <b>Scan Document</b> opens the camera.', 'The grid is the server\'s Kept scans: sealed, for their maker alone, deleted after 3 days. Nothing goes to the phone\'s own Photos.'],
+    camera: ['Take the document', 'Full screen, like the Camera app. Hold the document under the frame: it is outlined in yellow when found, the MRZ is read live, and the photo is taken by itself once two frames read the same lines. An ID card needs both sides, in either order; the chips say which are done. <b>Photos</b> reads pictures already taken. <b>AUTO</b> off leaves the shutter to you.', 'Choose “ID card · glare on the MRZ” above to see a reading that fails.'],
+    viewer: ['Check what was read', 'The flattened page, as Photos shows a photo, with the details below it (the ⓘ button hides them). Every field says where it came from: <b>MRZ</b> (check digits right), <b>Printed · MRZ agrees</b> for names (the MRZ has no accents), <b>Printed</b> for what only the printed text has, <b>Check</b> where a reading is doubtful, <b>Typed</b> after a correction. Tap a field to correct it.', 'Adjust moves the page\'s corners; the share button downloads the archive; the bin deletes the scan. Find Employee needs the MRZ.'],
+    match: ['Find the person', 'Employees with the <b>same name</b> (any order, accents aside) or a <b>similar name</b> (a slip of a letter) are offered, the same test Add New Employee uses. Each is compared with the document field by field: = the same, ≈ the same but for accents, ≠ differs, – not on file.', 'When two records look like the same person, Merge Employees is offered first. Choose Another Employee… searches all of them; Add as New Employee is always there.'],
+    decide: ['Update, merge or add', '<b>Update Employee</b>: what the record would take from the document, field by field, with Add to Employee Record. <b>Merge Employees</b>: the record to keep and each value, then the update. <b>Add New Employee</b>: the form filled from the document.', 'The document copies are always saved to the personnel file, sealed, whatever is chosen.'],
+    saved: ['Saved', 'What was saved and changed, each on a line. <b>Scan Next Document</b> opens the camera again; <b>Open Employee Page</b> opens the staff app; the scan stays in Scans with a green badge.', '']
+  };
+  var QS = [
+    '<b>Name and place.</b> The app is “Scan Documents” (slug <code>docs-scan</code>), a published app like Scan SIMs. Import Documents (<code>docs-import</code>) already reads passports and ID cards by the MRZ: should this replace it, or sit beside it until it passes?',
+    '<b>Home screen.</b> A grid of your recent scans, or open straight into the camera and keep the grid one tap away?',
+    '<b>Taking the photo.</b> Automatic once two frames agree, with the shutter for a photo by hand. Keep both?',
+    '<b>Add to Employee Record.</b> The live app keeps it off by default (decision D1); here it starts on, because updating the record is the point. Which should it be?',
+    '<b>What is ticked.</b> A field the record lacks, and a name that differs only by accents, start ticked; a real difference (Andrei → Andrii) starts unticked. Right?',
+    '<b>Merging on the phone.</b> It needs Merge employees (Administrator and Manager). Without it, the banner would say to ask a manager, and the document can still go to one of the records. Agreed?',
+    '<b>Portrait.</b> Make a Photo from the Portrait is offered grey only. Should Make Colour Photo (AI) come here too?'
+  ];
+  function renderChrome() {
+    seg(document.getElementById('seg-scn'), Object.keys(SCEN).map(function (k) { return [k, SCEN[k].label]; }), S.ro ? null : S.scen, function (v) { setScen(v); go('camera'); });
+    seg(document.getElementById('seg-thm'), [['auto', 'Like this page'], ['light', 'Light'], ['dark', 'Dark']], S.theme, function (v) { S.theme = v; render(); });
+    var cur = stepOf(S.screen);
+    document.getElementById('jlist').innerHTML = STEPS.map(function (s, i) {
+      return '<li class="' + (S.seen[s.id] ? 'seen' : '') + '"><button data-step="' + s.id + '"' + (cur === s.id ? ' aria-current="step"' : '') + '><span class="jn">' + (S.seen[s.id] ? '✓' : i + 1) + '</span><span class="jt">' + s.t + '</span><span class="jq">' + s.q + '</span></button></li>';
+    }).join('');
+    var n = NOTES[cur];
+    document.getElementById('note-scr').innerHTML = '<h2>About this screen: ' + n[0] + '</h2><p>' + n[1] + '</p>' + (n[2] ? '<p class="mut">' + n[2] + '</p>' : '');
+    document.getElementById('note-q').innerHTML = '<h2>Questions for you</h2><ol>' + QS.map(function (q) { return '<li>' + q + '</li>'; }).join('') + '</ol>';
+    document.getElementById('meta').textContent = 'iPhone · 390 × 844 · ' + Math.round(scale * 100) + '% · ' + (S.ro ? 'saved scan' : SCEN[S.scen].label);
+  }
+  document.getElementById('jlist').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-step]'); if (!b) return;
+    var st = b.dataset.step, s = sc();
+    if (S.ro) { S.ro = null; }
+    if (st === 'library') return go('library');
+    if (st === 'camera') { S.pages = []; S.cam = null; return go('camera'); }
+    clearTimers();
+    if (st === 'viewer') { if (!S.pages.length) fillPages(!!s.glare && !S.glareDone); return go('viewer'); }
+    if (s.glare) { S.glareDone = true; fillPages(false); } else if (!S.pages.length) fillPages(false);
+    if (st === 'match') return go('match');
+    if (st === 'decide') {
+      if (s.decide === 'update') { S.target = s.cands[0].id; return go('update'); }
+      if (s.decide === 'merge') { return S.merged ? go('update') : go('merge'); }
+      S.nw = null; return go('newemp');
+    }
+    if (st === 'saved') {
+      if (s.decide === 'newemp') { var d = DOCS[s.doc]; S.nw = { first: title(d.given), last: title(d.surname), code: '' }; doSave(true); }
+      else { S.target = S.target || s.cands[0].id; doSave(false); }
+    }
+  });
+  document.getElementById('hints').addEventListener('change', function (ev) { S.hints = ev.target.checked; render(); });
+
+  /* ---------- Scale the phone to the stage ---------- */
+  var scale = 1;
+  function fit() {
+    var stage = document.getElementById('stage'), fw = document.getElementById('fw');
+    var avail = stage.clientWidth - 24 - 26;
+    scale = Math.min(1, avail / 390);
+    phone.style.transform = 'scale(' + scale + ')';
+    fw.style.width = (390 * scale + 0) + 'px'; fw.style.height = (844 * scale) + 'px';
+    phone.style.position = 'absolute'; phone.style.left = '0'; phone.style.top = '0';
+    fw.style.margin = (12 * scale) + 'px';
+    var m = document.getElementById('meta'); if (m) renderChrome();
+  }
+  window.addEventListener('resize', fit);
+  if (window.matchMedia) { var mq = window.matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', render); }
+  new MutationObserver(function () { render(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  fit(); render();
+})();
+</script>

@@ -179,6 +179,10 @@ pages as a zip and downloads it, **Save to Personnel** hands them to Import. **K
 "Kept scans" in `personnel-service.md`; migration 0053, `internal/personnel/scan`, `cmd/api/personnel-scan-routes.go`):
 the zip is kept `API_PERSONNEL_SCAN_DAYS` (3) days for its uploader alone, sealed under a per-scan data key in
 `personnel.scans` and `personnel-scans/{id}`, and erased by the upkeep (`PurgeExpired`).
+**Scan Documents** (`docs-scan`, to build; [plan](docs/apps/docs-scan-plan.md), every decision made 2026-11-21; ADR 0007's
+amendment of that day) reads first, then finds the person (`POST …/personnel/documents/match`), updates, merges or adds them;
+kept scans gain a state and a link to the saved document; its mockup is `docs/ux/mockups/docs-scan.html`. It replaces Import
+Documents after its trial, sharing `@ppe/id-docs`, and uses ui-sdk only through `@ppe/ui`.
 **App Launcher** (ADR 0006, accepted with every recommended decision; phases 1 to 3 built; spec
 `docs/specs/app-launcher.md`, guide `docs/ux/app-launcher.html`): a fourth app at `/apps/`
 (`web/apps/launcher`) showing every app and shortcut a user sees as big tiles in groups, with pins
@@ -530,7 +534,7 @@ tests open it at `webURL/admin/` on one origin, as behind Caddy.
 ## Frontend (`web/`)
 
 pnpm workspace (pnpm 12, Node ≥ 22), React 19, TypeScript 7, Vite 8, Vitest 5, Tailwind 4,
-shadcn/ui on Base UI. Follow `web/AGENTS.md`.
+shadcn/ui on Base UI, and ui-sdk (`@ui-sdk/react`, a beta, in `@ppe/ui`; its skill in `.claude/skills/ui-sdk`). Follow `web/AGENTS.md`.
 
 ```bash
 cd web && pnpm install
