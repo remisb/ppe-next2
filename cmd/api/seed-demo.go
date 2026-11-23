@@ -168,7 +168,7 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 	s.employer = nil
 	s.employee("Lukas", "Kandidatas", "", 180, 52, "44", "Interview in December", "lt")
 	s.employer = &home.ID
-	former := s.employee("Inga", "Buvusi", "W-007", 168, 44, "38", "", "")
+	former := s.employee("Inga", "Buvusi", "W-007", 168, 44, "39", "", "")
 	if s.err == nil && len(former.Employments) > 0 {
 		_, err := employees.EndEmployment(ctx, former.ID, former.Employments[0].ID, clock.now().In(loc).AddDate(0, 0, 30).Format(time.DateOnly),
 			employee.Rights{Profile: true}, admin.ID)
