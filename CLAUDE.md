@@ -125,7 +125,14 @@ Exports are not on the Audit log. Export (every list's: the header button, ⋯ o
 `session.can('data.export')`; the Audit log's export stays `audit.export`). **Select mode** (WARE-45, `docs/ux/export-select-mode.html`): no list shows
 checkboxes while browsing; Export (`ExportMode`) and SIM Cards' Change Status… start a mode (`useSelection`'s `mode`, `SelectModeBar`:
 above the list from md, pinned above the tab bar on a phone) in which a row click ticks it (`selectRowProps`); Cancel, Esc or the
-finished action end it. **Duplicates and merging** (migration 0052, spec "Duplicates and merging" in
+finished action end it. **Share** (WARE-51, migration 0060, spec `docs/specs/share-service.md`, `internal/domain/share`,
+`cmd/api/share-routes.go`): Employees' Export sheet (`ExportSheet`'s `share`, `ShareOptions`) also offers, to everyone and up to
+10 rows, **Copy as Text** (`exportText`, nothing stored) and **Share Link**: the rows as the sharer sees them (`employee.Sight`,
+the chosen columns' fields alone, `employeeShareFields`) kept 1, 7 or 30 days behind a hashed token, opened by anyone at
+`/shared/<token>` (`routes/shared.tsx`, before the sign-in gate; `POST /api/v1/shares/view`, public, rate limited, 410 once
+gone); **Shared Links** (`/shared-links`, Employees' ⋯) lists the user's own open links to Revoke; revoking, or the upkeep once
+expired, erases the rows (`shares.rows = '[]'`); events `share.created`, `share.revoked`. Without Export data Employees' button
+reads Share and the sheet offers no files. **Duplicates and merging** (migration 0052, spec "Duplicates and merging" in
 `employee-service.md`): Add New Employee warns of alike names (`employee.CompareNames`, `POST …/employees/similar`)
 with Use This Employee; Employees offers possible duplicates (Not the Same Person, `employee_distinct_pairs`) and
 **Merge Employees** (`employees.merge`, Administrator and Manager): one transaction moves the removed record's orders,

@@ -122,6 +122,10 @@ import type {
   User,
   UserCreateInput,
   UserUpdateInput,
+  Share,
+  ShareCreated,
+  SharedView,
+  ShareInput,
 } from './types.ts'
 
 /**
@@ -725,6 +729,15 @@ export function createClient(options: ClientOptions) {
       /** One signed copy, as the file it is. */
       signedCopy: (id: string, assignmentId: string, copyId: string) =>
         download(`/api/v1/assets/${seg(id)}/assignments/${seg(assignmentId)}/signed-copies/${seg(copyId)}`),
+    },
+
+    /** Shared links (WARE-51): Share Link, Shared Links and Revoke; any signed-in user, their own links. */
+    shares: {
+      create: (input: ShareInput) => request<ShareCreated>('POST', '/api/v1/shares', input),
+      list: () => request<Share[]>('GET', '/api/v1/shares'),
+      revoke: (id: string) => request<void>('DELETE', `/api/v1/shares/${seg(id)}`),
+      /** The public page's read; the token is the only credential. 410 once revoked or expired. */
+      view: (token: string) => request<SharedView>('POST', '/api/v1/shares/view', { token }),
     },
 
     /** Public, token-only routes for the employee's confirmation page. */

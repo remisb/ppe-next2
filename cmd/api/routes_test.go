@@ -33,6 +33,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
+	"github.com/remisb/ppe-next2/internal/domain/share"
 	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
@@ -840,6 +841,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	svc.ready = stubReady{}
 	svc.documents = document.NewService(stubDocuments{}, document.Keys{}, nil)
 	svc.scans = scan.NewService(nil, document.Keys{}, nil)
+	svc.shares = share.NewService(nil)
 	svc.ai = newTestAI()
 	tok := testTokens(time.Now())
 	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, log: log, errors: errs}
@@ -1029,22 +1031,27 @@ var policy = map[string]rule{
 	"GET /api/v1/orders":                            {"", "any"},
 	"GET /api/v1/settings":                          {"", "any"},
 	// Settings → AI and AI Usage (ADR 0007); colouring is given to no built-in role.
-	"GET /api/v1/settings/ai":                                                   {role.SettingsManage, "admins"},
-	"PUT /api/v1/settings/ai":                                                   {role.SettingsManage, "admins"},
-	"PUT /api/v1/settings/ai/key":                                               {role.SettingsManage, "admins"},
-	"DELETE /api/v1/settings/ai/key":                                            {role.SettingsManage, "admins"},
-	"POST /api/v1/settings/ai/key/test":                                         {role.SettingsManage, "admins"},
-	"GET /api/v1/ai-usage":                                                      {role.AIUsageRead, "admins"},
-	"GET /api/v1/ai-usage/calls":                                                {role.AIUsageRead, "admins"},
-	"GET /api/v1/ai-usage/calls.csv":                                            {role.AIUsageRead, "admins"},
-	"GET /api/v1/personnel/portraits/colorize":                                  {role.PersonnelPortraitsColorize, "nobody"},
-	"POST /api/v1/personnel/portraits/colorize":                                 {role.PersonnelPortraitsColorize, "nobody"},
-	"PUT /api/v1/settings/supplier-chat":                                        {role.SettingsManage, "admins"},
-	"PUT /api/v1/settings/sim-providers":                                        {role.SettingsManage, "admins"},
-	"POST /api/v1/orders/{id}/confirmation-link":                                {"", "any"},
-	"POST /api/v1/orders/{id}/confirm-paper":                                    {"", "any"},
-	"POST /api/v1/orders/{id}/confirm-in-person":                                {"", "any"},
-	"GET /api/v1/orders/{id}/record":                                            {"", "any"},
+	"GET /api/v1/settings/ai":                    {role.SettingsManage, "admins"},
+	"PUT /api/v1/settings/ai":                    {role.SettingsManage, "admins"},
+	"PUT /api/v1/settings/ai/key":                {role.SettingsManage, "admins"},
+	"DELETE /api/v1/settings/ai/key":             {role.SettingsManage, "admins"},
+	"POST /api/v1/settings/ai/key/test":          {role.SettingsManage, "admins"},
+	"GET /api/v1/ai-usage":                       {role.AIUsageRead, "admins"},
+	"GET /api/v1/ai-usage/calls":                 {role.AIUsageRead, "admins"},
+	"GET /api/v1/ai-usage/calls.csv":             {role.AIUsageRead, "admins"},
+	"GET /api/v1/personnel/portraits/colorize":   {role.PersonnelPortraitsColorize, "nobody"},
+	"POST /api/v1/personnel/portraits/colorize":  {role.PersonnelPortraitsColorize, "nobody"},
+	"PUT /api/v1/settings/supplier-chat":         {role.SettingsManage, "admins"},
+	"PUT /api/v1/settings/sim-providers":         {role.SettingsManage, "admins"},
+	"POST /api/v1/orders/{id}/confirmation-link": {"", "any"},
+	"POST /api/v1/orders/{id}/confirm-paper":     {"", "any"},
+	"POST /api/v1/orders/{id}/confirm-in-person": {"", "any"},
+	"GET /api/v1/orders/{id}/record":             {"", "any"},
+	"POST /api/v1/shares":                        {"", "any"},
+	"GET /api/v1/shares":                         {"", "any"},
+	"DELETE /api/v1/shares/{id}":                 {"", "any"},
+	"POST /api/v1/shares/view":                   {"", "public"},
+
 	"POST /api/v1/confirmations/view":                                           {"", "public"},
 	"POST /api/v1/confirmations/confirm":                                        {"", "public"},
 	"GET /api/v1/orders/{id}":                                                   {"", "any"},

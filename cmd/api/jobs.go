@@ -35,6 +35,8 @@ type JobRun struct {
 	DaysStamped        int   `json:"days_stamped"`
 	// ScansPurged are the kept scans that expired and were erased.
 	ScansPurged int `json:"scans_purged"`
+	// SharesErased are the shared links that expired and whose rows were erased.
+	SharesErased int `json:"shares_erased"`
 	// Failed is true when a part of it failed; the log says why.
 	Failed bool `json:"failed"`
 }
@@ -55,7 +57,8 @@ func (j *jobRuns) get() JobRun {
 //   - seals the audit days that have ended, purges audit events older than
 //     API_AUDIT_RETENTION (sealed days only), and verifies every seal, which
 //     the Overview reports on;
-//   - shreds personnel files whose retention has ended and erases expired kept scans.
+//   - shreds personnel files whose retention has ended, erases expired kept scans
+//     and the rows of expired shared links.
 func runJobs(ctx context.Context, svc services, logger *slog.Logger) {
 	tick := time.NewTicker(jobEvery)
 	defer tick.Stop()
@@ -144,6 +147,15 @@ func upkeep(ctx context.Context, svc services, logger *slog.Logger) JobRun {
 			logger.Error("kept scans purge failed", slog.Any("error", err))
 		} else if run.ScansPurged > 0 {
 			logger.Info("kept scans purged", slog.Int("scans", run.ScansPurged))
+		}
+	}
+	// Shared links that have expired lose their rows (WARE-51).
+	if svc.shares != nil {
+		if run.SharesErased, err = svc.shares.EraseExpired(ctx); err != nil && ctx.Err() == nil {
+			run.Failed = true
+			logger.Error("shared links erasing failed", slog.Any("error", err))
+		} else if run.SharesErased > 0 {
+			logger.Info("shared links erased", slog.Int("shares", run.SharesErased))
 		}
 	}
 	if run.AuthEventsDeleted > 0 || run.ErrorEventsDeleted > 0 || run.AuditEventsDeleted > 0 {

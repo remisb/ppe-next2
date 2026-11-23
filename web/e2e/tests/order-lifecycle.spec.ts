@@ -1878,7 +1878,11 @@ test('Employees: Export starts select mode; the ticked employees, with the colum
   const sheet = page.getByRole('dialog', { name: 'Export Employees' })
   // The rows were picked on the list: said, not asked again.
   await expect(sheet.getByText('1 selected', { exact: true })).toBeVisible()
-  await expect(sheet.getByRole('radio')).toHaveCount(0)
+  await expect(sheet.getByRole('radio', { name: /^(Selected|All shown)/ })).toHaveCount(0)
+  // How: Excel first, with CSV, beside the two ways to share (WARE-51).
+  await expect(sheet.getByRole('radio', { name: 'Excel (.xlsx)' })).toBeChecked()
+  await expect(sheet.getByRole('radio', { name: /^Copy as Text/ })).toBeVisible()
+  await expect(sheet.getByRole('radio', { name: /^Share Link/ })).toBeVisible()
   // The screen's columns start ticked; the rest can be added.
   await expect(sheet.getByRole('checkbox', { name: 'Code' })).toBeChecked()
   await expect(sheet.getByRole('checkbox', { name: 'Notes' })).not.toBeChecked()
@@ -1908,6 +1912,71 @@ test('Employees: Export starts select mode; the ticked employees, with the colum
   await expect(bar).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(bar).toBeHidden()
+})
+
+test('Employees: Share copies a few as text, or makes a link anyone opens until it is revoked on Shared Links', async ({ browser }) => {
+  await openTab('Employees')
+  const bar = page.getByRole('region', { name: 'Export Employees' })
+  const sheet = page.getByRole('dialog', { name: 'Export Employees' })
+  const pick = async () => {
+    await page.getByRole('button', { name: 'Export', exact: true }).click()
+    await page.getByRole('row', { name: /Ona Kazlauskienė/ }).getByRole('cell').nth(3).click()
+    await bar.getByRole('button', { name: 'Export 1…' }).click()
+  }
+
+  // Copy as Text: readable blocks, the first column a heading, the others "Label: value". Where the
+  // browser will not copy, the same text is there to copy by hand; either way it is shown.
+  await pick()
+  await sheet.getByRole('radio', { name: /^Copy as Text/ }).check()
+  await sheet.getByRole('button', { name: 'Copy Text (1)' }).click()
+  const copied = page.getByRole('dialog', { name: 'Copy as Text' })
+  const text = await copied.getByRole('textbox', { name: 'Copy as Text' }).inputValue()
+  expect(text).toMatch(/^Employees \(1\)\n\nOna Kazlauskienė\nStatus: Employee\nCompany: UAB Gavort\n/)
+  // Her height and shoe size; no clothing size yet, so no such line.
+  expect(text).toContain('Height (cm): 170\nShoe size: 42\n')
+  expect(text).not.toContain('Clothing size')
+  await copied.getByRole('button', { name: 'Done' }).click()
+  await expect(bar).toBeHidden()
+
+  // Share Link: named, open for 30 days; the link is shown once.
+  await pick()
+  await sheet.getByRole('radio', { name: /^Share Link/ }).check()
+  await expect(sheet.getByRole('textbox', { name: 'Name' })).toHaveAttribute('placeholder', 'Ona Kazlauskienė')
+  await sheet.getByRole('textbox', { name: 'Name' }).fill('Sizes for the supplier')
+  await sheet.getByRole('button', { name: '30 days' }).click()
+  await sheet.getByRole('button', { name: 'Create Link (1)' }).click()
+  const made = page.getByRole('dialog', { name: 'Link created' })
+  const url = await made.getByRole('textbox', { name: 'Share Link' }).inputValue()
+  expect(url).toMatch(/\/shared\/[\w-]{43}$/)
+  await made.getByRole('button', { name: 'Done' }).click()
+
+  // Anyone with the link, signed in or not, sees what was chosen, as it was.
+  const ctx = await browser.newContext()
+  const visitor = await ctx.newPage()
+  await visitor.goto(url)
+  await expect(visitor.getByRole('heading', { name: 'Sizes for the supplier' })).toBeVisible()
+  await expect(visitor.getByText(/Employees · 1 person · Shared by /)).toBeVisible()
+  await expect(visitor.getByText('Ona Kazlauskienė')).toBeVisible()
+  await expect(visitor.getByText('Height (cm)')).toBeVisible()
+  await expect(visitor.getByText('170', { exact: true })).toBeVisible()
+  await expect(visitor.getByText('Prefers Russian. Collects on Fridays.')).toHaveCount(0)
+
+  // Shared Links (Employees' ⋯): the user's open links; Revoke asks first, then the link stops opening.
+  await page.getByRole('button', { name: 'More actions for Employees' }).click()
+  await page.getByRole('menuitem', { name: 'Shared Links' }).click()
+  await expect(page.getByRole('heading', { name: 'Shared Links', level: 1 })).toBeVisible()
+  const row = page.getByRole('row', { name: /Sizes for the supplier/ })
+  await expect(row).toContainText('Employees')
+  page.once('dialog', (d) => {
+    expect(d.message()).toContain('Revoke the link “Sizes for the supplier”?')
+    void d.accept()
+  })
+  await row.getByRole('button', { name: 'Revoke Sizes for the supplier' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Link “Sizes for the supplier” revoked.' })).toBeVisible()
+  await expect(row).toHaveCount(0)
+  await visitor.reload()
+  await expect(visitor.getByText('This link is no longer available')).toBeVisible()
+  await ctx.close()
 })
 
 test('Employees: a row opens the employee at its own address, with the items given and their receipts', async () => {
