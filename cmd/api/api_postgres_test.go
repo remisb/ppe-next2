@@ -347,6 +347,32 @@ func TestPostgresSharesHTTP(t *testing.T) {
 	}
 }
 
+// TestPostgresSeedDemo runs make seed-demo's data through the services on an
+// empty database, so a demo value a rule refuses (a shoe size outside the
+// vocabulary) fails here instead of on a developer's machine; a second run
+// refuses the non-empty database.
+func TestPostgresSeedDemo(t *testing.T) {
+	api, owner := newPostgresAPI(t)
+	cfg := testConfig()
+	cfg.SeedUserEmail = api.admin.Email
+	cfg.FilesTarget = "file://" + t.TempDir()
+	// loadConfig's defaults testConfig leaves out: the demo seals its cards' PIN and PUK, and confirms an order by link.
+	cfg.SIMCodesKeyID, cfg.ConfirmTTL = 1, 7*24*time.Hour
+	ctx := context.Background()
+	if err := seedDemo(ctx, owner, api.svc.users, cfg, time.UTC, testLogger); err != nil {
+		t.Fatalf("seed-demo: %v", err)
+	}
+	var employees, former int
+	owner.QueryRow(ctx, `SELECT count(*) FROM employees WHERE deleted_at IS NULL`).Scan(&employees)
+	owner.QueryRow(ctx, `SELECT count(*) FROM employees WHERE last_name = 'Buvusi' AND shoe_size = '39'`).Scan(&former)
+	if employees < 8 || former != 1 {
+		t.Errorf("seeded %d employees, Inga Buvusi %d", employees, former)
+	}
+	if err := seedDemo(ctx, owner, api.svc.users, cfg, time.UTC, testLogger); err == nil || !strings.Contains(err.Error(), "refusing to seed") {
+		t.Errorf("second run = %v, want a refusal", err)
+	}
+}
+
 // TestPostgresAssetsHTTPFlow runs a SIM card through Company Assets: added,
 // activated, given against its printed form, held while its employee may not
 // be deleted, and returned (docs/specs/asset-service.md).
