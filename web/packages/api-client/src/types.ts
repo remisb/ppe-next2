@@ -1242,6 +1242,8 @@ export interface SystemStatus {
       days_sealed: number
       /** Kept scans erased once expired. */
       scans_purged: number
+      /** Shared links whose rows were erased once expired. */
+      shares_erased: number
       failed: boolean
     }
   }
@@ -2057,4 +2059,54 @@ export interface AICallsQuery {
   outcome?: 'ok' | 'failed' | 'refused'
   limit?: number
   offset?: number
+}
+
+/** What a shared link holds (WARE-51): employees, from the Employees export sheet. */
+export type ShareKind = 'employees'
+
+/** The days a shared link may stay open: share.Durations (SHARE_DAYS in shares.ts). */
+export type ShareDays = 1 | 7 | 30
+
+/** A shared link as its sharer sees it on Shared Links: never its rows or token. */
+export interface Share {
+  id: string
+  kind: ShareKind
+  name: string
+  /** The export columns' keys, in the order chosen. */
+  columns: string[]
+  subject_ids: string[]
+  row_count: number
+  expires_at: string
+  created_at: string
+  created_by_user_id: string
+  created_by_name: string
+}
+
+/** Share Link's input: the employees' ids in the order chosen, the columns' keys. */
+export interface ShareInput {
+  kind: ShareKind
+  name: string
+  columns: string[]
+  ids: string[]
+  days: ShareDays
+}
+
+/** Share Link's answer: the link, shown once (only its hash is kept). */
+export interface ShareCreated {
+  share: Share
+  url: string
+}
+
+/**
+ * The public page's read of a link: each row holds the chosen columns'
+ * fields alone, as the sharer saw them when sharing.
+ */
+export interface SharedView {
+  kind: ShareKind
+  name: string
+  columns: string[]
+  rows: Record<string, unknown>[]
+  shared_by: string
+  created_at: string
+  expires_at: string
 }

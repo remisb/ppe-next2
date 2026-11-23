@@ -1,4 +1,4 @@
-import type { Employee, EmployeePair, EmployeeStatus, Sizes } from '@ppe/api-client'
+import { type Employee, type EmployeePair, type EmployeeStatus, SHARE_DAYS, SHARE_MAX_ROWS, type ShareDays, type Sizes } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { Button } from '@ppe/ui/components/button'
@@ -16,9 +16,10 @@ import { useAction } from '@ppe/ui/lib/use-action'
 import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
+import type { ShareOptions } from '@ppe/ui/components/export-sheet'
 import { RowCheckbox, SelectAllCheckbox, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
 import { selectRowProps, useSelection } from '@ppe/ui/lib/use-selection'
-import { ChevronRight, Download, Plus, Users } from 'lucide-react'
+import { ChevronRight, Download, Link2, Plus, Share2, Users } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 
 import { EmployeeDetail } from '@/routes/employee'
@@ -72,6 +73,21 @@ export function Employees({
   const seesSizes = session.can('employee_sizes.read')
   const seesProfile = session.can('employee_profiles.read')
   const canExport = session.can('data.export')
+  // Sharing (WARE-51): Copy as Text and Share Link beside Export's files, for everyone, up to 10 rows.
+  const share: ShareOptions<Employee> = {
+    files: canExport,
+    limit: SHARE_MAX_ROWS,
+    days: SHARE_DAYS,
+    defaultName: (rows) => {
+      const names = rows.map((e) => e.full_name)
+      return names.length <= 3 ? names.join(', ') : t.shares.namesAndMore(names.slice(0, 2).join(', '), names.length - 2)
+    },
+    link: async ({ name, columns, rows, days }) => {
+      const made = await client.shares.create({ kind: 'employees', name, columns, ids: rows.map((e) => e.id), days: days as ShareDays })
+      return { url: made.url, expires_at: made.share.expires_at }
+    },
+    onManage: () => navigate({ name: 'sharedLinks' }),
+  }
   const managesSizes = session.can('employee_sizes.manage')
   const managesProfile = session.can('employee_profiles.manage')
   const merges = session.can('employees.merge')
@@ -187,8 +203,18 @@ export function Employees({
       <PageHeader
         title={t.employees.title}
         description={t.employees.description}
-        // Export (data.export): in the header from md, in ⋯ below (a phone exports all shown: its list has no checkboxes).
-        secondary={canExport ? [{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: shown.length === 0 || selection.active }] : []}
+        // Export (data.export) or, without it, Share (everyone's, WARE-51): in the header from md, in ⋯ below
+        // (a phone exports all shown: its list has no checkboxes). Shared Links always in ⋯.
+        secondary={[
+          {
+            label: canExport ? t.common.export : t.common.share,
+            icon: canExport ? Download : Share2,
+            onClick: () => selection.start(EXPORT_MODE),
+            showFrom: 'md',
+            disabled: shown.length === 0 || selection.active,
+          },
+          { label: t.shares.title, icon: Link2, onClick: () => navigate({ name: 'sharedLinks' }), showFrom: 'never' },
+        ]}
         primary={managesProfile ? { label: t.employees.addNew, short: t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
       />
       {/* As on every list: the tabs first, then the search. */}
@@ -242,7 +268,7 @@ export function Employees({
         </p>
       ) : null}
       {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
-      {canExport ? <ExportMode selection={selection} list={t.employees.title} columns={employeeExportColumns({ sizes: seesSizes, profile: seesProfile })} shown={shown} /> : null}
+      <ExportMode selection={selection} list={t.employees.title} columns={employeeExportColumns({ sizes: seesSizes, profile: seesProfile })} shown={shown} share={share} />
       <Loaded
         load={employees}
         empty={shown.length === 0}

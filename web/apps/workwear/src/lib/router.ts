@@ -67,6 +67,10 @@ export type Route =
   | { name: 'record'; id: string; print?: boolean }
   /** The employee's public confirmation page; the token is its only credential. */
   | { name: 'confirm'; token: string }
+  /** Shared Links (WARE-51): the user's own open links, each to revoke. */
+  | { name: 'sharedLinks' }
+  /** A shared link's public page; the token is its only credential. */
+  | { name: 'shared'; token: string }
 
 /** A Company Assets tile the register can open on, besides Total. */
 export type AssetTile = 'inOffice' | 'withEmployees' | 'notReturned'
@@ -103,6 +107,7 @@ const fixed = {
   catalogue: '/catalogue',
   itemSets: '/item-sets',
   replacements: '/replacements',
+  sharedLinks: '/shared-links',
   account: '/account',
   help: '/help',
 } as const
@@ -160,6 +165,8 @@ export function parsePath(pathname: string, search = ''): Route {
   if (record?.[1]) return { name: 'record', id: decodeURIComponent(record[1]) }
   const confirm = /^\/confirm\/([^/]+)$/.exec(path)
   if (confirm?.[1]) return { name: 'confirm', token: decodeURIComponent(confirm[1]) }
+  const shared = /^\/shared\/([^/]+)$/.exec(path)
+  if (shared?.[1]) return { name: 'shared', token: decodeURIComponent(shared[1]) }
   return { name: 'home' }
 }
 
@@ -235,6 +242,8 @@ export function pathOf(route: Route): string {
       return `/orders/${encodeURIComponent(route.id)}/record`
     case 'confirm':
       return `/confirm/${encodeURIComponent(route.token)}`
+    case 'shared':
+      return `/shared/${encodeURIComponent(route.token)}`
     case 'administration':
       return route.path
     default:

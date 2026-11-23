@@ -47,6 +47,8 @@ export const AUDIT_EVENTS = [
   'personnel.scan_kept',
   'personnel.scan_downloaded',
   'personnel.scan_removed',
+  'share.created',
+  'share.revoked',
   'catalogue.created',
   'catalogue.updated',
   'catalogue.price_changed',
