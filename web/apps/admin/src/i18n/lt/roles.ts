@@ -45,6 +45,7 @@ export const roles: RolesText = {
     launcher: 'Programų sąrašas',
     workwear: 'Darbo drabužiai ir įranga',
     personnel: 'Asmens bylos',
+    vault: 'Dokumentų saugykla',
     dashboards: 'Suvestinės',
   },
   permission: {
@@ -139,6 +140,14 @@ export const roles: RolesText = {
     'personnel.portraits.colorize': {
       label: 'Kurti DI spalvotas nuotraukas',
       grants: 'Nuspalvinti dokumento portretą DI (OpenAI), asmeniui sutikus. Kiekvienas naudojimas skaičiuojamas „DI naudojime“.',
+    },
+    'vault.read': {
+      label: 'Matyti dokumentus',
+      grants: 'Dokumentų saugykla ir dokumentai darbuotojų bei turto puslapiuose: atidaryti ir atsisiųsti. Darbo dokumentams reikia atskiros rolės.',
+    },
+    'vault.manage': {
+      label: 'Tvarkyti dokumentus',
+      grants: 'Įkelti dokumentus ir naujesnes versijas, keisti jų duomenis ir susiejimus, juos pašalinti. Reikia teisės „Matyti dokumentus“.',
     },
     'dashboard.overview': { label: 'Suvestinė', grants: 'Išlaidos, laukiantys užsakymai ir trūkumai.' },
     'dashboard.manager': { label: 'Vadovo suvestinė', grants: 'Prekės, kainos ir pirkimai.' },

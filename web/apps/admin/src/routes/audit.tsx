@@ -53,6 +53,7 @@ const areaEvents: Record<AuditArea, readonly string[]> = {
   item_sets: ['item_set.'],
   orders: ['order.'],
   assets: ['asset.'],
+  vault: ['vault.'],
   settings: ['settings.', 'mail_template.'],
   security: ['access_review.'],
   audit: ['audit.'],

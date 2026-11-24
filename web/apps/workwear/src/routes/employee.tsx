@@ -20,6 +20,7 @@ import { OrderStatusBadge } from '@/components/order-status'
 import { formatDate } from '@/components/dashboard'
 import { EmployeePhotos, useEmployeePhotos } from '@/components/employee-photos'
 import { IdentitySection } from '@/components/identity-section'
+import { DocumentsSection } from '@/components/documents-section'
 import { EmploymentSection, StatusBadge } from '@/components/employment-section'
 import { useFileDrop } from '@/lib/photo-drop'
 import { employeeActions } from '@/lib/employee-actions'
@@ -401,6 +402,9 @@ export function EmployeeDetail({ id, place, navigate }: { id: string; place: Emp
             ) : null}
             <div className="order-8">
               <IdentitySection employeeId={e.id} timeZone={tz} />
+            </div>
+            <div className="order-8">
+              <DocumentsSection kind="employee" id={e.id} label={e.full_name} timeZone={tz} navigate={navigate} />
             </div>
             </div>
 

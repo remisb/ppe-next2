@@ -27,6 +27,7 @@ import { EquipmentForm } from '@/components/equipment-form'
 import { SignedCopies } from '@/components/signed-copies'
 import { useSimCodes } from '@/components/sim-codes'
 import { SimCardForm } from '@/components/sim-card-form'
+import { DocumentsSection } from '@/components/documents-section'
 import { t } from '@/i18n'
 import { assetActions } from '@/lib/asset-actions'
 import { categoryLabel, formatDay, locationText, managePermission, simCopyText, todayIn } from '@/lib/assets'
@@ -300,6 +301,8 @@ export function AssetDetail({
                 </RuleList>
               )}
             </DisclosureSection>
+
+            <DocumentsSection kind="asset" id={a.id} label={[a.inventory_no, a.name ?? a.phone_no].filter(Boolean).join(' ')} timeZone={tz} navigate={navigate} />
 
             <RecordChanges load={() => client.audit.history('assets', id)} deps={[id, a.updated_at, a.assignments.length, a.open_assignment?.not_returned_at, codesShown]} timeZone={tz} rememberAs={changesKey} className="mb-0" />
 

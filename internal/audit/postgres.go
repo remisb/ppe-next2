@@ -29,7 +29,7 @@ func NewPostgresStore(pool *pgxpool.Pool) *PostgresStore { return &PostgresStore
 // order is named by its record number, as order.FormatRecordNumber writes it,
 // an asset by its inventory number, and a catalogue picture by its icon and a
 // mail template by its use case's key, which the apps translate, and an App
-// Launcher tile by its English name.
+// Launcher tile by its English name, and a document by its title.
 const entityLabel = `CASE a.entity_type
 		WHEN 'employee' THEN (SELECT x.first_name || ' ' || x.last_name FROM employees x WHERE x.id = a.entity_id)
 		WHEN 'catalogue_item' THEN (SELECT x.name FROM catalogue_items x WHERE x.id = a.entity_id)
@@ -44,6 +44,7 @@ const entityLabel = `CASE a.entity_type
 		WHEN 'asset' THEN (SELECT x.inventory_no FROM assets x WHERE x.id = a.entity_id)
 		WHEN 'mail_template' THEN (SELECT x.key FROM mail_templates x WHERE x.id = a.entity_id)
 		WHEN 'app' THEN (SELECT x.name_en FROM launcher_apps x WHERE x.id = a.entity_id)
+		WHEN 'vault_document' THEN (SELECT x.title FROM vault.documents x WHERE x.id = a.entity_id)
 	END`
 
 // entityDeleted is whether the record is soft-deleted now; false for the
@@ -58,6 +59,7 @@ const entityDeleted = `coalesce(CASE a.entity_type
 		WHEN 'user' THEN (SELECT x.deleted_at IS NOT NULL FROM users x WHERE x.id = a.entity_id)
 		WHEN 'role' THEN (SELECT x.deleted_at IS NOT NULL FROM roles x WHERE x.id = a.entity_id)
 		WHEN 'asset' THEN (SELECT x.deleted_at IS NOT NULL FROM assets x WHERE x.id = a.entity_id)
+		WHEN 'vault_document' THEN (SELECT x.deleted_at IS NOT NULL FROM vault.documents x WHERE x.id = a.entity_id)
 	END, false)`
 
 // List reads q's events, newest first, with each record's name and the

@@ -11,7 +11,7 @@ import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Kbd } from '@ppe/ui/components/kbd'
-import { BookOpen, Boxes, ChevronDown, ClipboardList, Ellipsis, Grip, History as HistoryIcon, Keyboard, LayoutDashboard, Link2, LogOut, Package, Plus, RotateCcw, Search, ShieldCheck, Shirt, UserRound, Users } from 'lucide-react'
+import { BookOpen, Boxes, ChevronDown, ClipboardList, Ellipsis, Grip, History as HistoryIcon, Keyboard, FileText, LayoutDashboard, Link2, LogOut, Package, Plus, RotateCcw, Search, ShieldCheck, Shirt, UserRound, Users } from 'lucide-react'
 import { Fragment, Suspense, lazy, useEffect, useId, useRef, useState } from 'react'
 
 import { CommandPalette, type PaletteApp, type PaletteSection } from '@/components/command-palette'
@@ -34,6 +34,7 @@ import { EmployeeDetail } from './routes/employee'
 import { Employees } from './routes/employees'
 import { History } from './routes/history'
 import { ItemSets } from './routes/item-sets'
+import { Vault } from './routes/vault'
 import { ManagerDashboard } from './routes/manager-dashboard'
 import { RecordPage } from './routes/record'
 import { Replacements } from './routes/replacements'
@@ -77,6 +78,8 @@ const tabs = (can: (p: Permission) => boolean): Tab[] => [
         } satisfies Tab,
       ]
     : []),
+  // Document Vault (ADR 0008) takes See documents (vault.read).
+  ...(can('vault.read') ? [{ route: { name: 'vault' }, label: t.shell.vault, short: t.shell.shortVault, icon: FileText } satisfies Tab] : []),
   { route: { name: 'catalogue' }, label: t.shell.catalogue, short: t.shell.shortCatalogue, icon: Shirt },
   // Item Sets take See Item Sets (item_sets.read); Create Order offers the active ones to everyone.
   ...(can('item_sets.read') ? [{ route: { name: 'itemSets' }, label: t.shell.itemSets, short: t.shell.shortItemSets, icon: Package } satisfies Tab] : []),
@@ -552,6 +555,7 @@ export function App() {
         ) : null}
         {route.name === 'catalogue' ? <Catalogue item={route.item} status={route.status} navigate={navigate} /> : null}
         {route.name === 'itemSets' ? <ItemSets navigate={navigate} /> : null}
+        {route.name === 'vault' ? <Vault selected={route.document} navigate={navigate} /> : null}
         {route.name === 'replacements' ? <Replacements navigate={navigate} onBack={back({ name: 'home' })} /> : null}
         {route.name === 'sharedLinks' ? <SharedLinks navigate={navigate} /> : null}
         {route.name === 'account' ? <Account onSignOut={signOut} /> : null}

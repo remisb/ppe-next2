@@ -44,6 +44,7 @@ export const roles = {
     launcher: 'App Launcher',
     workwear: 'Workwear & Equipment',
     personnel: 'Personnel files',
+    vault: 'Document Vault',
     dashboards: 'Dashboards',
   } satisfies Record<PermissionInfo['group'], string>,
   permission: {
@@ -138,6 +139,14 @@ export const roles = {
     'personnel.portraits.colorize': {
       label: 'Make AI colour photos',
       grants: 'Colour a document’s portrait with AI (OpenAI), with the person’s consent. Each use is counted in AI Usage.',
+    },
+    'vault.read': {
+      label: 'See documents',
+      grants: 'The Document Vault and the documents on employee and asset pages: open and download them. Employment documents need their own role.',
+    },
+    'vault.manage': {
+      label: 'Manage documents',
+      grants: 'Upload documents and newer versions, change their details and links, and remove them. Needs See documents.',
     },
     'dashboard.overview': { label: 'Dashboard', grants: 'Spending, orders waiting and setup gaps.' },
     'dashboard.manager': { label: 'Manager Dashboard', grants: 'Items, prices and purchasing.' },

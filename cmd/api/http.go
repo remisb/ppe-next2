@@ -35,6 +35,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/personnel/scan"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
+	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
 )
 
 const maxBodyBytes = 1 << 20
@@ -86,6 +87,7 @@ var errorStatuses = []struct {
 	{asset.ErrMayNotChange, http.StatusForbidden},
 	{catalogue.ErrNotPermitted, http.StatusForbidden},
 	{employee.ErrNotPermitted, http.StatusForbidden},
+	{vaultdoc.ErrForbidden, http.StatusForbidden},
 
 	// The actor comes from a verified token, so an unknown actor is an
 	// authentication problem, not a bad request.
@@ -96,6 +98,7 @@ var errorStatuses = []struct {
 	{employee.ErrActorNotFound, http.StatusUnauthorized},
 	{catalogue.ErrActorNotFound, http.StatusUnauthorized},
 	{supplier.ErrActorNotFound, http.StatusUnauthorized},
+	{vaultdoc.ErrActorNotFound, http.StatusUnauthorized},
 	{share.ErrActorNotFound, http.StatusUnauthorized},
 	{company.ErrActorNotFound, http.StatusUnauthorized},
 	{itemset.ErrActorNotFound, http.StatusUnauthorized},
@@ -116,6 +119,8 @@ var errorStatuses = []struct {
 	{employee.ErrEmploymentNotFound, http.StatusNotFound},
 	{catalogue.ErrNotFound, http.StatusNotFound},
 	{supplier.ErrNotFound, http.StatusNotFound},
+	{vaultdoc.ErrNotFound, http.StatusNotFound},
+	{vaultdoc.ErrSubjectNotFound, http.StatusNotFound},
 	{share.ErrNotFound, http.StatusNotFound},
 	{company.ErrNotFound, http.StatusNotFound},
 	{catalogue.ErrPictureNotFound, http.StatusNotFound},
@@ -131,8 +136,11 @@ var errorStatuses = []struct {
 	{asset.ErrNoForm, http.StatusNotFound},
 	{asset.ErrAssignmentNotFound, http.StatusNotFound},
 	{asset.ErrFileTooLarge, http.StatusRequestEntityTooLarge},
+	{vaultdoc.ErrTooLarge, http.StatusRequestEntityTooLarge},
 	{asset.ErrFileType, http.StatusUnsupportedMediaType},
+	{vaultdoc.ErrFileType, http.StatusUnsupportedMediaType},
 	{asset.ErrNoStorage, http.StatusServiceUnavailable},
+	{vaultdoc.ErrNoStorage, http.StatusServiceUnavailable},
 	{asset.ErrNoSIMCodes, http.StatusNotFound},
 	{asset.ErrSIMCodesUnavailable, http.StatusServiceUnavailable},
 	{employeephoto.ErrNotFound, http.StatusNotFound},
@@ -170,6 +178,7 @@ var errorStatuses = []struct {
 	{employee.ErrCodeTaken, http.StatusConflict},
 	{catalogue.ErrNameTaken, http.StatusConflict},
 	{supplier.ErrCodeTaken, http.StatusConflict},
+	{vaultdoc.ErrLocked, http.StatusConflict},
 	{company.ErrCodeTaken, http.StatusConflict},
 	{company.ErrDefaultTaken, http.StatusConflict},
 	{company.ErrIsDefault, http.StatusConflict},
@@ -203,6 +212,7 @@ var errorStatuses = []struct {
 	{employee.ErrCompanyNotFound, http.StatusBadRequest},
 	{catalogue.ErrInvalid, http.StatusBadRequest},
 	{supplier.ErrInvalid, http.StatusBadRequest},
+	{vaultdoc.ErrInvalid, http.StatusBadRequest},
 	{share.ErrInvalid, http.StatusBadRequest},
 	{company.ErrInvalid, http.StatusBadRequest},
 	{itemset.ErrInvalid, http.StatusBadRequest},

@@ -41,6 +41,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
 	"github.com/remisb/ppe-next2/internal/usage"
+	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
 )
 
 // memRepo is a minimal in-memory user.Repository for exercising the HTTP layer.
@@ -841,6 +842,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	svc.ready = stubReady{}
 	svc.documents = document.NewService(stubDocuments{}, document.Keys{}, nil)
 	svc.scans = scan.NewService(nil, document.Keys{}, nil)
+	svc.vault = vaultdoc.NewService(stubVault{}, vaultSubjects{})
 	svc.shares = share.NewService(nil)
 	svc.ai = newTestAI()
 	tok := testTokens(time.Now())
@@ -1131,6 +1133,39 @@ var policy = map[string]rule{
 	"POST /api/v1/client-errors":                                                {"", "any"},
 	"GET /api/v1/overview":                                                      {"", "any"},
 	"GET /api/v1/usage":                                                         {role.UsageRead, "admins"},
+	"GET /api/v1/audit-events/vault/{id}":                                       {role.VaultRead, "managers"},
+	"GET /api/v1/vault/types":                                                   {role.VaultRead, "managers"},
+	"POST /api/v1/vault/search":                                                 {role.VaultRead, "managers"},
+	"GET /api/v1/vault/by-subject/{kind}/{id}":                                  {role.VaultRead, "managers"},
+	"POST /api/v1/vault/documents":                                              {role.VaultManage, "managers"},
+	"GET /api/v1/vault/documents/{id}":                                          {role.VaultRead, "managers"},
+	"PUT /api/v1/vault/documents/{id}":                                          {role.VaultManage, "managers"},
+	"DELETE /api/v1/vault/documents/{id}":                                       {role.VaultManage, "managers"},
+	"POST /api/v1/vault/documents/{id}/versions":                                {role.VaultManage, "managers"},
+	"GET /api/v1/vault/documents/{id}/versions/{n}/file":                        {role.VaultRead, "managers"},
+}
+
+// stubVault is a vaultdoc.Repository with no documents.
+type stubVault struct{}
+
+func (stubVault) Create(context.Context, vaultdoc.Document, []vaultdoc.Link, audit.Event) error {
+	return nil
+}
+func (stubVault) Get(context.Context, uuid.UUID) (vaultdoc.Document, error) {
+	return vaultdoc.Document{}, vaultdoc.ErrNotFound
+}
+func (stubVault) Update(context.Context, uuid.UUID, vaultdoc.Mutation) (vaultdoc.Document, error) {
+	return vaultdoc.Document{}, vaultdoc.ErrNotFound
+}
+func (stubVault) AddVersion(context.Context, uuid.UUID, vaultdoc.VersionMutation) (vaultdoc.Document, error) {
+	return vaultdoc.Document{}, vaultdoc.ErrNotFound
+}
+func (stubVault) Search(context.Context, vaultdoc.Query, []string) (vaultdoc.Page, error) {
+	return vaultdoc.Page{Documents: []vaultdoc.Hit{}}, nil
+}
+func (stubVault) Subjects(context.Context) ([]vaultdoc.Subject, error) { return nil, nil }
+func (stubVault) Relabel(context.Context, vaultdoc.Subject, string) (int, error) {
+	return 0, nil
 }
 
 // allowedRoles is who each audience was before permissions: the three fixed

@@ -45,8 +45,12 @@ const (
 	PersonnelDocumentsRead     Permission = "personnel.documents.read"
 	PersonnelDocumentsManage   Permission = "personnel.documents.manage"
 	PersonnelPortraitsColorize Permission = "personnel.portraits.colorize"
-	SettingsManage             Permission = "settings.manage"
-	MailTemplatesManage        Permission = "mail_templates.manage"
+	// Document Vault (ADR 0008): see documents, and upload, change and remove
+	// them (migration 0061). Each type names its own pair; these are phase 1's.
+	VaultRead           Permission = "vault.read"
+	VaultManage         Permission = "vault.manage"
+	SettingsManage      Permission = "settings.manage"
+	MailTemplatesManage Permission = "mail_templates.manage"
 	// SuppliersManage is Administration's Suppliers: the companies catalogue
 	// items are bought from (migration 0054). Everyone sees them.
 	SuppliersManage Permission = "suppliers.manage"
@@ -81,6 +85,8 @@ const (
 	GroupWorkwear Group = "workwear"
 	// GroupPersonnel is Personnel files' (ADR 0007): identity documents.
 	GroupPersonnel Group = "personnel"
+	// GroupVault is Document Vault's (ADR 0008): documents.
+	GroupVault Group = "vault"
 	// GroupDashboards is the three dashboards, one each.
 	GroupDashboards Group = "dashboards"
 )
@@ -130,6 +136,8 @@ var catalogue = []Info{
 	{PersonnelDocumentsRead, GroupPersonnel, nil},
 	{PersonnelDocumentsManage, GroupPersonnel, []Permission{PersonnelDocumentsRead}},
 	{PersonnelPortraitsColorize, GroupPersonnel, []Permission{PersonnelDocumentsManage}},
+	{VaultRead, GroupVault, nil},
+	{VaultManage, GroupVault, []Permission{VaultRead}},
 	{DashboardOverview, GroupDashboards, nil},
 	{DashboardManager, GroupDashboards, nil},
 	{DashboardEmployee, GroupDashboards, nil},

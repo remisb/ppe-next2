@@ -39,6 +39,8 @@ export const PERMISSIONS = [
   'personnel.documents.read',
   'personnel.documents.manage',
   'personnel.portraits.colorize',
+  'vault.read',
+  'vault.manage',
   'dashboard.overview',
   'dashboard.manager',
   'dashboard.employee',

@@ -1386,7 +1386,8 @@ replaced by **Scan Documents** (docs-scan, decided 2026-11-21, to build).
 The organisation's documents, of fixed types, with their versions, templates and search
 (ADR 0008; rules in [vault-service.md](specs/vault-service.md),
 [document-template-service.md](specs/document-template-service.md) and
-[outbox-service.md](specs/outbox-service.md)). Decided, not built.
+[outbox-service.md](specs/outbox-service.md)). Phase 1 is built (upload, versions, links, search, the
+Documents sections); sealed types, templates, the worker and moving the records in are to come.
 
 ### Document Vault
 - **Brief:** the context, and the staff app's screen, that keeps documents, makes them from

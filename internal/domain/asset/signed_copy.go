@@ -7,10 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"path"
-	"strings"
 	"time"
-	"unicode"
 
 	"github.com/google/uuid"
 
@@ -143,26 +140,5 @@ func (s *Service) assignment(ctx context.Context, assetID, assignmentID uuid.UUI
 	return Assignment{}, ErrAssignmentNotFound
 }
 
-// copyName is the name a copy is listed and downloaded under: the device's
-// name without its folder or odd characters, with the extension of what the
-// file really is.
-func copyName(name, contentType string) string {
-	base := strings.TrimSuffix(path.Base(strings.ReplaceAll(name, `\`, "/")), path.Ext(name))
-	var b strings.Builder
-	for _, r := range base {
-		switch {
-		case unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-' || r == '_' || r == '.':
-			b.WriteRune(r)
-		case unicode.IsSpace(r):
-			b.WriteRune(' ')
-		}
-	}
-	clean := strings.TrimSpace(b.String())
-	if clean == "" || clean == "." {
-		clean = "signed-form"
-	}
-	if r := []rune(clean); len(r) > 150 {
-		clean = string(r[:150])
-	}
-	return clean + files.Ext(contentType)
-}
+// copyName is the name a copy is listed and downloaded under (files.Name).
+func copyName(name, contentType string) string { return files.Name(name, contentType, "signed-form") }

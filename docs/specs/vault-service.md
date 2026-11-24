@@ -7,9 +7,11 @@ and generation are [document-template-service.md](document-template-service.md);
 worker are [outbox-service.md](outbox-service.md); the data-protection note is
 [document-vault-dpia-note.md](../privacy/document-vault-dpia-note.md).
 
-**Status: decided, not built.** Each section names the phase that builds it (ADR 0008's plan:
-1 core, 2 sealed types, 3 templates, 4 worker and text, 5 signed copies, 6 archiving, 7 identity
-documents, 8 DOCX).
+**Status: phase 1 built** (migration 0061, `internal/vault`, `internal/vault/document`,
+`cmd/api/vault-routes.go`, `cmd/api/wire_vault.go`, the staff app's Document Vault and Documents
+sections); the rest decided, not built. Each section names the phase that builds it (ADR 0008's
+plan: 1 core, 2 sealed types, 3 templates, 4 worker and text, 5 signed copies, 6 archiving, 7
+identity documents, 8 DOCX).
 
 - **Packages:** `internal/vault` (the type registry, `Types()`), `internal/vault/document`
   (entity, service, repository, Postgres; the five-file layout of `internal/domain/user`),
@@ -19,9 +21,9 @@ documents, 8 DOCX).
 - **Isolation:** `internal/vault/...` imports no `internal/domain/*` or `internal/personnel/*`
   package (`internal/vault/imports_test.go`). It may import the platform: `internal/audit`,
   `internal/files`, `internal/sealbox`, `internal/outbox`, `internal/placeholder`.
-- **Migrations:** `0060_vault` (phase 1), `0061_vault_sealed` (phase 2),
-  `0062_document_templates` (phase 3), `0063_outbox` (phase 4), `0064_vault_signed_copies`
-  (phase 5), `0065_document_template_docx` (phase 8).
+- **Migrations:** `0061_vault` (phase 1), `0062_vault_sealed` (phase 2),
+  `0063_document_templates` (phase 3), `0064_outbox` (phase 4), `0065_vault_signed_copies`
+  (phase 5), `0066_document_template_docx` (phase 8).
 - **Apps:** the staff app's **Document Vault** (`/vault`, list and detail at `/vault/<id>`) and a
   **Documents** section on the employee page and an asset's detail; Administration's **Document
   Templates** (phase 3).
@@ -86,7 +88,7 @@ vault's routes show them to readers who also have `vault.read`.
 | `template_id`, `template_version` | for generated documents (phase 3) |
 | `sealed` | copied from the type when created |
 | `requires` | `text[]`, the permissions a reader needs (all of them); GIN-indexed; set from the type and the links (an asset document of an equipment item requires `equipment.read`) |
-| `link_labels` | the linked subjects' names, for search and the list, refreshed when a name changes |
+| `type_words` | the type's names in English, Lithuanian and Russian (`vault.Type.Words`), for search |
 | `search` | `tsvector`, weighted (Search below) |
 | `retain_until` | computed from the type's rule (phase 2); null while it cannot be (employment not ended) or for `Keep`/`Forever` |
 | `hold_until`, `hold_reason` | Legal Hold (phase 2) |
@@ -127,8 +129,11 @@ more (phase 8: the DOCX a PDF was rendered from).
 What a document is about. `subject_kind` is one of `employee`, `company`, `employment`, `asset`,
 `order`, `supplier`; `subject_id` is its id, checked through the `Subjects` port when the link is
 made. `employee_id` is also set (a foreign key to `employees`, the shared kernel) for an employee
-link, so a merge can move it. `locked` links are set by generation, archiving or the migration
-and cannot be removed by a user. UNIQUE (`document_id`, `subject_kind`, `subject_id`).
+link, so a merge can move it. `label` is the subject's name (an employee's full name, a company's
+or supplier's name, an asset's inventory number and name or phone number), for the list and
+search; `requires` the permissions its kind needs (an equipment item's `equipment.read`). `locked`
+links are set by generation, archiving or the migration and cannot be removed by a user. Primary
+key (`document_id`, `subject_kind`, `subject_id`).
 
 ### Read text (`vault.version_text`, phase 4)
 
@@ -175,8 +180,8 @@ size, SHA-256).
 
 ### Update (phase 1)
 
-`PATCH /api/v1/vault/documents/{id}`: title, dates, note, and links that are not locked. A
-type never changes. Events `vault.document_updated` (fields changed, names only for sealed
+`PUT /api/v1/vault/documents/{id}`: title, dates and the links that are not locked, all replaced
+(locked links stay whatever the body says). A type and a version's note never change. Events `vault.document_updated` (fields changed, names only for sealed
 types) and `vault.document_linked` / `vault.document_unlinked`.
 
 ### Remove (phase 1)
@@ -193,23 +198,25 @@ versioning and the type's retention decide).
   names), files, links and read-text state. 404 when the reader lacks any of `requires`.
 - `GET /api/v1/vault/documents/{id}/versions/{n}/file`: the main file as an attachment
   (`Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, `Cache-Control: private,
-  no-store`; `writeAttachment`, factored out of the signed-copy route), checked against its
-  SHA-256 as it streams. For a **sealed** type the route is `POST` and sensitive: a recent
+  no-store`; `writeAttachment`), read whole and checked against its SHA-256 before it is sent
+  (a changed object is a 500, `ErrDamaged`). For a **sealed** type the route is `POST` and sensitive: a recent
   sign-in, the event `vault.document_opened` recorded before the answer.
 - `GET /api/v1/vault/by-subject/{kind}/{id}`: the documents linked to a subject that the reader
   may see, newest first; from phase 7, an employee's identity documents too.
 
 ### Employee merge (phase 1)
 
-`internal/domain/employee/postgres_merge.go` moves the removed record's `vault.links` (and
-`employee_id`) to the kept record in its transaction, and refreshes the documents'
-`link_labels` and `search`. A link that would become a duplicate is dropped.
+`internal/domain/employee/postgres_merge.go` (`moveDocumentLinks`) moves the removed record's
+`vault.links` (and `employee_id`) to the kept record in its transaction, names them as the kept
+record is called, and rebuilds the documents' `search` (`vault.refresh_search`). A link that would
+become a duplicate is dropped.
 
 ### Names change (phase 1)
 
-When an employee, company, asset or supplier is renamed, `link_labels` and `search` of its
-documents are refreshed: through the outbox once it exists (phase 4), until then in the
-renaming request through a `VaultLabels` port the renaming service may call after commit.
+When an employee, company, asset or supplier is renamed, the API's hourly upkeep
+(`Service.RefreshLabels`, `cmd/api/jobs.go`) names every linked subject as it is called now and
+rebuilds the search of the documents whose link changed; a subject that is gone keeps its last
+name. Through the outbox once it exists (phase 4).
 
 ## Search (phase 1, read text from phase 4)
 
@@ -219,12 +226,13 @@ name searched for is never in a URL or the request log. `vault.read` or
 
 - **Configuration** `vault.ppe`: a copy of `simple` with `unaccent` (the immutable wrapper
   `vault.unaccent`), so *Žukauskaitė*, *zukauskaite* and *ŽUKAUSKAITĖ* match. No stemmer.
-- **Vector** `documents.search`, rebuilt by the service when a document, its links or its read
-  text change: **A** title, number, type's name; **B** link labels; **C** file names, dates;
-  **D** read text (every version's, the newest first, capped at 1 MB).
+- **Vector** `documents.search`, rebuilt by `vault.refresh_search(id)` (SQL, migration 0061)
+  after every change to a document, its links or its read text: **A** title, number, the type's
+  names; **B** link labels; **C** file names (dates are filters, not words); **D** read text (every version's, the newest first, capped at 1 MB).
 - **Query:** the words typed, each a prefix (`zukausk:*`), all required; ranked by
   `ts_rank_cd`, then the newest. When it finds nothing, a trigram fallback (`pg_trgm`,
-  `similarity` over title and link labels, 0.3) finds near spellings.
+  `word_similarity` of the words to the title and link labels, at least 0.45: *Zukauskiate* is
+  0.58 of *Žukauskaitė*) finds near spellings, and the answer says `near`.
 - **Filtering** in SQL: `requires <@ $reader_permissions`, `deleted_at IS NULL`,
   `shredded_at IS NULL`. Never filtered after the query, so counts and pages are right.
 - **Answer:** pages of 50, each hit with type, title (or for a sealed type its type's name and
@@ -278,7 +286,7 @@ Nothing of them is stored in the vault.
 | `GET /api/v1/vault/by-subject/{kind}/{id}` | `vault.read` or `vault.employment.read` | 1 | |
 | `POST /api/v1/vault/documents` | the type's `manage` | 1 | multipart; 400, 413, 415 |
 | `GET /api/v1/vault/documents/{id}` | the type's `read` | 1 | |
-| `PATCH /api/v1/vault/documents/{id}` | the type's `manage` | 1 | |
+| `PUT /api/v1/vault/documents/{id}` | the type's `manage` | 1 | |
 | `DELETE /api/v1/vault/documents/{id}` | the type's `manage` | 1 | 409 locked or held |
 | `POST /api/v1/vault/documents/{id}/versions` | the type's `manage` | 1 | multipart |
 | `GET /api/v1/vault/documents/{id}/versions/{n}/file` | the type's `read` | 1 | attachment; types that are not sealed |
@@ -287,8 +295,11 @@ Nothing of them is stored in the vault.
 | `POST /api/v1/vault/documents/{id}/versions/{n}/read-again` | the type's `manage` | 4 | enqueues `vault.extract_text` |
 | `GET /api/v1/vault/documents/{id}/verify` | the type's `read` | 6 | recomputes an archived copy's hash from its source |
 
-Routes with a permission that depends on the type are `rt.restrictedAny` over the read (or
-manage) permissions, the type checked by the handler (as Company Assets' kinds are). Every route
+Phase 1's routes need `vault.read` or `vault.manage` (`rt.restricted`): every phase 1 type names
+them, and the service checks each document's type and links. From phase 2, routes whose
+permission depends on the type become `rt.restrictedAny` over the read (or manage) permissions,
+the type checked by the service (as Company Assets' kinds are). A document's Changes are
+`GET /api/v1/audit-events/vault/{id}` (`vault.read`). Every route
 goes into `routes_test.go`'s policy table, the errors into `errorStatuses` (`ErrNotFound` 404,
 `ErrInvalid` 400, `ErrLocked` 409, `ErrHeld` 409, `ErrTooLarge` 413, `ErrFileType` 415,
 `ErrNotConfigured` 503, `ErrNoStorage` 503).
@@ -309,8 +320,9 @@ Export of the list needs `data.export`, as every list's.
 
 ## Audit events
 
-Area **Document Vault** (`vault`), entity type `vault_document`, entity id the document's; also
-on each linked employee's and asset's Changes. For sealed types no title, file name, value or
+Area **Document Vault** (`vault`), entity type `vault_document`, entity id the document's; the
+document's **Changes** (`GET /api/v1/audit-events/vault/{id}`, for whoever may see it). Links are
+recorded as `links: [{kind, id, label}]` (upload, linked, unlinked), which Changes name. For sealed types no title, file name, value or
 read text, only type, number, dates and sizes:
 
 `vault.document_uploaded`, `vault.document_generated` (phase 3), `vault.document_archived`
@@ -324,7 +336,7 @@ Signed copies keep **their** event: an upload through Company Assets records
 
 ## Signed copies (phase 5)
 
-Migration `0064_vault_signed_copies`, pure SQL: each assignment with copies becomes a document
+Migration `0065_vault_signed_copies`, pure SQL: each assignment with copies becomes a document
 of type `asset.signed_form` (`source_kind` `asset_assignment`, `source_id` its id, links to the
 asset and employee, locked); each copy becomes a version (`original`, then `added`) and a file
 with **the same id**, object key, name, type, size, SHA-256, time and uploader; read text starts

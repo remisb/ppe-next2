@@ -46,6 +46,12 @@ Employ…, Move to Another Company…, End Employment… on the employee's page 
 `employee_profiles.manage`. The names stay `employee*` (the sealed audit trail's events included): People is ADR 0001's
 later step. Merge moves the periods and refuses two records employed now. `TRUNCATE users CASCADE` empties `companies`
 too, so a test that adds employees adds a company first (e2e's Companies step does).
+**Document Vault**, phase 1 (ADR 0008, migration 0061, spec `docs/specs/vault-service.md`): `internal/vault` (types fixed in code,
+`vault.Types()`) and `internal/vault/document` (upload, versions, links, search), schema `vault` with `unaccent`, `pg_trgm` and the
+search configuration `vault.ppe`; routes `cmd/api/vault-routes.go`, adapters `cmd/api/wire_vault.go` (the vault imports no domain:
+`internal/vault/imports_test.go`); `vault.read`/`vault.manage` (Administrator, Manager). The staff app's **Document Vault**
+(`/vault`, a document beside the list at `/vault/<id>`, `routes/vault.tsx`, `lib/vault.ts`) and a **Documents** section on the
+employee page and an asset. Versions and files are append-only; Merge Employees moves the links; the upkeep renames them.
 **Mail templates** (`internal/domain/mailtemplate`, migration 0040, spec
 `docs/specs/mail-template-service.md`): one template per use case fixed in code (`sim.activation`,
 `sim.blocking`), To/Cc/Subject/Message with `{{field}}` placeholders, edited on Administration's
@@ -421,10 +427,10 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   ADR 0005 seals SIM cards' PIN and PUK in the app and makes Scan SIMs a trial app with its own CSP;
   ADR 0007 makes Personnel files (identity documents read by docs-import, sealed per person, kept
   employment + 3 years) and AI usage (the OpenAI key in Settings, every AI call's tokens and cost);
-  ADR 0008 (decided, not built) makes the Document Vault: typed documents with versions and links,
+  ADR 0008 makes the Document Vault: typed documents with versions and links,
   sealed Employment documents with retention and shredding, templates made into locked PDFs,
   Postgres search, and a worker on an outbox (specs `vault-service.md`,
-  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`).
+  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phase 1 is built.
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and

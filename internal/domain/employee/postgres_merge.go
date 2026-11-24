@@ -13,7 +13,7 @@ import (
 
 // Duplicates and merging (migration 0052): the code lookup a 409 names,
 // employee_distinct_pairs, and Merge Employees across employees, orders,
-// asset_assignments, employee_photos and employments.
+// asset_assignments, employee_photos, employments and the Document Vault's links.
 
 // IDByCode reads the live employee with code, compared as the unique index
 // does (lower); false when there is none.
@@ -225,6 +225,9 @@ func (r *PostgresRepository) Merge(ctx context.Context, keepID, removeID uuid.UU
 			next.Notes, next.PreferredLanguage, next.UpdatedAt, next.UpdatedByUserID); err != nil {
 			return err
 		}
+		if err := moveDocumentLinks(ctx, tx, keepID, removeID, next.FullName()); err != nil {
+			return err
+		}
 		if err := audit.InsertAll(ctx, tx, evs); err != nil {
 			return err
 		}
@@ -232,6 +235,34 @@ func (r *PostgresRepository) Merge(ctx context.Context, keepID, removeID uuid.UU
 		return err
 	})
 	return out, translate(err)
+}
+
+// moveDocumentLinks gives the Document Vault's links to the removed record to
+// the one kept (ADR 0008; a document linked to both keeps one link), names
+// them as the kept record is called, and rebuilds those documents' search.
+// The vault's schema is the shared kernel's consumer, so its foreign key to
+// employees is moved here, in the merge's transaction.
+func moveDocumentLinks(ctx context.Context, tx pgx.Tx, keepID, removeID uuid.UUID, name string) error {
+	if _, err := tx.Exec(ctx, `DELETE FROM vault.links r WHERE r.subject_kind = 'employee' AND r.subject_id = $1
+		AND EXISTS (SELECT 1 FROM vault.links k WHERE k.document_id = r.document_id AND k.subject_kind = 'employee'
+			AND k.subject_id = $2)`, removeID, keepID); err != nil {
+		return err
+	}
+	rows, err := tx.Query(ctx, `UPDATE vault.links SET subject_id = $2, employee_id = $2, label = $3
+		WHERE subject_kind = 'employee' AND subject_id IN ($1, $2) RETURNING document_id`, removeID, keepID, name)
+	if err != nil {
+		return err
+	}
+	docs, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+	if err != nil {
+		return err
+	}
+	for _, id := range docs {
+		if _, err := tx.Exec(ctx, `SELECT vault.refresh_search($1)`, id); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // MergedInto reads merged_into_id of id, deleted or not; false when id is

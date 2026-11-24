@@ -5,7 +5,7 @@
  * The apps' words are typed against these lists, so a new event cannot be
  * shown without a description.
  */
-export const AUDIT_AREAS = ['users', 'employees', 'catalogue', 'item_sets', 'orders', 'assets', 'settings', 'security', 'audit'] as const
+export const AUDIT_AREAS = ['users', 'employees', 'catalogue', 'item_sets', 'orders', 'assets', 'vault', 'settings', 'security', 'audit'] as const
 
 export const AUDIT_EVENTS = [
   'user.created',
@@ -80,6 +80,12 @@ export const AUDIT_EVENTS = [
   'asset.blocking_email_prepared',
   'asset.sim_codes_changed',
   'asset.sim_codes_shown',
+  'vault.document_uploaded',
+  'vault.version_added',
+  'vault.document_updated',
+  'vault.document_linked',
+  'vault.document_unlinked',
+  'vault.document_removed',
   'settings.company_changed',
   'settings.supplier_chat_changed',
   'settings.default_sim_provider_changed',

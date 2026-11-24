@@ -58,7 +58,8 @@ func (j *jobRuns) get() JobRun {
 //     API_AUDIT_RETENTION (sealed days only), and verifies every seal, which
 //     the Overview reports on;
 //   - shreds personnel files whose retention has ended, erases expired kept scans
-//     and the rows of expired shared links.
+//     and the rows of expired shared links;
+//   - names documents' links as their subjects are called now.
 func runJobs(ctx context.Context, svc services, logger *slog.Logger) {
 	tick := time.NewTicker(jobEvery)
 	defer tick.Stop()
@@ -156,6 +157,16 @@ func upkeep(ctx context.Context, svc services, logger *slog.Logger) JobRun {
 			logger.Error("shared links erasing failed", slog.Any("error", err))
 		} else if run.SharesErased > 0 {
 			logger.Info("shared links erased", slog.Int("shares", run.SharesErased))
+		}
+	}
+	// Documents' links are named as their subjects are called now (a renamed
+	// employee, asset or company), for the lists and search.
+	if svc.vault != nil {
+		if n, err := svc.vault.RefreshLabels(ctx); err != nil && ctx.Err() == nil {
+			run.Failed = true
+			logger.Error("document link names failed", slog.Any("error", err))
+		} else if n > 0 {
+			logger.Info("document link names refreshed", slog.Int("links", n))
 		}
 	}
 	if run.AuthEventsDeleted > 0 || run.ErrorEventsDeleted > 0 || run.AuditEventsDeleted > 0 {

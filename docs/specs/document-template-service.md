@@ -14,7 +14,7 @@ documents, types and storage in [vault-service.md](vault-service.md).
   `internal/pdffonts` (the embedded fonts, adding italic and bold italic; `formpdf.Fonts()` wraps
   it), `internal/docpdf` (draws blocks on pdf-mini's `layout`), later `internal/vault/docx`.
 - **Routes:** `cmd/api/document-template-routes.go`, generation in `cmd/api/vault-routes.go`.
-- **Migration:** `0062_document_templates`: `vault.templates`, `vault.template_versions`,
+- **Migration:** `0063_document_templates`: `vault.templates`, `vault.template_versions`,
   `vault.document_number_counters`, the permission `document_templates.manage` (Administrator).
 - **Apps:** Administration's **Document Templates** (`/admin/document-templates`,
   `routes/document-templates.tsx`, rules `lib/document-templates.ts`); the staff app's
@@ -122,7 +122,7 @@ and company.
 
 ## DOCX templates (phase 8)
 
-Migration `0065`: `template_versions.kind` and `file_id`. **Upload DOCX Template** in
+Migration `0066`: `template_versions.kind` and `file_id`. **Upload DOCX Template** in
 Administration: the file is sniffed as DOCX, placeholders split across Word's runs are joined,
 every `{{…}}` is checked as a field (`internal/placeholder`), `{{document.number}}` and
 `{{document.hash}}` are required. Generate merges the values into the DOCX and the worker's
