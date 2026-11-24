@@ -75,6 +75,22 @@ out and the actions stay in reach however far the record scrolls. There is no ot
 record-level buttons in the body; an action that belongs to one part of the record stays with
 that part (Change status ▾ in Connection, Edit beside Sizes).
 
+### The list and its open record
+
+A list with a record beside it (or in its place below `lg`) has **one mark**: the row of the open
+record, or of the one just closed. There is no separate keyboard cursor, so the list's mark and the
+pane never show different records (WARE-52, decided 2026-11-24).
+
+- **The user opens a record**: a click or tap on its row, Enter on its link, J / K for the next or
+  previous one in the list as shown (the pane follows at once), a link from elsewhere or ⌘K.
+- **Nothing opens a record on its own.** No list change opens one: not loading, not a filter, not
+  the record before it going away. When the open record leaves the list, the pane closes and no
+  row is marked (below, "When the list changes"); the user picks the next one.
+- **Filters apply at once** and keep applying while a record is open: the list beside it is always
+  the list for the filters shown.
+
+The three parts below are the whole rule: closing a record, and what a change of the list does.
+
 ### Closing a record
 
 Closing a record returns the user to the list exactly where they left it (WARE-25):
