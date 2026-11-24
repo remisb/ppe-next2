@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIM Action Icons</title>
+<style>
+/* Icon options for every SIM card action, on lucide's 24 grid (stroke 2, round caps), drawn at the app's own sizes in its neutrals. */
+:root{
+  --bg:#ffffff; --fg:#171717; --muted:#6b6b6b; --line:#e5e5e5; --soft:#f5f5f5; --pri:#171717; --pri-fg:#fafafa;
+  --rec:#1f6f43; --rec-bg:#e6f4ec; --warn:#8a5300; --warn-bg:#fcf0de; --ok:#15803d; --bad:#b91c1c; --amber:#b45309;
+  --grid:#ececec; --font:system-ui, -apple-system, 'Segoe UI', sans-serif; --mono:ui-monospace, 'SF Mono', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0a0a0a; --fg:#fafafa; --muted:#a3a3a3; --line:#2e2e2e; --soft:#1c1c1c; --pri:#e5e5e5; --pri-fg:#171717;
+  --rec:#7fd6a2; --rec-bg:#12301f; --warn:#f2b45e; --warn-bg:#382811; --ok:#4ade80; --bad:#f87171; --amber:#fbbf24; --grid:#222; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0a0a0a; --fg:#fafafa; --muted:#a3a3a3; --line:#2e2e2e; --soft:#1c1c1c; --pri:#e5e5e5; --pri-fg:#171717;
+  --rec:#7fd6a2; --rec-bg:#12301f; --warn:#f2b45e; --warn-bg:#382811; --ok:#4ade80; --bad:#f87171; --amber:#fbbf24; --grid:#222; color-scheme:dark }
+*{box-sizing:border-box}
+body{ margin:0; padding:24px 16px 64px; background:var(--bg); color:var(--fg); font:14px/1.5 var(--font) }
+.wrap{ max-width:1100px; margin:0 auto; display:grid; gap:28px }
+h1{ font-size:26px; margin:0; letter-spacing:-.01em } h2{ font-size:18px; margin:0 } h3{ font-size:15px; margin:0 }
+p{ margin:0 } .muted{ color:var(--muted) } .small{ font-size:13px }
+code{ font-family:var(--mono); font-size:12px; background:var(--soft); padding:1px 5px; border-radius:5px }
+pre{ font-family:var(--mono); font-size:12px; background:var(--soft); padding:12px; border-radius:10px; overflow-x:auto; margin:0 }
+.lede{ max-width:75ch; color:var(--muted) }
+.set{ display:flex; flex-wrap:wrap; gap:10px }
+.set figure{ margin:0; display:grid; justify-items:center; gap:6px; width:104px; text-align:center; font-size:12px; color:var(--muted) }
+.set .tile{ width:56px; height:56px; display:grid; place-items:center; border:1px solid var(--line); border-radius:12px }
+.action{ border:1px solid var(--line); border-radius:14px; padding:16px; display:grid; gap:12px }
+.action header{ display:flex; flex-wrap:wrap; gap:8px 16px; align-items:baseline; justify-content:space-between }
+.now{ font-size:13px; color:var(--muted) }
+.opts{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:10px }
+.opt{ border:1px solid var(--line); border-radius:12px; padding:12px; display:grid; gap:10px; align-content:start }
+.opt.rec{ border:2px solid var(--rec) }
+.opt .top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px }
+.big{ display:block; flex:none; width:64px; height:64px; background-image:linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size:calc(64px / 24) calc(64px / 24); border-radius:4px }
+.sizes{ display:flex; gap:10px; align-items:center }
+.row{ display:flex; gap:6px; align-items:center; flex-wrap:wrap }
+.btn{ display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 12px; border-radius:9px; background:var(--pri); color:var(--pri-fg); font-weight:500; font-size:13px; white-space:nowrap }
+.btn.outline{ background:transparent; color:var(--fg); border:1px solid var(--line) }
+.ibtn{ display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:9px; border:1px solid var(--line) }
+.menuitem{ display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; background:var(--soft); font-size:13px }
+.tag{ font-size:11px; font-weight:600; padding:2px 8px; border-radius:99px; white-space:nowrap }
+.tag.rec{ background:var(--rec-bg); color:var(--rec) } .tag.now{ background:var(--soft); color:var(--muted) } .tag.future{ background:var(--warn-bg); color:var(--warn) }
+.why{ font-size:13px; border-left:3px solid var(--rec); padding:4px 0 4px 10px }
+.why b{ color:var(--rec) }
+.ok{ color:var(--ok) } .bad{ color:var(--bad) } .amber{ color:var(--amber) }
+table{ border-collapse:collapse; width:100%; font-size:13px }
+.tbl{ overflow-x:auto; border:1px solid var(--line); border-radius:12px }
+th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:middle }
+th{ color:var(--muted); font-weight:600; background:var(--soft) } tr:last-child td{ border-bottom:0 }
+td svg{ vertical-align:-3px }
+</style>
+</head>
+<body>
+<main class="wrap">
+<div>
+  <h1>SIM action icons</h1>
+  <p class="lede" style="margin-top:8px">Options for each SIM card action the staff app has, built on the SIM symbol it already uses (lucide's <code>CardSim</code>, the SIM Cards tile) with a badge in the bottom-right corner, lucide's way of saying "this thing, plus an act". Every icon is on lucide's 24 grid with a 2px stroke and round ends, so it sits beside <code>Pencil</code>, <code>Printer</code> and <code>KeyRound</code> in the action bar. Each is shown at 64, 24 and 16px, in a button with words, as an icon-only tool and as a ⋯ item.</p>
+</div>
+
+<section>
+  <h2>The recommended set</h2>
+  <p class="small muted" style="margin:6px 0 12px">Seen together, at 24px: one card, one corner, one badge per meaning.</p>
+  <div class="set" id="set"></div>
+</section>
+
+<section class="tbl">
+  <table>
+    <thead><tr><th>Action</th><th>Where today</th><th>Icon today</th><th>Recommended</th><th>Why</th></tr></thead>
+    <tbody id="summary"></tbody>
+  </table>
+</section>
+
+<div id="actions" style="display:grid; gap:16px"></div>
+
+<section style="display:grid; gap:10px">
+  <h2>Using them</h2>
+  <ul class="small" style="margin:0; padding-left:20px; display:grid; gap:4px">
+    <li><b>Words.</b> The app says <b>Give</b>, not Assign, and <b>Blocked</b>, not Deactivated (glossary §12): Assign SIM is Give SIM's icon, Deactivate is Block's. <b>Replace SIM</b> is not an action today (it is a Return, then a Give); its icon waits for it.</li>
+    <li><b>Where SIM badges go.</b> On a SIM card's own action bar, Change Status ▾ and ⋯ the badge carries the act. Equipment keeps plain icons for Give Asset and Return (an arrow without the card), so a SIM icon never stands for a laptop.</li>
+    <li><b>Generic stays generic.</b> Edit (<code>Pencil</code>), Print Form (<code>Printer</code>), Upload Signed Form (<code>Upload</code>), Copy numbers (<code>Copy</code>) and Export keep the vocabulary's icons: the screen already says it is a SIM.</li>
+    <li><b>Status colour.</b> In Change Status ▾ the three status icons may take the status colours (Active green, Blocked red, Not Activated amber), as the badges do; in the action bar they stay the text colour.</li>
+    <li><b>Vocabulary.</b> Each adopted icon becomes one entry in <code>actionIcons</code> (<code>@ppe/ui/lib/record-actions.ts</code>), made with lucide's <code>createLucideIcon</code> from the nodes below, so it is a <code>LucideIcon</code> like the rest.</li>
+  </ul>
+  <pre id="code"></pre>
+</section>
+</main>
+
+<script>
+// ---------- shapes ----------
+// Lucide's CardSim moved to x 2–17 and opened at the bottom right, where a badge (x 13–22, y 13–22) says the act.
+const CARD = [
+  ['path', { d: 'M11 22H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8.172a2 2 0 0 1 1.414.586l2.828 2.828A2 2 0 0 1 17 6.828V11' }],
+  ['rect', { x: '5', y: '6', width: '8', height: '8', rx: '2' }], ['path', { d: 'M5 10h8' }], ['path', { d: 'M9 10v4' }],
+]
+const BADGE = {
+  out: [['path', { d: 'M14 18h8' }], ['path', { d: 'm19 15 3 3-3 3' }]],
+  in: [['path', { d: 'M22 18h-8' }], ['path', { d: 'm17 15-3 3 3 3' }]],
+  hook: [['path', { d: 'm17 14-3 3 3 3' }], ['path', { d: 'M14 17h4a3 3 0 0 1 3 3v2' }]],
+  person: [['circle', { cx: '18', cy: '16', r: '2' }], ['path', { d: 'M14 22a4 4 0 0 1 8 0' }]],
+  plus: [['path', { d: 'M18 14v8' }], ['path', { d: 'M14 18h8' }]],
+  check: [['path', { d: 'm14 18 3 3 5-5' }]],
+  signal: [['path', { d: 'M15 22v-2' }], ['path', { d: 'M18 22v-5' }], ['path', { d: 'M21 22v-8' }]],
+  power: [['path', { d: 'M18 14v4' }], ['path', { d: 'M20.83 15.17a4 4 0 1 1-5.66 0' }]],
+  ban: [['circle', { cx: '18', cy: '18', r: '4' }], ['path', { d: 'm15.17 15.17 5.66 5.66' }]],
+  lock: [['rect', { x: '14', y: '17', width: '8', height: '5', rx: '1' }], ['path', { d: 'M16 17v-1.5a2 2 0 0 1 4 0V17' }]],
+  x: [['path', { d: 'm16 16 5 5' }], ['path', { d: 'm21 16-5 5' }]],
+  clock: [['circle', { cx: '18', cy: '18', r: '4' }], ['path', { d: 'M18 16v2l1.5 1' }]],
+  alert: [['circle', { cx: '18', cy: '18', r: '4' }], ['path', { d: 'M18 16v2' }], ['path', { d: 'M18 20h.01' }]],
+  question: [['circle', { cx: '18', cy: '18', r: '4' }], ['path', { d: 'M16.6 16.8a1.5 1.5 0 0 1 2.9.5c0 1-1.5 1.2-1.5 1.7' }], ['path', { d: 'M18 20.5h.01' }]],
+  swap: [['path', { d: 'M14 15h7' }], ['path', { d: 'm19 13 2 2-2 2' }], ['path', { d: 'M21 20h-7' }], ['path', { d: 'm16 18-2 2 2 2' }]],
+}
+const sim = (badge) => [...CARD, ...BADGE[badge]]
+// Stock lucide icons (lucide-react 1.48), as the app's package draws them.
+const STOCK = {"mail-check":[["path",{"d":"M22 13V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h8"}],["path",{"d":"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"}],["path",{"d":"m16 19 2 2 4-4"}]],"mail-x":[["path",{"d":"M22 12.532V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8.792"}],["path",{"d":"m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"}],["path",{"d":"m16.5 16.5 5 5"}],["path",{"d":"m21.5 16.5-5 5"}]],"mail":[["path",{"d":"m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"}],["rect",{"x":"2","y":"4","width":"20","height":"16","rx":"2"}]],"rectangle-ellipsis":[["rect",{"width":"20","height":"12","x":"2","y":"6","rx":"2"}],["path",{"d":"M12 12h.01"}],["path",{"d":"M17 12h.01"}],["path",{"d":"M7 12h.01"}]],"replace":[["path",{"d":"M14 4a1 1 0 0 1 1-1"}],["path",{"d":"M15 10a1 1 0 0 1-1-1"}],["path",{"d":"M21 4a1 1 0 0 0-1-1"}],["path",{"d":"M21 9a1 1 0 0 1-1 1"}],["path",{"d":"m3 7 3 3 3-3"}],["path",{"d":"M6 10V5a2 2 0 0 1 2-2h2"}],["rect",{"x":"3","y":"14","width":"7","height":"7","rx":"1"}]],"scan-barcode":[["path",{"d":"M3 7V5a2 2 0 0 1 2-2h2"}],["path",{"d":"M17 3h2a2 2 0 0 1 2 2v2"}],["path",{"d":"M21 17v2a2 2 0 0 1-2 2h-2"}],["path",{"d":"M7 21H5a2 2 0 0 1-2-2v-2"}],["path",{"d":"M8 7v10"}],["path",{"d":"M12 7v10"}],["path",{"d":"M17 7v10"}]],"user-plus":[["path",{"d":"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"}],["circle",{"cx":"9","cy":"7","r":"4"}],["line",{"x1":"19","x2":"19","y1":"8","y2":"14"}],["line",{"x1":"22","x2":"16","y1":"11","y2":"11"}]],"ban":[["circle",{"cx":"12","cy":"12","r":"10"}],["path",{"d":"M4.929 4.929 19.07 19.071"}]],"key-round":[["path",{"d":"M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"}],["circle",{"cx":"16.5","cy":"7.5","r":".5","fill":"currentColor"}]],"undo-2":[["path",{"d":"M9 14 4 9l5-5"}],["path",{"d":"M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"}]],"plus":[["path",{"d":"M5 12h14"}],["path",{"d":"M12 5v14"}]],"card-sim":[["path",{"d":"M12 14v4"}],["path",{"d":"M14.172 2a2 2 0 0 1 1.414.586l3.828 3.828A2 2 0 0 1 20 7.828V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"}],["path",{"d":"M8 14h8"}],["rect",{"x":"8","y":"10","width":"8","height":"8","rx":"2"}]],"hand-helping":[["path",{"d":"M11 12h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 14"}],["path",{"d":"m7 18 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9"}],["path",{"d":"m2 13 6 6"}]],"circle-alert":[["circle",{"cx":"12","cy":"12","r":"10"}],["line",{"x1":"12","x2":"12","y1":"8","y2":"12"}],["line",{"x1":"12","x2":"12.01","y1":"16","y2":"16"}]],"send":[["path",{"d":"M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"}],["path",{"d":"m21.854 2.147-10.94 10.939"}]]}
+
+// ---------- the actions ----------
+// name: the icon's name in actionIcons if adopted; kind: how the action shows (main with words, tool, menu item, status in Change Status ▾).
+const ACTIONS = [
+  { title: 'Give SIM', alias: 'also covers "Assign SIM"', now: 'Main action of a SIM in the office; Given SIM on the employee page', current: null, kind: 'main',
+    options: [
+      { id: 'sim-give', label: 'Card, arrow out', nodes: sim('out'), rec: true, note: 'Leaves the office; the mirror of Return' },
+      { id: 'sim-give-person', label: 'Card, person', nodes: sim('person'), note: 'To someone; busier at 16px' },
+      { id: 'hand-helping', label: 'HandHelping', nodes: STOCK['hand-helping'], stock: true, note: 'Reads as help or charity' },
+      { id: 'send', label: 'Send', nodes: STOCK.send, stock: true, note: 'Already Send Email in the sheets' },
+    ],
+    why: 'It pairs with Return: the same card and arrow, the other way. Give has no icon today, so it is the only main action that cannot shrink to an icon.' },
+  { title: 'Return', now: 'Main action of a held SIM', current: 'undo-2', kind: 'main',
+    options: [
+      { id: 'sim-return', label: 'Card, arrow in', nodes: sim('in'), rec: true, note: 'Back to the card, back to the office' },
+      { id: 'sim-return-hook', label: 'Card, hook', nodes: sim('hook'), note: 'Clear, a little heavier' },
+      { id: 'undo-2', label: 'Undo2 (today)', nodes: STOCK['undo-2'], stock: true, note: 'Reads as Undo the last change' },
+    ],
+    why: 'The clearest arrow at 16px, and the reverse of Give.' },
+  { title: 'Add SIM', now: 'SIM Cards screen header (+ Add SIM)', current: 'plus', kind: 'main',
+    options: [
+      { id: 'plus', label: 'Plus (today)', nodes: STOCK.plus, stock: true, rec: true, note: 'The "+ Add …" of every screen' },
+      { id: 'sim-add', label: 'Card, plus', nodes: sim('plus'), note: 'For ⌘K or a launcher shortcut' },
+    ],
+    why: 'Keep Plus on the screen, where every Add has it; use the card with a plus only where the action is seen out of its screen (⌘K, a shortcut tile).' },
+  { title: 'Scan SIMs', now: 'App Launcher tile (published app)', current: 'scan-barcode', kind: 'main',
+    options: [
+      { id: 'scan-barcode', label: 'ScanBarcode (today)', nodes: STOCK['scan-barcode'], stock: true, rec: true, note: 'It reads the SIM No. barcode' },
+    ],
+    why: 'Already right: the app reads the barcode on the carrier. A card inside scan brackets is too small to read at 16px.' },
+  { title: 'Activate', alias: 'Change Status → Active', now: 'Change Status ▾ (radio item, no icon); the Active badge', current: null, kind: 'status', color: 'ok',
+    options: [
+      { id: 'sim-active', label: 'Card, check', nodes: sim('check'), rec: true, note: 'Done, working' },
+      { id: 'sim-active-signal', label: 'Card, signal', nodes: sim('signal'), note: 'Has network; reads as signal strength' },
+      { id: 'sim-active-power', label: 'Card, power', nodes: sim('power'), note: 'Switched on; reads as a device' },
+    ],
+    why: 'A check, a ban and a clock make a set people already know for ok, stopped and waiting.' },
+  { title: 'Block', alias: 'also covers "Deactivate SIM"', now: 'Change Status ▾ → Blocked; the Blocked badge', current: null, kind: 'status', color: 'bad',
+    options: [
+      { id: 'sim-blocked', label: 'Card, ban', nodes: sim('ban'), rec: true, note: 'Stopped by the provider' },
+      { id: 'sim-blocked-lock', label: 'Card, lock', nodes: sim('lock'), note: 'Reads as PIN-protected' },
+      { id: 'sim-blocked-x', label: 'Card, x', nodes: sim('x'), note: 'Reads as remove or delete' },
+    ],
+    why: 'The ban sign is the meaning of Blocked; a lock is too close to PIN and PUK, an x to Delete.' },
+  { title: 'Not Activated', alias: 'a status, set back with Change Status', now: 'Change Status ▾; the Not Activated badge', current: null, kind: 'status', color: 'amber',
+    options: [
+      { id: 'sim-not-activated', label: 'Card, clock', nodes: sim('clock'), rec: true, note: 'Waiting for the provider' },
+      { id: 'card-sim', label: 'CardSim, plain', nodes: STOCK['card-sim'], stock: true, note: 'No state at all' },
+    ],
+    why: 'Completes the set; a card waiting to be switched on.' },
+  { title: 'Mark as Not Returned…', now: '⋯ of a held SIM, last, asks first', current: null, kind: 'menu',
+    options: [
+      { id: 'sim-not-returned', label: 'Card, alert', nodes: sim('alert'), rec: true, note: 'Something is wrong with this card' },
+      { id: 'sim-not-returned-question', label: 'Card, question', nodes: sim('question'), note: 'Where is it? The ? is tiny at 16px' },
+      { id: 'circle-alert', label: 'CircleAlert', nodes: STOCK['circle-alert'], stock: true, note: 'Loses the SIM' },
+    ],
+    why: 'Readable at 16px and serious without being red; it stays a labelled ⋯ item that asks first, never a tool.' },
+  { title: 'Prepare Activation Email', now: '⋯, for a SIM not Active', current: 'mail', kind: 'menu',
+    options: [
+      { id: 'mail-check', label: 'MailCheck', nodes: STOCK['mail-check'], stock: true, rec: true, note: 'An email asking to switch it on' },
+      { id: 'mail', label: 'Mail (today)', nodes: STOCK.mail, stock: true, note: 'Same as the blocking email' },
+    ],
+    why: 'The two emails sit next to each other in ⋯ with the same icon today; a check and an x tell them apart and echo Active and Blocked.' },
+  { title: 'Prepare Blocking Email', now: '⋯, for a SIM not Blocked', current: 'mail', kind: 'menu',
+    options: [
+      { id: 'mail-x', label: 'MailX', nodes: STOCK['mail-x'], stock: true, rec: true, note: 'An email asking to stop it' },
+      { id: 'mail', label: 'Mail (today)', nodes: STOCK.mail, stock: true, note: 'Same as the activation email' },
+    ],
+    why: 'As above.' },
+  { title: 'Show PIN and PUK', now: 'A tool on every SIM card', current: 'key-round', kind: 'tool',
+    options: [
+      { id: 'key-round', label: 'KeyRound (today)', nodes: STOCK['key-round'], stock: true, rec: true, note: 'Codes that unlock the card' },
+      { id: 'rectangle-ellipsis', label: 'RectangleEllipsis', nodes: STOCK['rectangle-ellipsis'], stock: true, note: 'A hidden-password field' },
+    ],
+    why: 'Keep it: people already know the key, and the SIM symbol would make it the third card in a row.' },
+  { title: 'Replace SIM', future: true, now: 'Not an action today: Return, then Give', current: null, kind: 'main',
+    options: [
+      { id: 'sim-replace', label: 'Card, swap', nodes: sim('swap'), rec: true, note: 'One card for another' },
+      { id: 'replace', label: 'Replace', nodes: STOCK.replace, stock: true, note: 'Reads as Find and Replace' },
+    ],
+    why: 'If Replace is ever built (one step: return the old card, give the new one), it keeps the card and the badge.' },
+]
+
+// ---------- drawing ----------
+const svg = (nodes, size, cls = '') => `<svg class="${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${nodes.map(([t, a]) => `<${t} ${Object.entries(a).map(([k, v]) => `${k}="${v}"`).join(' ')}/>`).join('')}</svg>`
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+const short = (a) => a.title.replace(/…$/, '')
+
+function usage(a, o) {
+  const i16 = svg(o.nodes, 16, a.color ?? '')
+  if (a.kind === 'status') return `<span class="menuitem">${i16}${esc(a.alias?.split('→ ')[1] ?? a.title)}</span><span class="ibtn" title="${esc(a.title)}">${svg(o.nodes, 16)}</span>`
+  if (a.kind === 'menu') return `<span class="menuitem">${i16}${esc(a.title)}</span>`
+  if (a.kind === 'tool') return `<span class="ibtn" title="${esc(a.title)}">${i16}</span><span class="btn outline">${i16}${esc(a.title)}</span>`
+  return `<span class="btn">${i16}${esc(short(a))}</span><span class="ibtn" title="${esc(a.title)}">${i16}</span>`
+}
+
+const recOf = (a) => a.options.find((o) => o.rec)
+document.getElementById('set').innerHTML = ACTIONS.map((a) => `<figure><span class="tile ${a.color ?? ''}">${svg(recOf(a).nodes, 24)}</span>${esc(short(a))}</figure>`).join('')
+document.getElementById('summary').innerHTML = ACTIONS.map((a) => {
+  const cur = a.current ? `${svg(STOCK[a.current], 16)} <code>${a.current}</code>` : '<span class="muted">none</span>'
+  const r = recOf(a)
+  return `<tr><td><b>${esc(a.title)}</b>${a.future ? ' <span class="tag future">not built</span>' : ''}</td><td class="muted">${esc(a.now)}</td><td>${cur}</td><td>${svg(r.nodes, 16)} ${esc(r.label)}${r.stock ? '' : ' <span class="muted">(new)</span>'}</td><td class="muted">${esc(r.note)}</td></tr>`
+}).join('')
+document.getElementById('actions').innerHTML = ACTIONS.map((a) => `
+  <section class="action" aria-label="${esc(a.title)}">
+    <header><div><h2>${esc(a.title)} ${a.future ? '<span class="tag future">not built</span>' : ''}</h2>${a.alias ? `<p class="small muted">${esc(a.alias)}</p>` : ''}</div><p class="now">${esc(a.now)}</p></header>
+    <div class="opts">${a.options.map((o) => `
+      <div class="opt ${o.rec ? 'rec' : ''}">
+        <div class="top"><span class="big ${a.color && o.rec ? '' : ''}">${svg(o.nodes, 64)}</span>
+          ${o.rec ? '<span class="tag rec">Recommended</span>' : a.current === o.id ? '<span class="tag now">In use</span>' : ''}</div>
+        <div class="sizes">${svg(o.nodes, 24)}${svg(o.nodes, 16)}<span class="small muted">24 · 16</span></div>
+        <div class="row">${usage(a, o)}</div>
+        <div><b class="small">${esc(o.label)}</b>${o.stock ? ' <span class="small muted">lucide</span>' : ''}<p class="small muted">${esc(o.note)}</p></div>
+      </div>`).join('')}
+    </div>
+    <p class="why"><b>Why:</b> ${esc(a.why)}</p>
+  </section>`).join('')
+
+// The new icons as lucide nodes, ready for createLucideIcon.
+const fresh = ACTIONS.flatMap((a) => a.options.filter((o) => o.rec && !o.stock))
+document.getElementById('code').textContent = `import { createLucideIcon } from 'lucide-react'\n\n` + fresh.map((o) =>
+  `export const ${o.id.split('-').map((w) => w[0].toUpperCase() + w.slice(1)).join('')} = createLucideIcon('${o.id}', [\n${o.nodes.map(([t, at]) => `  ['${t}', { ${Object.entries(at).map(([k, v]) => `${k}: '${v}'`).join(', ')} }],`).join('\n')}\n])`).join('\n\n')
+</script>
+</body>
+</html>
