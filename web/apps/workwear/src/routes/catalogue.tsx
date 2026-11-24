@@ -16,7 +16,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
-import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
+import { besideList, useCloseFilteredOut, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
 import { RowCheckbox, SelectAllCheckbox, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
@@ -196,6 +196,14 @@ export function Catalogue({
 
   // J and K: the next or previous item in the list as shown, while one is open; Escape closes it beside the list.
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: 'catalogue', item: id }, { scroll: false }), onClose: close })
+  // A tab that leaves the open item out of the list closes it (WARE-42).
+  useCloseFilteredOut({
+    filters: status,
+    current: items.data !== undefined,
+    ids: shownIds,
+    selected,
+    onClose: () => navigate({ name: 'catalogue' }, { replace: true, scroll: false }),
+  })
 
   const beside = selected !== undefined
   const shownColumns = beside ? columns().filter((c) => besideColumns.includes(c.key)) : columns()

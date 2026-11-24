@@ -18,7 +18,7 @@ import { Fact, FactGrid } from '@ppe/ui/components/facts'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
-import { useListKeys } from '@ppe/ui/lib/list-keys'
+import { useCloseFilteredOut, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail, PaneBar } from '@ppe/ui/components/list-detail'
 import { formatNumber } from '@ppe/i18n'
 import { Button } from '@ppe/ui/components/button'
@@ -341,6 +341,14 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
   // J and K: the next or previous one in the list as shown, while one is open; Escape closes it beside the list.
   const shownIds = useMemo(() => errors.map((e) => e.id), [errors])
   useListKeys({ ids: shownIds, selected, onOpen: open, onClose: close })
+  // A tab that leaves the open error out of the list closes it (WARE-42).
+  useCloseFilteredOut({
+    filters: kind,
+    current: pages.current,
+    ids: shownIds,
+    selected,
+    onClose: () => navigate({ name: 'system', tab: 'errors' }, { replace: true, scroll: false }),
+  })
   const beside = selected !== undefined
   // The errors ticked for Export, of those loaded (Older loads more).
   const selection = useSelection(errors, errorId)

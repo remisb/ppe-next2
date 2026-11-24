@@ -707,11 +707,12 @@ one.
 A list screen whose records have more to show opens a record **beside** the list from `lg`
 and **in its place** below, at the record's own address; the list keeps its filters and page
 behind it, its open row marked. J / K step through the list as shown and Esc closes the
-record beside it. Orders, Employees, SIM Cards, Equipment, Item Catalogue, the Audit log,
-System's Errors.
+record beside it. A filter, search or tab that leaves the open record out of the list closes
+it, and nothing opens in its place (ui-ux-guidelines.md §2, "When the list changes").
+Orders, Employees, SIM Cards, Equipment, Item Catalogue, the Audit log, System's Errors.
 - **Code:** `ListDetail` (`width` `md` 26rem, `lg` 30rem for an item or an employee),
-  `DetailPane`, `PaneBar` (Back below `lg`, Close in the corner beside), `useListKeys`
-  (`@ppe/ui`).
+  `DetailPane`, `PaneBar` (Back below `lg`, Close in the corner beside), `useListKeys` and
+  `useCloseFilteredOut` (`@ppe/ui`).
 
 ### Edit in a sheet, edit in place
 A record's fields are edited in a **form sheet** from its row or header (Edit Item, Edit

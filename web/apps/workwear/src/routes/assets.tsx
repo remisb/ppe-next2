@@ -14,7 +14,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
-import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
+import { besideList, useCloseFilteredOut, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
 import { RowCheckbox, SelectAllCheckbox, SelectModeBar, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
@@ -154,7 +154,10 @@ export function Assets({
   }, [search])
 
   const query = assetQuery(kind, filters, sort.key, sort.dir, page)
-  const list = useLoad(() => client.assets.list(query), [JSON.stringify(query), reloads])
+  // The tab, search and filters, not the sort or page: what an open SIM or item must stay in to stay open (useCloseFilteredOut).
+  const filterKey = JSON.stringify(filters)
+  // Each page remembers the filters it was loaded for, so a page still on screen while the next loads is not taken for it.
+  const list = useLoad(() => client.assets.list(query).then((r) => ({ ...r, filters: filterKey })), [JSON.stringify(query), reloads])
   const summary = useLoad(() => client.assets.summary(kind), [reloads])
   // The tabs each show how many choosing them would list; they set the status and place, so only the rest counts.
   const counted = chooseTab(kind, filters, 'all')
@@ -251,6 +254,14 @@ export function Assets({
   const pageRows = useMemo(() => list.data?.assets ?? [], [list.data])
   const selection = useSelection(pageRows, assetId, { acrossPages: true })
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: register, ...at, asset: id }, { scroll: false }), onClose: close })
+  // A tab, search or filter that leaves the open SIM or item out of the register closes it (WARE-42).
+  useCloseFilteredOut({
+    filters: filterKey,
+    current: list.data?.filters === filterKey,
+    ids: shownIds,
+    selected,
+    onClose: () => navigate({ name: register, ...at }, { replace: true, scroll: false }),
+  })
 
   // Beside an open SIM or item the register keeps the columns that find the next one: one line a row; the rest is in the pane.
   const beside = selected !== undefined

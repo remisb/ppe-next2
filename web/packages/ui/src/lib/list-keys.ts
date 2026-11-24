@@ -22,6 +22,42 @@ export function stepTo(ids: readonly string[], selected: string, key: 'j' | 'k')
 }
 
 /**
+ * The open record follows the list's filters (WARE-42, ui-ux-guidelines.md §2 "When the
+ * list changes"): once the user has changed the filters, the search or the tab and the
+ * list for them is shown, a record it does not show closes, its row mark with it.
+ * Nothing opens in its place; another record opens only when the user opens it.
+ *
+ * `filters` is the list's filters as a key, never its sort or page (paging and sorting
+ * close nothing). `current` says the list shown (`ids`) is the one for those filters,
+ * not the one before them still on screen while they load; a list filtered in the
+ * browser is current as soon as it has loaded. The filters the screen opened with are
+ * never checked, so a record opened by a link or ⌘K stays open beside a list that does
+ * not show it, as does a record whose own change moves it out of the list.
+ */
+export function useCloseFilteredOut({
+  filters,
+  current,
+  ids,
+  selected,
+  onClose,
+}: {
+  filters: string
+  current: boolean
+  ids: readonly string[] | undefined
+  selected: string | undefined
+  onClose: () => void
+}): void {
+  const checked = useRef(filters)
+  const close = useRef(onClose)
+  close.current = onClose
+  useEffect(() => {
+    if (!current || !ids || checked.current === filters) return
+    checked.current = filters
+    if (selected !== undefined && !ids.includes(selected)) close.current()
+  }, [filters, current, ids, selected])
+}
+
+/**
  * The keys of a list with a record open (ListDetail): J and K open the next
  * or previous record of the list as shown, Escape closes the one beside the
  * list; none while typing, with a modifier, with a dialog open or once
