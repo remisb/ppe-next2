@@ -774,6 +774,11 @@ export function createClient(options: ClientOptions) {
       },
       /** A version's file, as the file it is. */
       file: (id: string, version: number) => download(`/api/v1/vault/documents/${seg(id)}/versions/${version}/file`),
+      /** A sealed document's file: a POST that asks Confirm your password when the sign-in is not recent, and is recorded. */
+      openSealed: (id: string, version: number) => download(`/api/v1/vault/documents/${seg(id)}/versions/${version}/file`, 'POST'),
+      /** Legal Hold until a day, with its reason; null clears it. */
+      setHold: (id: string, holdUntil: string | null, holdReason = '') =>
+        request<VaultDocument>('PUT', `/api/v1/vault/documents/${seg(id)}/hold`, { hold_until: holdUntil, hold_reason: holdReason }),
     },
 
     /** Public, token-only routes for the employee's confirmation page. */

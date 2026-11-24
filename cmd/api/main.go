@@ -166,7 +166,11 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	svc.personnelRetentionMonths = cfg.PersonnelRetentionMonths
 	svc.scans = scan.NewService(scan.NewPostgresRepository(pool), personnel, store, scan.WithDays(cfg.PersonnelScanDays),
 		scan.WithLocation(loc))
-	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), store)
+	vaultKeys, err := vaultKeyring(cfg)
+	if err != nil {
+		return err
+	}
+	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), store, vaultKeys, loc)
 	svc.shares = share.NewService(share.NewPostgresRepository(pool))
 	// App Launcher's default tiles, put back should the registry have been
 	// emptied, and its apps' slugs, which tell requests' apps apart.
@@ -367,7 +371,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerAssetRoutes(rt, svc.assets, svc.users)
 	registerPersonnelRoutes(rt, svc.documents, sensitive)
 	registerPersonnelScanRoutes(rt, svc.scans)
-	registerVaultRoutes(rt, svc.vault)
+	registerVaultRoutes(rt, svc.vault, sensitive)
 	registerAIRoutes(rt, svc.ai, sensitive)
 	registerDashboardRoutes(rt, svc.dashboard)
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)

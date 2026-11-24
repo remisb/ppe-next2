@@ -118,6 +118,23 @@ losing a code: when it may have been seen by someone who should not have it, or 
    retention): restoring one needs it, in `API_SIM_CODES_PREVIOUS_KEYS`, and then step 4
    again. It can leave `.env.prod` once step 4 has run (and `make prod-up` again).
 
+### The Document Vault's key (`API_VAULT_KEY`)
+
+Sealed documents (employment contracts and other employment papers, ADR 0008) are each sealed
+with a data key of their own, and those keys are sealed under `API_VAULT_KEY`. The database and
+its backups hold only ciphertext, and the files in the bucket are sealed too: **a restore needs
+the same key**, and losing it loses every sealed document. Generate it once with
+`openssl rand -hex 32`, keep a copy offline beside the SIM codes key, and never reuse another key
+here (the API refuses to start if it does). Without the key the API still starts; sealed
+documents then answer 503. Changing it (`API_VAULT_KEY_ID`, `API_VAULT_PREVIOUS_KEYS`) works as
+the SIM codes key's does, but the command that seals every document key again under the new one
+(`api -reseal-vault-keys`) is still to come: until it exists, keep the old key in
+`API_VAULT_PREVIOUS_KEYS`.
+
+A shredded document's key is deleted at once; the backups still hold its sealed rows and key for
+as long as they are kept (`DBBACKUP_KEEP_DAYS`, 14 days), and a versioned bucket keeps the sealed
+objects, which no key opens once the last such backup has expired.
+
 ### Published apps' builds
 
 The `published` volume (App Launcher's published apps, such as Scan SIMs; `API_APPS_DIR`) is

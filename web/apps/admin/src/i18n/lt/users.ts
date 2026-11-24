@@ -38,6 +38,8 @@ export const users: UsersText = {
   testersGrants: 'Mato bandomas programas programų sąraše.',
   personnel: 'Asmens dokumentai',
   personnelGrants: 'Nuskaito, išsaugo ir rodo asmens dokumentus.',
+  employment: 'Darbo dokumentai',
+  employmentGrants: 'Mato ir saugo darbo sutartis ir kitus užšifruotus darbo dokumentus.',
 
   editUser: (name: string) => `Redaguoti naudotoją: ${name}`,
   editDescription: 'Rolės pakeitimas naudotoją pasiekia per kelias minutes, iš naujo jungtis nereikia.',

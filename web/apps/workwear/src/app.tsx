@@ -78,8 +78,8 @@ const tabs = (can: (p: Permission) => boolean): Tab[] => [
         } satisfies Tab,
       ]
     : []),
-  // Document Vault (ADR 0008) takes See documents (vault.read).
-  ...(can('vault.read') ? [{ route: { name: 'vault' }, label: t.shell.vault, short: t.shell.shortVault, icon: FileText } satisfies Tab] : []),
+  // Document Vault (ADR 0008) takes See documents (vault.read) or See employment documents.
+  ...(can('vault.read') || can('vault.employment.read') ? [{ route: { name: 'vault' }, label: t.shell.vault, short: t.shell.shortVault, icon: FileText } satisfies Tab] : []),
   { route: { name: 'catalogue' }, label: t.shell.catalogue, short: t.shell.shortCatalogue, icon: Shirt },
   // Item Sets take See Item Sets (item_sets.read); Create Order offers the active ones to everyone.
   ...(can('item_sets.read') ? [{ route: { name: 'itemSets' }, label: t.shell.itemSets, short: t.shell.shortItemSets, icon: Package } satisfies Tab] : []),

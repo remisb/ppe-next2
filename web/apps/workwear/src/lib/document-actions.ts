@@ -5,18 +5,19 @@ import { t } from '@/i18n'
 
 /**
  * Download with its words; for whoever may change it, Edit… and Add Version…
- * as tools and Remove document… in ⋯. A document the app keeps (locked) is
+ * as tools, and Legal Hold… (a sealed document's) and Remove document… in ⋯. A document the app keeps (locked) is
  * downloaded only.
  */
 export function documentActions(
-  can: { manage: boolean; locked: boolean; downloading: boolean },
-  run: { download: () => void; edit: () => void; addVersion: () => void; remove: () => void },
+  can: { manage: boolean; locked: boolean; downloading: boolean; hold: boolean },
+  run: { download: () => void; edit: () => void; addVersion: () => void; remove: () => void; hold: () => void },
 ): RecordAction[] {
   const changes = can.manage && !can.locked
   return [
     { id: 'download', label: t.vault.download, icon: 'document', place: 'main', pending: can.downloading, run: run.download },
     ...(changes ? [{ id: 'edit', label: t.vault.edit, icon: 'edit', place: 'tool', asks: true, run: run.edit } as const] : []),
     ...(changes ? [{ id: 'addVersion', label: t.vault.addVersion, icon: 'add', place: 'tool', asks: true, run: run.addVersion } as const] : []),
+    ...(can.manage && can.hold ? [{ id: 'hold', label: t.vault.legalHold, place: 'menu', asks: true, run: run.hold } as const] : []),
     ...(changes ? [{ id: 'remove', label: t.vault.remove, place: 'menu', destructive: true, asks: true, run: run.remove } as const] : []),
   ]
 }

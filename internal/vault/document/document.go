@@ -41,8 +41,19 @@ type Document struct {
 	Sealed       bool         `json:"sealed"`
 	// Locked documents (archived or migrated) are their source's: never removed
 	// or relinked by a user.
-	Locked          bool       `json:"locked"`
-	Requires        []string   `json:"-"`
+	Locked   bool     `json:"locked"`
+	Requires []string `json:"-"`
+	// RetainUntil is the day the retention rule removes a sealed document
+	// (shredded); nil while it cannot be known (still employed) or never.
+	RetainUntil *string `json:"retain_until"`
+	// HoldUntil and HoldReason are a Legal Hold: no shredding or removal until the day after.
+	HoldUntil  *string `json:"hold_until"`
+	HoldReason *string `json:"hold_reason"`
+	// TitleSealed, Key and KeyID are a sealed document's: its title sealed with
+	// its data key, and the data key sealed by the master keyring.
+	TitleSealed     []byte     `json:"-"`
+	Key             []byte     `json:"-"`
+	KeyID           int16      `json:"-"`
 	Versions        []Version  `json:"versions"`
 	Links           []Link     `json:"links"`
 	CreatedAt       time.Time  `json:"created_at"`
@@ -70,7 +81,9 @@ type Version struct {
 	Note         string    `json:"note"`
 	File         File      `json:"file"`
 	// TextState is what the worker made of its file (vault.version_text); pending until it runs.
-	TextState       string    `json:"text_state"`
+	TextState string `json:"text_state"`
+	// DataSealed is a sealed version's note and file name (sealedData), sealed with the document's key.
+	DataSealed      []byte    `json:"-"`
 	CreatedAt       time.Time `json:"created_at"`
 	CreatedByUserID uuid.UUID `json:"created_by_user_id"`
 	CreatedByName   string    `json:"created_by_name"`

@@ -19,20 +19,29 @@ type vaultHandler struct {
 	documents *vaultdoc.Service
 }
 
-// registerVaultRoutes mounts /api/v1/vault (ADR 0008, docs/specs/vault-service.md).
-// Phase 1's types all need vault.read to see and vault.manage to change; the
-// service checks each document's type and links too.
-func registerVaultRoutes(rt *router, documents *vaultdoc.Service) {
+// The permissions that open the vault's routes: a document's type names the
+// one it needs, which the service checks (ADR 0008, docs/specs/vault-service.md).
+var (
+	vaultReaders  = []role.Permission{role.VaultRead, role.VaultEmploymentRead}
+	vaultManagers = []role.Permission{role.VaultManage, role.VaultEmploymentManage}
+)
+
+// registerVaultRoutes mounts /api/v1/vault. A sealed document's file opens
+// only by POST with a recent sign-in, recorded first (sensitive).
+func registerVaultRoutes(rt *router, documents *vaultdoc.Service, sensitive func(role.Permission, http.HandlerFunc) http.HandlerFunc) {
 	h := &vaultHandler{documents: documents}
-	rt.restricted("GET /api/v1/vault/types", h.types, role.VaultRead)
-	rt.restricted("POST /api/v1/vault/search", h.search, role.VaultRead)
-	rt.restricted("GET /api/v1/vault/by-subject/{kind}/{id}", h.bySubject, role.VaultRead)
-	rt.restricted("POST /api/v1/vault/documents", h.upload, role.VaultManage)
-	rt.restricted("GET /api/v1/vault/documents/{id}", h.get, role.VaultRead)
-	rt.restricted("PUT /api/v1/vault/documents/{id}", h.update, role.VaultManage)
-	rt.restricted("DELETE /api/v1/vault/documents/{id}", h.remove, role.VaultManage)
-	rt.restricted("POST /api/v1/vault/documents/{id}/versions", h.addVersion, role.VaultManage)
-	rt.restricted("GET /api/v1/vault/documents/{id}/versions/{n}/file", h.file, role.VaultRead)
+	rt.restrictedAny("GET /api/v1/vault/types", h.types, vaultReaders...)
+	rt.restrictedAny("POST /api/v1/vault/search", h.search, vaultReaders...)
+	rt.restrictedAny("GET /api/v1/vault/by-subject/{kind}/{id}", h.bySubject, vaultReaders...)
+	rt.restrictedAny("POST /api/v1/vault/documents", h.upload, vaultManagers...)
+	rt.restrictedAny("GET /api/v1/vault/documents/{id}", h.get, vaultReaders...)
+	rt.restrictedAny("PUT /api/v1/vault/documents/{id}", h.update, vaultManagers...)
+	rt.restrictedAny("DELETE /api/v1/vault/documents/{id}", h.remove, vaultManagers...)
+	rt.restrictedAny("PUT /api/v1/vault/documents/{id}/hold", h.hold, vaultManagers...)
+	rt.restrictedAny("POST /api/v1/vault/documents/{id}/versions", h.addVersion, vaultManagers...)
+	rt.restrictedAny("GET /api/v1/vault/documents/{id}/versions/{n}/file", h.file, vaultReaders...)
+	rt.restricted("POST /api/v1/vault/documents/{id}/versions/{n}/file",
+		sensitive(role.VaultEmploymentRead, h.sealedFile), role.VaultEmploymentRead)
 }
 
 // vaultReader is the request's user and the permissions their token grants.
@@ -281,6 +290,50 @@ func (h *vaultHandler) file(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeAttachment(w, f.FileName, f.ContentType, data)
+}
+
+// sealedFile sends a sealed document's file, after the sensitive check (a
+// recent sign-in) and once its opening is recorded.
+func (h *vaultHandler) sealedFile(w http.ResponseWriter, r *http.Request) {
+	reader, id, ok := vaultDocument(w, r)
+	if !ok {
+		return
+	}
+	n, err := strconv.Atoi(r.PathValue("n"))
+	if err != nil || n < 1 {
+		writeError(w, r, vaultdoc.ErrNotFound)
+		return
+	}
+	f, data, err := h.documents.OpenSealed(r.Context(), reader, id, n)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeAttachment(w, f.FileName, f.ContentType, data)
+}
+
+// holdRequest is Legal Hold: a day and a reason, or null to clear it.
+type holdRequest struct {
+	HoldUntil  *string `json:"hold_until"`
+	HoldReason string  `json:"hold_reason"`
+}
+
+func (h *vaultHandler) hold(w http.ResponseWriter, r *http.Request) {
+	reader, id, ok := vaultDocument(w, r)
+	if !ok {
+		return
+	}
+	var req holdRequest
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, r, err)
+		return
+	}
+	d, err := h.documents.SetHold(r.Context(), reader, id, req.HoldUntil, req.HoldReason)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, d)
 }
 
 // writeAttachment sends data as a download named name: never shown inside the

@@ -123,7 +123,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	)
 	svc.documents = document.NewService(document.NewPostgresRepository(pool), testPersonnelKeys(t), testFiles(t), document.WithPeople(peopleOf(svc)))
 	svc.scans = scan.NewService(scan.NewPostgresRepository(pool), testPersonnelKeys(t), testFiles(t))
-	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), testFiles(t))
+	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), testFiles(t), testVaultKeys(t), time.UTC)
 	svc.shares = share.NewService(share.NewPostgresRepository(pool))
 	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123", []uuid.UUID{role.AdminID})
 	if err != nil {

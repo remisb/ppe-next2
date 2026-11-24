@@ -403,7 +403,7 @@ ADR 0006, `docs/specs/app-launcher.md`.
 | `make new-app` starts a published app from the template: its folder found by its manifest, the next free dev port, no placeholder left, the name escaped per file, its tile in POC above the marker in `defaults.go`; a slug that does not fit, is reserved, or is a folder's or a tile's already is refused with nothing changed; the template's app typechecks, passes its tests and builds | `@ppe/launcher` `new-app.ts`, `web/templates/published-app` | `new-app.test.ts`; `pnpm check:new-app` (CI's web job); `TestDefaultsAreValid` for the tile |
 | A small app's bar scrolls away; only the screen's header sticks | `@ppe/launcher` `AppFrame` | e2e *Scan SIMs: …* (scrolled, the page header is at the top and the bar out of view) |
 
-## Document Vault (phase 1)
+## Document Vault (phases 1 and 2)
 
 ADR 0008, [vault-service.md](specs/vault-service.md).
 
@@ -418,6 +418,11 @@ ADR 0008, [vault-service.md](specs/vault-service.md).
 | Versions and files are never changed or deleted, by `ppe_app` or the owner; an archived source is unique | migration 0061 (triggers, UNIQUE), `grants.sql` | `TestPostgresDocuments`, `TestPostgresAPIRoleIsLeastPrivileged` |
 | Merge Employees moves the vault's links to the record kept, named as it is | `employee` `moveDocumentLinks` | `TestPostgresVaultHTTP` |
 | The upkeep names links as their subjects are called now; a subject gone keeps its name | `document.Service.RefreshLabels`, `cmd/api/jobs.go` | `TestRefreshLabels`, `TestPostgresDocuments` |
+| Sealed types (employment documents): a key per document under `API_VAULT_KEY` (503 without it); the title, notes, file names and files stored sealed, opened on reads; no title, name or note in an event; seen only with `vault.employment.read`, Employment Documents' alone, Administrator included | `document.Service` (`sealed.go`), migration 0062, `role.builtins` | `TestSealedUploadSealsWhatNamesIt`, `TestSealedWithoutKeys`, `TestSealedEditAndVersion`, `TestOnlyEmploymentDocumentsSeesEmploymentDocuments`, `TestPostgresSealedDocuments`, `TestPostgresVaultSealedHTTP` |
+| A sealed file opens only by POST with a recent sign-in, recorded before it is read, its hash checked; GET is refused (409) | `document.Service.OpenSealed`, `sensitive` | `TestSealedOpenRecordsFirst`, `TestPostgresVaultSealedHTTP`, `TestRoutePolicy` |
+| Retention: kept while the employee is employed; past the type's months after the last period ended, or once removed, shredded unless held: key, versions, files, read text and links gone, a tombstone kept, the objects deleted, `vault.document_shredded` by no one; again changes nothing | `document.Service.ShredDue`, `vault.shred_document` | `TestRetentionShredsWhatIsDue`, `TestRemovedSealedIsShredded`, `TestPostgresSealedDocuments`, `TestEmploymentEnded` |
+| Legal Hold: a day from today and a reason; while held, no shredding (the SQL function refuses too) or removal (409); set and cleared recorded | `document.Service.SetHold` | `TestHoldRules`, `TestRetentionShredsWhatIsDue`, `TestPostgresSealedDocuments`, `TestPostgresVaultSealedHTTP` |
+| `API_VAULT_KEY`: none, or 64 hex of its own with an id and previous keys that differ | `config.vaultKeyErrors` | `TestVaultKeyErrors` |
 | `internal/vault` imports no domain or Personnel files | ADR 0008 decision 1 | `TestVaultImportsNoContext` |
 | The staff app: a type's name in the language in use; expired and expiring soon (30 days); a file refused before sending; the draft's problems; the types offered where the sheet was opened; the export's columns | `lib/vault.ts`, `lib/vault-export.ts` | `vault.test.ts`; e2e *Document Vault: …* |
 

@@ -9,7 +9,7 @@ import type { AppIcon } from './app-icons.ts'
 import type { Permission } from './permissions.ts'
 
 /** A built-in role's key; a role an administrator added has none. */
-export type RoleKey = 'admin' | 'manager' | 'employee' | 'equipment' | 'testers' | 'personnel'
+export type RoleKey = 'admin' | 'manager' | 'employee' | 'equipment' | 'testers' | 'personnel' | 'employment'
 export type SizeGroup = 'CLOTHING' | 'SHOES' | 'NONE'
 
 /** A user's interface language; each user sets their own. */
@@ -2140,6 +2140,8 @@ export interface VaultType {
   max_bytes: number
   dated: boolean
   expiring: boolean
+  /** How long its documents are kept: a sealed type's rule is applied by the API (shredded). */
+  retention: { rule: 'keep' | 'forever' | 'after_document_date' | 'after_employment_end'; months?: number }
 }
 
 /** A subject a document is linked to, with its name now. */
@@ -2189,6 +2191,11 @@ export interface VaultDocument {
   origin: VaultOrigin
   sealed: boolean
   locked: boolean
+  /** A sealed document's day of shredding by its retention rule; null while it cannot be known (still employed). */
+  retain_until: string | null
+  /** A Legal Hold: neither removed nor shredded until the day after. */
+  hold_until: string | null
+  hold_reason: string | null
   versions: VaultVersion[]
   links: VaultLink[]
   created_at: string

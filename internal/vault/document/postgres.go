@@ -38,22 +38,25 @@ type querier interface {
 // docColumns are a document's own columns (d).
 const docColumns = `d.id, d.type, d.title, d.number, d.document_date::text, d.valid_from::text, d.valid_until::text,
 	d.origin, d.sealed, d.source_kind IS NOT NULL, d.requires, d.created_at, d.created_by_user_id, d.updated_at,
-	d.updated_by_user_id, d.deleted_at, d.deleted_by_user_id`
+	d.updated_by_user_id, d.deleted_at, d.deleted_by_user_id, d.retain_until::text, d.hold_until::text, d.hold_reason,
+	d.title_sealed, k.sealed_key, coalesce(k.key_id, 0)`
 
 // read reads the document with id, locked FOR UPDATE when lock, live or not
 // as live says, with its versions and links.
 func read(ctx context.Context, q querier, id uuid.UUID, live, lock bool) (Document, error) {
-	sql := `SELECT ` + docColumns + ` FROM vault.documents d WHERE d.id = $1`
+	sql := `SELECT ` + docColumns + ` FROM vault.documents d LEFT JOIN vault.document_keys k ON k.document_id = d.id
+		WHERE d.id = $1 AND d.shredded_at IS NULL`
 	if live {
 		sql += ` AND d.deleted_at IS NULL`
 	}
 	if lock {
-		sql += ` FOR UPDATE`
+		sql += ` FOR UPDATE OF d`
 	}
 	var d Document
 	err := q.QueryRow(ctx, sql, id).Scan(&d.ID, &d.Type, &d.Title, &d.Number, &d.DocumentDate, &d.ValidFrom, &d.ValidUntil,
 		&d.Origin, &d.Sealed, &d.Locked, &d.Requires, &d.CreatedAt, &d.CreatedByUserID, &d.UpdatedAt,
-		&d.UpdatedByUserID, &d.DeletedAt, &d.DeletedByUserID)
+		&d.UpdatedByUserID, &d.DeletedAt, &d.DeletedByUserID, &d.RetainUntil, &d.HoldUntil, &d.HoldReason,
+		&d.TitleSealed, &d.Key, &d.KeyID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Document{}, ErrNotFound
 	}
@@ -76,7 +79,7 @@ func versionsOf(ctx context.Context, q querier, id uuid.UUID) ([]Version, error)
 	rows, err := q.Query(ctx, `
 		SELECT v.id, v.number, v.origin, v.document_hash, v.note, v.created_at, v.created_by_user_id, coalesce(u.name, ''),
 			f.id, f.object_key, f.file_name, f.content_type, f.size_bytes, f.sha256, f.sealed,
-			coalesce(t.state, 'pending')
+			coalesce(t.state, 'pending'), v.data_sealed
 		FROM vault.versions v
 		JOIN vault.files f ON f.version_id = v.id AND f.role = 'main'
 		LEFT JOIN users u ON u.id = v.created_by_user_id
@@ -92,7 +95,7 @@ func versionsOf(ctx context.Context, q querier, id uuid.UUID) ([]Version, error)
 		var v Version
 		f := &v.File
 		if err := rows.Scan(&v.ID, &v.Number, &v.Origin, &v.DocumentHash, &v.Note, &v.CreatedAt, &v.CreatedByUserID, &v.CreatedByName,
-			&f.ID, &f.ObjectKey, &f.FileName, &f.ContentType, &f.SizeBytes, &f.SHA256, &f.Sealed, &v.TextState); err != nil {
+			&f.ID, &f.ObjectKey, &f.FileName, &f.ContentType, &f.SizeBytes, &f.SHA256, &f.Sealed, &v.TextState, &v.DataSealed); err != nil {
 			return nil, err
 		}
 		v.CreatedAt = v.CreatedAt.UTC()
@@ -154,9 +157,9 @@ func insertLinks(ctx context.Context, tx pgx.Tx, id uuid.UUID, links []Link, at 
 // pending text row.
 func insertVersion(ctx context.Context, tx pgx.Tx, id uuid.UUID, v Version) error {
 	if _, err := tx.Exec(ctx, `
-		INSERT INTO vault.versions (id, document_id, number, origin, document_hash, note, created_at, created_by_user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		v.ID, id, v.Number, v.Origin, v.DocumentHash, v.Note, v.CreatedAt, v.CreatedByUserID); err != nil {
+		INSERT INTO vault.versions (id, document_id, number, origin, document_hash, note, data_sealed, created_at, created_by_user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		v.ID, id, v.Number, v.Origin, v.DocumentHash, v.Note, v.DataSealed, v.CreatedAt, v.CreatedByUserID); err != nil {
 		return err
 	}
 	f := v.File
@@ -182,11 +185,17 @@ func (r *PostgresRepository) Create(ctx context.Context, d Document, links []Lin
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO vault.documents (id, type, type_words, title, number, document_date, valid_from, valid_until, origin,
-				sealed, requires, created_at, created_by_user_id, updated_at, updated_by_user_id)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+				sealed, requires, created_at, created_by_user_id, updated_at, updated_by_user_id, title_sealed)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
 			d.ID, d.Type, t.Words, d.Title, d.Number, d.DocumentDate, d.ValidFrom, d.ValidUntil, d.Origin,
-			d.Sealed, d.Requires, d.CreatedAt, d.CreatedByUserID, d.UpdatedAt, d.UpdatedByUserID); err != nil {
+			d.Sealed, d.Requires, d.CreatedAt, d.CreatedByUserID, d.UpdatedAt, d.UpdatedByUserID, d.TitleSealed); err != nil {
 			return err
+		}
+		if d.Sealed {
+			if _, err := tx.Exec(ctx, `INSERT INTO vault.document_keys (document_id, sealed_key, key_id, created_at) VALUES ($1, $2, $3, $4)`,
+				d.ID, d.Key, d.KeyID, d.CreatedAt); err != nil {
+				return err
+			}
 		}
 		for _, v := range d.Versions {
 			if err := insertVersion(ctx, tx, d.ID, v); err != nil {
@@ -229,10 +238,11 @@ func (r *PostgresRepository) Update(ctx context.Context, id uuid.UUID, m Mutatio
 		n := c.Document
 		if _, err := tx.Exec(ctx, `
 			UPDATE vault.documents SET title = $2, document_date = $3, valid_from = $4, valid_until = $5, requires = $6,
-				updated_at = $7, updated_by_user_id = $8, deleted_at = $9, deleted_by_user_id = $10
+				updated_at = $7, updated_by_user_id = $8, deleted_at = $9, deleted_by_user_id = $10, title_sealed = $11,
+				hold_until = $12, hold_reason = $13
 			WHERE id = $1`,
 			id, n.Title, n.DocumentDate, n.ValidFrom, n.ValidUntil, n.Requires, n.UpdatedAt, n.UpdatedByUserID,
-			n.DeletedAt, n.DeletedByUserID); err != nil {
+			n.DeletedAt, n.DeletedByUserID, n.TitleSealed, n.HoldUntil, n.HoldReason); err != nil {
 			return err
 		}
 		if _, err := tx.Exec(ctx, `DELETE FROM vault.links WHERE document_id = $1`, id); err != nil {
@@ -325,7 +335,7 @@ func (r *PostgresRepository) Search(ctx context.Context, q Query, perms []string
 		perms = []string{}
 	}
 	args := []any{kindOrder(), perms}
-	where := []string{"d.deleted_at IS NULL", "d.requires <@ $2::text[]"}
+	where := []string{"d.deleted_at IS NULL", "d.shredded_at IS NULL", "d.requires <@ $2::text[]"}
 	arg := func(v any) string { args = append(args, v); return fmt.Sprintf("$%d", len(args)) }
 	if len(q.Types) > 0 {
 		where = append(where, "d.type = ANY("+arg(q.Types)+"::text[])")
@@ -383,7 +393,7 @@ func (r *PostgresRepository) Search(ctx context.Context, q Query, perms []string
 // Subjects reads every subject a live document is linked to.
 func (r *PostgresRepository) Subjects(ctx context.Context) ([]Subject, error) {
 	rows, err := r.pool.Query(ctx, `SELECT DISTINCT l.subject_kind, l.subject_id FROM vault.links l
-		JOIN vault.documents d ON d.id = l.document_id AND d.deleted_at IS NULL ORDER BY 1, 2`)
+		JOIN vault.documents d ON d.id = l.document_id AND d.deleted_at IS NULL AND d.shredded_at IS NULL ORDER BY 1, 2`)
 	if err != nil {
 		return nil, err
 	}
@@ -421,6 +431,56 @@ func (r *PostgresRepository) Relabel(ctx context.Context, s Subject, label strin
 		return nil
 	})
 	return n, translate(err)
+}
+
+// Record writes ev alone.
+func (r *PostgresRepository) Record(ctx context.Context, ev audit.Event) error {
+	return audit.Insert(ctx, r.pool, ev)
+}
+
+// Sealed reads the sealed documents not shredded, removed ones too, with
+// their linked employees.
+func (r *PostgresRepository) Sealed(ctx context.Context) ([]Candidate, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT d.id, d.type, d.number, d.document_date::text, d.retain_until::text, d.hold_until::text, d.deleted_at IS NOT NULL,
+			coalesce((SELECT array_agg(l.employee_id ORDER BY l.employee_id) FROM vault.links l
+				WHERE l.document_id = d.id AND l.employee_id IS NOT NULL), '{}')
+		FROM vault.documents d WHERE d.sealed AND d.shredded_at IS NULL ORDER BY d.created_at, d.id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]Candidate, 0)
+	for rows.Next() {
+		var c Candidate
+		if err := rows.Scan(&c.ID, &c.Type, &c.Number, &c.DocumentDate, &c.RetainUntil, &c.HoldUntil, &c.Removed, &c.Employees); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// SetRetainUntil sets a document's retain_until.
+func (r *PostgresRepository) SetRetainUntil(ctx context.Context, id uuid.UUID, day *string) error {
+	_, err := r.pool.Exec(ctx, `UPDATE vault.documents SET retain_until = $2 WHERE id = $1`, id, day)
+	return err
+}
+
+// Shred runs vault.shred_document and records ev in one transaction.
+func (r *PostgresRepository) Shred(ctx context.Context, id uuid.UUID, at time.Time, day string, ev audit.Event) ([]string, error) {
+	var keys []string
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx, `SELECT vault.shred_document($1, $2, $3::date)`, id, at, day)
+		if err != nil {
+			return err
+		}
+		if keys, err = pgx.CollectRows(rows, pgx.RowTo[string]); err != nil {
+			return err
+		}
+		return audit.Insert(ctx, tx, ev)
+	})
+	return keys, translate(err)
 }
 
 // translate maps Postgres errors to sentinels: a foreign key is the actor

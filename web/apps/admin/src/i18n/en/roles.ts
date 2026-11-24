@@ -148,6 +148,14 @@ export const roles = {
       label: 'Manage documents',
       grants: 'Upload documents and newer versions, change their details and links, and remove them. Needs See documents.',
     },
+    'vault.employment.read': {
+      label: 'See employment documents',
+      grants: 'Employment contracts, annexes, NDAs and other employment papers in the Document Vault and on employee pages: open them after Confirm your password. Each opening is recorded.',
+    },
+    'vault.employment.manage': {
+      label: 'Manage employment documents',
+      grants: 'Upload employment documents and newer versions, change and remove them, and set a Legal Hold. Needs See employment documents.',
+    },
     'dashboard.overview': { label: 'Dashboard', grants: 'Spending, orders waiting and setup gaps.' },
     'dashboard.manager': { label: 'Manager Dashboard', grants: 'Items, prices and purchasing.' },
     'dashboard.employee': { label: 'Employee Dashboard', grants: 'The user’s own orders and what to order next.' },

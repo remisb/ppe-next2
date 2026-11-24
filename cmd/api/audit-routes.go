@@ -173,7 +173,7 @@ func registerAuditRoutes(rt *router, svc services) {
 		return err
 	}), role.UsersRead)
 	// A document's Changes, for whoever may see it (its type's and links' permissions).
-	rt.restricted("GET /api/v1/audit-events/vault/{id}", func(w http.ResponseWriter, r *http.Request) {
+	rt.restrictedAny("GET /api/v1/audit-events/vault/{id}", func(w http.ResponseWriter, r *http.Request) {
 		reader, err := vaultReader(r)
 		if err != nil {
 			writeError(w, r, err)
@@ -183,7 +183,7 @@ func registerAuditRoutes(rt *router, svc services) {
 			_, err := svc.vault.Get(ctx, reader, id)
 			return err
 		})(w, r)
-	}, role.VaultRead)
+	}, vaultReaders...)
 	// An App Launcher tile's Changes, on Manage apps.
 	rt.restricted("GET /api/v1/audit-events/apps/{id}", history("app", func(ctx context.Context, id uuid.UUID) error {
 		apps, err := svc.launcher.List(ctx)

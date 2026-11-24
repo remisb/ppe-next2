@@ -7,7 +7,7 @@ and generation are [document-template-service.md](document-template-service.md);
 worker are [outbox-service.md](outbox-service.md); the data-protection note is
 [document-vault-dpia-note.md](../privacy/document-vault-dpia-note.md).
 
-**Status: phase 1 built** (migration 0061, `internal/vault`, `internal/vault/document`,
+**Status: phases 1 and 2 built** (migrations 0061 and 0062, `internal/vault`, `internal/vault/document`,
 `cmd/api/vault-routes.go`, `cmd/api/wire_vault.go`, the staff app's Document Vault and Documents
 sections); the rest decided, not built. Each section names the phase that builds it (ADR 0008's
 plan: 1 core, 2 sealed types, 3 templates, 4 worker and text, 5 signed copies, 6 archiving, 7
@@ -51,22 +51,22 @@ Templates' use cases are. Administrators edit templates, never types. A type has
 
 | Key | Group | Sealed | Retention (default) | Must link to | Read / manage | Origins | Phase |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `employee.certificate` | Employee | no | `AfterDocDate(10)` | employee | `vault.read` / `vault.manage` | uploaded | 1 |
-| `employee.training` | Employee | no | `AfterDocDate(10)` | employee | `vault.read` / `vault.manage` | uploaded | 1 |
-| `invoice` | Finance | no | `AfterDocDate(10)` | | `vault.read` / `vault.manage` | uploaded | 1 |
+| `employee.certificate` | Employee | no | `Keep` (`AfterDocDate(10)` once the DPO agrees) | employee | `vault.read` / `vault.manage` | uploaded | 1 |
+| `employee.training` | Employee | no | `Keep` (likewise) | employee | `vault.read` / `vault.manage` | uploaded | 1 |
+| `invoice` | Finance | no | `Keep` (likewise) | | `vault.read` / `vault.manage` | uploaded | 1 |
 | `asset.document` | Company Assets | no | `Keep` | asset | `vault.read` / `vault.manage` | uploaded | 1 |
 | `other` | Other | no | `Keep` | | `vault.read` / `vault.manage` | uploaded | 1 |
-| `employment.contract` | Employment | yes | `AfterEmploymentEnd(120)` | employee | `vault.employment.read` / `vault.employment.manage` | generated, uploaded | 2 |
-| `employment.annex` | Employment | yes | as its contract | employee; parent a contract | the same | generated, uploaded | 2 |
-| `employment.nda` | Employment | yes | `AfterEmploymentEnd(120)` | employee | the same | generated, uploaded | 2 |
-| `employment.other` | Employment | yes | `AfterEmploymentEnd(36)` | employee | the same | generated, uploaded | 2 |
+| `employment.contract` | Employment | yes | `AfterEmploymentEnd(120)` | employee | `vault.employment.read` / `vault.employment.manage` | uploaded; generated from phase 3 | 2 |
+| `employment.annex` | Employment | yes | `AfterEmploymentEnd(120)`, as a contract | employee (its contract as parent from phase 3) | the same | the same | 2 |
+| `employment.nda` | Employment | yes | `AfterEmploymentEnd(120)` | employee | the same | the same | 2 |
+| `employment.other` | Employment | yes | `AfterEmploymentEnd(36)` | employee | the same | the same | 2 |
 | `asset.signed_form` | Company Assets | no | `Keep` | asset, employee | `vault.read` and the asset kind's read / the asset kind's manage (`sim_cards.manage`, `assets.manage`) | uploaded | 5 |
 | `asset.assignment_form` | Company Assets | no | `Keep` | asset, employee | `vault.read` and the asset kind's read / none (archived only) | archived | 6 |
 | `order.record` | Workwear | no | `Keep` | order, employee | `vault.read` (orders are every signed-in user's) / none (archived only) | archived | 6 |
 
-The retention periods are defaults until the DPO answers (ADR 0008, open question 1); each is
-a setting (`API_VAULT_RETENTION_<TYPE>`, months or years as the rule counts) so a change needs no
-release. A Company Assets document also needs the asset kind's read permission (`sim_cards.read`
+The retention periods are defaults until the DPO answers (ADR 0008, open question 1). They are in
+code (`vault.Types()`, `Type.Retention`), so a change is a release; the API applies them to sealed
+types only, and the other types are kept until removed. A Company Assets document also needs the asset kind's read permission (`sim_cards.read`
 or `equipment.read`), so Equipment & Furniture's forms stay hidden as their assets are. Signed
 copies are still uploaded and read through Company Assets' own routes with its permissions; the
 vault's routes show them to readers who also have `vault.read`.
@@ -244,29 +244,47 @@ name searched for is never in a URL or the request log. `vault.read` or
 
 ## Sealed types (phase 2)
 
+Built (migration 0062, `internal/vault/document/sealed.go`).
+
 - **Keys.** `API_VAULT_KEY` (64 hex), `…_KEY_ID`, `…_PREVIOUS_KEYS`, read in `loadConfig` and
-  checked in `validate`. Optional: without it, creating, opening or generating a sealed type
-  answers 503 `ErrNotConfigured`; listing and search show what is there.
-  `api -reseal-vault-keys` re-seals the document keys under the current key. Kept offline
-  (`docs/backups.md`).
-- **What is sealed:** the title, the version's data and note, the files and their names. Plain:
-  type, number, dates, links, sizes, hashes, retention.
-- **Retention.** `retain_until` is computed from the type's rule: `AfterEmploymentEnd` reads the
-  linked employee's employment periods through the `Employments` port (the end of the last one;
-  null while one is open); `AfterDocDate` from `document_date`. An annex follows its contract.
-  Recomputed when the employment changes (through the outbox, or the upkeep's daily pass).
-- **Shredding.** The upkeep (`cmd/api/jobs.go`) calls `ShredDue`: for each document past
-  `retain_until`, not held, it calls the owner's function `vault.shred_document(id)`, which
-  deletes the key, versions' data, files' rows, read text and the vector, and sets
-  `shredded_at`; then the objects are deleted (every version of them where the bucket keeps
-  versions). Event `vault.document_shredded` (type, number, dates). Running it again changes
-  nothing; after a restore it shreds again.
-- **Legal Hold.** `PUT /api/v1/vault/documents/{id}/hold` with a date and reason (`manage`);
-  events `vault.hold_set`, `vault.hold_cleared`. Held documents are never shredded or removed.
-- **Overview:** documents that go within 30 days, for whoever may manage them.
-- **Who sees them:** the built-in add-on role **Employment Documents** (fixed id, key
-  `employment_documents`) holds `vault.employment.read` and `.manage`; no other built-in role,
-  Administrator included.
+  checked in `validate` (`vaultKeyErrors`: none of them another key here). Optional: without it,
+  uploading, adding a version to or opening a sealed document answers 503 `ErrNotConfigured`;
+  lists and search show what is there, named by type. Each document's data key
+  (`sealbox.NewDataKey`) is sealed by the keyring in `vault.document_keys`, bound to the document;
+  `ppe_app` may insert and delete a key, never change one. Kept offline (`docs/backups.md`).
+  **To come:** `api -reseal-vault-keys`, for changing the key.
+- **What is sealed:** the title (`title_sealed`; the plain `title` is empty), each version's note
+  and file name (`versions.data_sealed`, JSON), and the files themselves (the stored file is named
+  `document.<ext>`). Plain: type, number, dates, links and their names, sizes, hashes, retention.
+  Reads open them when the keys are there (`Service.unseal`), so the document's page shows its
+  title; lists and search name a sealed document by its type. Events never hold its title, file
+  name or note (an edited title is `title_changed`).
+- **Opening a file:** `GET …/versions/{n}/file` refuses a sealed document (409 `ErrSealed`);
+  `POST …/versions/{n}/file` (`vault.employment.read`, `sensitive`: the user's roles as they are
+  now and a recent sign-in, else Confirm your password) records `vault.document_opened` (type,
+  version, file type, size, hash) before it opens the file, checks its hash and sends it.
+- **Retention.** The upkeep (`cmd/api/jobs.go`, hourly) calls `ShredDue`, which computes each
+  sealed document's `retain_until` from its type's rule: `AfterEmploymentEnd` asks the
+  `Employments` port (adapted over the employee's employment periods) when each linked employee's
+  last period ended; while one is open, or the person was never employed or is not found, it is
+  null. `AfterDocDate` counts from `document_date`.
+- **Shredding.** A document past `retain_until`, or removed, and not held, goes through the owner's
+  function `vault.shred_document(id, at, day)` with `vault.document_shredded` (type, number,
+  dates, whether removed; by no one) in one transaction: its key, versions, files, read text and
+  links are deleted (the versions' and files' trigger allows it only there, under
+  `ppe.vault_shred`), its search emptied and `shredded_at` set, the row kept as a tombstone; then
+  its objects are deleted from the store. Reads and search leave shredded documents out. Running it
+  again changes nothing; after a restore it shreds again. Removing a sealed document is a soft
+  delete; the next upkeep shreds it unless it is held.
+- **Legal Hold.** `PUT /api/v1/vault/documents/{id}/hold` with `hold_until` (today or later) and
+  `hold_reason` (1–500), or `null` to clear it (the type's manage permission); events
+  `vault.hold_set`, `vault.hold_cleared`. Until the day after `hold_until` a document is neither
+  shredded (the SQL function refuses too) nor removed (409 `ErrHeld`).
+- **Who sees them:** the built-in add-on role **Employment Documents** (`role.EmploymentID`
+  `a0e1d000-0000-4000-8000-000000000007`, key `employment`) holds `vault.employment.read` and
+  `.manage`; no other built-in role, Administrator included. A document's `requires` is
+  `vault.employment.read`, so `vault.read` alone never shows one.
+- **To come:** the Overview item for documents that go within 30 days.
 
 ## Identity documents (phase 7)
 
@@ -295,11 +313,10 @@ Nothing of them is stored in the vault.
 | `POST /api/v1/vault/documents/{id}/versions/{n}/read-again` | the type's `manage` | 4 | enqueues `vault.extract_text` |
 | `GET /api/v1/vault/documents/{id}/verify` | the type's `read` | 6 | recomputes an archived copy's hash from its source |
 
-Phase 1's routes need `vault.read` or `vault.manage` (`rt.restricted`): every phase 1 type names
-them, and the service checks each document's type and links. From phase 2, routes whose
-permission depends on the type become `rt.restrictedAny` over the read (or manage) permissions,
-the type checked by the service (as Company Assets' kinds are). A document's Changes are
-`GET /api/v1/audit-events/vault/{id}` (`vault.read`). Every route
+The routes are `rt.restrictedAny` over `vault.read`/`vault.employment.read` (reads) or
+`vault.manage`/`vault.employment.manage` (changes), the service checking each document's type and
+links; opening a sealed file is `rt.restricted` to `vault.employment.read` behind `sensitive`. A
+document's Changes are `GET /api/v1/audit-events/vault/{id}`, for whoever may see it. Every route
 goes into `routes_test.go`'s policy table, the errors into `errorStatuses` (`ErrNotFound` 404,
 `ErrInvalid` 400, `ErrLocked` 409, `ErrHeld` 409, `ErrTooLarge` 413, `ErrFileType` 415,
 `ErrNotConfigured` 503, `ErrNoStorage` 503).
@@ -367,8 +384,9 @@ matches.
 | Setting | Phase | Notes |
 | --- | --- | --- |
 | `API_VAULT_KEY`, `…_KEY_ID`, `…_PREVIOUS_KEYS` | 2 | the master keyring over document keys (64 hex each); optional; kept offline |
-| `API_VAULT_MAX_UPLOAD_MB` | 1 | 20; 1 to 100 |
-| `API_VAULT_RETENTION_<TYPE>` | 2 | each type's period; the default the table above names |
+
+
+The upload limit (20 MB, `vault.MaxUploadBytes`) and the retention periods are in code.
 
 The files store is the existing `API_FILES_TARGET`; without it uploads are 503 `ErrNoStorage`.
 Worker settings are in [outbox-service.md](outbox-service.md).

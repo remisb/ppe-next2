@@ -141,3 +141,28 @@ func TestParseKeys(t *testing.T) {
 		}
 	}
 }
+
+func TestDataKeys(t *testing.T) {
+	master, err := NewKeyring(1, map[int16][]byte{1: bytes.Repeat([]byte{7}, KeySize)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	box, sealed, id, err := NewDataKey(master, []byte("ppe.test|a"))
+	if err != nil || id != 1 {
+		t.Fatalf("new = %v %d", err, id)
+	}
+	text, err := box.Seal([]byte("contract"), []byte("ctx"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, err := OpenDataKey(master, sealed, id, []byte("ppe.test|a"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plain, err := again.Open(text, []byte("ctx")); err != nil || string(plain) != "contract" {
+		t.Fatalf("open = %q %v", plain, err)
+	}
+	if _, err := OpenDataKey(master, sealed, id, []byte("ppe.test|b")); !errors.Is(err, ErrOpen) {
+		t.Errorf("another context: %v", err)
+	}
+}

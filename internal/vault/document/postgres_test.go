@@ -1,8 +1,11 @@
 package document
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
+	"log/slog"
 	"os"
 	"slices"
 	"testing"
@@ -13,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/remisb/ppe-next2/internal/db/dbtest"
+	"github.com/remisb/ppe-next2/internal/sealbox"
 	"github.com/remisb/ppe-next2/internal/vault"
 )
 
@@ -193,5 +197,97 @@ func TestPostgresDocumentEvents(t *testing.T) {
 	}
 	if !slices.Equal(got, []string{EventUploaded, EventUpdated}) {
 		t.Errorf("events = %v", got)
+	}
+}
+
+// TestPostgresSealedDocuments: a sealed contract keeps nothing readable in
+// its rows or the store, opens with its key, and the shredding (as ppe_app,
+// through the owner's function) leaves a tombstone and deletes its files.
+func TestPostgresSealedDocuments(t *testing.T) {
+	app, owner, actor := newTestPool(t)
+	ctx := context.Background()
+	ana := addEmployee(t, owner, actor, "Ana", "Žukauskaitė")
+	master, err := sealbox.NewKeyring(1, map[int16][]byte{1: bytes.Repeat([]byte{5}, sealbox.KeySize)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := &memStore{files: map[string][]byte{}}
+	ended := stubEmployments{}
+	day := time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
+	svc := NewService(NewPostgresRepository(app), stubSubjects{ana: {Label: "Ana Žukauskaitė"}}, WithFiles(store), WithKeys(master),
+		WithEmployments(ended), WithClock(func() time.Time { return day }))
+	clerk := Reader{ID: actor, Perms: []string{vault.PermEmploymentRead, vault.PermEmploymentManage}}
+
+	d, err := svc.Upload(ctx, clerk, "employment.contract", Details{Title: "Darbo sutartis Nr. 7", Links: []LinkRef{{vault.Employee, ana}}},
+		Upload{FileName: "sutartis.pdf", Data: pdf, Note: "2400 EUR"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Title != "Darbo sutartis Nr. 7" || d.Current().Note != "2400 EUR" {
+		t.Fatalf("answer = %q %q", d.Title, d.Current().Note)
+	}
+	var title, note, fileName string
+	if err := owner.QueryRow(ctx, `SELECT d.title, v.note, f.file_name FROM vault.documents d JOIN vault.versions v ON v.document_id = d.id
+		JOIN vault.files f ON f.version_id = v.id WHERE d.id = $1`, d.ID).Scan(&title, &note, &fileName); err != nil {
+		t.Fatal(err)
+	}
+	if title != "" || note != "" || fileName != "document.pdf" {
+		t.Errorf("stored in the clear: %q %q %q", title, note, fileName)
+	}
+	// Found by the employee's name, its title hidden from the list.
+	p, err := svc.Search(ctx, clerk, Query{Words: "zukausk"})
+	if err != nil || p.Total != 1 || p.Documents[0].Title != "" || !p.Documents[0].Sealed {
+		t.Fatalf("search = %+v %v", p, err)
+	}
+	if _, data, err := svc.OpenSealed(ctx, clerk, d.ID, 1); err != nil || !bytes.Equal(data, pdf) {
+		t.Fatalf("open = %v", err)
+	}
+	// Retention: the employment ended 2026-01-31, 120 months.
+	ended[ana] = "2026-01-31"
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	if res, err := svc.ShredDue(ctx, logger); err != nil || res.Documents != 0 {
+		t.Fatalf("not due: %+v %v", res, err)
+	}
+	got, err := svc.Get(ctx, clerk, d.ID)
+	if err != nil || got.RetainUntil == nil || *got.RetainUntil != "2036-01-31" {
+		t.Fatalf("retain until = %v %v", got.RetainUntil, err)
+	}
+	// Held, the shredding function itself refuses.
+	if _, err := svc.SetHold(ctx, clerk, d.ID, ptr("2026-12-31"), "Inspection"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := app.Exec(ctx, `SELECT vault.shred_document($1, now(), '2026-11-24')`, d.ID); err == nil {
+		t.Error("shredded while held")
+	}
+	if _, err := svc.SetHold(ctx, clerk, d.ID, nil, ""); err != nil {
+		t.Fatal(err)
+	}
+	// Removed, it is shredded at the next run.
+	if err := svc.Remove(ctx, clerk, d.ID); err != nil {
+		t.Fatal(err)
+	}
+	if res, err := svc.ShredDue(ctx, logger); err != nil || res.Documents != 1 {
+		t.Fatalf("removed: %+v %v", res, err)
+	}
+	if len(store.files) != 0 {
+		t.Errorf("files left: %d", len(store.files))
+	}
+	var rows int
+	if err := owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM vault.versions WHERE document_id = $1)
+		+ (SELECT count(*) FROM vault.document_keys WHERE document_id = $1) + (SELECT count(*) FROM vault.links WHERE document_id = $1)`, d.ID).Scan(&rows); err != nil || rows != 0 {
+		t.Errorf("left after shredding: %d %v", rows, err)
+	}
+	var shredded bool
+	if err := owner.QueryRow(ctx, `SELECT shredded_at IS NOT NULL FROM vault.documents WHERE id = $1`, d.ID).Scan(&shredded); err != nil || !shredded {
+		t.Errorf("tombstone = %v %v", shredded, err)
+	}
+	// ppe_app may not change a key in place, nor delete versions itself.
+	for _, sql := range []string{`UPDATE vault.document_keys SET key_id = key_id`, `DELETE FROM vault.versions`} {
+		if _, err := app.Exec(ctx, sql); err == nil {
+			t.Errorf("%s: allowed", sql)
+		}
+	}
+	if res, err := svc.ShredDue(ctx, logger); err != nil || res.Documents != 0 {
+		t.Errorf("again: %+v %v", res, err)
 	}
 }

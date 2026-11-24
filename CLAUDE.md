@@ -52,6 +52,11 @@ search configuration `vault.ppe`; routes `cmd/api/vault-routes.go`, adapters `cm
 `internal/vault/imports_test.go`); `vault.read`/`vault.manage` (Administrator, Manager). The staff app's **Document Vault**
 (`/vault`, a document beside the list at `/vault/<id>`, `routes/vault.tsx`, `lib/vault.ts`) and a **Documents** section on the
 employee page and an asset. Versions and files are append-only; Merge Employees moves the links; the upkeep renames them.
+Phase 2 (migration 0062): **sealed** Employment documents (`employment.contract`, `.annex`, `.nda`, `.other`), each sealed with a data key
+of its own under the optional `API_VAULT_KEY` (`vault.document_keys`; without it they answer 503), for the add-on role **Employment
+Documents** alone (`vault.employment.read`/`.manage`, Administrator included only when holding it); a sealed file opens only by
+`POST …/versions/{n}/file` behind `sensitive`, recorded first; the upkeep's `ShredDue` keeps each for its type's months after the
+employee's employment ended, then shreds it through the owner's `vault.shred_document` (a tombstone stays) unless under a **Legal Hold**.
 **Mail templates** (`internal/domain/mailtemplate`, migration 0040, spec
 `docs/specs/mail-template-service.md`): one template per use case fixed in code (`sim.activation`,
 `sim.blocking`), To/Cc/Subject/Message with `{{field}}` placeholders, edited on Administration's
@@ -430,7 +435,7 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   ADR 0008 makes the Document Vault: typed documents with versions and links,
   sealed Employment documents with retention and shredding, templates made into locked PDFs,
   Postgres search, and a worker on an outbox (specs `vault-service.md`,
-  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phase 1 is built.
+  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 and 2 are built.
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and

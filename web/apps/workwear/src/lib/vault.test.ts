@@ -2,7 +2,7 @@ import type { VaultDocument, VaultHit, VaultType } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
 import { vaultExportColumns } from './vault-export'
-import { detailsOf, draftProblems, expiry, fileProblem, linkLabels, linkRoute, typeLabel, uploadRefusal, uploadTypes, withLink } from './vault'
+import { detailsOf, displayTitle, draftProblems, holdProblems, seesVault, expiry, fileProblem, linkLabels, linkRoute, typeLabel, uploadRefusal, uploadTypes, withLink } from './vault'
 
 const type = (key: string, must: VaultType['must'], manage = 'vault.manage'): VaultType => ({
   key,
@@ -17,12 +17,30 @@ const type = (key: string, must: VaultType['must'], manage = 'vault.manage'): Va
   max_bytes: 20 << 20,
   dated: true,
   expiring: true,
+  retention: { rule: 'keep' },
+})
+
+describe('sealed', () => {
+  it('names a sealed document by its type in lists, whose title only its page shows', () => {
+    expect(displayTitle({ title: '', type: 'employment.contract' })).toBe('Employment contract')
+    expect(displayTitle({ title: 'Darbas aukštyje', type: 'employee.certificate' })).toBe('Darbas aukštyje')
+  })
+  it('opens the vault to either reader', () => {
+    expect(seesVault((p) => p === 'vault.employment.read')).toBe(true)
+    expect(seesVault((p) => p === 'vault.read')).toBe(true)
+    expect(seesVault(() => false)).toBe(false)
+  })
+  it('needs a day and a reason for a Legal Hold', () => {
+    expect(holdProblems('', ' ')).toEqual({ until: 'Choose the day.', reason: 'Say why.' })
+    expect(holdProblems('2027-01-01', 'Court case')).toEqual({})
+  })
 })
 
 describe('names', () => {
   it('names a type, or shows a key it does not know', () => {
     expect(typeLabel('employee.certificate')).toBe('Certificate')
-    expect(typeLabel('employment.contract')).toBe('employment.contract')
+    expect(typeLabel('employment.contract')).toBe('Employment contract')
+    expect(typeLabel('order.record')).toBe('order.record')
   })
   it('joins the links’ names', () => {
     expect(linkLabels([{ label: 'Ana Žukauskaitė' }, { label: 'EQ-0001 Laptop' }])).toBe('Ana Žukauskaitė, EQ-0001 Laptop')

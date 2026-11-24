@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/files"
+	"github.com/remisb/ppe-next2/internal/sealbox"
 	"github.com/remisb/ppe-next2/internal/vault"
 	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
 )
@@ -22,9 +24,43 @@ import (
 
 // newVault is the document service over repo, its links described by svc's
 // services and its files kept in store.
-func newVault(svc services, repo vaultdoc.Repository, store files.Store) *vaultdoc.Service {
+func newVault(svc services, repo vaultdoc.Repository, store files.Store, keys *sealbox.Keyring, loc *time.Location) *vaultdoc.Service {
 	subjects := vaultSubjects{employees: svc.employees, companies: svc.companies, assets: svc.assets, suppliers: svc.suppliers}
-	return vaultdoc.NewService(repo, subjects, vaultdoc.WithFiles(store))
+	opts := []vaultdoc.Option{vaultdoc.WithFiles(store), vaultdoc.WithEmployments(vaultEmployments{svc.employees}), vaultdoc.WithLocation(loc)}
+	if keys != nil {
+		opts = append(opts, vaultdoc.WithKeys(keys))
+	}
+	return vaultdoc.NewService(repo, subjects, opts...)
+}
+
+// vaultEmployments answers vaultdoc.Employments: when an employee's last
+// employment ended. Employed now, never employed, or not found: not ended.
+type vaultEmployments struct{ employees *employee.Service }
+
+var _ vaultdoc.Employments = vaultEmployments{}
+
+func (e vaultEmployments) EmploymentEnded(ctx context.Context, id uuid.UUID) (bool, string, error) {
+	emp, err := e.employees.Get(ctx, id)
+	if errors.Is(err, employee.ErrNotFound) {
+		return false, "", nil
+	}
+	if err != nil {
+		return false, "", err
+	}
+	return employmentEnded(emp.Employments)
+}
+
+// employmentEnded is whether periods have all ended, and the last day: false
+// for none, or while one is open.
+func employmentEnded(periods []employee.Employment) (bool, string, error) {
+	last := ""
+	for _, p := range periods {
+		if p.EndedOn == nil {
+			return false, "", nil
+		}
+		last = max(last, *p.EndedOn)
+	}
+	return last != "", last, nil
 }
 
 // vaultSubjects answers vaultdoc.Subjects: what a linked record is called and

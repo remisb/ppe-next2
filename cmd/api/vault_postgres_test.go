@@ -141,3 +141,53 @@ func TestPostgresVaultHTTP(t *testing.T) {
 		}
 	}
 }
+
+// TestPostgresVaultSealedHTTP: an employment contract (ADR 0008 phase 2) is
+// the Employment Documents role's alone; its file opens only by POST with a
+// recent sign-in, recorded; a Legal Hold stops its removal.
+func TestPostgresVaultSealedHTTP(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	_, mgr := api.userWith(t, role.KeyManager)
+	_, clerk := api.userWith(t, role.KeyEmployment)
+	rec := api.do(t, "POST", "/api/v1/employees", mgr, map[string]any{"first_name": "Ana", "last_name": "Žukauskaitė"})
+	ana := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+
+	pdf := []byte("%PDF-1.7\n1 0 obj\n%%EOF\n")
+	details := map[string]any{"type": "employment.contract", "title": "Darbo sutartis Nr. 7", "links": []map[string]any{{"kind": "employee", "id": ana}}}
+	if rec := api.uploadDocument(t, "/api/v1/vault/documents", mgr, "c.pdf", pdf, details); rec.Code != http.StatusBadRequest {
+		t.Errorf("a manager uploads a contract = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.uploadDocument(t, "/api/v1/vault/documents", clerk, "sutartis.pdf", pdf, details)
+	if rec.Code != http.StatusCreated || !strings.Contains(rec.Body.String(), `"sealed":true`) || !strings.Contains(rec.Body.String(), "Darbo sutartis Nr. 7") {
+		t.Fatalf("upload = %d %s", rec.Code, rec.Body)
+	}
+	id := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	if rec := api.do(t, "GET", "/api/v1/vault/documents/"+id, mgr, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("a manager reads it = %d", rec.Code)
+	}
+	if rec := api.do(t, "POST", "/api/v1/vault/search", mgr, map[string]any{"query": "zukausk"}); !strings.Contains(rec.Body.String(), `"total":0`) {
+		t.Errorf("a manager finds it: %s", rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/vault/documents/"+id+"/versions/1/file", clerk, nil); rec.Code != http.StatusConflict {
+		t.Errorf("GET a sealed file = %d", rec.Code)
+	}
+	rec = api.do(t, "POST", "/api/v1/vault/documents/"+id+"/versions/1/file", clerk, nil)
+	if rec.Code != http.StatusOK || !bytes.Equal(rec.Body.Bytes(), pdf) || !strings.Contains(rec.Header().Get("Content-Disposition"), "sutartis.pdf") {
+		t.Fatalf("open = %d %v", rec.Code, rec.Header())
+	}
+	if rec := api.do(t, "PUT", "/api/v1/vault/documents/"+id+"/hold", clerk, map[string]any{"hold_until": "2099-01-01", "hold_reason": "Court case"}); rec.Code != http.StatusOK {
+		t.Errorf("hold = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/vault/documents/"+id, clerk, nil); rec.Code != http.StatusConflict {
+		t.Errorf("remove while held = %d", rec.Code)
+	}
+	rec = api.do(t, "GET", "/api/v1/audit-events/vault/"+id, clerk, nil)
+	for _, want := range []string{"vault.document_uploaded", "vault.document_opened", "vault.hold_set"} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("Changes lack %s", want)
+		}
+	}
+	if strings.Contains(rec.Body.String(), "Darbo sutartis") || strings.Contains(rec.Body.String(), "sutartis.pdf") {
+		t.Errorf("Changes hold the sealed title or file name: %s", rec.Body)
+	}
+}

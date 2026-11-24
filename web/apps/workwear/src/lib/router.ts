@@ -324,6 +324,6 @@ export function startRoute(route: Route, can: (p: Permission) => boolean): Route
   if (route.name === 'simCards' && !can('sim_cards.read'))
     return can('equipment.read') ? { name: 'equipment', ...(route.tile ? { tile: route.tile } : {}) } : home
   if (route.name === 'itemSets' && !can('item_sets.read')) return home
-  if (route.name === 'vault' && !can('vault.read')) return home
+  if (route.name === 'vault' && !can('vault.read') && !can('vault.employment.read')) return home
   return route
 }
