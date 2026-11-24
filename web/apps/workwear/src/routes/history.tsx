@@ -24,7 +24,7 @@ import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { isoDay } from '@ppe/ui/lib/dates'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Segmented } from '@ppe/ui/components/segmented'
-import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
+import { besideList, useCloseFilteredOut, useListKeys, useMarkedRow } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { t } from '@/i18n'
 import { loadAllOrders } from '@/lib/employee-items'
@@ -104,7 +104,9 @@ export function History({
   onOpenRecord: (id: string, print: boolean) => void
 }) {
   const { client } = useApi()
-  const { userId } = useSession()
+  const session = useSession()
+  const { userId } = session
+  const canExport = session.can('data.export')
   // Back from an order's record, the list is as it was left; a tab from the address (a dashboard's link) starts afresh on it.
   const [left] = useState(() => {
     const was = leftForRecord.get(userId)
@@ -142,9 +144,12 @@ export function History({
     page_size: PAGE_SIZE,
   }
   const key = JSON.stringify(query)
-  const orders = useLoad(() => client.orders.list(query), [key])
-  // The tabs' counts, within the other filters.
+  // The filters and tab, not the sort or page: what an open order must stay in to stay open (useCloseFilteredOut).
   const scopeKey = JSON.stringify(scope)
+  const filterKey = JSON.stringify([scope, filters.status])
+  // Each page remembers the filters it was loaded for, so a list still on screen while the next loads is not taken for it.
+  const orders = useLoad(() => client.orders.list(query).then((p) => ({ ...p, filters: filterKey })), [key])
+  // The tabs' counts, within the other filters.
   const counts = useLoad(
     () =>
       Promise.all(
@@ -184,6 +189,7 @@ export function History({
 
   const open = (id: string) => navigate({ name: 'history', order: id }, { scroll: !besideList() })
   const close = () => navigate({ name: 'history' }, { scroll: false })
+  const closeFilteredOut = () => navigate({ name: 'history' }, { replace: true, scroll: false })
 
   // J and K: the next or previous order on this page, while one is open; Escape closes it beside the list.
   const shownIds = useMemo(() => orders.data?.orders.map((o) => o.id), [orders.data])
@@ -191,6 +197,10 @@ export function History({
   // Export's select mode (WARE-45): ticks are kept across pages; Export all takes every page matching the filters.
   const selection = useSelection(useMemo(() => orders.data?.orders ?? [], [orders.data]), orderId, { acrossPages: true })
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: 'history', order: id }, { scroll: false }), onClose: close })
+  // A filter or tab that leaves the open order out of the list closes it; the user opens the next one (WARE-42).
+  useCloseFilteredOut({ filters: filterKey, current: orders.data?.filters === filterKey, ids: shownIds, selected, onClose: closeFilteredOut })
+  // The open row, or the one just closed, stays marked (WARE-25).
+  const marked = useMarkedRow(selected, filterKey)
 
   const tz = settings.data?.timezone
   // An order is open beside the list (from lg): the list keeps its short columns.
@@ -237,8 +247,8 @@ export function History({
         title={t.history.title}
         filters={{ label: t.history.filters, count: foldedFilters, controls: 'history-filters', open: showFilters, onToggle: () => setShowFilters((v) => !v) }}
         // A link, so it also opens in a new tab. Not on a phone, whose tab bar has New order.
-        // Export: in the header from md, in ⋯ below (a phone's list has no checkboxes, so it exports all matching).
-        secondary={[{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: !orders.data?.total || selection.active }]}
+        // Export (data.export): in the header from md, in ⋯ below (a phone's list has no checkboxes, so it exports all matching).
+        secondary={canExport ? [{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: !orders.data?.total || selection.active }] : []}
         primary={{ label: t.shell.createOrder, icon: Plus, link: linkTo({ name: 'createOrder' }, navigate), hiddenBelow: 'md' }}
       />
 
@@ -306,14 +316,16 @@ export function History({
       </section>
       </div>
       {/* Above the list, so the mode's bar stays while a filter leaves no orders. */}
-      <ExportMode
-        selection={selection}
-        list={t.history.title}
-        columns={orderExportColumns(tz)}
-        shown={orders.data?.orders ?? []}
-        // Every page matching the tab, filters and sort, fetched when exporting.
-        matching={{ count: orders.data?.total ?? 0, load: () => loadAllOrders(client, { ...scope, ...(filters.status ? { status: filters.status } : {}), sort: sort.key, dir: sort.dir }) }}
-      />
+      {canExport ? (
+        <ExportMode
+          selection={selection}
+          list={t.history.title}
+          columns={orderExportColumns(tz)}
+          shown={orders.data?.orders ?? []}
+          // Every page matching the tab, filters and sort, fetched when exporting.
+          matching={{ count: orders.data?.total ?? 0, load: () => loadAllOrders(client, { ...scope, ...(filters.status ? { status: filters.status } : {}), sort: sort.key, dir: sort.dir }) }}
+        />
+      ) : null}
       {orders.error ? (
         <ErrorState error={orders.error} onRetry={orders.reload} />
       ) : !orders.data ? (
@@ -377,7 +389,7 @@ export function History({
                   <Fragment key={o.id}>
                   {newMonth ? <TableGroupRow colSpan={columns.length + (selection.active ? 1 : 0)}>{month.label}</TableGroupRow> : null}
                   <TableRow
-                    data-state={selected === o.id ? 'selected' : undefined}
+                    data-state={marked === o.id ? 'selected' : undefined}
                     aria-current={selected === o.id ? 'true' : undefined}
                     className={cn(
                       stackedBreak,

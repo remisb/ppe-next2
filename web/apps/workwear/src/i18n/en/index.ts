@@ -9,7 +9,8 @@ import { employment } from './employment'
 import { history } from './history'
 import { identity } from './identity'
 import { order } from './order'
+import { shares } from './shares'
 import { shell } from './shell'
 import { vault } from './vault'
 
-export const en = { common, shell, order, history, dashboard, employees, employment, catalogue, account, backups, assets, identity, vault }
+export const en = { common, shell, order, history, dashboard, employees, employment, catalogue, account, backups, assets, identity, shares, vault }

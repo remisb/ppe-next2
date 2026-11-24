@@ -52,6 +52,7 @@ export function UsersPage({
 }) {
   const { client } = useApi()
   const session = useSession()
+  const canExport = session.can('data.export')
   const allowed = session.can('users.manage')
   const users = useLoad(() => (allowed ? client.users.list() : Promise.resolve([])))
   const roleList = useLoad(() => (allowed ? client.roles.list() : Promise.resolve([])))
@@ -111,7 +112,7 @@ export function UsersPage({
         title={t.users.title}
         description={t.users.description}
         // Export: in the header from md, in ⋯ below; it starts select mode (WARE-45), on a phone too.
-        secondary={[{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: shown.length === 0 || selection.active }]}
+        secondary={canExport ? [{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: shown.length === 0 || selection.active }] : []}
         primary={{ label: t.users.addUser, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
       />
       <Segmented<UserStatus | 'all'>
@@ -150,7 +151,7 @@ export function UsersPage({
         {saved}
       </p>
       {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
-      <ExportMode selection={selection} list={t.users.title} columns={userExportColumns(allRoles, timeZone)} shown={shown} />
+      {canExport ? <ExportMode selection={selection} list={t.users.title} columns={userExportColumns(allRoles, timeZone)} shown={shown} /> : null}
       <Loaded load={combineLoads(users, roleList)} empty={shown.length === 0} emptyState={status || role ? t.users.noneFiltered : filter ? t.users.noMatch(filter.trim()) : t.users.noUsers}>
         {() => (
           // Where the table is narrow the users are one list of rows: name, email, then roles, with Edit and ⋯ beside them.

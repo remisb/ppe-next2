@@ -291,6 +291,9 @@ export const lt: Guide = {
           p: '**Eksportuoti** išsaugo sąrašą kaip failą skaičiuoklei: **Excel (.xlsx)** arba **CSV**. Šis mygtukas yra ekranų **Užsakymai**, **Darbuotojai**, **Prekių katalogas**, **SIM kortelės** ir **Įranga** viršuje. Ekranuose **Prekių rinkiniai**, **Reikia pakeisti** ir darbuotojo **Išduotos prekės** jis iš karto atveria langą **Eksportuoti** su visomis eilutėmis.',
         },
         {
+          p: '**Eksportuoti** rodomas tik tada, kai bent viena jūsų rolė turi teisę **Eksportuoti duomenis**. Ją turi **Administratorius**, **Vadovas** ir **Darbuotojas**, o administratorius gali ją suteikti kitoms rolėms ekrane **Rolės ir teisės**. Be jos jokiame sąraše **Eksportuoti** nėra.',
+        },
+        {
           p: 'Sąrašo viršuje pasirinkite **Eksportuoti**. Šalia eilučių atsiranda žymimieji langeliai, o juosta virš sąrašo nurodo, ką darote ir kiek eilučių pažymėta, pavyzdžiui, **Eksportuoti: Darbuotojai · Pažymėta 3**. Kol ji rodoma, spustelėjus eilutę ji pažymima, o ne atidaroma, o pačios eilutės mygtukai paslepiami. Langelis stulpelio viršuje pažymi visas rodomas eilutes.',
           devices: ['tablet', 'desktop'],
         },
@@ -309,7 +312,43 @@ export const lt: Guide = {
         {
           p: 'Lange **Eksportuoti** nurodytos jūsų pasirinktos eilutės, pavyzdžiui, **Pažymėta: 3**; **Keisti** grąžina į sąrašą pasirinkti iš naujo. Pažymėkite norimus stulpelius (ekrane rodomi jau pažymėti), pasirinkite **Excel (.xlsx)** arba **CSV**, tada **Eksportuoti (3)**. Failas, pavyzdžiui, `Darbuotojai 2026-11-20.xlsx`, atsisiunčiamas su eilutėmis sąrašo tvarka ir stulpelių pavadinimais jūsų kalba. Jame tik tai, ką matote ekrane.',
         },
-        { p: '**Administravime** tas pats **Eksportuoti** yra ekranuose **Naudotojai**, **Rolės ir teisės**, **Tiekėjai**, **Programų tvarkymas**, taip pat **Saugos** skirtuke **Prisijungę įrenginiai** ir **Sistemos** skirtuke **Klaidos**.', roles: ['admin'] },
+        { p: '**Administravime** tas pats **Eksportuoti** yra ekranuose **Naudotojai**, **Rolės ir teisės**, **Tiekėjai**, **Įmonės**, **Programų tvarkymas**, taip pat **Saugos** skirtuke **Prisijungę įrenginiai** ir **Sistemos** skirtuke **Klaidos**.', roles: ['admin'] },
+      ],
+    },
+    {
+      id: 'share',
+      title: 'Kelių darbuotojų bendrinimas',
+      blocks: [
+        {
+          p: 'Norėdami nusiųsti kelių žmonių duomenis kam nors už programos ribų, pavyzdžiui, tiekėjui, naudokite langą **Eksportuoti** ekrane **Darbuotojai**. Skiltyje **Kaip** šalia failų yra du būdai bendrinti iki 10 žmonių: **Kopijuoti kaip tekstą** ir **Bendrinimo nuoroda**.',
+        },
+        {
+          p: 'Ekrano **Darbuotojai** viršuje pasirinkite **Eksportuoti**, pažymėkite žmones, tada **Eksportuoti 3…**. Pažymėkite stulpelius, kuriuos norite nusiųsti, ir pasirinkite būdą.',
+          devices: ['tablet', 'desktop'],
+        },
+        {
+          p: 'Ekrano **Darbuotojai** viršuje atidarykite **⋯**, pasirinkite **Eksportuoti**, pažymėkite žmones, tada **Eksportuoti 3…**. Pažymėkite stulpelius, kuriuos norite nusiųsti, ir pasirinkite būdą.',
+          devices: ['phone'],
+        },
+        {
+          ul: [
+            '**Kopijuoti kaip tekstą** nukopijuoja žmones kaip paprastą tekstą, vieną po kito, su eilute kiekvienam stulpeliui, pavyzdžiui, **Avalynės dydis: 43**. Įklijuokite jį į el. laišką arba WhatsApp pokalbį. Programoje niekas neišsaugoma. Jei naršyklė nenukopijuoja, tekstas parodomas pažymėtas, kad nukopijuotumėte patys.',
+            '**Bendrinimo nuoroda** sukuria nuorodą, kurią gali atverti kiekvienas ją turintis, neprisijungęs. Suteikite jai **Pavadinimą**, kurį matote tik jūs, pasirinkite, kiek ji galioja (**1 diena**, **7 dienos** arba **30 dienų**), tada **Sukurti nuorodą (3)**. Pasirinkite **Kopijuoti nuorodą** ir ją nusiųskite. Nuoroda parodoma tik šį kartą.',
+          ],
+        },
+        { shots: [{ name: 'share-link', alt: 'Langas „Eksportuoti“ su pasirinkta bendrinimo nuoroda: pavadinimas ir kiek ji galioja' }] },
+        {
+          p: 'Nuoroda rodo žmones tokius, kokie jie buvo bendrinant, tik su jūsų pažymėtais stulpeliais ir tik tai, ką matote patys. Vėlesni darbuotojo pakeitimai jos nepasiekia.',
+        },
+        { shots: [{ name: 'shared-page', alt: 'Bendrinimo nuoroda, atverta telefone', phone: true }] },
+        {
+          p: 'Bendrinti galima iki 10 žmonių; pažymėjus daugiau, langas tai pasako. Bendrinti gali visi. Tas, kurio rolės neleidžia **Eksportuoti duomenis**, ekrano **Darbuotojai** viršuje mato **Bendrinti**, o ne **Eksportuoti**, ir langas siūlo tik du bendrinimo būdus.',
+        },
+        {
+          p: '**Bendrinimo nuorodos** rodo jūsų bendrintas dar galiojančias nuorodas: pavadinimą, kiek žmonių, kada bendrinote ir iki kada jos galioja. Atidarykite jas per **⋯** ekrano **Darbuotojai** viršuje arba per **Paiešką**. **Atšaukti** iškart uždaro nuorodą (prieš tai paklausus) ir ištrina joje buvusius duomenis. Pasibaigus laikui nuoroda užsidaro ir pati, o jos duomenys tada ištrinami.',
+        },
+        { shots: [{ name: 'shared-links', alt: 'Bendrinimo nuorodos su mygtuku „Atšaukti“' }] },
+        { p: 'Kiekviena sukurta ir atšaukta nuoroda matoma **Audito žurnale**.', roles: ['admin'] },
       ],
     },
     {
@@ -474,6 +513,7 @@ export const lt: Guide = {
         {
           ul: [
             '**Administratorius**, **Vadovas** ir **Darbuotojas** yra įtaisytos rolės. **Administratorius** gali viską ir jo pakeisti negalima: **Peržiūrėti** parodo, ką jis leidžia. Ką leidžia **Vadovas** ir **Darbuotojas**, galite keisti, bet ne jų pavadinimus ar aprašymus, o ištrinti jų negalima.',
+            'Teisė **Eksportuoti duomenis** leidžia rolės naudotojams eksportuoti sąrašus. Įtaisytos rolės ją turi; jūsų pridėta rolė – tik jei ją pažymite. Nuimkite žymę **Vadovo** ar **Darbuotojo** rolėje, kad jie nebeeksportuotų. **Audito žurnalo** eksportui reikia atskiros teisės.',
             '**Pridėti rolę** sukuria naują: pavadinimas, kam ji skirta, ir jos teisės. Kai kurioms teisėms reikia kitos, kuri pažymima kartu: teisei **Tvarkyti naudotojus** reikia teisės **Matyti naudotojus**.',
             'Pakeitimas rolę turinčius naudotojus pasiekia per kelias minutes.',
             '**⋯ → Ištrinti rolę…** ištrina rolę, kurios neturi nė vienas naudotojas. Pirmiausia atimkite ją iš naudotojų skiltyje **Naudotojai**.',

@@ -11,7 +11,7 @@ import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Kbd } from '@ppe/ui/components/kbd'
-import { BookOpen, Boxes, ChevronDown, ClipboardList, Ellipsis, Grip, History as HistoryIcon, Keyboard, FileText, LayoutDashboard, LogOut, Package, Plus, RotateCcw, Search, ShieldCheck, Shirt, UserRound, Users } from 'lucide-react'
+import { BookOpen, Boxes, ChevronDown, ClipboardList, Ellipsis, Grip, History as HistoryIcon, Keyboard, FileText, LayoutDashboard, Link2, LogOut, Package, Plus, RotateCcw, Search, ShieldCheck, Shirt, UserRound, Users } from 'lucide-react'
 import { Fragment, Suspense, lazy, useEffect, useId, useRef, useState } from 'react'
 
 import { CommandPalette, type PaletteApp, type PaletteSection } from '@/components/command-palette'
@@ -38,6 +38,8 @@ import { Vault } from './routes/vault'
 import { ManagerDashboard } from './routes/manager-dashboard'
 import { RecordPage } from './routes/record'
 import { Replacements } from './routes/replacements'
+import { SharedPage } from './routes/shared'
+import { SharedLinks } from './routes/shared-links'
 
 // The guide's text in three languages is read rarely: its own chunk, loaded when Help opens.
 const Help = lazy(() => import('./routes/help').then((m) => ({ default: m.Help })))
@@ -105,7 +107,8 @@ function isCurrent(current: Route['name'], tab: Route['name']): boolean {
   return (
     current === tab ||
     (current === 'record' && tab === 'history') ||
-    ((current === 'employee' || current === 'employeePage') && tab === 'employees') ||
+    // Shared Links is reached from Employees (its ⋯ and Share Link): the section stays current.
+    ((current === 'employee' || current === 'employeePage' || current === 'sharedLinks') && tab === 'employees') ||
     // Company Assets' link is the SIM cards'; Equipment and an asset's page are in the section too.
     ((current === 'equipment' || current === 'asset' || current === 'assetForm') && tab === 'simCards') ||
     (current === 'managerDashboard' && tab === 'dashboard') ||
@@ -192,6 +195,8 @@ export function App() {
   // The public confirmation page is checked before the session gate: its
   // visitor is an employee with a link, not a signed-in user.
   if (asked.name === 'confirm') return <ConfirmPage token={asked.token} />
+  // So is a shared link's page (WARE-51): whoever has the link, signed in or not.
+  if (asked.name === 'shared') return <SharedPage token={asked.token} />
   // A screen that moved to Administration: the effect above sends the browser there.
   if (asked.name === 'administration') return <CheckingSignIn />
   // The refresh cookie answers whether this browser is signed in; until then, neither the app nor Sign in.
@@ -222,6 +227,7 @@ export function App() {
     // A section with screens of its own is each of them in the palette.
     ...shownTabs.flatMap((tab) => (tab.screens ?? [tab]).map((s) => ({ route: s.route, label: s.label, icon: tab.icon }))),
     { route: { name: 'replacements' }, label: t.shell.replacements, icon: RotateCcw },
+    { route: { name: 'sharedLinks' }, label: t.shares.title, icon: Link2 },
     { route: { name: 'account' }, label: t.shell.accountAndPassword, icon: UserRound },
     { route: { name: 'help' }, label: t.shell.userGuide, icon: BookOpen },
   ]
@@ -551,6 +557,7 @@ export function App() {
         {route.name === 'itemSets' ? <ItemSets navigate={navigate} /> : null}
         {route.name === 'vault' ? <Vault selected={route.document} navigate={navigate} /> : null}
         {route.name === 'replacements' ? <Replacements navigate={navigate} onBack={back({ name: 'home' })} /> : null}
+        {route.name === 'sharedLinks' ? <SharedLinks navigate={navigate} /> : null}
         {route.name === 'account' ? <Account onSignOut={signOut} /> : null}
         {route.name === 'help' ? (
           <Suspense fallback={<Loading />}>

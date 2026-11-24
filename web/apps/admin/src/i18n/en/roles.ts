@@ -79,6 +79,7 @@ export const roles = {
     'ai_usage.read': { label: 'See AI Usage', grants: 'Every call the app made to an AI model (the colour photo), its tokens and cost, who and when.' },
     'apps.manage': { label: 'Manage apps', grants: 'App Launcher’s apps and shortcuts: register them, change them, who sees each, their order, and feedback on them.' },
     'apps.preview': { label: 'See apps in testing', grants: 'POC and In development apps in App Launcher, behind Show apps in testing.' },
+    'data.export': { label: 'Export data', grants: 'Download the rows of any list you can see, shown or ticked, as Excel or CSV. The Audit log has its own.' },
     'employee_profiles.read': {
       label: 'See employee profiles',
       grants: 'An employee’s code, notes, preferred language and photos, and the birth date, nationality and sex from an identity document. Names are everyone’s.',

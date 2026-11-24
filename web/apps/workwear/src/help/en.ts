@@ -288,6 +288,9 @@ export const en: Guide = {
           p: '**Export** saves a list as a file for a spreadsheet: **Excel (.xlsx)** or **CSV**. It is at the top of **Orders**, **Employees**, **Item Catalogue**, **SIM Cards** and **Equipment**. On **Item Sets**, **Replacements due** and an employee\'s **Items given** it opens the **Export** window straight away, with every row.',
         },
         {
+          p: '**Export** is there only if one of your roles allows **Export data**. **Administrator**, **Manager** and **Employee** allow it, and an administrator can give it to other roles on **Roles & permissions**. Without it, no list shows **Export**.',
+        },
+        {
           p: 'Choose **Export** at the top of the list. Checkboxes appear beside the rows, and a bar above the list says what you are doing and how many rows are ticked, such as **Export Employees · 3 selected**. While it is there, clicking a row ticks it instead of opening it, and the row\'s own buttons are hidden. The box at the top of the column ticks every row shown.',
           devices: ['tablet', 'desktop'],
         },
@@ -306,7 +309,43 @@ export const en: Guide = {
         {
           p: 'The **Export** window names the rows you picked, such as **3 selected**; **Change** takes you back to the list to pick again. Tick the columns you want (those the screen shows are ticked already), choose **Excel (.xlsx)** or **CSV**, then **Export (3)**. The file, such as `Employees 2026-11-20.xlsx`, downloads with the rows in the list\'s order and the column names in your language. It holds only what you can see on the screen.',
         },
-        { p: 'In **Administration** the same **Export** is on **Users**, **Roles & permissions**, **Suppliers**, **Manage apps**, and on **Security**\'s **Signed-in devices** and **System**\'s **Errors**.', roles: ['admin'] },
+        { p: 'In **Administration** the same **Export** is on **Users**, **Roles & permissions**, **Suppliers**, **Companies**, **Manage apps**, and on **Security**\'s **Signed-in devices** and **System**\'s **Errors**.', roles: ['admin'] },
+      ],
+    },
+    {
+      id: 'share',
+      title: 'Share a few employees',
+      blocks: [
+        {
+          p: 'To send a few people\'s details to someone outside the app, such as a supplier, use the **Export** window on **Employees**. Under **How**, beside the files, are two ways to share up to 10 people: **Copy as Text** and **Share Link**.',
+        },
+        {
+          p: 'Choose **Export** at the top of **Employees**, tick the people, then **Export 3…**. Tick the columns to send, then choose how.',
+          devices: ['tablet', 'desktop'],
+        },
+        {
+          p: 'Open **⋯** at the top of **Employees**, choose **Export**, tick the people, then **Export 3…**. Tick the columns to send, then choose how.',
+          devices: ['phone'],
+        },
+        {
+          ul: [
+            '**Copy as Text** copies the people as plain text, one after another, with a line for each column, such as **Shoe size: 43**. Paste it into an e-mail or a WhatsApp chat. Nothing is kept in the app. If your browser will not copy, the text is shown selected, for you to copy yourself.',
+            '**Share Link** makes a link that anyone who has it can open, without signing in. Give it a **Name**, which only you see, choose how long it stays open (**1 day**, **7 days** or **30 days**), then **Create Link (3)**. Choose **Copy Link** and send it. The link is shown only this once.',
+          ],
+        },
+        { shots: [{ name: 'share-link', alt: 'The Export window with Share Link chosen: its name and how long it opens' }] },
+        {
+          p: 'A link shows the people as they were when you shared them, with only the columns you ticked and only what you can see yourself. Later changes to an employee do not reach it.',
+        },
+        { shots: [{ name: 'shared-page', alt: 'A shared link opened on a phone', phone: true }] },
+        {
+          p: 'Sharing takes up to 10 people; with more ticked, the window says so. Anyone can share. Someone whose roles do not allow **Export data** sees **Share** at the top of **Employees** instead of **Export**, and the window offers only the two ways to share.',
+        },
+        {
+          p: '**Shared Links** lists the links you have shared that are still open, with their name, how many people, when you shared them and until when they open. Open it from **⋯** at the top of **Employees**, or with **Search**. **Revoke** closes a link at once, after asking, and deletes the details it held. A link also closes by itself when its time is up, and its details are deleted then.',
+        },
+        { shots: [{ name: 'shared-links', alt: 'Shared Links, with Revoke' }] },
+        { p: 'Each link made and revoked is on the **Audit log**.', roles: ['admin'] },
       ],
     },
     {
@@ -484,6 +523,7 @@ export const en: Guide = {
         {
           ul: [
             '**Administrator**, **Manager** and **Employee** are built in. **Administrator** can do everything and cannot be changed: **View** shows what it allows. You can change what **Manager** and **Employee** allow, but not their names or descriptions, and you cannot delete them.',
+            '**Export data** lets a role\'s users export lists. The built-in roles have it; a role you add has it only if you tick it. Untick it on **Manager** or **Employee** to stop them exporting. Exporting the **Audit log** is a permission of its own.',
             '**Add Role** makes a new one: a name, what it is for, and its permissions. Some permissions need another, which is ticked with them: **Manage users** needs **See users**.',
             'A change reaches the users who hold the role within minutes.',
             '**⋯ → Delete role…** deletes a role that no user holds. Take it from its users on **Users** first.',

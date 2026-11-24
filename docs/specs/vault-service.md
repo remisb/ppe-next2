@@ -7,7 +7,7 @@ and generation are [document-template-service.md](document-template-service.md);
 worker are [outbox-service.md](outbox-service.md); the data-protection note is
 [document-vault-dpia-note.md](../privacy/document-vault-dpia-note.md).
 
-**Status: phase 1 built** (migration 0060, `internal/vault`, `internal/vault/document`,
+**Status: phase 1 built** (migration 0061, `internal/vault`, `internal/vault/document`,
 `cmd/api/vault-routes.go`, `cmd/api/wire_vault.go`, the staff app's Document Vault and Documents
 sections); the rest decided, not built. Each section names the phase that builds it (ADR 0008's
 plan: 1 core, 2 sealed types, 3 templates, 4 worker and text, 5 signed copies, 6 archiving, 7
@@ -21,9 +21,9 @@ identity documents, 8 DOCX).
 - **Isolation:** `internal/vault/...` imports no `internal/domain/*` or `internal/personnel/*`
   package (`internal/vault/imports_test.go`). It may import the platform: `internal/audit`,
   `internal/files`, `internal/sealbox`, `internal/outbox`, `internal/placeholder`.
-- **Migrations:** `0060_vault` (phase 1), `0061_vault_sealed` (phase 2),
-  `0062_document_templates` (phase 3), `0063_outbox` (phase 4), `0064_vault_signed_copies`
-  (phase 5), `0065_document_template_docx` (phase 8).
+- **Migrations:** `0061_vault` (phase 1), `0062_vault_sealed` (phase 2),
+  `0063_document_templates` (phase 3), `0064_outbox` (phase 4), `0065_vault_signed_copies`
+  (phase 5), `0066_document_template_docx` (phase 8).
 - **Apps:** the staff app's **Document Vault** (`/vault`, list and detail at `/vault/<id>`) and a
   **Documents** section on the employee page and an asset's detail; Administration's **Document
   Templates** (phase 3).
@@ -226,7 +226,7 @@ name searched for is never in a URL or the request log. `vault.read` or
 
 - **Configuration** `vault.ppe`: a copy of `simple` with `unaccent` (the immutable wrapper
   `vault.unaccent`), so *Žukauskaitė*, *zukauskaite* and *ŽUKAUSKAITĖ* match. No stemmer.
-- **Vector** `documents.search`, rebuilt by `vault.refresh_search(id)` (SQL, migration 0060)
+- **Vector** `documents.search`, rebuilt by `vault.refresh_search(id)` (SQL, migration 0061)
   after every change to a document, its links or its read text: **A** title, number, the type's
   names; **B** link labels; **C** file names (dates are filters, not words); **D** read text (every version's, the newest first, capped at 1 MB).
 - **Query:** the words typed, each a prefix (`zukausk:*`), all required; ranked by
@@ -336,7 +336,7 @@ Signed copies keep **their** event: an upload through Company Assets records
 
 ## Signed copies (phase 5)
 
-Migration `0064_vault_signed_copies`, pure SQL: each assignment with copies becomes a document
+Migration `0065_vault_signed_copies`, pure SQL: each assignment with copies becomes a document
 of type `asset.signed_form` (`source_kind` `asset_assignment`, `source_id` its id, links to the
 asset and employee, locked); each copy becomes a version (`original`, then `added`) and a file
 with **the same id**, object key, name, type, size, SHA-256, time and uploader; read text starts

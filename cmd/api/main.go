@@ -38,6 +38,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
+	"github.com/remisb/ppe-next2/internal/domain/share"
 	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
@@ -166,6 +167,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	svc.scans = scan.NewService(scan.NewPostgresRepository(pool), personnel, store, scan.WithDays(cfg.PersonnelScanDays),
 		scan.WithLocation(loc))
 	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), store)
+	svc.shares = share.NewService(share.NewPostgresRepository(pool))
 	// App Launcher's default tiles, put back should the registry have been
 	// emptied, and its apps' slugs, which tell requests' apps apart.
 	if err := launcher.EnsureDefaults(ctx, pool); err != nil {
@@ -278,6 +280,8 @@ type services struct {
 	scans *scan.Service
 	// vault is the Document Vault's documents (ADR 0008); run sets it.
 	vault *vaultdoc.Service
+	// shares are shared links (WARE-51); run sets them.
+	shares *share.Service
 	// ai is Settings → AI, AI Usage and Make Colour Photo (ADR 0007); run sets it.
 	ai        *aiHandler
 	dashboard *dashboard.Service
@@ -359,6 +363,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerItemSetRoutes(rt, svc.itemSets)
 	registerOrderRoutes(rt, svc.orders)
 	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)
+	registerShareRoutes(rt, svc.shares, svc.employees, cfg.PublicBaseURL)
 	registerAssetRoutes(rt, svc.assets, svc.users)
 	registerPersonnelRoutes(rt, svc.documents, sensitive)
 	registerPersonnelScanRoutes(rt, svc.scans)

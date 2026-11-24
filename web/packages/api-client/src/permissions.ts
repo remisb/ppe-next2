@@ -20,6 +20,7 @@ export const PERMISSIONS = [
   'ai_usage.read',
   'apps.manage',
   'apps.preview',
+  'data.export',
   'employee_profiles.read',
   'employee_profiles.manage',
   'employee_sizes.read',

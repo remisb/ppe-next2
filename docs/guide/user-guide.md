@@ -229,6 +229,8 @@ On **Add Item** and **Edit Item**, choose the **Supplier** from the list adminis
 
 **Export** saves a list as a file for a spreadsheet: **Excel (.xlsx)** or **CSV**. It is at the top of **Orders**, **Employees**, **Item Catalogue**, **SIM Cards** and **Equipment**. On **Item Sets**, **Replacements due** and an employee's **Items given** it opens the **Export** window straight away, with every row.
 
+**Export** is there only if one of your roles allows **Export data**. **Administrator**, **Manager** and **Employee** allow it, and an administrator can give it to other roles on **Roles & permissions**. Without it, no list shows **Export**.
+
 Choose **Export** at the top of the list. Checkboxes appear beside the rows, and a bar above the list says what you are doing and how many rows are ticked, such as **Export Employees · 3 selected**. While it is there, clicking a row ticks it instead of opening it, and the row's own buttons are hidden. The box at the top of the column ticks every row shown.
 
 - **Export 3…** exports the rows you ticked.
@@ -241,9 +243,34 @@ The **Export** window names the rows you picked, such as **3 selected**; **Chang
 
 *Administrators only:*
 
-In **Administration** the same **Export** is on **Users**, **Roles & permissions**, **Suppliers**, **Manage apps**, and on **Security**'s **Signed-in devices** and **System**'s **Errors**.
+In **Administration** the same **Export** is on **Users**, **Roles & permissions**, **Suppliers**, **Companies**, **Manage apps**, and on **Security**'s **Signed-in devices** and **System**'s **Errors**.
 
-## 12. Company Assets
+## 12. Share a few employees
+
+To send a few people's details to someone outside the app, such as a supplier, use the **Export** window on **Employees**. Under **How**, beside the files, are two ways to share up to 10 people: **Copy as Text** and **Share Link**.
+
+Choose **Export** at the top of **Employees**, tick the people, then **Export 3…**. Tick the columns to send, then choose how.
+
+- **Copy as Text** copies the people as plain text, one after another, with a line for each column, such as **Shoe size: 43**. Paste it into an e-mail or a WhatsApp chat. Nothing is kept in the app. If your browser will not copy, the text is shown selected, for you to copy yourself.
+- **Share Link** makes a link that anyone who has it can open, without signing in. Give it a **Name**, which only you see, choose how long it stays open (**1 day**, **7 days** or **30 days**), then **Create Link (3)**. Choose **Copy Link** and send it. The link is shown only this once.
+
+![The Export window with Share Link chosen: its name and how long it opens](../../web/apps/workwear/public/help-img/en/desktop/share-link.png)
+
+A link shows the people as they were when you shared them, with only the columns you ticked and only what you can see yourself. Later changes to an employee do not reach it.
+
+![A shared link opened on a phone](../../web/apps/workwear/public/help-img/en/phone/shared-page.png)
+
+Sharing takes up to 10 people; with more ticked, the window says so. Anyone can share. Someone whose roles do not allow **Export data** sees **Share** at the top of **Employees** instead of **Export**, and the window offers only the two ways to share.
+
+**Shared Links** lists the links you have shared that are still open, with their name, how many people, when you shared them and until when they open. Open it from **⋯** at the top of **Employees**, or with **Search**. **Revoke** closes a link at once, after asking, and deletes the details it held. A link also closes by itself when its time is up, and its details are deleted then.
+
+![Shared Links, with Revoke](../../web/apps/workwear/public/help-img/en/desktop/shared-links.png)
+
+*Administrators only:*
+
+Each link made and revoked is on the **Audit log**.
+
+## 13. Company Assets
 
 **Company Assets** records the SIMs, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two screens: **SIM Cards**, and **Equipment**, for equipment and furniture alike, which only those given the **Equipment Assignments** role see. Each item is one record with its own inventory number, so three identical laptops are three assets.
 
@@ -309,7 +336,7 @@ Leaving never returns anything. When an employee does not give a card back, **Ma
 
 Search finds a SIM by its SIM, phone or inventory number, and an item by its inventory number.
 
-## 13. Scan SIMs
+## 14. Scan SIMs
 
 *Administrators and managers only.*
 
@@ -327,7 +354,7 @@ The list below checks every SIM at once and says what needs fixing: a number tha
 
 **PIN and PUK**, at the top, finds a SIM by its SIM No. or phone number, at least 4 digits. **Show PIN and PUK** shows them, as the key on a SIM in **SIM Cards** does; each time is recorded in its **Changes**, never the codes. A SIM without them has **Add PIN and PUK**. They are kept encrypted, and never shown in a list. Shown codes hide again after a minute, or when you leave the tab. The SIMs you were scanning stay in their list while you look one up here.
 
-## 14. Administration
+## 15. Administration
 
 *Administrators only.*
 
@@ -337,7 +364,7 @@ Open it with **Administration** at the foot of the sidebar. It has a sidebar of 
 
 You are signed in to both at once, and **Sign out** in either signs you out of both. Anyone whose roles let them manage users, roles, settings or suppliers, or read the Audit log, Security, System, Usage or the backups, sees **Administration**, with only the screens their roles open.
 
-## 15. Overview
+## 16. Overview
 
 *Administrators only.*
 
@@ -354,7 +381,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 
 ![Overview: what needs attention, then the figures](../../web/apps/workwear/public/help-img/en/desktop/overview.png)
 
-## 16. Users
+## 17. Users
 
 *Administrators only.*
 
@@ -366,13 +393,14 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 
 ![The Users screen](../../web/apps/workwear/public/help-img/en/desktop/users.png)
 
-## 17. Roles & permissions
+## 18. Roles & permissions
 
 *Administrators only.*
 
 **Roles & permissions** lists each role, what it allows and how many users hold it. A role is a set of permissions, such as **Manage Item Catalogue** or **Delete employees**. You give roles to users on **Users**.
 
 - **Administrator**, **Manager** and **Employee** are built in. **Administrator** can do everything and cannot be changed: **View** shows what it allows. You can change what **Manager** and **Employee** allow, but not their names or descriptions, and you cannot delete them.
+- **Export data** lets a role's users export lists. The built-in roles have it; a role you add has it only if you tick it. Untick it on **Manager** or **Employee** to stop them exporting. Exporting the **Audit log** is a permission of its own.
 - **Add Role** makes a new one: a name, what it is for, and its permissions. Some permissions need another, which is ticked with them: **Manage users** needs **See users**.
 - A change reaches the users who hold the role within minutes.
 - **⋯ → Delete role…** deletes a role that no user holds. Take it from its users on **Users** first.
@@ -381,7 +409,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 ![Roles & permissions: the built-in roles and the users holding them](../../web/apps/workwear/public/help-img/en/desktop/roles.png)
 ![A role's permissions, grouped, each with what it allows](../../web/apps/workwear/public/help-img/en/desktop/role.png)
 
-## 18. Audit log
+## 19. Audit log
 
 *Administrators only.*
 
@@ -397,7 +425,7 @@ Filter by **Area**, **Change**, **Person** and dates. Click a change to open it 
 
 ![Audit log: a price change open, with the fields before and after](../../web/apps/workwear/public/help-img/en/desktop/audit-log.png)
 
-## 19. Security
+## 20. Security
 
 *Administrators only.*
 
@@ -412,7 +440,7 @@ Filter by **Area**, **Change**, **Person** and dates. Click a change to open it 
 ![Security: sign-ins with their address and device](../../web/apps/workwear/public/help-img/en/desktop/security.png)
 ![The access review: users, their roles and last sign-in](../../web/apps/workwear/public/help-img/en/desktop/access-review.png)
 
-## 20. System
+## 21. System
 
 *Administrators only.*
 
@@ -427,7 +455,7 @@ When something goes wrong, the app shows a **Reference**, such as `9f2c1a7e`. Th
 ![System: the app, its requests and the database](../../web/apps/workwear/public/help-img/en/desktop/system.png)
 ![Errors: an error open, with its reference](../../web/apps/workwear/public/help-img/en/desktop/errors.png)
 
-## 21. Backups
+## 22. Backups
 
 *Administrators only.*
 
@@ -446,7 +474,7 @@ The settings are made on the server, and a backup is restored there too: the app
 
 ![Backups: the last backup, the recent ones and the settings](../../web/apps/workwear/public/help-img/en/desktop/backups.png)
 
-## 22. Usage
+## 23. Usage
 
 *Administrators only.*
 
@@ -461,7 +489,7 @@ The settings are made on the server, and a backup is restored there too: the app
 
 ![Usage: active people, sign-ins and more](../../web/apps/workwear/public/help-img/en/desktop/usage.png)
 
-## 23. Settings
+## 24. Settings
 
 *Administrators only.*
 
@@ -477,7 +505,7 @@ A card already registered keeps its provider, even one you remove from the list,
 
 ![Settings: the SIM providers, one of them the default, and the default non-return value](../../web/apps/workwear/public/help-img/en/desktop/sim-providers.png)
 
-## 24. Suppliers
+## 25. Suppliers
 
 *Administrators only.*
 
@@ -491,7 +519,7 @@ An item's supplier is chosen on **Edit Item**, in the Item Catalogue. Someone gi
 
 ![Suppliers: each with its internal code, place, items and contact](../../web/apps/workwear/public/help-img/en/desktop/suppliers.png)
 
-## 25. Manage apps
+## 26. Manage apps
 
 *Administrators only.*
 
@@ -509,7 +537,7 @@ Turn on **Stable follows deploys** for an app no one tries first: each deploy's 
 
 ![Manage apps: Scan SIMs beside the list, with its versions and channels](../../web/apps/workwear/public/help-img/en/desktop/manage-apps.png)
 
-## 26. Your account
+## 27. Your account
 
 - **Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian. Dates follow your language: 2026-10-15 in English, 2026.10.15 in Lithuanian, 15.10.2026 in Russian.
 - **Theme**: **Light**, **Dark** or **System**, which follows the device. It is kept on this device, and the sign-in page uses it too.
@@ -521,7 +549,7 @@ Turn on **Stable follows deploys** for an app no one tries first: each deploy's 
 ![Account: language, theme and password](../../web/apps/workwear/public/help-img/en/desktop/account.png)
 ![Signed-in devices: this device and a phone](../../web/apps/workwear/public/help-img/en/desktop/devices.png)
 
-## 27. Install the app
+## 28. Install the app
 
 Add the app to your phone's home screen to open it like any other app: in a window of its own, without the browser's address bar, under the name **Workwear**.
 
@@ -543,7 +571,7 @@ On a computer, Chrome and Edge can install it too: choose **Install app** on you
 - Without a connection, the app shows **The server cannot be reached**. It opens the page again by itself once you are back online, or choose **Retry**.
 - The icon's shortcuts are in the language you used when you added the app. After changing your language, remove the app from the home screen and add it again.
 
-## 28. Search and shortcuts
+## 29. Search and shortcuts
 
 | Key | Does |
 | --- | --- |

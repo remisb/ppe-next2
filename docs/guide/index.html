@@ -86,23 +86,24 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <li><a href="#employees"><b>9</b>Employees</a></li>
     <li><a href="#catalogue"><b>10</b>Item Catalogue and Item Sets</a></li>
     <li><a href="#export"><b>11</b>Export a list</a></li>
-    <li><a href="#assets"><b>12</b>Company Assets</a></li>
-    <li><a href="#sim-scan"><b>13</b>Scan SIMs</a></li>
-    <li><a href="#administration"><b>14</b>Administration</a></li>
-    <li><a href="#overview"><b>15</b>Overview</a></li>
-    <li><a href="#users"><b>16</b>Users</a></li>
-    <li><a href="#roles"><b>17</b>Roles &amp; permissions</a></li>
-    <li><a href="#audit"><b>18</b>Audit log</a></li>
-    <li><a href="#security"><b>19</b>Security</a></li>
-    <li><a href="#system"><b>20</b>System</a></li>
-    <li><a href="#backups"><b>21</b>Backups</a></li>
-    <li><a href="#usage"><b>22</b>Usage</a></li>
-    <li><a href="#settings"><b>23</b>Settings</a></li>
-    <li><a href="#suppliers"><b>24</b>Suppliers</a></li>
-    <li><a href="#manage-apps"><b>25</b>Manage apps</a></li>
-    <li><a href="#account"><b>26</b>Your account</a></li>
-    <li><a href="#install"><b>27</b>Install the app</a></li>
-    <li><a href="#shortcuts"><b>28</b>Search and shortcuts</a></li>
+    <li><a href="#share"><b>12</b>Share a few employees</a></li>
+    <li><a href="#assets"><b>13</b>Company Assets</a></li>
+    <li><a href="#sim-scan"><b>14</b>Scan SIMs</a></li>
+    <li><a href="#administration"><b>15</b>Administration</a></li>
+    <li><a href="#overview"><b>16</b>Overview</a></li>
+    <li><a href="#users"><b>17</b>Users</a></li>
+    <li><a href="#roles"><b>18</b>Roles &amp; permissions</a></li>
+    <li><a href="#audit"><b>19</b>Audit log</a></li>
+    <li><a href="#security"><b>20</b>Security</a></li>
+    <li><a href="#system"><b>21</b>System</a></li>
+    <li><a href="#backups"><b>22</b>Backups</a></li>
+    <li><a href="#usage"><b>23</b>Usage</a></li>
+    <li><a href="#settings"><b>24</b>Settings</a></li>
+    <li><a href="#suppliers"><b>25</b>Suppliers</a></li>
+    <li><a href="#manage-apps"><b>26</b>Manage apps</a></li>
+    <li><a href="#account"><b>27</b>Your account</a></li>
+    <li><a href="#install"><b>28</b>Install the app</a></li>
+    <li><a href="#shortcuts"><b>29</b>Search and shortcuts</a></li>
   </ol></nav>
 </header>
 
@@ -322,6 +323,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 <section id="export">
   <h2><span class="n">11</span>Export a list</h2>
     <p><b>Export</b> saves a list as a file for a spreadsheet: <b>Excel (.xlsx)</b> or <b>CSV</b>. It is at the top of <b>Orders</b>, <b>Employees</b>, <b>Item Catalogue</b>, <b>SIM Cards</b> and <b>Equipment</b>. On <b>Item Sets</b>, <b>Replacements due</b> and an employee's <b>Items given</b> it opens the <b>Export</b> window straight away, with every row.</p>
+    <p><b>Export</b> is there only if one of your roles allows <b>Export data</b>. <b>Administrator</b>, <b>Manager</b> and <b>Employee</b> allow it, and an administrator can give it to other roles on <b>Roles &amp; permissions</b>. Without it, no list shows <b>Export</b>.</p>
     <p>Choose <b>Export</b> at the top of the list. Checkboxes appear beside the rows, and a bar above the list says what you are doing and how many rows are ticked, such as <b>Export Employees · 3 selected</b>. While it is there, clicking a row ticks it instead of opening it, and the row's own buttons are hidden. The box at the top of the column ticks every row shown.</p>
     <ul>
       <li><b>Export 3…</b> exports the rows you ticked.</li>
@@ -331,11 +333,35 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <p><kbd>Esc</kbd> leaves too.</p>
     <p>The <b>Export</b> window names the rows you picked, such as <b>3 selected</b>; <b>Change</b> takes you back to the list to pick again. Tick the columns you want (those the screen shows are ticked already), choose <b>Excel (.xlsx)</b> or <b>CSV</b>, then <b>Export (3)</b>. The file, such as <kbd>Employees 2026-11-20.xlsx</kbd>, downloads with the rows in the list's order and the column names in your language. It holds only what you can see on the screen.</p>
     <p class="who">Administrators only</p>
-    <p>In <b>Administration</b> the same <b>Export</b> is on <b>Users</b>, <b>Roles &amp; permissions</b>, <b>Suppliers</b>, <b>Manage apps</b>, and on <b>Security</b>'s <b>Signed-in devices</b> and <b>System</b>'s <b>Errors</b>.</p>
+    <p>In <b>Administration</b> the same <b>Export</b> is on <b>Users</b>, <b>Roles &amp; permissions</b>, <b>Suppliers</b>, <b>Companies</b>, <b>Manage apps</b>, and on <b>Security</b>'s <b>Signed-in devices</b> and <b>System</b>'s <b>Errors</b>.</p>
+</section>
+
+<section id="share">
+  <h2><span class="n">12</span>Share a few employees</h2>
+    <p>To send a few people's details to someone outside the app, such as a supplier, use the <b>Export</b> window on <b>Employees</b>. Under <b>How</b>, beside the files, are two ways to share up to 10 people: <b>Copy as Text</b> and <b>Share Link</b>.</p>
+    <p>Choose <b>Export</b> at the top of <b>Employees</b>, tick the people, then <b>Export 3…</b>. Tick the columns to send, then choose how.</p>
+    <ul>
+      <li><b>Copy as Text</b> copies the people as plain text, one after another, with a line for each column, such as <b>Shoe size: 43</b>. Paste it into an e-mail or a WhatsApp chat. Nothing is kept in the app. If your browser will not copy, the text is shown selected, for you to copy yourself.</li>
+      <li><b>Share Link</b> makes a link that anyone who has it can open, without signing in. Give it a <b>Name</b>, which only you see, choose how long it stays open (<b>1 day</b>, <b>7 days</b> or <b>30 days</b>), then <b>Create Link (3)</b>. Choose <b>Copy Link</b> and send it. The link is shown only this once.</li>
+    </ul>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/share-link.png" alt="The Export window with Share Link chosen: its name and how long it opens" loading="lazy"></figure>
+    </div>
+    <p>A link shows the people as they were when you shared them, with only the columns you ticked and only what you can see yourself. Later changes to an employee do not reach it.</p>
+    <div class="shots">
+      <figure class="phone"><img src="../../web/apps/workwear/public/help-img/en/phone/shared-page.png" alt="A shared link opened on a phone" loading="lazy"></figure>
+    </div>
+    <p>Sharing takes up to 10 people; with more ticked, the window says so. Anyone can share. Someone whose roles do not allow <b>Export data</b> sees <b>Share</b> at the top of <b>Employees</b> instead of <b>Export</b>, and the window offers only the two ways to share.</p>
+    <p><b>Shared Links</b> lists the links you have shared that are still open, with their name, how many people, when you shared them and until when they open. Open it from <b>⋯</b> at the top of <b>Employees</b>, or with <b>Search</b>. <b>Revoke</b> closes a link at once, after asking, and deletes the details it held. A link also closes by itself when its time is up, and its details are deleted then.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/shared-links.png" alt="Shared Links, with Revoke" loading="lazy"></figure>
+    </div>
+    <p class="who">Administrators only</p>
+    <p>Each link made and revoked is on the <b>Audit log</b>.</p>
 </section>
 
 <section id="assets">
-  <h2><span class="n">12</span>Company Assets</h2>
+  <h2><span class="n">13</span>Company Assets</h2>
     <p><b>Company Assets</b> records the SIMs, equipment and furniture the company gives employees: where each one is, who holds it, and the signed form for each giving. It has two screens: <b>SIM Cards</b>, and <b>Equipment</b>, for equipment and furniture alike, which only those given the <b>Equipment Assignments</b> role see. Each item is one record with its own inventory number, so three identical laptops are three assets.</p>
     <p>Open it from the sidebar, or press <kbd>G</kbd> then <kbd>A</kbd>. If you also see <b>Equipment</b>, it and <b>SIM Cards</b> are listed under <b>Company Assets</b>: choose one to open it. Choosing <b>Company Assets</b> hides or shows them.</p>
     <p class="who">Administrators and managers only</p>
@@ -385,7 +411,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="sim-scan">
-  <h2><span class="n">13</span>Scan SIMs</h2>
+  <h2><span class="n">14</span>Scan SIMs</h2>
   <p class="who">Administrators and managers only</p>
     <p><b>Scan SIMs</b> adds newly received SIMs from their cards: the SIM No. is read from the barcode on the front, the PIN and PUK from the back. It is an app of its own, still on trial, for those who manage Company Assets: open it from <b>Apps</b>. <b>SIM Cards</b> at its top takes you back to Workwear &amp; Equipment.</p>
     <p><b>For every SIM</b> shows what the cards share: the provider, plan and non-return value from <b>Settings</b>, the received date and a comment. The pencil beside it changes them for this batch only.</p>
@@ -399,7 +425,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="administration">
-  <h2><span class="n">14</span>Administration</h2>
+  <h2><span class="n">15</span>Administration</h2>
   <p class="who">Administrators only</p>
     <p><b>Administration</b> is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on <b>Overview</b>. Its other screens are <b>Users</b>, <b>Roles &amp; permissions</b>, <b>Audit log</b>, <b>Security</b>, <b>System</b>, <b>Usage</b>, <b>Settings</b>, <b>Mail Templates</b>, <b>Suppliers</b> and <b>Manage apps</b>.</p>
     <p>Open it with <b>Administration</b> at the foot of the sidebar. It has a sidebar of its own; <b>Workwear &amp; Equipment</b>, at its foot, takes you back.</p>
@@ -407,7 +433,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="overview">
-  <h2><span class="n">15</span>Overview</h2>
+  <h2><span class="n">16</span>Overview</h2>
   <p class="who">Administrators only</p>
     <p><b>Overview</b> answers the question: is anything wrong? <b>Needs attention</b> lists what to look at, the most urgent first, each with a link to where it is put right. When all is well, it says <b>Nothing needs your attention.</b></p>
     <ul>
@@ -425,7 +451,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="users">
-  <h2><span class="n">16</span>Users</h2>
+  <h2><span class="n">17</span>Users</h2>
   <p class="who">Administrators only</p>
     <ul>
       <li>Add, edit or deactivate accounts. Give each account one or more roles: a user may do what any of their roles allows. <b>Roles &amp; permissions</b> says what each role allows.</li>
@@ -440,11 +466,12 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="roles">
-  <h2><span class="n">17</span>Roles &amp; permissions</h2>
+  <h2><span class="n">18</span>Roles &amp; permissions</h2>
   <p class="who">Administrators only</p>
     <p><b>Roles &amp; permissions</b> lists each role, what it allows and how many users hold it. A role is a set of permissions, such as <b>Manage Item Catalogue</b> or <b>Delete employees</b>. You give roles to users on <b>Users</b>.</p>
     <ul>
       <li><b>Administrator</b>, <b>Manager</b> and <b>Employee</b> are built in. <b>Administrator</b> can do everything and cannot be changed: <b>View</b> shows what it allows. You can change what <b>Manager</b> and <b>Employee</b> allow, but not their names or descriptions, and you cannot delete them.</li>
+      <li><b>Export data</b> lets a role's users export lists. The built-in roles have it; a role you add has it only if you tick it. Untick it on <b>Manager</b> or <b>Employee</b> to stop them exporting. Exporting the <b>Audit log</b> is a permission of its own.</li>
       <li><b>Add Role</b> makes a new one: a name, what it is for, and its permissions. Some permissions need another, which is ticked with them: <b>Manage users</b> needs <b>See users</b>.</li>
       <li>A change reaches the users who hold the role within minutes.</li>
       <li><b>⋯ → Delete role…</b> deletes a role that no user holds. Take it from its users on <b>Users</b> first.</li>
@@ -457,7 +484,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="audit">
-  <h2><span class="n">18</span>Audit log</h2>
+  <h2><span class="n">19</span>Audit log</h2>
   <p class="who">Administrators only</p>
     <p><b>Audit log</b> lists every recorded change: what changed, who made it, when, and where. A change is made in <b>Workwear &amp; Equipment</b>, in <b>Administration</b>, through an employee's <b>Confirmation link</b>, or by the <b>System</b> itself.</p>
     <p>Filter by <b>Area</b>, <b>Change</b>, <b>Person</b> and dates. Click a change to open it beside the list. It shows each field before and after, and <b>Open in Workwear &amp; Equipment</b> opens the record. <b>All changes to this record</b> narrows the list to it.</p>
@@ -474,7 +501,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="security">
-  <h2><span class="n">19</span>Security</h2>
+  <h2><span class="n">20</span>Security</h2>
   <p class="who">Administrators only</p>
     <p><b>Security</b> has three tabs:</p>
     <ul>
@@ -490,7 +517,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="system">
-  <h2><span class="n">20</span>System</h2>
+  <h2><span class="n">21</span>System</h2>
   <p class="who">Administrators only</p>
     <p><b>System</b> shows how the app is running. It has three tabs: <b>Status</b>, <b>Errors</b> and <b>Backups</b>.</p>
     <ul>
@@ -506,7 +533,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="backups">
-  <h2><span class="n">21</span>Backups</h2>
+  <h2><span class="n">22</span>Backups</h2>
   <p class="who">Administrators only</p>
     <p><b>System → Backups</b> shows whether the database is backed up. The backup service on the server copies the whole database on a schedule, every night unless set otherwise, and deletes old copies after the retention period.</p>
     <p>The line at the top says whether all is well. It turns red when the last backup failed, when a scheduled one is overdue, or when the service has stopped reporting. Tell whoever runs the server.</p>
@@ -524,7 +551,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="usage">
-  <h2><span class="n">22</span>Usage</h2>
+  <h2><span class="n">23</span>Usage</h2>
   <p class="who">Administrators only</p>
     <p><b>Usage</b> shows how the apps are used. No page is tracked: everything comes from what the app records anyway.</p>
     <ul>
@@ -541,7 +568,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="settings">
-  <h2><span class="n">23</span>Settings</h2>
+  <h2><span class="n">24</span>Settings</h2>
   <p class="who">Administrators only</p>
     <p><b>Supplier's WhatsApp group</b>: enter the group's name and its invite link. In WhatsApp, open the group, tap its name, then <b>Invite via link</b> and <b>Copy link</b>.</p>
     <p><b>Copy for WhatsApp</b> then offers to open that group, where you paste the order message. WhatsApp cannot open a group with the message already typed in. <b>Remove the group</b> goes back to opening WhatsApp without a chat chosen.</p>
@@ -556,7 +583,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="suppliers">
-  <h2><span class="n">24</span>Suppliers</h2>
+  <h2><span class="n">25</span>Suppliers</h2>
   <p class="who">Administrators only</p>
     <p><b>Suppliers</b>, in Administration, lists the companies catalogue items are bought from: each one's <b>Internal code</b>, name, where it is, how many items name it, and whom to contact. Search by code, name, city or contact. On a phone it is under <b>More</b>.</p>
     <p><b>Add Supplier</b> adds one. Its <b>Internal code</b>, your own short code for it, and its <b>Name</b> are required; the code must differ from every other supplier's, whatever the case. Add the rest as you know it: the <b>Company code</b> and <b>VAT code</b>, the <b>Bank account</b> (IBAN), the address with a two-letter <b>Country</b>, such as LT, the contact person, email, phone, website and notes. <b>Edit</b> changes it; every item from that supplier shows the change.</p>
@@ -568,7 +595,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="manage-apps">
-  <h2><span class="n">25</span>Manage apps</h2>
+  <h2><span class="n">26</span>Manage apps</h2>
   <p class="who">Administrators only</p>
     <p><b>Manage apps</b>, in Administration, is App Launcher's list: every app and shortcut, in the launcher's order. Choose one to see where it runs, who sees it, its feedback and its <b>Changes</b>.</p>
     <p><b>Register app</b> adds a tile: its name in each language, its slug (its short name in addresses and records, set once), whether it is an app or a shortcut to one screen of an app, its group, stage, picture and colour, and where it runs: <b>On this site</b>, with a path such as /orders/new, or <b>Another site</b>, with its https address. <b>Edit</b> changes it later.</p>
@@ -582,7 +609,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="account">
-  <h2><span class="n">26</span>Your account</h2>
+  <h2><span class="n">27</span>Your account</h2>
     <ul>
       <li><b>Language</b>: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian. Dates follow your language: 2026-10-15 in English, 2026.10.15 in Lithuanian, 15.10.2026 in Russian.</li>
       <li><b>Theme</b>: <b>Light</b>, <b>Dark</b> or <b>System</b>, which follows the device. It is kept on this device, and the sign-in page uses it too.</li>
@@ -598,7 +625,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="install">
-  <h2><span class="n">27</span>Install the app</h2>
+  <h2><span class="n">28</span>Install the app</h2>
     <p>Add the app to your phone's home screen to open it like any other app: in a window of its own, without the browser's address bar, under the name <b>Workwear</b>.</p>
     <p><b>Android</b>, in Chrome:</p>
     <ol>
@@ -621,7 +648,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="shortcuts">
-  <h2><span class="n">28</span>Search and shortcuts</h2>
+  <h2><span class="n">29</span>Search and shortcuts</h2>
     <div class="table"><table>
       <thead><tr><th>Key</th><th>Does</th></tr></thead>
       <tbody>

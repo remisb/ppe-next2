@@ -15,7 +15,7 @@ TEST_DB ?= $(POSTGRES_DB)_test
 PSQL := docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' db psql -v ON_ERROR_STOP=1 -q -U $(POSTGRES_USER) -d $(DB)
 
 .PHONY: help build run vet test test-db e2e e2e-caddy new-app db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo import-sims \
-	prod-build prod-up prod-ready prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo prod-import-sims prod-reseal-sim-codes \
+	prod-build prod-prune-cache prod-up prod-ready prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo prod-import-sims prod-reseal-sim-codes \
 	prod-backup prod-backups prod-restore prod-drill backup-once publish-app prod-publish
 
 help: ## List targets
@@ -149,19 +149,35 @@ PROD := $(PROD_ENV) $(PROD_COMPOSE)
 # tracked files differ from it.
 PROD_COMMIT = $(shell git describe --always --dirty --abbrev=12 2>/dev/null)
 
+# The build cache a deploy keeps: the most recently used this much, the cache
+# of the last build or two (about 4 GB each). The API's Go build cache and the
+# backup agent's build are in it; emptied, the next build compiles them afresh,
+# about ten minutes on the droplet's one CPU instead of one or two (WARE-53).
+PROD_BUILD_CACHE ?= 6gb
+
 prod-build: ## Build the API and web images (separate from prod-up, so building is not downtime)
 	$(PROD_ENV) API_COMMIT="$(PROD_COMMIT)" $(PROD_COMPOSE) build
+	@$(MAKE) --no-print-directory prod-prune-cache
 
-# `up` runs migrate before the API starts and recreates what changed. Compose
-# has kept api or caddy on the previous image after a rebuild, so each built
-# service whose container still runs another image than its tag names is then
-# recreated, once; one already on its image is left running (each restart is
-# about a second of downtime). db is recreated only when its config changes.
-# It ends when GET /ready answers (the database is reachable and migrated), or
-# fails with the API's last log lines.
+prod-prune-cache: ## Trim Docker's build cache to the newest PROD_BUILD_CACHE (prod-build does it)
+	docker builder prune -f --reserved-space $(PROD_BUILD_CACHE)
+
+# `up` runs migrate before the API starts and recreates what changed, all but
+# Caddy first: Caddy depends on the API, so recreated with it, it would stop at
+# once and start only after migrate and the API, refusing every connection
+# meanwhile (about 9 s, WARE-53). The old Caddy keeps serving instead, holding
+# requests while the API restarts (the Caddyfile's `api` snippet), and is
+# replaced on its own once the API is ready (about 2 s without connections).
+# Compose has kept a service on the previous image after a rebuild, so each
+# built service whose container still runs another image than its tag names is
+# recreated, once; one already on its image is left running. db is recreated
+# only when its config changes. It fails with the API's last log lines when the
+# API is not ready (GET /ready: the database reachable and migrated) in 60 s.
+PROD_BEHIND_CADDY := db migrate api backup
+
 prod-up: ## Start or update the deployment stack; migrations run before the API starts
-	$(PROD) up -d
-	@for svc in api caddy backup; do \
+	$(PROD) up -d $(PROD_BEHIND_CADDY)
+	@for svc in api backup; do \
 		set -- $$(docker inspect -f '{{.Config.Image}} {{.Image}}' "$$($(PROD) ps -aq $$svc)") && \
 		want=$$(docker image inspect -f '{{.Id}}' "$$1") || exit 1; \
 		if [ "$$want" != "$$2" ]; then \
@@ -169,6 +185,18 @@ prod-up: ## Start or update the deployment stack; migrations run before the API 
 			$(PROD) up -d --force-recreate --no-deps $$svc || exit 1; \
 		fi; \
 	done
+	@for i in $$(seq 1 60); do \
+		if out=$$($(PROD) exec -T api /api -healthcheck 2>/dev/null); then echo "api ready: $$out"; exit 0; fi; \
+		sleep 1; \
+	done; \
+	echo "the API is not ready after 60s" >&2; $(PROD) logs --tail=30 api >&2; exit 1
+	$(PROD) up -d --no-deps caddy
+	@set -- $$(docker inspect -f '{{.Config.Image}} {{.Image}}' "$$($(PROD) ps -aq caddy)") && \
+	want=$$(docker image inspect -f '{{.Id}}' "$$1") || exit 1; \
+	if [ "$$want" != "$$2" ]; then \
+		echo "caddy still runs the previous image: recreating it"; \
+		$(PROD) up -d --force-recreate --no-deps caddy || exit 1; \
+	fi
 	@# The Caddyfile is mounted from the checkout, so a change to it alone
 	@# (a security policy, say) changes no image: compare what Caddy runs with.
 	@# A single-file mount keeps the file it started with, so recreate, not reload.
@@ -178,11 +206,6 @@ prod-up: ## Start or update the deployment stack; migrations run before the API 
 		echo "caddy runs an older Caddyfile: recreating it"; \
 		$(PROD) up -d --force-recreate --no-deps caddy || exit 1; \
 	fi
-	@for i in $$(seq 1 60); do \
-		if out=$$($(PROD) exec -T api /api -healthcheck 2>/dev/null); then echo "api ready: $$out"; exit 0; fi; \
-		sleep 1; \
-	done; \
-	echo "the API is not ready after 60s" >&2; $(PROD) logs --tail=30 api >&2; exit 1
 	@# The deployed commit's published apps go to Preview (and Stable, for an
 	@# app with none yet or one whose Stable follows deploys); Stable and Beta
 	@# otherwise move on Manage apps. A version is named by its commit, so a

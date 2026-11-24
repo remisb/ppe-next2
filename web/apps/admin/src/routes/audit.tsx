@@ -30,7 +30,7 @@ import { InfoTip } from '@ppe/ui/components/info-tip'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { StatusLine } from '@ppe/ui/components/status-line'
 import { StickyFilters } from '@ppe/ui/components/sticky-filters'
-import { useListKeys } from '@ppe/ui/lib/list-keys'
+import { useCloseFilteredOut, useListKeys, useMarkedRow } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail, PaneBar } from '@ppe/ui/components/list-detail'
 import { Download, ExternalLink, ShieldAlert, ShieldCheck, X } from 'lucide-react'
 import { type FormEvent, type ReactNode, useMemo, useState } from 'react'
@@ -108,6 +108,16 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
   // J and K: the next or previous one in the list as shown, while one is open; Escape closes it beside the list.
   const shownIds = useMemo(() => events.map((e) => e.id), [events])
   useListKeys({ ids: shownIds, selected, onOpen: open, onClose: close })
+  // A filter that leaves the open change out of the list closes it (WARE-42).
+  useCloseFilteredOut({
+    filters: filterKey,
+    current: pages.current,
+    ids: shownIds,
+    selected,
+    onClose: () => navigate({ name: 'audit', filter }, { replace: true, scroll: false }),
+  })
+  // The open row, or the one just closed, stays marked (WARE-25).
+  const marked = useMarkedRow(selected, filterKey)
 
   const options: DescribeOptions = useMemo(() => {
     const byId = new Map((roles.data ?? []).map((r) => [r.id, roleName(r)]))
@@ -284,7 +294,7 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
                 {events.map((e) => (
                   <TableRow
                     key={e.id}
-                    data-state={selected === e.id ? 'selected' : undefined}
+                    data-state={marked === e.id ? 'selected' : undefined}
                     aria-current={selected === e.id ? 'true' : undefined}
                     className={cn(stackedBreak, 'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted')}
                     // The whole row opens the change; its name is the real link, for

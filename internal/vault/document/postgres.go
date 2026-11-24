@@ -18,7 +18,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/vault"
 )
 
-// PostgresRepository stores documents in schema vault (migration 0060).
+// PostgresRepository stores documents in schema vault (migration 0061).
 type PostgresRepository struct {
 	pool *pgxpool.Pool
 }

@@ -805,9 +805,45 @@ Rules for using it:
   them ("3 selected", Change) instead of asking.
   Employees first (WARE-43), then every list (WARE-44); the plan and mockups are
   `docs/ux/list-export.html`.
+  Only with [Export data](#export-data) (`data.export`).
 - **Code:** `@ppe/ui` `lib/table-export.ts`, `lib/use-selection.ts`, `components/export-sheet.tsx`,
   `components/selection-bar.tsx`; Employees' columns `apps/workwear/src/lib/employee-export.ts`.
   **UI:** Export (screen header, ⋯ on a phone), the selection bar's Export…, the Export sheet.
+
+### Export data
+- **Brief:** the permission to [export a list](#export-of-a-list): EN "Export data", LT
+  "Eksportuoti duomenis", RU "Экспортировать данные".
+- **Detail:** without it no list shows Export, in the header, under ⋯ or as select mode. The
+  built-in Administrator, Manager and Employee hold it (migration 0059 gave it to every role but
+  the add-on ones, since everyone could export before); a role added since has it only when
+  ticked. Not [Export (of the Audit log)](#export-of-the-audit-log), which is `audit.export`.
+- **Code:** `role.DataExport`, `data.export`; the apps' `session.can('data.export')`.
+  **UI:** Roles & permissions, under Workwear & Equipment.
+
+### Share (of a few rows)
+- **Brief:** sending up to 10 of a list's rows, with the columns chosen, to someone outside the
+  app, from the [Export](#export-of-a-list) sheet: **Copy as Text** (LT "Kopijuoti kaip tekstą",
+  RU "Копировать как текст") or a **Share Link** (LT "Bendrinimo nuoroda", RU "Ссылка для
+  просмотра"). EN "Share", LT "Bendrinti", RU "Поделиться".
+- **Detail:** everyone may share; Export data adds the files beside it (without it the header's
+  button reads Share, the sheet offers the two ways to share alone). Copy as Text is built in the
+  browser and stored nowhere. A Share Link keeps the rows as the sharer saw them (a snapshot) for
+  1, 7 or 30 days; anyone with the link opens it without signing in, until it expires or its sharer
+  **revokes** it (EN "Revoke", LT "Atšaukti", RU "Отозвать") on [Shared Links](#shared-links).
+  Revoking or expiring erases the rows. Employees only for now (WARE-51). Not "publish": nothing
+  is public but the link itself.
+- **Code:** `internal/domain/share`, `cmd/api/share-routes.go`; `@ppe/ui` `ShareOptions`
+  (`components/export-sheet.tsx`), `exportText` (`lib/table-export.ts`); the public page
+  `apps/workwear/src/routes/shared.tsx` at `/shared/<token>`. Spec `docs/specs/share-service.md`.
+  **UI:** the Export sheet's How (Download a file; Share, up to 10 rows), Create Link, Link
+  created, Copy Link.
+
+### Shared Links
+- **Brief:** the screen of the user's own links that are still open, to revoke them (WARE-49):
+  EN "Shared Links", LT "Bendrinimo nuorodos", RU "Отправленные ссылки".
+- **Detail:** name, type, rows, when shared, open until, Revoke (asked first). Someone else's
+  links are never listed. Reached from Employees' ⋯, Link created and ⌘K.
+- **Code:** `apps/workwear/src/routes/shared-links.tsx`, `/shared-links`; `GET /api/v1/shares`.
 
 ### Select mode
 - **Brief:** the state of a list while an action picks its rows: the action's button (Export,
@@ -1510,6 +1546,9 @@ confirmation page, hand-over mode and the Items Given Record stay English / Russ
 | Equipment Assignments (role) / See Equipment & Furniture (permission) | Įrangos išdavimai / Matyti įrangą ir baldus | Выдачи оборудования / Видеть оборудование и мебель |
 | See Item Sets (permission) | Matyti prekių rinkinius | Видеть наборы предметов |
 | Change Item prices (permission) | Keisti prekių kainas | Изменять цены предметов |
+| Export data (permission) | Eksportuoti duomenis | Экспортировать данные |
+| Share / Copy as Text / Share Link | Bendrinti / Kopijuoti kaip tekstą / Bendrinimo nuoroda | Поделиться / Копировать как текст / Ссылка для просмотра |
+| Shared Links / Revoke | Bendrinimo nuorodos / Atšaukti | Отправленные ссылки / Отозвать |
 | Settings | Nustatymai | Настройки |
 | Backups | Atsarginės kopijos | Резервные копии |
 | Audit log | Audito žurnalas | Журнал аудита |

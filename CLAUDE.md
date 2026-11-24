@@ -46,7 +46,7 @@ Employ…, Move to Another Company…, End Employment… on the employee's page 
 `employee_profiles.manage`. The names stay `employee*` (the sealed audit trail's events included): People is ADR 0001's
 later step. Merge moves the periods and refuses two records employed now. `TRUNCATE users CASCADE` empties `companies`
 too, so a test that adds employees adds a company first (e2e's Companies step does).
-**Document Vault**, phase 1 (ADR 0008, migration 0060, spec `docs/specs/vault-service.md`): `internal/vault` (types fixed in code,
+**Document Vault**, phase 1 (ADR 0008, migration 0061, spec `docs/specs/vault-service.md`): `internal/vault` (types fixed in code,
 `vault.Types()`) and `internal/vault/document` (upload, versions, links, search), schema `vault` with `unaccent`, `pg_trgm` and the
 search configuration `vault.ppe`; routes `cmd/api/vault-routes.go`, adapters `cmd/api/wire_vault.go` (the vault imports no domain:
 `internal/vault/imports_test.go`); `vault.read`/`vault.manage` (Administrator, Manager). The staff app's **Document Vault**
@@ -126,10 +126,19 @@ Excel or CSV, built in the browser by `@ppe/ui`'s `table-export.ts` (no dependen
 `SelectionBar`/`useSelection`; columns offered by permission (`lib/employee-export.ts`). WARE-44 gave every list the same
 (each list's columns in a `lib/*-export.ts`, Administration's in `apps/admin/src/lib/list-export.ts`): a list loaded page by page
 (Orders, SIM Cards, Equipment) exports "All matching the filters" through `ExportSheet`'s `matching` (every page fetched at export);
-Exports are not on the Audit log. **Select mode** (WARE-45, `docs/ux/export-select-mode.html`): no list shows
+Exports are not on the Audit log. Export (every list's: the header button, ⋯ on a phone, select mode, `ExportSheet`) shows only with
+**Export data** (`data.export`, migration 0059: every role but the three add-on ones; no route needs it, so screens check
+`session.can('data.export')`; the Audit log's export stays `audit.export`). **Select mode** (WARE-45, `docs/ux/export-select-mode.html`): no list shows
 checkboxes while browsing; Export (`ExportMode`) and SIM Cards' Change Status… start a mode (`useSelection`'s `mode`, `SelectModeBar`:
 above the list from md, pinned above the tab bar on a phone) in which a row click ticks it (`selectRowProps`); Cancel, Esc or the
-finished action end it. **Duplicates and merging** (migration 0052, spec "Duplicates and merging" in
+finished action end it. **Share** (WARE-51, migration 0060, spec `docs/specs/share-service.md`, `internal/domain/share`,
+`cmd/api/share-routes.go`): Employees' Export sheet (`ExportSheet`'s `share`, `ShareOptions`) also offers, to everyone and up to
+10 rows, **Copy as Text** (`exportText`, nothing stored) and **Share Link**: the rows as the sharer sees them (`employee.Sight`,
+the chosen columns' fields alone, `employeeShareFields`) kept 1, 7 or 30 days behind a hashed token, opened by anyone at
+`/shared/<token>` (`routes/shared.tsx`, before the sign-in gate; `POST /api/v1/shares/view`, public, rate limited, 410 once
+gone); **Shared Links** (`/shared-links`, Employees' ⋯) lists the user's own open links to Revoke; revoking, or the upkeep once
+expired, erases the rows (`shares.rows = '[]'`); events `share.created`, `share.revoked`. Without Export data Employees' button
+reads Share and the sheet offers no files. **Duplicates and merging** (migration 0052, spec "Duplicates and merging" in
 `employee-service.md`): Add New Employee warns of alike names (`employee.CompareNames`, `POST …/employees/similar`)
 with Use This Employee; Employees offers possible duplicates (Not the Same Person, `employee_distinct_pairs`) and
 **Merge Employees** (`employees.merge`, Administrator and Manager): one transaction moves the removed record's orders,
@@ -348,6 +357,11 @@ Both builds keep their cache between deploys: the API's Go build cache is a Buil
 mount (the modules stay in a layer, so an emptied cache never needs the token), and the web
 image runs `pnpm fetch` from the lockfile alone before copying the sources (`web/.dockerignore`
 keeps tests and e2e out) and only `vite build`, since CI's web job typechecks.
+`make prod-build` ends by trimming Docker's build cache to the newest `PROD_BUILD_CACHE` (6 GB,
+`make prod-prune-cache`): an emptied cache (`docker builder prune` without it) makes the next build
+compile the API and the backup agent afresh, about ten minutes on the droplet's one CPU (WARE-53).
+Caddy retries a connection the API refused for up to 15 s (the `api` snippet), so the API's restart
+in a deploy holds requests rather than answering 502.
 Caddy also sends the security headers, including a Content-Security-Policy that allows
 `index.html`'s inline theme script, the same in every app, by its hash
 (every app's `web/apps/<app>/src/csp.test.ts` keeps them in step; rules in `web/AGENTS.md`);
@@ -381,15 +395,15 @@ were redirected until 2026-11-22 and no longer answer. Deploy a pushed commit on
 cd /opt/ppe-next2 && git pull && make prod-build && make prod-up
 ```
 
-`prod-up` runs migrations before the API starts and recreates what changed; then, because compose
-has left `api` or `caddy` running the previous image after a rebuild, it recreates each of `api`,
-`caddy` and `backup` whose container still runs another image than its tag names, once (about a
-second of downtime each; certificates live in the `caddy-data` volume), and `caddy` again when the
-Caddyfile it runs with (mounted from the checkout, so a change to it alone changes no image) differs
-from the checkout's. `db` is recreated only when its
-config changes. It ends when the API's `GET /ready` answers (database reachable, every
-migration the build embeds applied; `internal/db.Migrations`), else it fails with the API's
-log. `GET /health` is liveness only. The image's `HEALTHCHECK` runs `/api -healthcheck` (the
+`prod-up` runs migrations before the API starts and recreates what changed, Caddy last (WARE-53): it
+first brings up `db`, `migrate`, `api` and `backup` (`PROD_BEHIND_CADDY`) while the old Caddy keeps
+serving and holds requests through the API's restart, recreates `api` or `backup` if compose left it on
+the previous image, waits until the API's `GET /ready` answers (database reachable, every migration the
+build embeds applied; `internal/db.Migrations`), else fails with the API's log, and only then replaces
+`caddy` on its own (about 2 s without connections; certificates live in the `caddy-data` volume), again
+when the Caddyfile it runs with (mounted from the checkout, so a change to it alone changes no image)
+differs from the checkout's. Recreated with the API, Caddy refused connections from its stop until the
+API had started (about 9 s). `db` is recreated only when its config changes. `GET /health` is liveness only. The image's `HEALTHCHECK` runs `/api -healthcheck` (the
 binary probes its own `/ready`, as scratch has no curl); Docker shows but never acts on it.
 `make prod-build` stamps `git describe` into the binary (`API_COMMIT` → `-X main.commit`),
 shown by `/ready` and `make prod-ready`. Every prod service rotates its logs (`x-logging`, 5 × 10 MB).

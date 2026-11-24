@@ -12,6 +12,7 @@ export const common: CommonText = {
   delete: 'Ištrinti',
   add: 'Pridėti',
   export: 'Eksportuoti',
+  share: 'Bendrinti',
   exportSelected: 'Eksportuoti…',
   search: 'Paieška',
   moreActions: (name: string) => `Daugiau veiksmų: ${name}`,

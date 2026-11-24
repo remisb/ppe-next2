@@ -18,7 +18,7 @@ import { Fact, FactGrid } from '@ppe/ui/components/facts'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
-import { useListKeys } from '@ppe/ui/lib/list-keys'
+import { useCloseFilteredOut, useListKeys, useMarkedRow } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail, PaneBar } from '@ppe/ui/components/list-detail'
 import { formatNumber } from '@ppe/i18n'
 import { Button } from '@ppe/ui/components/button'
@@ -322,6 +322,7 @@ const kindLabel = (k: string) => (errorKinds as string[]).includes(k) ? t.system
 /** The error list, newest occurrence first, one error open beside it (/system/errors/<id>). */
 function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefined; timeZone: string | undefined; navigate: Navigate }) {
   const { client } = useApi()
+  const canExport = useSession().can('data.export')
   const [kind, setKind] = useState<ErrorKind | ''>('')
   // The tabs' counts come with each first page, of every kind whatever the tab.
   const [counts, setCounts] = useState<Record<ErrorKind, number>>()
@@ -340,6 +341,16 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
   // J and K: the next or previous one in the list as shown, while one is open; Escape closes it beside the list.
   const shownIds = useMemo(() => errors.map((e) => e.id), [errors])
   useListKeys({ ids: shownIds, selected, onOpen: open, onClose: close })
+  // A tab that leaves the open error out of the list closes it (WARE-42).
+  useCloseFilteredOut({
+    filters: kind,
+    current: pages.current,
+    ids: shownIds,
+    selected,
+    onClose: () => navigate({ name: 'system', tab: 'errors' }, { replace: true, scroll: false }),
+  })
+  // The open row, or the one just closed, stays marked (WARE-25).
+  const marked = useMarkedRow(selected, kind)
   const beside = selected !== undefined
   // The errors ticked for Export, of those loaded (Older loads more).
   const selection = useSelection(errors, errorId)
@@ -369,15 +380,17 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
         />
         {/* The tab's Export beside Refresh: System's header belongs to every tab. It exports the errors loaded. */}
         <div className="flex gap-2">
-          <Button variant="outline" disabled={errors.length === 0 || selection.active} onClick={() => selection.start(EXPORT_MODE)}>
-            <Download aria-hidden />
-            {t.common.export}
-          </Button>
+          {canExport ? (
+            <Button variant="outline" disabled={errors.length === 0 || selection.active} onClick={() => selection.start(EXPORT_MODE)}>
+              <Download aria-hidden />
+              {t.common.export}
+            </Button>
+          ) : null}
           <RefreshButton loading={pages.loading} onClick={reload} />
         </div>
       </div>
       {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
-      <ExportMode selection={selection} list={t.system.errors} columns={errorExportColumns(timeZone)} shown={errors} />
+      {canExport ? <ExportMode selection={selection} list={t.system.errors} columns={errorExportColumns(timeZone)} shown={errors} /> : null}
       {pages.error ? (
         <ErrorState error={pages.error} onRetry={reload} />
       ) : !pages.data ? (
@@ -405,7 +418,7 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
               {errors.map((e) => (
                 <TableRow
                   key={e.id} {...selectRowProps(selection, e.id)}
-                  data-state={selected === e.id ? 'selected' : undefined}
+                  data-state={marked === e.id ? 'selected' : undefined}
                   aria-current={selected === e.id ? 'true' : undefined}
                   className={cn(stackedBreak, 'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted', selectRowClass(selection, e.id))}
                   onClick={(ev) => {

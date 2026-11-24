@@ -75,6 +75,66 @@ out and the actions stay in reach however far the record scrolls. There is no ot
 record-level buttons in the body; an action that belongs to one part of the record stays with
 that part (Change status ▾ in Connection, Edit beside Sizes).
 
+### The list and its open record
+
+A list with a record beside it (or in its place below `lg`) has **one mark**: the row of the open
+record, or of the one just closed. There is no separate keyboard cursor, so the list's mark and the
+pane never show different records (WARE-52, decided 2026-11-24).
+
+- **The user opens a record**: a click or tap on its row, Enter on its link, J / K for the next or
+  previous one in the list as shown (the pane follows at once), a link from elsewhere or ⌘K.
+- **Nothing opens a record on its own.** No list change opens one: not loading, not a filter, not
+  the record before it going away. When the open record leaves the list, the pane closes and no
+  row is marked (below, "When the list changes"); the user picks the next one.
+- **Filters apply at once** and keep applying while a record is open: the list beside it is always
+  the list for the filters shown.
+
+The three parts below are the whole rule: closing a record, and what a change of the list does.
+
+### Closing a record
+
+Closing a record returns the user to the list exactly where they left it (WARE-25):
+
+- **✕, Esc and Back close it.** ✕ in the record's row and Esc close it beside the list; below `lg`,
+  Back (the record's own and the browser's) returns to the list. Esc closes what is on top first: a
+  sheet, a dialog, a menu or a popover takes the first Esc, and the record the next one.
+- **The list is as it was.** Its search, filters, tab, sort and page are kept (they live in the
+  list's screen, which stays mounted behind the record). Below `lg`, where the record took the
+  list's place, the list comes back at the scroll position it had; beside the list nothing scrolls,
+  except the marked row back into view if the wider list moved it out.
+- **The row stays marked.** The record just closed keeps its row's mark (the same look as the open
+  row, without `aria-current`), so the user sees where they were. Opening another record moves the
+  mark; a change of filters, search or tab clears it.
+
+Code: `ListDetail` keeps the list's place, and `useMarkedRow` (`@ppe/ui/lib/list-keys`) gives the
+row to mark (`data-state="selected"`); only the open row is `aria-current`. Esc beside the list is
+`useListKeys`, which leaves alone a key something on top already handled.
+
+### When the list changes
+
+The open record and the list's marked row are one choice, so they never show different records
+(WARE-42):
+
+- **A filter, search or tab that leaves the open record out closes it.** Once the list for the
+  new filters is shown, a record it does not show closes, and its row mark goes with it. A
+  record it still shows stays open and marked.
+- **Nothing opens in its place.** Another record opens only when the user opens it (a click,
+  Enter, J / K).
+- **Only the user's change of filters counts.** Paging and sorting close nothing; neither does
+  the list reloading, the record's own change moving it out of the list (it stays open so the
+  user sees the result), nor a record opened from a link or ⌘K that the list does not show.
+- **What is late does not come back.** The list still on screen while the next one loads is
+  never taken for it, and a closed record's late answer is dropped (its pane is gone).
+- "Shown" is the list as loaded: in a list read a page at a time, the first page for the new
+  filters. A record on a later page closes too, and paging to it opens nothing.
+- The closing replaces the record's address with the list's, so Back does not open it again.
+
+Code: `useCloseFilteredOut` (`@ppe/ui/lib/list-keys`) beside `useListKeys`, with the filters as a
+key and whether the list shown was loaded for them (a list read from the API tags its result with
+its filters; `useCursorPages` says `current`; a list filtered in the browser is current once it has
+loaded). Orders, Employees, Item Catalogue, SIM Cards, Equipment, the Audit log and System's Errors
+use it; a new list with a detail pane does too.
+
 ### Spacing and type
 
 One scale, so panes line up with each other:
@@ -343,6 +403,10 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
       what to do and where.
 - [ ] Nothing interactive inside something interactive. Inside a row or a choice, help is a
       tooltip (`InControl`).
+- [ ] A list with a record beside it closes the record when a filter, search or tab leaves
+      it out (`useCloseFilteredOut`), and opens nothing in its place.
+- [ ] Closing the record (✕, Esc, Back) leaves the list as it was, its row still marked
+      (`ListDetail`, `useMarkedRow`).
 - [ ] Works by touch (44px, tap opens), by keyboard (Enter, Escape, arrows where things move)
       and by screen reader (names, descriptions, live result).
 - [ ] Nothing loads while hidden or closed. Counts are cheap, and a run of changes reloads

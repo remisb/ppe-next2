@@ -14,7 +14,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
-import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
+import { besideList, useCloseFilteredOut, useListKeys, useMarkedRow } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
 import { RowCheckbox, SelectAllCheckbox, SelectModeBar, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
@@ -123,6 +123,7 @@ export function Assets({
   const { client } = useApi()
   const session = useSession()
   const canManage = session.can(managePermission(kind))
+  const canExport = session.can('data.export')
   const settings = useLoad(() => client.settings())
   const today = todayIn(settings.data?.timezone)
   // A dashboard's Company Assets card opens the register on the tab of one of its tiles (SIM Cards' places on Location).
@@ -153,7 +154,10 @@ export function Assets({
   }, [search])
 
   const query = assetQuery(kind, filters, sort.key, sort.dir, page)
-  const list = useLoad(() => client.assets.list(query), [JSON.stringify(query), reloads])
+  // The tab, search and filters, not the sort or page: what an open SIM or item must stay in to stay open (useCloseFilteredOut).
+  const filterKey = JSON.stringify(filters)
+  // Each page remembers the filters it was loaded for, so a page still on screen while the next loads is not taken for it.
+  const list = useLoad(() => client.assets.list(query).then((r) => ({ ...r, filters: filterKey })), [JSON.stringify(query), reloads])
   const summary = useLoad(() => client.assets.summary(kind), [reloads])
   // The tabs each show how many choosing them would list; they set the status and place, so only the rest counts.
   const counted = chooseTab(kind, filters, 'all')
@@ -250,6 +254,16 @@ export function Assets({
   const pageRows = useMemo(() => list.data?.assets ?? [], [list.data])
   const selection = useSelection(pageRows, assetId, { acrossPages: true })
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: register, ...at, asset: id }, { scroll: false }), onClose: close })
+  // A tab, search or filter that leaves the open SIM or item out of the register closes it (WARE-42).
+  useCloseFilteredOut({
+    filters: filterKey,
+    current: list.data?.filters === filterKey,
+    ids: shownIds,
+    selected,
+    onClose: () => navigate({ name: register, ...at }, { replace: true, scroll: false }),
+  })
+  // The open row, or the one just closed, stays marked (WARE-25).
+  const marked = useMarkedRow(selected, filterKey)
 
   // Beside an open SIM or item the register keeps the columns that find the next one: one line a row; the rest is in the pane.
   const beside = selected !== undefined
@@ -353,7 +367,9 @@ export function Assets({
             ...(bulkStatus
               ? [{ label: t.assets.changeStatusMode.start, icon: ListChecks, onClick: () => startMode(STATUS_MODE), showFrom: beside ? ('never' as const) : ('md' as const), disabled: !list.data || list.data.total === 0 || ticking }]
               : []),
-            { label: t.common.export, icon: Download, onClick: () => startMode(EXPORT_MODE), showFrom: beside ? 'never' : 'md', disabled: !list.data || list.data.total === 0 || ticking },
+            ...(canExport
+              ? [{ label: t.common.export, icon: Download, onClick: () => startMode(EXPORT_MODE), showFrom: beside ? ('never' as const) : ('md' as const), disabled: !list.data || list.data.total === 0 || ticking }]
+              : []),
           ]}
           primary={canManage ? { label: sim ? t.assets.addSimCard : t.assets.addAsset, short: sim ? undefined : t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
         />
@@ -422,13 +438,15 @@ export function Assets({
         </p>
         <ActionError error={action.error} />
         {/* Export's select mode, with its sheet: every card or item the filters match (all pages, in the register's sort), or those ticked. */}
-        <ExportMode
-          selection={selection}
-          list={sim ? t.assets.simCards : t.assets.equipment}
-          columns={assetExportColumns(kind, settings.data?.timezone)}
-          shown={pageRows}
-          matching={list.data ? { count: list.data.total, load: () => loadAllAssets(client.assets.list, query) } : undefined}
-        />
+        {canExport ? (
+          <ExportMode
+            selection={selection}
+            list={sim ? t.assets.simCards : t.assets.equipment}
+            columns={assetExportColumns(kind, settings.data?.timezone)}
+            shown={pageRows}
+            matching={list.data ? { count: list.data.total, load: () => loadAllAssets(client.assets.list, query) } : undefined}
+          />
+        ) : null}
         {selection.mode === STATUS_MODE ? (
           <SelectModeBar selection={selection} title={t.assets.changeStatusMode.title} hint={t.assets.changeStatusMode.hint}>
             <BulkStatusMenu disabled={bulkBusy || selection.count === 0} onChange={(next) => void changeChosen(next)} />
@@ -495,7 +513,7 @@ export function Assets({
                   return (
                     <TableRow
                       key={a.id}
-                      data-state={selected === a.id ? 'selected' : undefined}
+                      data-state={marked === a.id ? 'selected' : undefined}
                       aria-current={selected === a.id ? 'true' : undefined}
                       // In select mode a click anywhere on the row ticks it instead.
                       {...selectRowProps(selection, a.id)}

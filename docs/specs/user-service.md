@@ -50,6 +50,7 @@ order:
 | `ai_usage.read` | read AI Usage (migration 0051) | ✓ | | | |
 | `apps.manage` | Manage apps: register, edit, move, retire, versions and channels (migration 0042) | ✓ | | | |
 | `apps.preview` | see App Launcher's apps in testing (migration 0042) | | | | Testers |
+| `data.export` | Export on every list of both apps (the rows shown or ticked, as Excel or CSV, built in the browser; no route needs it, the apps show Export by it; migration 0059; before it, every signed-in user). Not the Audit log's, which is `audit.export` | ✓ | ✓ | ✓ | |
 | `employee_profiles.read` | see employees' code, notes, language, photos, identity details (migration 0050; before it, every signed-in user) | ✓ | ✓ | ✓ | |
 | `employee_profiles.manage` | add and edit employees, their photos (needs `employee_profiles.read`) | ✓ | ✓ | ✓ | |
 | `employee_sizes.read` | see employees' size defaults (migration 0050; before it, every signed-in user) | ✓ | ✓ | ✓ | |

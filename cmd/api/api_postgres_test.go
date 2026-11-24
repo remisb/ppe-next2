@@ -40,6 +40,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
+	"github.com/remisb/ppe-next2/internal/domain/share"
 	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
@@ -123,6 +124,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	svc.documents = document.NewService(document.NewPostgresRepository(pool), testPersonnelKeys(t), testFiles(t), document.WithPeople(peopleOf(svc)))
 	svc.scans = scan.NewService(scan.NewPostgresRepository(pool), testPersonnelKeys(t), testFiles(t))
 	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), testFiles(t))
+	svc.shares = share.NewService(share.NewPostgresRepository(pool))
 	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123", []uuid.UUID{role.AdminID})
 	if err != nil {
 		t.Fatal(err)
@@ -221,6 +223,155 @@ func TestPostgresEmployeeHTTPFlow(t *testing.T) {
 	}
 	if rec := api.do(t, "GET", "/api/v1/employees/"+id, staff, nil); rec.Code != http.StatusNotFound {
 		t.Errorf("get deleted = %d", rec.Code)
+	}
+}
+
+// TestPostgresSharesHTTP is Share Link end to end (WARE-51): the rows are the
+// employees as the sharer sees them, with the chosen columns alone; the
+// public read needs only the token, which is never stored; Shared Links lists
+// the sharer's own; Revoke closes and erases it.
+func TestPostgresSharesHTTP(t *testing.T) {
+	api, pool := newPostgresAPI(t)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	namesOnly := api.tokenWith(t, role.ItemSetsRead)
+	ctx := context.Background()
+
+	full := map[string]any{"first_name": "Ona", "last_name": "Jonaitė", "code": "E-7", "height_cm": 170, "clothing_size": 48, "shoe_size": "39", "notes": "left-handed"}
+	rec := api.do(t, "POST", "/api/v1/employees", staff, full)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("add = %d %s", rec.Code, rec.Body)
+	}
+	ona := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	rec = api.do(t, "POST", "/api/v1/employees", staff, map[string]any{"first_name": "Petras", "last_name": "Petraitis"})
+	petras := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+
+	body := map[string]any{"kind": "employees", "name": "For the supplier", "columns": []string{"name", "clothing", "code"}, "ids": []string{ona, petras}, "days": 7}
+	rec = api.do(t, "POST", "/api/v1/shares", staff, body)
+	if rec.Code != http.StatusCreated || rec.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("share = %d %s", rec.Code, rec.Body)
+	}
+	made := decode[struct {
+		Share map[string]any `json:"share"`
+		URL   string         `json:"url"`
+	}](t, rec.Body.Bytes())
+	token := made.URL[strings.LastIndex(made.URL, "/shared/")+len("/shared/"):]
+	if !strings.Contains(made.URL, "/shared/") || token == "" || made.Share["row_count"] != 2.0 {
+		t.Fatalf("made = %+v", made)
+	}
+	var stored string
+	pool.QueryRow(ctx, `SELECT token_hash FROM shares`).Scan(&stored)
+	if stored == token || strings.Contains(stored, token) {
+		t.Error("the token itself is stored")
+	}
+
+	// The public read: the chosen columns' fields alone, in the order chosen.
+	rec = api.do(t, "POST", "/api/v1/shares/view", "", map[string]any{"token": token})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("view = %d %s", rec.Code, rec.Body)
+	}
+	view := rec.Body.String()
+	for _, want := range []string{`"full_name":"Ona Jonaitė"`, `"clothing_size":48`, `"code":"E-7"`, `"full_name":"Petras Petraitis"`, `"shared_by":"U"`} {
+		if !strings.Contains(view, want) {
+			t.Errorf("view lacks %s: %s", want, view)
+		}
+	}
+	for _, hidden := range []string{"left-handed", "height_cm", "shoe_size", ona, "subject_ids"} {
+		if strings.Contains(view, hidden) {
+			t.Errorf("view holds %s: %s", hidden, view)
+		}
+	}
+
+	// A sharer who may not see sizes or profiles shares the names alone.
+	rec = api.do(t, "POST", "/api/v1/shares", namesOnly, body)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("names-only share = %d %s", rec.Code, rec.Body)
+	}
+	var rows string
+	pool.QueryRow(ctx, `SELECT rows::text FROM shares WHERE created_by_user_id = $1`, api.admin.ID).Scan(&rows)
+	if !strings.Contains(rows, "Ona Jonaitė") || strings.Contains(rows, "48") || strings.Contains(rows, "E-7") {
+		t.Errorf("names-only rows = %s", rows)
+	}
+
+	// Refused: more than ten, an unknown column, a repeated employee, other days, an unknown employee.
+	eleven := make([]string, 11)
+	for i := range eleven {
+		eleven[i] = uuid.NewString()
+	}
+	for name, edit := range map[string]func(map[string]any){
+		"eleven":         func(b map[string]any) { b["ids"] = eleven },
+		"unknown column": func(b map[string]any) { b["columns"] = []string{"name", "salary"} },
+		"twice":          func(b map[string]any) { b["ids"] = []string{ona, ona} },
+		"three days":     func(b map[string]any) { b["days"] = 3 },
+		"orders":         func(b map[string]any) { b["kind"] = "orders" },
+	} {
+		b := map[string]any{"kind": "employees", "name": "x", "columns": []string{"name"}, "ids": []string{ona}, "days": 1}
+		edit(b)
+		if rec := api.do(t, "POST", "/api/v1/shares", staff, b); rec.Code != http.StatusBadRequest {
+			t.Errorf("%s = %d %s", name, rec.Code, rec.Body)
+		}
+	}
+	if rec := api.do(t, "POST", "/api/v1/shares", staff, map[string]any{"kind": "employees", "name": "x", "columns": []string{"name"}, "ids": []string{uuid.NewString()}, "days": 1}); rec.Code != http.StatusNotFound {
+		t.Errorf("unknown employee = %d", rec.Code)
+	}
+
+	// Shared Links: the sharer's own.
+	list := decode[[]map[string]any](t, api.do(t, "GET", "/api/v1/shares", staff, nil).Body.Bytes())
+	if len(list) != 1 || list[0]["name"] != "For the supplier" {
+		t.Fatalf("list = %v", list)
+	}
+	id := list[0]["id"].(string)
+	if rec := api.do(t, "DELETE", "/api/v1/shares/"+id, namesOnly, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("revoke another's = %d", rec.Code)
+	}
+	if rec := api.do(t, "DELETE", "/api/v1/shares/"+id, staff, nil); rec.Code != http.StatusNoContent {
+		t.Fatalf("revoke = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/shares/view", "", map[string]any{"token": token}); rec.Code != http.StatusGone {
+		t.Errorf("view revoked = %d", rec.Code)
+	}
+	if rec := api.do(t, "POST", "/api/v1/shares/view", "", map[string]any{"token": "nope"}); rec.Code != http.StatusNotFound {
+		t.Errorf("view unknown = %d", rec.Code)
+	}
+	pool.QueryRow(ctx, `SELECT rows::text FROM shares WHERE id = $1`, id).Scan(&rows)
+	if rows != "[]" {
+		t.Errorf("revoked rows = %s", rows)
+	}
+	var events []string
+	r, _ := pool.Query(ctx, `SELECT event FROM audit_events WHERE entity_type = 'share' AND entity_id = $1 ORDER BY occurred_at`, id)
+	for r.Next() {
+		var e string
+		_ = r.Scan(&e)
+		events = append(events, e)
+	}
+	r.Close()
+	if strings.Join(events, ",") != "share.created,share.revoked" {
+		t.Errorf("events = %v", events)
+	}
+}
+
+// TestPostgresSeedDemo runs make seed-demo's data through the services on an
+// empty database, so a demo value a rule refuses (a shoe size outside the
+// vocabulary) fails here instead of on a developer's machine; a second run
+// refuses the non-empty database.
+func TestPostgresSeedDemo(t *testing.T) {
+	api, owner := newPostgresAPI(t)
+	cfg := testConfig()
+	cfg.SeedUserEmail = api.admin.Email
+	cfg.FilesTarget = "file://" + t.TempDir()
+	// loadConfig's defaults testConfig leaves out: the demo seals its cards' PIN and PUK, and confirms an order by link.
+	cfg.SIMCodesKeyID, cfg.ConfirmTTL = 1, 7*24*time.Hour
+	ctx := context.Background()
+	if err := seedDemo(ctx, owner, api.svc.users, cfg, time.UTC, testLogger); err != nil {
+		t.Fatalf("seed-demo: %v", err)
+	}
+	var employees, former int
+	owner.QueryRow(ctx, `SELECT count(*) FROM employees WHERE deleted_at IS NULL`).Scan(&employees)
+	owner.QueryRow(ctx, `SELECT count(*) FROM employees WHERE last_name = 'Buvusi' AND shoe_size = '39'`).Scan(&former)
+	if employees < 8 || former != 1 {
+		t.Errorf("seeded %d employees, Inga Buvusi %d", employees, former)
+	}
+	if err := seedDemo(ctx, owner, api.svc.users, cfg, time.UTC, testLogger); err == nil || !strings.Contains(err.Error(), "refusing to seed") {
+		t.Errorf("second run = %v, want a refusal", err)
 	}
 }
 
@@ -1708,7 +1859,7 @@ func TestPostgresRolesHTTP(t *testing.T) {
 	}
 	login := api.do(t, "POST", "/api/v1/auth/login", "", map[string]any{"email": "k@example.com", "password": "password123"})
 	claims, err := api.tokens.parse(decode[tokenJSON](t, login.Body.Bytes()).AccessToken)
-	if err != nil || !slices.Equal(claims.Perms, []string{"employee_profiles.read", "employee_profiles.manage", "employee_sizes.read", "employee_sizes.manage", "catalogue.manage", "item_sets.read", "sim_cards.read", "dashboard.employee"}) {
+	if err != nil || !slices.Equal(claims.Perms, []string{"data.export", "employee_profiles.read", "employee_profiles.manage", "employee_sizes.read", "employee_sizes.manage", "catalogue.manage", "item_sets.read", "sim_cards.read", "dashboard.employee"}) {
 		t.Errorf("k's token perms %v, %v", claims.Perms, err)
 	}
 	if rec := api.do(t, "DELETE", "/api/v1/roles/"+store.ID.String(), adminTok, nil); rec.Code != http.StatusConflict {

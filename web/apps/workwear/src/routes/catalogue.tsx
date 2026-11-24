@@ -16,7 +16,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
-import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
+import { besideList, useCloseFilteredOut, useListKeys, useMarkedRow } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
 import { RowCheckbox, SelectAllCheckbox, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
@@ -111,7 +111,9 @@ export function Catalogue({
   navigate: (to: Route, options?: NavigateOptions) => void
 }) {
   const { client } = useApi()
-  const canManageItems = useSession().can('catalogue.manage')
+  const session = useSession()
+  const canManageItems = session.can('catalogue.manage')
+  const canExport = session.can('data.export')
   const items = useLoad(() => client.catalogue.list())
   const [editing, setEditing] = useState<CatalogueItem | 'new' | null>(null)
   const [picturesOpen, setPicturesOpen] = useState(false)
@@ -194,6 +196,16 @@ export function Catalogue({
 
   // J and K: the next or previous item in the list as shown, while one is open; Escape closes it beside the list.
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: 'catalogue', item: id }, { scroll: false }), onClose: close })
+  // A tab that leaves the open item out of the list closes it (WARE-42).
+  useCloseFilteredOut({
+    filters: status,
+    current: items.data !== undefined,
+    ids: shownIds,
+    selected,
+    onClose: () => navigate({ name: 'catalogue' }, { replace: true, scroll: false }),
+  })
+  // The open row, or the one just closed, stays marked (WARE-25).
+  const marked = useMarkedRow(selected, status)
 
   const beside = selected !== undefined
   const shownColumns = beside ? columns().filter((c) => besideColumns.includes(c.key)) : columns()
@@ -229,18 +241,22 @@ export function Catalogue({
           title={t.catalogue.title}
           description={t.catalogue.description}
           // Export starts select mode (WARE-45), on the whole table: an item open beside the list closes first.
-          secondary={[
-            {
-              label: t.common.export,
-              icon: Download,
-              onClick: () => {
-                if (beside) close()
-                selection.start(EXPORT_MODE)
-              },
-              showFrom: 'md',
-              disabled: shown.length === 0 || ticks,
-            },
-          ]}
+          secondary={
+            canExport
+              ? [
+                  {
+                    label: t.common.export,
+                    icon: Download,
+                    onClick: () => {
+                      if (beside) close()
+                      selection.start(EXPORT_MODE)
+                    },
+                    showFrom: 'md',
+                    disabled: shown.length === 0 || ticks,
+                  },
+                ]
+              : []
+          }
           primary={canManageItems ? { label: t.catalogue.addItem, short: t.common.add, icon: Plus, onClick: () => setEditing('new') } : undefined}
           // Set up once, so never a button: under ⋯ at every width.
           more={canManageItems ? <DropdownMenuItem onClick={() => setPicturesOpen(true)}>{t.catalogue.pictures}</DropdownMenuItem> : undefined}
@@ -263,7 +279,7 @@ export function Catalogue({
         <p aria-live="polite" className="sr-only">
           {moved}
         </p>
-        <ExportMode selection={selection} list={t.catalogue.title} columns={catalogueExportColumns(tz)} shown={rows} />
+        {canExport ? <ExportMode selection={selection} list={t.catalogue.title} columns={catalogueExportColumns(tz)} shown={rows} /> : null}
         <Loaded load={items} empty={shown.length === 0} emptyState={statusChips().find((c) => c.status === status)!.empty}>
           {() => (
             /*
@@ -297,7 +313,7 @@ export function Catalogue({
                       {newGroup ? <TableGroupRow colSpan={shownColumns.length + (rowActions ? 1 : 0) + (ticks ? 1 : 0)}>{sizeGroupLabel[i.size_group]}</TableGroupRow> : null}
                       <TableRow
                         data-row-id={i.id}
-                        data-state={selected === i.id ? 'selected' : undefined}
+                        data-state={marked === i.id ? 'selected' : undefined}
                         aria-current={selected === i.id ? 'true' : undefined}
                         // In select mode a click anywhere on the row ticks it instead.
                         {...selectRowProps(selection, i.id)}

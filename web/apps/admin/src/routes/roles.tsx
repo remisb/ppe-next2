@@ -36,6 +36,7 @@ const roleId = (r: Role) => r.id
 export function RolesPage({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
   const session = useSession()
+  const canExport = session.can('data.export')
   const allowed = session.can('roles.manage')
   const canUsers = session.can('users.manage')
   const roles = useLoad(() => (allowed ? client.roles.list() : Promise.resolve([])))
@@ -70,12 +71,12 @@ export function RolesPage({ navigate }: { navigate: (to: Route) => void }) {
         title={t.roles.title}
         description={t.roles.description}
         // Export: in the header from md, in ⋯ below; it starts select mode (WARE-45), on a phone too.
-        secondary={[{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: shown.length === 0 || selection.active }]}
+        secondary={canExport ? [{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: shown.length === 0 || selection.active }] : []}
         primary={{ label: t.roles.addRole, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
       />
       <ActionError error={action.error} className="mb-4" />
       {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
-      <ExportMode selection={selection} list={t.roles.title} columns={roleExportColumns()} shown={shown} />
+      {canExport ? <ExportMode selection={selection} list={t.roles.title} columns={roleExportColumns()} shown={shown} /> : null}
       <Loaded load={combineLoads(roles, catalogue)}>
         {([list]) => (
           // Where the table is narrow the roles are one list of rows: name and what it is for, then its counts, with Edit and ⋯ beside them.

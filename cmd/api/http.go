@@ -26,6 +26,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
+	"github.com/remisb/ppe-next2/internal/domain/share"
 	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/personnel/colour"
@@ -98,6 +99,7 @@ var errorStatuses = []struct {
 	{catalogue.ErrActorNotFound, http.StatusUnauthorized},
 	{supplier.ErrActorNotFound, http.StatusUnauthorized},
 	{vaultdoc.ErrActorNotFound, http.StatusUnauthorized},
+	{share.ErrActorNotFound, http.StatusUnauthorized},
 	{company.ErrActorNotFound, http.StatusUnauthorized},
 	{itemset.ErrActorNotFound, http.StatusUnauthorized},
 	{order.ErrActorNotFound, http.StatusUnauthorized},
@@ -119,6 +121,7 @@ var errorStatuses = []struct {
 	{supplier.ErrNotFound, http.StatusNotFound},
 	{vaultdoc.ErrNotFound, http.StatusNotFound},
 	{vaultdoc.ErrSubjectNotFound, http.StatusNotFound},
+	{share.ErrNotFound, http.StatusNotFound},
 	{company.ErrNotFound, http.StatusNotFound},
 	{catalogue.ErrPictureNotFound, http.StatusNotFound},
 	{itemset.ErrNotFound, http.StatusNotFound},
@@ -200,6 +203,7 @@ var errorStatuses = []struct {
 	{document.ErrDuplicate, http.StatusConflict},
 	{document.ErrEmployeeCodeTaken, http.StatusConflict},
 	{order.ErrLinkExpired, http.StatusGone},
+	{share.ErrGone, http.StatusGone},
 
 	{user.ErrInvalid, http.StatusBadRequest},
 	{role.ErrInvalid, http.StatusBadRequest},
@@ -209,6 +213,7 @@ var errorStatuses = []struct {
 	{catalogue.ErrInvalid, http.StatusBadRequest},
 	{supplier.ErrInvalid, http.StatusBadRequest},
 	{vaultdoc.ErrInvalid, http.StatusBadRequest},
+	{share.ErrInvalid, http.StatusBadRequest},
 	{company.ErrInvalid, http.StatusBadRequest},
 	{itemset.ErrInvalid, http.StatusBadRequest},
 	{itemset.ErrUnknownItem, http.StatusBadRequest},

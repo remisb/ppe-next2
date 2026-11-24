@@ -22,6 +22,57 @@ export function stepTo(ids: readonly string[], selected: string, key: 'j' | 'k')
 }
 
 /**
+ * The row a list marks (`data-state="selected"`): the open record's, and once it is
+ * closed (✕, Esc, Back) the one that was open, so the user sees where they were
+ * (WARE-25, ui-ux-guidelines.md §2 "When the list changes"). A change of `filters`
+ * (the same key as useCloseFilteredOut's) while nothing is open clears it; opening
+ * another record moves it. Only the open row is `aria-current`.
+ */
+export function useMarkedRow(selected: string | undefined, filters: string): string | undefined {
+  const last = useRef({ id: selected, filters })
+  // Derived during render from the props alone, so every render of the same props agrees.
+  if (selected !== undefined) last.current = { id: selected, filters }
+  else if (last.current.filters !== filters) last.current = { id: undefined, filters }
+  return last.current.id
+}
+
+/**
+ * The open record follows the list's filters (WARE-42, ui-ux-guidelines.md §2 "When the
+ * list changes"): once the user has changed the filters, the search or the tab and the
+ * list for them is shown, a record it does not show closes, its row mark with it.
+ * Nothing opens in its place; another record opens only when the user opens it.
+ *
+ * `filters` is the list's filters as a key, never its sort or page (paging and sorting
+ * close nothing). `current` says the list shown (`ids`) is the one for those filters,
+ * not the one before them still on screen while they load; a list filtered in the
+ * browser is current as soon as it has loaded. The filters the screen opened with are
+ * never checked, so a record opened by a link or ⌘K stays open beside a list that does
+ * not show it, as does a record whose own change moves it out of the list.
+ */
+export function useCloseFilteredOut({
+  filters,
+  current,
+  ids,
+  selected,
+  onClose,
+}: {
+  filters: string
+  current: boolean
+  ids: readonly string[] | undefined
+  selected: string | undefined
+  onClose: () => void
+}): void {
+  const checked = useRef(filters)
+  const close = useRef(onClose)
+  close.current = onClose
+  useEffect(() => {
+    if (!current || !ids || checked.current === filters) return
+    checked.current = filters
+    if (selected !== undefined && !ids.includes(selected)) close.current()
+  }, [filters, current, ids, selected])
+}
+
+/**
  * The keys of a list with a record open (ListDetail): J and K open the next
  * or previous record of the list as shown, Escape closes the one beside the
  * list; none while typing, with a modifier, with a dialog open or once

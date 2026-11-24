@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { type ExportColumn, columnName, crc32, exportEuros, exportMoment, exportFile, exportFileName, exportTable, toCSV, toXLSX, unzipStored, zip } from './table-export.ts'
+import { type ExportColumn, columnName, crc32, exportEuros, exportMoment, exportFile, exportFileName, exportTable, exportText, toCSV, toXLSX, unzipStored, zip } from './table-export.ts'
 
 interface Person {
   name: string
@@ -25,6 +25,19 @@ describe('exportTable', () => {
       ['Petrauskienė Rūta', 168, 'Left-handed, "tall" gloves'],
       ['Смирнов Игорь', null, 'two\nlines'],
     ])
+  })
+})
+
+describe('exportText', () => {
+  it('reads as blocks headed by the first column, leaving empty values out', () => {
+    expect(exportText('Employees', columns, people)).toBe(
+      'Employees (2)\n\n' +
+        'Petrauskienė Rūta\nHeight (cm): 168\nNotes: Left-handed, "tall" gloves\n\n' +
+        'Смирнов Игорь\nNotes: two\nlines\n',
+    )
+  })
+  it('heads a row with no first value with a dash', () => {
+    expect(exportText('List', columns.slice(0, 1), [{ name: ' ', height: null, note: '' }])).toBe('List (1)\n\n—\n')
   })
 })
 

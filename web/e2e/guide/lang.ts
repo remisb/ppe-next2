@@ -6,6 +6,7 @@ import { en as adminEn } from '../../apps/admin/src/i18n/en/index.ts'
 import { lt as adminLt } from '../../apps/admin/src/i18n/lt/index.ts'
 import { ru as adminRu } from '../../apps/admin/src/i18n/ru/index.ts'
 import { dictionaries as shellText } from '../../packages/app-shell/src/text.ts'
+import { dictionaries as uiText } from '../../packages/ui/src/text.ts'
 
 /** The guide's language, GUIDE_LANG (en, lt or ru): the admin's language and the browser's. */
 export const lang = (process.env['GUIDE_LANG'] ?? 'en') as 'en' | 'lt' | 'ru'
@@ -19,6 +20,9 @@ export const A = { en: adminEn, lt: adminLt, ru: adminRu }[lang]
 
 /** The sign-in screen's text in that language (@ppe/app-shell's). */
 export const S = shellText[lang]
+
+/** The shared components' text in that language (@ppe/ui's: the Export window, select mode). */
+export const U = uiText[lang]
 
 export const locale = { en: 'en-GB', lt: 'lt-LT', ru: 'ru-RU' }[lang]
 

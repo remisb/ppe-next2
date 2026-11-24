@@ -46,6 +46,27 @@ export function exportTable<T>(columns: readonly ExportColumn<T>[], rows: readon
 }
 
 /**
+ * Copy as Text (WARE-51): the rows as plain text to paste into an e-mail or a
+ * chat. The list's name and count, then each row as a block: its first
+ * column's value as a heading, the others as "Label: value" lines, empty
+ * values left out; a blank line between blocks. No markup, so it reads the
+ * same in an e-mail as in WhatsApp.
+ */
+export function exportText<T>(list: string, columns: readonly ExportColumn<T>[], rows: readonly T[]): string {
+  const text = (v: ExportValue) => (v === null || v === undefined ? '' : String(v).trim())
+  const [first, ...rest] = columns
+  const blocks = rows.map((r) => {
+    const lines = first ? [text(first.value(r)) || '—'] : []
+    for (const c of rest) {
+      const v = text(c.value(r))
+      if (v) lines.push(`${c.label}: ${v}`)
+    }
+    return lines.join('\n')
+  })
+  return [`${list} (${rows.length})`, ...blocks].join('\n\n') + '\n'
+}
+
+/**
  * RFC 4180 CSV: commas, CRLF, a field quoted when it holds a comma, quote or
  * line break. It starts with a byte order mark, so Excel reads it as UTF-8
  * (ą, ė, Cyrillic) rather than the system's code page.

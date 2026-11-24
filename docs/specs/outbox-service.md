@@ -10,7 +10,7 @@ through a transactional outbox); its first user is [vault-service.md](vault-serv
 
 - **Package:** `internal/outbox` (platform: imports no domain). Handlers live with their
   context (`internal/vault/extract`, …) and are registered by kind in `cmd/api/worker.go`.
-- **Migration:** `0063_outbox`: schema `outbox`, tables `outbox.jobs` and `outbox.workers`.
+- **Migration:** `0064_outbox`: schema `outbox`, tables `outbox.jobs` and `outbox.workers`.
 - **Binary:** the API's own, `api -worker`; image **docworker** (a target of the root
   `Dockerfile`).
 

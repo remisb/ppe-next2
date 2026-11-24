@@ -455,7 +455,7 @@ export function EmployeeDetail({ id, place, navigate }: { id: string; place: Emp
             >
               <Loaded load={orders} empty={items.given.length === 0} emptyState={t.employees.noItemsGiven(e.first_name)}>
                 {() => (
-                  <ItemsTable items={items.given} kind="given" tz={tz} due={dueByLine} navigate={navigate} exportAs={t.employees.itemsExport.file(e.full_name)} />
+                  <ItemsTable items={items.given} kind="given" tz={tz} due={dueByLine} navigate={navigate} exportAs={session.can('data.export') ? t.employees.itemsExport.file(e.full_name) : undefined} />
                 )}
               </Loaded>
             </DisclosureSection>
@@ -541,7 +541,7 @@ function ItemsTable({
   /** For given items: when each item's latest line is due for replacement. Older lines are replaced. */
   due?: Map<string, Due>
   navigate: (to: Route) => void
-  /** Offers Export above the table, the file named this ("Items given – Ona Kazlauskienė"). */
+  /** Offers Export above the table, the file named this ("Items given – Ona Kazlauskienė"); only with data.export. */
   exportAs?: string | undefined
 }) {
   const given = kind === 'given'

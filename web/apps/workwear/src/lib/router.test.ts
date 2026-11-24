@@ -51,6 +51,11 @@ describe('router', () => {
     expect(parsePath(pathOf({ name: 'catalogue', item: 'x/y' }))).toEqual({ name: 'catalogue', item: 'x/y' })
     expect(parsePath(pathOf({ name: 'record', id: 'a b' }))).toEqual({ name: 'record', id: 'a b' })
     expect(parsePath(pathOf({ name: 'confirm', token: 'Ab-_9' }))).toEqual({ name: 'confirm', token: 'Ab-_9' })
+    // Shared links (WARE-51): the screen, and a link's public page by its token.
+    expect(pathOf({ name: 'sharedLinks' })).toBe('/shared-links')
+    expect(parsePath('/shared-links')).toEqual({ name: 'sharedLinks' })
+    expect(parsePath(pathOf({ name: 'shared', token: 'Ab-_9' }))).toEqual({ name: 'shared', token: 'Ab-_9' })
+    expect(parsePath('/shared/')).toEqual({ name: 'home' })
     expect(parsePath(pathOf({ name: 'history', order: 'o 1' }))).toEqual({ name: 'history', order: 'o 1' })
     // A document open beside Document Vault.
     expect(pathOf({ name: 'vault', document: 'd/1' })).toBe('/vault/d%2F1')

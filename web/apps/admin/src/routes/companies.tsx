@@ -45,6 +45,7 @@ const columns = (): SortColumn<CompanySort>[] => [
 export function CompaniesPage({ navigate }: { navigate: (to: Route) => void }) {
   const { client } = useApi()
   const session = useSession()
+  const canExport = session.can('data.export')
   const allowed = session.can('companies.manage')
   const list = useLoad(() => (allowed ? client.companies.list() : Promise.resolve([])))
   const [filter, setFilter] = useState('')
@@ -104,7 +105,7 @@ export function CompaniesPage({ navigate }: { navigate: (to: Route) => void }) {
         title={t.companies.title}
         description={t.companies.description}
         // Export: in the header from md, in ⋯ below; it starts select mode (WARE-45), on a phone too.
-        secondary={[{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: shown.length === 0 || selection.active }]}
+        secondary={canExport ? [{ label: t.common.export, icon: Download, onClick: () => selection.start(EXPORT_MODE), showFrom: 'md', disabled: shown.length === 0 || selection.active }] : []}
         primary={{ label: t.companies.addCompany, short: t.common.add, icon: Plus, onClick: () => setEditing('new') }}
       />
       <div className="mb-4 flex flex-wrap gap-2">
@@ -124,7 +125,7 @@ export function CompaniesPage({ navigate }: { navigate: (to: Route) => void }) {
         {saved}
       </p>
       {/* Export starts select mode (WARE-45): its bar, the checkboxes, then the sheet. */}
-      <ExportMode selection={selection} list={t.companies.title} columns={companyExportColumns()} shown={shown} />
+      {canExport ? <ExportMode selection={selection} list={t.companies.title} columns={companyExportColumns()} shown={shown} /> : null}
       <Loaded load={list} empty={shown.length === 0} emptyState={filter.trim() ? t.companies.noMatch(filter.trim()) : t.companies.noCompanies}>
         {() => (
           // Where the table is narrow the companies are one list of rows: name, then code and place, with Edit and ⋯ beside them.

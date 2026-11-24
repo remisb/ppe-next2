@@ -12,6 +12,7 @@ export const common: CommonText = {
   delete: 'Удалить',
   add: 'Добавить',
   export: 'Экспорт',
+  share: 'Поделиться',
   exportSelected: 'Экспорт…',
   search: 'Поиск',
   moreActions: (name: string) => `Другие действия: ${name}`,
