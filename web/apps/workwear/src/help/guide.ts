@@ -67,6 +67,7 @@ export type SectionId =
   | 'employees'
   | 'catalogue'
   | 'export'
+  | 'share'
   | 'assets'
   | 'sim-scan'
   | 'administration'

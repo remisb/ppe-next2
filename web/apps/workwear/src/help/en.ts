@@ -313,6 +313,39 @@ export const en: Guide = {
       ],
     },
     {
+      id: 'share',
+      title: 'Share a few employees',
+      blocks: [
+        {
+          p: 'To send a few people\'s details to someone outside the app, such as a supplier, use the **Export** window on **Employees**. Under **How**, beside the files, are two ways to share up to 10 people: **Copy as Text** and **Share Link**.',
+        },
+        {
+          p: 'Choose **Export** at the top of **Employees**, tick the people, then **Export 3…**. Tick the columns to send, then choose how.',
+          devices: ['tablet', 'desktop'],
+        },
+        {
+          p: 'Open **⋯** at the top of **Employees**, choose **Export**, tick the people, then **Export 3…**. Tick the columns to send, then choose how.',
+          devices: ['phone'],
+        },
+        {
+          ul: [
+            '**Copy as Text** copies the people as plain text, one after another, with a line for each column, such as **Shoe size: 43**. Paste it into an e-mail or a WhatsApp chat. Nothing is kept in the app. If your browser will not copy, the text is shown selected, for you to copy yourself.',
+            '**Share Link** makes a link that anyone who has it can open, without signing in. Give it a **Name**, which only you see, choose how long it stays open (**1 day**, **7 days** or **30 days**), then **Create Link (3)**. Choose **Copy Link** and send it. The link is shown only this once.',
+          ],
+        },
+        {
+          p: 'A link shows the people as they were when you shared them, with only the columns you ticked and only what you can see yourself. Later changes to an employee do not reach it.',
+        },
+        {
+          p: 'Sharing takes up to 10 people; with more ticked, the window says so. Anyone can share. Someone whose roles do not allow **Export data** sees **Share** at the top of **Employees** instead of **Export**, and the window offers only the two ways to share.',
+        },
+        {
+          p: '**Shared Links** lists the links you have shared that are still open, with their name, how many people, when you shared them and until when they open. Open it from **⋯** at the top of **Employees**, or with **Search**. **Revoke** closes a link at once, after asking, and deletes the details it held. A link also closes by itself when its time is up, and its details are deleted then.',
+        },
+        { p: 'Each link made and revoked is on the **Audit log**.', roles: ['admin'] },
+      ],
+    },
+    {
       id: 'assets',
       title: 'Company Assets',
       blocks: [
