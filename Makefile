@@ -15,7 +15,7 @@ TEST_DB ?= $(POSTGRES_DB)_test
 PSQL := docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' db psql -v ON_ERROR_STOP=1 -q -U $(POSTGRES_USER) -d $(DB)
 
 .PHONY: help build run vet test test-db e2e e2e-caddy new-app db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo import-sims \
-	prod-build prod-up prod-ready prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo prod-import-sims prod-reseal-sim-codes \
+	prod-build prod-prune-cache prod-up prod-ready prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo prod-import-sims prod-reseal-sim-codes \
 	prod-backup prod-backups prod-restore prod-drill backup-once publish-app prod-publish
 
 help: ## List targets
@@ -149,8 +149,18 @@ PROD := $(PROD_ENV) $(PROD_COMPOSE)
 # tracked files differ from it.
 PROD_COMMIT = $(shell git describe --always --dirty --abbrev=12 2>/dev/null)
 
+# The build cache a deploy keeps: the most recently used this much, the cache
+# of the last build or two (about 4 GB each). The API's Go build cache and the
+# backup agent's build are in it; emptied, the next build compiles them afresh,
+# about ten minutes on the droplet's one CPU instead of one or two (WARE-53).
+PROD_BUILD_CACHE ?= 6gb
+
 prod-build: ## Build the API and web images (separate from prod-up, so building is not downtime)
 	$(PROD_ENV) API_COMMIT="$(PROD_COMMIT)" $(PROD_COMPOSE) build
+	@$(MAKE) --no-print-directory prod-prune-cache
+
+prod-prune-cache: ## Trim Docker's build cache to the newest PROD_BUILD_CACHE (prod-build does it)
+	docker builder prune -f --reserved-space $(PROD_BUILD_CACHE)
 
 # `up` runs migrate before the API starts and recreates what changed. Compose
 # has kept api or caddy on the previous image after a rebuild, so each built

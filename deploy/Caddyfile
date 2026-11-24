@@ -13,6 +13,17 @@
 #   HSTS_MAX_AGE  seconds; set 0 on a shared zone such as sslip.io, where a pin
 #                 would outlive the demo and cannot be taken back
 
+# The API. While a deploy replaces its container (about a second), a request
+# that cannot reach it waits for the new one instead of answering 502: Caddy
+# retries only a connection that failed, so the API never saw the request, and
+# the old API finishes the requests it has (graceful shutdown) before it stops.
+(api) {
+	reverse_proxy {$API_UPSTREAM:127.0.0.1:8090} {
+		lb_try_duration 15s
+		lb_try_interval 250ms
+	}
+}
+
 # Other sites this Caddy serves for applications sharing the host, one file
 # each in deploy/sites/ (mounted at /etc/caddy/sites). They belong to those
 # applications and are not committed here; with none present this imports
@@ -27,13 +38,13 @@ import sites/*.caddy
 	redir /.well-known/change-password /account 302
 
 	handle /api/* {
-		reverse_proxy {$API_UPSTREAM:127.0.0.1:8090}
+		import api
 	}
 	# /health: the API process answers. /ready: it also reaches a migrated
 	# database; the external uptime check watches it (docs/monitoring.md).
 	@probe path /health /ready
 	handle @probe {
-		reverse_proxy {$API_UPSTREAM:127.0.0.1:8090}
+		import api
 	}
 	# App Launcher (ADR 0006), every app a user's roles open, on the same
 	# origin as the staff app, so they share the sign-in cookie: /apps/ and
@@ -67,7 +78,7 @@ import sites/*.caddy
 	# the app's own screens): the API answers its version's index.html with
 	# the profile's policy (cmd/api/published-app-routes.go).
 	handle /apps/* {
-		reverse_proxy {$API_UPSTREAM:127.0.0.1:8090}
+		import api
 	}
 	# Administration: the same origin as the staff app, so the two share the
 	# sign-in cookie. handle_path strips /admin, so its built /admin/assets/*
