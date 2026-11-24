@@ -1381,6 +1381,140 @@ replaced by **Scan Documents** (docs-scan, decided 2026-11-21, to build).
   is the bill. The key is entered once and never shown again, only its last four characters.
 - **Code:** `internal/aiusage`, `ai_usage`. **UI:** AI Usage (Administration), Settings → **AI**.
 
+## 15. Document Vault
+
+The organisation's documents, of fixed types, with their versions, templates and search
+(ADR 0008; rules in [vault-service.md](specs/vault-service.md),
+[document-template-service.md](specs/document-template-service.md) and
+[outbox-service.md](specs/outbox-service.md)). Decided, not built.
+
+### Document Vault
+- **Brief:** the context, and the staff app's screen, that keeps documents, makes them from
+  templates and finds them.
+- **Detail:** stores uploaded documents, generated ones and copies of the app's own records
+  (assignment forms, Items Given Records, signed copies); lists identity documents from
+  Personnel files without keeping them. Not a general file share: every document has a type.
+- **Code:** `internal/vault`, schema `vault`, permissions `vault.*`. **UI:** Document Vault (Main
+  nav, `/vault`); the employee page's and an asset's **Documents** section.
+
+### Document
+- **Brief:** one paper of a known type (a contract, a certificate, an invoice), with its versions
+  and the people and things it is linked to.
+- **Detail:** has a type, a title, optional dates and a number, and at least one version. A
+  document is what a user finds and opens; the **file** is the bytes a version holds. An Identity
+  Document is Personnel files', not a vault document. Company Assets' **Documents** column and
+  filter are about signed copies and keep their name.
+- **Code:** `vault.documents`, `document.Document`. **UI:** Document, Documents.
+
+### Document type
+- **Brief:** what kind of document it is, fixed in code: Employment contract, Certificate,
+  Invoice, Assignment form, …
+- **Detail:** decides whether it is sealed, how long it is kept, what it must be linked to, who
+  may see and change it, how it may come to be (Origin) and which files it takes. Administrators
+  choose templates, never types.
+- **Code:** `vault.Types()`, `type` (`employment.contract`). **UI:** Type.
+
+### Version
+- **Brief:** one state of a document: the first upload or generation, a newer file, the signed
+  copy.
+- **Detail:** versions are never changed or deleted; the newest is the one shown. Each has its
+  **Origin** and a document hash.
+- **Code:** `vault.versions`. **UI:** Version, v1, v2…; **Add Version**.
+
+### Origin
+- **Brief:** how a document or version came to be.
+- **Detail:** a document is **Uploaded**, **Generated** from a template, or **Kept
+  automatically** (an assignment form or Items Given Record copied by the worker; code
+  `archived`). A version is also **Signed** (Upload Signed Copy) or **Added** (a newer file).
+- **Code:** `origin`. **UI:** Origin.
+
+### Linked to (subject)
+- **Brief:** the people and things a document is about: an employee, a company, an employment,
+  an asset, an order, a supplier.
+- **Detail:** a document is found from each of them (the employee page's Documents). Links made
+  by generation or by keeping a record automatically are **locked**. Code calls each one a
+  **subject**.
+- **Code:** `vault.links`, `subject_kind`, `subject_id`. **UI:** Linked to.
+
+### Employment documents
+- **Brief:** contracts, their annexes, NDAs and other employment papers: the sealed types.
+- **Detail:** seen and changed only by the add-on role **Employment Documents**
+  (`vault.employment.read`, `.manage`), Administrator not included. Kept for a period after
+  employment ends, then **shredded**; a **Legal Hold** stops it.
+- **UI:** Employment documents (group), Employment contract, Annex, NDA.
+
+### Sealed
+- **Brief:** a document whose files and values are encrypted with a key of its own.
+- **Detail:** a property of its type (Employment documents). Opening one needs a recent sign-in
+  and is recorded; its read text is never kept, only search words without digits. Shredding
+  deletes the key, so nothing of it opens again.
+- **Code:** `sealed`, `vault.document_keys`. **UI:** Sealed (badge), with ⓘ.
+
+### Kept until
+- **Brief:** the day a document goes by its type's retention rule.
+- **Detail:** empty while it cannot be known (the person is still employed) or when the type is
+  kept until removed. Not the document's own validity (**Valid until**, for a certificate).
+- **Code:** `retain_until`. **UI:** Kept until.
+
+### Document template
+- **Brief:** the text of a kind of document with fields to fill in, edited in Administration.
+- **Detail:** belongs to one type; a **Draft** is edited, **Publish** freezes it as a new
+  version, **Retire** hides it from Generate. Made of blocks (headings, paragraphs, lists,
+  tables, signatures) and fields `{{employee.name}}`; no logic. Later also an uploaded Word
+  file. Not a Mail template.
+- **Code:** `vault.templates`, `vault.template_versions`, `internal/vault/template`. **UI:**
+  Document Templates (Administration), Draft, Published, Retired, **Save Draft**, **Publish**,
+  **Retire**.
+
+### Field, Asked field
+- **Brief:** a value a template fills in: from the app (the employee's name, the company's
+  code) or **asked** of the user when generating (a salary, a position).
+- **Detail:** asked fields are declared by the template with a label, a kind (text, long text,
+  date, number, money, choice) and whether they are required.
+- **Code:** `fields.go`, `input.<key>`. **UI:** Fields (panel), **Add Asked Field**.
+
+### Generate Document…, Preview, Generate
+- **Brief:** making a document from a published template for an employee.
+- **Detail:** type, template, employment, asked fields, then **Preview** (a PDF marked
+  PREVIEW), then **Generate**, which numbers, draws and stores it as a locked PDF. Refused when
+  a value changed after the preview.
+- **Code:** `POST /api/v1/vault/generate`. **UI:** Generate Document… (employee page), Preview,
+  Generate.
+
+### Document number
+- **Brief:** a generated document's number, per type and year (`EC-2026-0001`).
+- **Detail:** given on Generate, never reused; printed in the footer with the version and hash.
+  Not an order's **record number**.
+- **Code:** `number`, `vault.document_number_counters`. **UI:** No.
+
+### Upload Document…, Upload Signed Copy
+- **Brief:** adding a document from a file; adding the signed paper of a generated one as its
+  next version.
+- **Detail:** PDF, JPEG or PNG (Word later), up to 20 MB, read from the file's first bytes.
+  Company Assets' **Upload Signed Form** stays the assignment's own action; its copies are stored
+  in the vault.
+- **UI:** Upload Document…, Upload Signed Copy.
+
+### Read text, text states
+- **Brief:** the text the worker reads from a version's file, so search finds what is in it.
+- **Detail:** from a PDF's own text, else by OCR (Lithuanian, Russian, English). States:
+  **Waiting to be read**, **Reading**, **Read**, **No text found**, **Couldn't read**; **Read
+  Again** queues it once more. Sealed types keep no text.
+- **Code:** `vault.version_text` (`pending`, `reading`, `read`, `none`, `failed`, `skipped`).
+  **UI:** the states above, Read Again.
+
+### Verify
+- **Brief:** checking that a kept assignment form or Items Given Record still matches its
+  source's document hash.
+- **UI:** Verify; Matches, Does not match.
+
+### Worker, Job
+- **Brief:** the background program that reads text, keeps records and converts files, and one
+  piece of its work.
+- **Detail:** runs beside the API (`api -worker`, the docworker container) and takes jobs from
+  a queue in the database. System shows it; the Overview warns when it is silent or jobs fail.
+- **Code:** `internal/outbox`, `outbox.jobs`. **UI:** Worker (System), jobs.
+
 ---
 
 ## Translations
@@ -1569,6 +1703,28 @@ App Launcher (the source is `@ppe/launcher`'s `text.ts`):
 | Make Colour Photo (AI) / AI-coloured / AI colour photos | Sukurti spalvotą nuotrauką (DI) / Spalvinta DI / DI spalvotos nuotraukos | Сделать цветное фото (ИИ) / Раскрашено ИИ / Цветные фото с ИИ |
 | AI Usage / Monthly AI Budget / OpenAI API Key | DI naudojimas / Mėnesio DI biudžetas / OpenAI API raktas | Использование ИИ / Месячный бюджет ИИ / API-ключ OpenAI |
 
+Document Vault (decided, not built; ADR 0008):
+
+| English | Lietuvių | Русский |
+|---|---|---|
+| Document Vault | Dokumentų saugykla | Хранилище документов |
+| Document / Documents (also the employee page's section) | Dokumentas / Dokumentai | Документ / Документы |
+| Type (document type) / Version / Origin / Linked to | Tipas / Versija / Kilmė / Susieta su | Тип / Версия / Происхождение / Связан с |
+| Uploaded / Generated / Kept automatically / Signed / Added (origins) | Įkelta / Sugeneruota / Išsaugota automatiškai / Pasirašyta / Pridėta | Загружено / Сформировано / Сохранено автоматически / Подписано / Добавлено |
+| Upload Document… / Add Version / Upload Signed Copy | Įkelti dokumentą… / Pridėti versiją / Įkelti pasirašytą kopiją | Загрузить документ… / Добавить версию / Загрузить подписанную копию |
+| Employment documents / Employment Documents (role) | Darbo dokumentai / Darbo dokumentai | Трудовые документы / Трудовые документы |
+| Employment contract / Annex / NDA | Darbo sutartis / Priedas / Konfidencialumo sutartis | Трудовой договор / Приложение / Соглашение о неразглашении |
+| Certificate / Training / Invoice / Other | Pažymėjimas / Mokymai / Sąskaita faktūra / Kita | Сертификат / Обучение / Счёт-фактура / Другое |
+| Sealed / Kept until / Valid until | Užšifruota / Saugoma iki / Galioja iki | Зашифровано / Хранится до / Действует до |
+| Document Templates / Document template | Dokumentų šablonai / Dokumento šablonas | Шаблоны документов / Шаблон документа |
+| Draft / Published / Retired; Save Draft / Publish / Retire | Juodraštis / Paskelbta / Nebenaudojama; Išsaugoti juodraštį / Paskelbti / Nebenaudoti | Черновик / Опубликовано / Выведено из работы; Сохранить черновик / Опубликовать / Вывести из работы |
+| Fields / Add Asked Field / Required | Laukai / Pridėti klausiamą lauką / Privalomas | Поля / Добавить запрашиваемое поле / Обязательное |
+| Generate Document… / Preview / Generate | Generuoti dokumentą… / Peržiūra / Generuoti | Сформировать документ… / Предпросмотр / Сформировать |
+| Document number (No.) | Dokumento numeris (Nr.) | Номер документа (№) |
+| Waiting to be read / Reading / Read / No text found / Couldn't read / Read Again | Laukia nuskaitymo / Skaitoma / Nuskaityta / Teksto nerasta / Nepavyko nuskaityti / Nuskaityti dar kartą | Ожидает распознавания / Распознаётся / Распознано / Текст не найден / Не удалось распознать / Распознать снова |
+| Verify / Matches / Does not match | Patikrinti / Sutampa / Nesutampa | Проверить / Совпадает / Не совпадает |
+| Worker (System) | Foninė apdorojimo programa | Фоновый обработчик |
+
 ---
 
 ## Words to avoid
@@ -1617,3 +1773,9 @@ App Launcher (the source is `@ppe/launcher`'s `text.ts`):
 | scan, ID copy, passport copy (for what is kept) | **Document Copy** | "Scan" is what the person does; a photo is an employee's picture. |
 | HR file, dossier, personal file (in the UI) | **Personnel files**; a person's **personnel file** | One name for the context and its part. |
 | delete, erase (a person's documents, by retention) | **shred** (code), the documents **go** (UI) | Removing one document is Remove; the whole file is shredded by the retention rule. |
+| file, attachment (for a stored document) | **document**; a version's **file** | A document has versions; a file is the bytes one version holds. |
+| archive, repository, storage (for the Document Vault) | **Document Vault** | **Download Archive** is Scan Document's zip; "archived" is only the code's name for the origin Kept automatically. |
+| revision, edition (of a document) | **version** | A template's versions are the same word: Draft, then Published. |
+| form, blank, pattern (for a template) | **document template** | A form is Company Assets' assignment form; a mail template is an email's. |
+| issue, create, produce (a document from a template) | **Generate** | "Issued on" is an ID document's date; nothing in the vault is issued. |
+| encrypted, protected, private (for a document) | **Sealed** | One word for the badge and the rule. |
