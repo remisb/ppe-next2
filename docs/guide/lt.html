@@ -86,23 +86,24 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <li><a href="#employees"><b>9</b>Darbuotojai</a></li>
     <li><a href="#catalogue"><b>10</b>Prekių katalogas ir prekių rinkiniai</a></li>
     <li><a href="#export"><b>11</b>Sąrašo eksportas</a></li>
-    <li><a href="#assets"><b>12</b>Įmonės turtas</a></li>
-    <li><a href="#sim-scan"><b>13</b>Skenuoti SIM</a></li>
-    <li><a href="#administration"><b>14</b>Administravimas</a></li>
-    <li><a href="#overview"><b>15</b>Apžvalga</a></li>
-    <li><a href="#users"><b>16</b>Naudotojai</a></li>
-    <li><a href="#roles"><b>17</b>Rolės ir teisės</a></li>
-    <li><a href="#audit"><b>18</b>Audito žurnalas</a></li>
-    <li><a href="#security"><b>19</b>Sauga</a></li>
-    <li><a href="#system"><b>20</b>Sistema</a></li>
-    <li><a href="#backups"><b>21</b>Atsarginės kopijos</a></li>
-    <li><a href="#usage"><b>22</b>Naudojimas</a></li>
-    <li><a href="#settings"><b>23</b>Nustatymai</a></li>
-    <li><a href="#suppliers"><b>24</b>Tiekėjai</a></li>
-    <li><a href="#manage-apps"><b>25</b>Programų tvarkymas</a></li>
-    <li><a href="#account"><b>26</b>Jūsų paskyra</a></li>
-    <li><a href="#install"><b>27</b>Programos įdiegimas</a></li>
-    <li><a href="#shortcuts"><b>28</b>Paieška ir spartieji klavišai</a></li>
+    <li><a href="#share"><b>12</b>Kelių darbuotojų bendrinimas</a></li>
+    <li><a href="#assets"><b>13</b>Įmonės turtas</a></li>
+    <li><a href="#sim-scan"><b>14</b>Skenuoti SIM</a></li>
+    <li><a href="#administration"><b>15</b>Administravimas</a></li>
+    <li><a href="#overview"><b>16</b>Apžvalga</a></li>
+    <li><a href="#users"><b>17</b>Naudotojai</a></li>
+    <li><a href="#roles"><b>18</b>Rolės ir teisės</a></li>
+    <li><a href="#audit"><b>19</b>Audito žurnalas</a></li>
+    <li><a href="#security"><b>20</b>Sauga</a></li>
+    <li><a href="#system"><b>21</b>Sistema</a></li>
+    <li><a href="#backups"><b>22</b>Atsarginės kopijos</a></li>
+    <li><a href="#usage"><b>23</b>Naudojimas</a></li>
+    <li><a href="#settings"><b>24</b>Nustatymai</a></li>
+    <li><a href="#suppliers"><b>25</b>Tiekėjai</a></li>
+    <li><a href="#manage-apps"><b>26</b>Programų tvarkymas</a></li>
+    <li><a href="#account"><b>27</b>Jūsų paskyra</a></li>
+    <li><a href="#install"><b>28</b>Programos įdiegimas</a></li>
+    <li><a href="#shortcuts"><b>29</b>Paieška ir spartieji klavišai</a></li>
   </ol></nav>
 </header>
 
@@ -322,6 +323,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 <section id="export">
   <h2><span class="n">11</span>Sąrašo eksportas</h2>
     <p><b>Eksportuoti</b> išsaugo sąrašą kaip failą skaičiuoklei: <b>Excel (.xlsx)</b> arba <b>CSV</b>. Šis mygtukas yra ekranų <b>Užsakymai</b>, <b>Darbuotojai</b>, <b>Prekių katalogas</b>, <b>SIM kortelės</b> ir <b>Įranga</b> viršuje. Ekranuose <b>Prekių rinkiniai</b>, <b>Reikia pakeisti</b> ir darbuotojo <b>Išduotos prekės</b> jis iš karto atveria langą <b>Eksportuoti</b> su visomis eilutėmis.</p>
+    <p><b>Eksportuoti</b> rodomas tik tada, kai bent viena jūsų rolė turi teisę <b>Eksportuoti duomenis</b>. Ją turi <b>Administratorius</b>, <b>Vadovas</b> ir <b>Darbuotojas</b>, o administratorius gali ją suteikti kitoms rolėms ekrane <b>Rolės ir teisės</b>. Be jos jokiame sąraše <b>Eksportuoti</b> nėra.</p>
     <p>Sąrašo viršuje pasirinkite <b>Eksportuoti</b>. Šalia eilučių atsiranda žymimieji langeliai, o juosta virš sąrašo nurodo, ką darote ir kiek eilučių pažymėta, pavyzdžiui, <b>Eksportuoti: Darbuotojai · Pažymėta 3</b>. Kol ji rodoma, spustelėjus eilutę ji pažymima, o ne atidaroma, o pačios eilutės mygtukai paslepiami. Langelis stulpelio viršuje pažymi visas rodomas eilutes.</p>
     <ul>
       <li><b>Eksportuoti 3…</b> eksportuoja jūsų pažymėtas eilutes.</li>
@@ -331,11 +333,35 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <p>Išeiti galima ir <kbd>Esc</kbd>.</p>
     <p>Lange <b>Eksportuoti</b> nurodytos jūsų pasirinktos eilutės, pavyzdžiui, <b>Pažymėta: 3</b>; <b>Keisti</b> grąžina į sąrašą pasirinkti iš naujo. Pažymėkite norimus stulpelius (ekrane rodomi jau pažymėti), pasirinkite <b>Excel (.xlsx)</b> arba <b>CSV</b>, tada <b>Eksportuoti (3)</b>. Failas, pavyzdžiui, <kbd>Darbuotojai 2026-11-20.xlsx</kbd>, atsisiunčiamas su eilutėmis sąrašo tvarka ir stulpelių pavadinimais jūsų kalba. Jame tik tai, ką matote ekrane.</p>
     <p class="who">Tik administratoriams</p>
-    <p><b>Administravime</b> tas pats <b>Eksportuoti</b> yra ekranuose <b>Naudotojai</b>, <b>Rolės ir teisės</b>, <b>Tiekėjai</b>, <b>Programų tvarkymas</b>, taip pat <b>Saugos</b> skirtuke <b>Prisijungę įrenginiai</b> ir <b>Sistemos</b> skirtuke <b>Klaidos</b>.</p>
+    <p><b>Administravime</b> tas pats <b>Eksportuoti</b> yra ekranuose <b>Naudotojai</b>, <b>Rolės ir teisės</b>, <b>Tiekėjai</b>, <b>Įmonės</b>, <b>Programų tvarkymas</b>, taip pat <b>Saugos</b> skirtuke <b>Prisijungę įrenginiai</b> ir <b>Sistemos</b> skirtuke <b>Klaidos</b>.</p>
+</section>
+
+<section id="share">
+  <h2><span class="n">12</span>Kelių darbuotojų bendrinimas</h2>
+    <p>Norėdami nusiųsti kelių žmonių duomenis kam nors už programos ribų, pavyzdžiui, tiekėjui, naudokite langą <b>Eksportuoti</b> ekrane <b>Darbuotojai</b>. Skiltyje <b>Kaip</b> šalia failų yra du būdai bendrinti iki 10 žmonių: <b>Kopijuoti kaip tekstą</b> ir <b>Bendrinimo nuoroda</b>.</p>
+    <p>Ekrano <b>Darbuotojai</b> viršuje pasirinkite <b>Eksportuoti</b>, pažymėkite žmones, tada <b>Eksportuoti 3…</b>. Pažymėkite stulpelius, kuriuos norite nusiųsti, ir pasirinkite būdą.</p>
+    <ul>
+      <li><b>Kopijuoti kaip tekstą</b> nukopijuoja žmones kaip paprastą tekstą, vieną po kito, su eilute kiekvienam stulpeliui, pavyzdžiui, <b>Avalynės dydis: 43</b>. Įklijuokite jį į el. laišką arba WhatsApp pokalbį. Programoje niekas neišsaugoma. Jei naršyklė nenukopijuoja, tekstas parodomas pažymėtas, kad nukopijuotumėte patys.</li>
+      <li><b>Bendrinimo nuoroda</b> sukuria nuorodą, kurią gali atverti kiekvienas ją turintis, neprisijungęs. Suteikite jai <b>Pavadinimą</b>, kurį matote tik jūs, pasirinkite, kiek ji galioja (<b>1 diena</b>, <b>7 dienos</b> arba <b>30 dienų</b>), tada <b>Sukurti nuorodą (3)</b>. Pasirinkite <b>Kopijuoti nuorodą</b> ir ją nusiųskite. Nuoroda parodoma tik šį kartą.</li>
+    </ul>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/share-link.png" alt="Langas „Eksportuoti“ su pasirinkta bendrinimo nuoroda: pavadinimas ir kiek ji galioja" loading="lazy"></figure>
+    </div>
+    <p>Nuoroda rodo žmones tokius, kokie jie buvo bendrinant, tik su jūsų pažymėtais stulpeliais ir tik tai, ką matote patys. Vėlesni darbuotojo pakeitimai jos nepasiekia.</p>
+    <div class="shots">
+      <figure class="phone"><img src="../../web/apps/workwear/public/help-img/lt/phone/shared-page.png" alt="Bendrinimo nuoroda, atverta telefone" loading="lazy"></figure>
+    </div>
+    <p>Bendrinti galima iki 10 žmonių; pažymėjus daugiau, langas tai pasako. Bendrinti gali visi. Tas, kurio rolės neleidžia <b>Eksportuoti duomenis</b>, ekrano <b>Darbuotojai</b> viršuje mato <b>Bendrinti</b>, o ne <b>Eksportuoti</b>, ir langas siūlo tik du bendrinimo būdus.</p>
+    <p><b>Bendrinimo nuorodos</b> rodo jūsų bendrintas dar galiojančias nuorodas: pavadinimą, kiek žmonių, kada bendrinote ir iki kada jos galioja. Atidarykite jas per <b>⋯</b> ekrano <b>Darbuotojai</b> viršuje arba per <b>Paiešką</b>. <b>Atšaukti</b> iškart uždaro nuorodą (prieš tai paklausus) ir ištrina joje buvusius duomenis. Pasibaigus laikui nuoroda užsidaro ir pati, o jos duomenys tada ištrinami.</p>
+    <div class="shots">
+      <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/shared-links.png" alt="Bendrinimo nuorodos su mygtuku „Atšaukti“" loading="lazy"></figure>
+    </div>
+    <p class="who">Tik administratoriams</p>
+    <p>Kiekviena sukurta ir atšaukta nuoroda matoma <b>Audito žurnale</b>.</p>
 </section>
 
 <section id="assets">
-  <h2><span class="n">12</span>Įmonės turtas</h2>
+  <h2><span class="n">13</span>Įmonės turtas</h2>
     <p>Skyriuje <b>Įmonės turtas</b> registruojamos darbuotojams išduodamos įmonės SIM, įranga ir baldai: kur kiekvienas daiktas yra, pas ką jis ir koks aktas pasirašytas jį išduodant. Jame yra du ekranai: <b>SIM kortelės</b> ir <b>Įranga</b>, kurioje registruojama ir įranga, ir baldai; ją mato tik tie, kam suteikta rolė <b>Įrangos išdavimai</b>. Kiekvienas daiktas – atskiras įrašas su savo inventoriaus numeriu, todėl trys vienodi nešiojamieji kompiuteriai yra trys turto vienetai.</p>
     <p>Jį atidarysite šoninėje juostoje arba paspaudę <kbd>G</kbd>, tada <kbd>A</kbd>. Jei matote ir <b>Įranga</b>, ji ir <b>SIM kortelės</b> išvardytos po <b>Įmonės turtas</b>: pasirinkite vieną, kad atidarytumėte. Pasirinkę <b>Įmonės turtas</b>, jas paslėpsite arba parodysite.</p>
     <p class="who">Tik administratoriams ir vadovams</p>
@@ -385,7 +411,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="sim-scan">
-  <h2><span class="n">13</span>Skenuoti SIM</h2>
+  <h2><span class="n">14</span>Skenuoti SIM</h2>
   <p class="who">Tik administratoriams ir vadovams</p>
     <p><b>Skenuoti SIM</b> prideda naujai gautas SIM iš jų kortelių: SIM Nr. nuskaitomas iš brūkšninio kodo priekyje, PIN ir PUK – iš nugarėlės. Tai atskira, dar bandoma programa tiems, kurie tvarko įmonės turtą: atidarykite ją iš <b>Programos</b>. <b>SIM kortelės</b> viršuje grąžina į darbo drabužių programą.</p>
     <p><b>Visoms SIM</b> rodo, kas kortelėms bendra: tiekėjas, planas ir negrąžinimo vertė iš <b>Nustatymai</b>, gavimo data ir pastaba. Pieštukas šalia keičia juos tik šiai siuntai.</p>
@@ -399,7 +425,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="administration">
-  <h2><span class="n">14</span>Administravimas</h2>
+  <h2><span class="n">15</span>Administravimas</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Administravime</b> tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro <b>Apžvalgoje</b>. Kiti jo ekranai: <b>Naudotojai</b>, <b>Rolės ir teisės</b>, <b>Audito žurnalas</b>, <b>Sauga</b>, <b>Sistema</b>, <b>Naudojimas</b>, <b>Nustatymai</b>, <b>Laiškų šablonai</b>, <b>Tiekėjai</b> ir <b>Programų tvarkymas</b>.</p>
     <p>Atidarykite jį mygtuku <b>Administravimas</b> šoninės juostos apačioje. Jis turi savo šoninę juostą; <b>Darbo drabužiai ir įranga</b> jos apačioje grąžina atgal.</p>
@@ -407,7 +433,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="overview">
-  <h2><span class="n">15</span>Apžvalga</h2>
+  <h2><span class="n">16</span>Apžvalga</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Apžvalga</b> atsako į klausimą: ar kas nors negerai? <b>Reikia dėmesio</b> išvardija, į ką pažiūrėti, svarbiausia pirmiau, su nuoroda, kur tai sutvarkyti. Kai viskas gerai, rodoma <b>Niekam nereikia jūsų dėmesio.</b></p>
     <ul>
@@ -425,7 +451,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="users">
-  <h2><span class="n">16</span>Naudotojai</h2>
+  <h2><span class="n">17</span>Naudotojai</h2>
   <p class="who">Tik administratoriams</p>
     <ul>
       <li>Kurkite, redaguokite ar deaktyvuokite paskyras. Kiekvienai paskyrai priskirkite vieną ar kelias roles: naudotojas gali tai, ką leidžia bet kuri jo rolė. Ką leidžia kiekviena rolė, rodo <b>Rolės ir teisės</b>.</li>
@@ -440,11 +466,12 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="roles">
-  <h2><span class="n">17</span>Rolės ir teisės</h2>
+  <h2><span class="n">18</span>Rolės ir teisės</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Rolės ir teisės</b> rodo kiekvieną rolę, ką ji leidžia ir kiek naudotojų ją turi. Rolė – tai teisių rinkinys, pavyzdžiui, <b>Tvarkyti prekių katalogą</b> ar <b>Trinti darbuotojus</b>. Roles naudotojams skiriate skiltyje <b>Naudotojai</b>.</p>
     <ul>
       <li><b>Administratorius</b>, <b>Vadovas</b> ir <b>Darbuotojas</b> yra įtaisytos rolės. <b>Administratorius</b> gali viską ir jo pakeisti negalima: <b>Peržiūrėti</b> parodo, ką jis leidžia. Ką leidžia <b>Vadovas</b> ir <b>Darbuotojas</b>, galite keisti, bet ne jų pavadinimus ar aprašymus, o ištrinti jų negalima.</li>
+      <li>Teisė <b>Eksportuoti duomenis</b> leidžia rolės naudotojams eksportuoti sąrašus. Įtaisytos rolės ją turi; jūsų pridėta rolė – tik jei ją pažymite. Nuimkite žymę <b>Vadovo</b> ar <b>Darbuotojo</b> rolėje, kad jie nebeeksportuotų. <b>Audito žurnalo</b> eksportui reikia atskiros teisės.</li>
       <li><b>Pridėti rolę</b> sukuria naują: pavadinimas, kam ji skirta, ir jos teisės. Kai kurioms teisėms reikia kitos, kuri pažymima kartu: teisei <b>Tvarkyti naudotojus</b> reikia teisės <b>Matyti naudotojus</b>.</li>
       <li>Pakeitimas rolę turinčius naudotojus pasiekia per kelias minutes.</li>
       <li><b>⋯ → Ištrinti rolę…</b> ištrina rolę, kurios neturi nė vienas naudotojas. Pirmiausia atimkite ją iš naudotojų skiltyje <b>Naudotojai</b>.</li>
@@ -457,7 +484,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="audit">
-  <h2><span class="n">18</span>Audito žurnalas</h2>
+  <h2><span class="n">19</span>Audito žurnalas</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Audito žurnalas</b> rodo kiekvieną užfiksuotą pakeitimą: kas pakeista, kas pakeitė, kada ir kur. Pakeitimas daromas programoje <b>Darbo drabužiai ir įranga</b>, <b>Administravime</b>, per darbuotojo <b>Patvirtinimo nuorodą</b> arba pačios <b>Sistemos</b>.</p>
     <p>Filtruokite pagal <b>Sritis</b>, <b>Pakeitimas</b>, <b>Naudotojas</b> ir datas. Spustelėkite pakeitimą, kad jis atsivertų šalia sąrašo. Jame matyti kiekvienas laukas prieš ir po, o <b>Atidaryti programoje „Darbo drabužiai ir įranga“</b> atidaro įrašą. <b>Visi šio įrašo pakeitimai</b> susiaurina sąrašą iki jo.</p>
@@ -474,7 +501,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="security">
-  <h2><span class="n">19</span>Sauga</h2>
+  <h2><span class="n">20</span>Sauga</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Sauga</b> turi tris skirtukus:</p>
     <ul>
@@ -490,7 +517,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="system">
-  <h2><span class="n">20</span>Sistema</h2>
+  <h2><span class="n">21</span>Sistema</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Sistema</b> rodo, kaip veikia programėlė. Ji turi tris skirtukus: <b>Būsena</b>, <b>Klaidos</b> ir <b>Atsarginės kopijos</b>.</p>
     <ul>
@@ -506,7 +533,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="backups">
-  <h2><span class="n">21</span>Atsarginės kopijos</h2>
+  <h2><span class="n">22</span>Atsarginės kopijos</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Sistema → Atsarginės kopijos</b> rodo, ar duomenų bazė kopijuojama. Atsarginių kopijų tarnyba serveryje pagal tvarkaraštį kopijuoja visą duomenų bazę, jei nenustatyta kitaip, kiekvieną naktį, ir ištrina senas kopijas pasibaigus laikymo laikui.</p>
     <p>Viršutinė eilutė sako, ar viskas gerai. Ji tampa raudona, kai paskutinė kopija nepavyko, kai suplanuota kopija vėluoja arba kai tarnyba nustojo pranešti. Praneškite serverį prižiūrinčiam žmogui.</p>
@@ -524,7 +551,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="usage">
-  <h2><span class="n">22</span>Naudojimas</h2>
+  <h2><span class="n">23</span>Naudojimas</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Naudojimas</b> rodo, kaip naudojamasi programėlėmis. Jokie puslapiai nesekami: viskas gaunama iš to, ką programėlė ir taip užfiksuoja.</p>
     <ul>
@@ -541,7 +568,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="settings">
-  <h2><span class="n">23</span>Nustatymai</h2>
+  <h2><span class="n">24</span>Nustatymai</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Tiekėjo WhatsApp grupė</b>: įrašykite grupės pavadinimą ir pakvietimo nuorodą. WhatsApp programėlėje atidarykite grupę, palieskite jos pavadinimą, tada <b>Pakviesti per nuorodą</b> ir <b>Kopijuoti nuorodą</b>.</p>
     <p><b>Kopijuoti į WhatsApp</b> tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. <b>Pašalinti grupę</b> grąžina WhatsApp atidarymą nepasirinkus pokalbio.</p>
@@ -556,7 +583,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="suppliers">
-  <h2><span class="n">24</span>Tiekėjai</h2>
+  <h2><span class="n">25</span>Tiekėjai</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Tiekėjai</b> Administravime – tai įmonės, iš kurių perkamos katalogo prekės: kiekvienos <b>Vidinis kodas</b>, pavadinimas, vieta, kiek prekių jai priskirta ir su kuo susisiekti. Ieškokite pagal kodą, pavadinimą, miestą ar kontaktą. Telefone šis ekranas yra <b>Daugiau</b>.</p>
     <p><b>Pridėti tiekėją</b> prideda naują. Privalomi jo <b>Vidinis kodas</b> (jūsų pačių trumpas kodas) ir <b>Pavadinimas</b>; kodas turi skirtis nuo kitų tiekėjų kodų, nepaisant didžiųjų ir mažųjų raidžių. Kitus duomenis įveskite, kiek žinote: <b>Įmonės kodą</b> ir <b>PVM mokėtojo kodą</b>, <b>Banko sąskaitą</b> (IBAN), adresą su dviejų raidžių <b>Šalimi</b>, pvz., LT, kontaktinį asmenį, el. paštą, telefoną, svetainę ir pastabas. <b>Redaguoti</b> jį pakeičia; pakeitimas matomas visose šio tiekėjo prekėse.</p>
@@ -568,7 +595,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="manage-apps">
-  <h2><span class="n">25</span>Programų tvarkymas</h2>
+  <h2><span class="n">26</span>Programų tvarkymas</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Programų tvarkymas</b> Administravime – tai programų sąrašo plytelės: kiekviena programa ir nuoroda, sąrašo tvarka. Pasirinkite vieną, kad pamatytumėte, kur ji veikia, kas ją mato, atsiliepimus ir <b>Pakeitimai</b>.</p>
     <p><b>Registruoti programą</b> prideda plytelę: jos pavadinimą kiekviena kalba, trumpąjį vardą (jos vardas adresuose ir įrašuose, nustatomas vieną kartą), ar tai programa, ar nuoroda į vieną programos ekraną, grupę, etapą, paveikslėlį ir spalvą, ir kur ji veikia: <b>Šioje svetainėje</b>, su keliu, pvz., /orders/new, ar <b>Kitoje svetainėje</b>, su jos https adresu. <b>Redaguoti</b> pakeičia vėliau.</p>
@@ -582,7 +609,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="account">
-  <h2><span class="n">26</span>Jūsų paskyra</h2>
+  <h2><span class="n">27</span>Jūsų paskyra</h2>
     <ul>
       <li><b>Kalba</b>: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis. Datos rašomos pagal kalbą: 2026-10-15 anglų, 2026.10.15 lietuvių, 15.10.2026 rusų kalba.</li>
       <li><b>Tema</b>: <b>Šviesi</b>, <b>Tamsi</b> arba <b>Kaip įrenginyje</b>. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.</li>
@@ -598,7 +625,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="install">
-  <h2><span class="n">27</span>Programos įdiegimas</h2>
+  <h2><span class="n">28</span>Programos įdiegimas</h2>
     <p>Įtraukite programą į telefono pradžios ekraną ir atidarykite ją kaip bet kurią kitą: savo lange, be naršyklės adreso juostos, pavadinimu <b>Workwear</b>.</p>
     <p><b>Android</b>, naršyklėje Chrome:</p>
     <ol>
@@ -621,7 +648,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="shortcuts">
-  <h2><span class="n">28</span>Paieška ir spartieji klavišai</h2>
+  <h2><span class="n">29</span>Paieška ir spartieji klavišai</h2>
     <div class="table"><table>
       <thead><tr><th>Klavišas</th><th>Ką daro</th></tr></thead>
       <tbody>
