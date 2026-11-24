@@ -22,6 +22,21 @@ export function stepTo(ids: readonly string[], selected: string, key: 'j' | 'k')
 }
 
 /**
+ * The row a list marks (`data-state="selected"`): the open record's, and once it is
+ * closed (✕, Esc, Back) the one that was open, so the user sees where they were
+ * (WARE-25, ui-ux-guidelines.md §2 "When the list changes"). A change of `filters`
+ * (the same key as useCloseFilteredOut's) while nothing is open clears it; opening
+ * another record moves it. Only the open row is `aria-current`.
+ */
+export function useMarkedRow(selected: string | undefined, filters: string): string | undefined {
+  const last = useRef({ id: selected, filters })
+  // Derived during render from the props alone, so every render of the same props agrees.
+  if (selected !== undefined) last.current = { id: selected, filters }
+  else if (last.current.filters !== filters) last.current = { id: undefined, filters }
+  return last.current.id
+}
+
+/**
  * The open record follows the list's filters (WARE-42, ui-ux-guidelines.md §2 "When the
  * list changes"): once the user has changed the filters, the search or the tab and the
  * list for them is shown, a record it does not show closes, its row mark with it.

@@ -24,7 +24,7 @@ import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { isoDay } from '@ppe/ui/lib/dates'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Segmented } from '@ppe/ui/components/segmented'
-import { besideList, useCloseFilteredOut, useListKeys } from '@ppe/ui/lib/list-keys'
+import { besideList, useCloseFilteredOut, useListKeys, useMarkedRow } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { t } from '@/i18n'
 import { loadAllOrders } from '@/lib/employee-items'
@@ -199,6 +199,8 @@ export function History({
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: 'history', order: id }, { scroll: false }), onClose: close })
   // A filter or tab that leaves the open order out of the list closes it; the user opens the next one (WARE-42).
   useCloseFilteredOut({ filters: filterKey, current: orders.data?.filters === filterKey, ids: shownIds, selected, onClose: closeFilteredOut })
+  // The open row, or the one just closed, stays marked (WARE-25).
+  const marked = useMarkedRow(selected, filterKey)
 
   const tz = settings.data?.timezone
   // An order is open beside the list (from lg): the list keeps its short columns.
@@ -387,7 +389,7 @@ export function History({
                   <Fragment key={o.id}>
                   {newMonth ? <TableGroupRow colSpan={columns.length + (selection.active ? 1 : 0)}>{month.label}</TableGroupRow> : null}
                   <TableRow
-                    data-state={selected === o.id ? 'selected' : undefined}
+                    data-state={marked === o.id ? 'selected' : undefined}
                     aria-current={selected === o.id ? 'true' : undefined}
                     className={cn(
                       stackedBreak,

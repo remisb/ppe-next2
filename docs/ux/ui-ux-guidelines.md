@@ -75,6 +75,25 @@ out and the actions stay in reach however far the record scrolls. There is no ot
 record-level buttons in the body; an action that belongs to one part of the record stays with
 that part (Change status ▾ in Connection, Edit beside Sizes).
 
+### Closing a record
+
+Closing a record returns the user to the list exactly where they left it (WARE-25):
+
+- **✕, Esc and Back close it.** ✕ in the record's row and Esc close it beside the list; below `lg`,
+  Back (the record's own and the browser's) returns to the list. Esc closes what is on top first: a
+  sheet, a dialog, a menu or a popover takes the first Esc, and the record the next one.
+- **The list is as it was.** Its search, filters, tab, sort and page are kept (they live in the
+  list's screen, which stays mounted behind the record). Below `lg`, where the record took the
+  list's place, the list comes back at the scroll position it had; beside the list nothing scrolls,
+  except the marked row back into view if the wider list moved it out.
+- **The row stays marked.** The record just closed keeps its row's mark (the same look as the open
+  row, without `aria-current`), so the user sees where they were. Opening another record moves the
+  mark; a change of filters, search or tab clears it.
+
+Code: `ListDetail` keeps the list's place, and `useMarkedRow` (`@ppe/ui/lib/list-keys`) gives the
+row to mark (`data-state="selected"`); only the open row is `aria-current`. Esc beside the list is
+`useListKeys`, which leaves alone a key something on top already handled.
+
 ### When the list changes
 
 The open record and the list's marked row are one choice, so they never show different records
@@ -370,6 +389,8 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
       tooltip (`InControl`).
 - [ ] A list with a record beside it closes the record when a filter, search or tab leaves
       it out (`useCloseFilteredOut`), and opens nothing in its place.
+- [ ] Closing the record (✕, Esc, Back) leaves the list as it was, its row still marked
+      (`ListDetail`, `useMarkedRow`).
 - [ ] Works by touch (44px, tap opens), by keyboard (Enter, Escape, arrows where things move)
       and by screen reader (names, descriptions, live result).
 - [ ] Nothing loads while hidden or closed. Counts are cheap, and a run of changes reloads

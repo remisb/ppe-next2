@@ -13,7 +13,7 @@ import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
-import { besideList, useCloseFilteredOut, useListKeys } from '@ppe/ui/lib/list-keys'
+import { besideList, useCloseFilteredOut, useListKeys, useMarkedRow } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
 import type { ShareOptions } from '@ppe/ui/components/export-sheet'
@@ -188,13 +188,16 @@ export function Employees({
   const selection = useSelection(shown, employeeId)
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: 'employee', id }, { scroll: false }), onClose: close })
   // A search, tab or company that leaves the open employee out of the list closes them (WARE-42).
+  const filterKey = JSON.stringify([filter.trim().toLowerCase(), tab, companyShown ? company : ''])
   useCloseFilteredOut({
-    filters: JSON.stringify([filter.trim().toLowerCase(), tab, companyShown ? company : '']),
+    filters: filterKey,
     current: employees.data !== undefined,
     ids: shownIds,
     selected,
     onClose: () => navigate({ name: 'employees' }, { replace: true, scroll: false }),
   })
+  // The open row, or the one just closed, stays marked (WARE-25).
+  const marked = useMarkedRow(selected, filterKey)
 
   return (
     // An employee opens beside the list from lg (S17), with more room than an order: her sections hold tables.
@@ -320,7 +323,7 @@ export function Employees({
                 return (
                   <TableRow
                     key={e.id}
-                    data-state={selected === e.id ? 'selected' : undefined}
+                    data-state={marked === e.id ? 'selected' : undefined}
                     aria-current={selected === e.id ? 'true' : undefined}
                     {...(managesProfile ? photoDrop.rowProps(e.id) : {})}
                     // In select mode a click anywhere on the row ticks it instead.

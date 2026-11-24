@@ -18,7 +18,7 @@ import { Fact, FactGrid } from '@ppe/ui/components/facts'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { RecordHeader, RecordTitle } from '@ppe/ui/components/record-header'
-import { useCloseFilteredOut, useListKeys } from '@ppe/ui/lib/list-keys'
+import { useCloseFilteredOut, useListKeys, useMarkedRow } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail, PaneBar } from '@ppe/ui/components/list-detail'
 import { formatNumber } from '@ppe/i18n'
 import { Button } from '@ppe/ui/components/button'
@@ -349,6 +349,8 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
     selected,
     onClose: () => navigate({ name: 'system', tab: 'errors' }, { replace: true, scroll: false }),
   })
+  // The open row, or the one just closed, stays marked (WARE-25).
+  const marked = useMarkedRow(selected, kind)
   const beside = selected !== undefined
   // The errors ticked for Export, of those loaded (Older loads more).
   const selection = useSelection(errors, errorId)
@@ -416,7 +418,7 @@ function ErrorsTab({ selected, timeZone, navigate }: { selected: string | undefi
               {errors.map((e) => (
                 <TableRow
                   key={e.id} {...selectRowProps(selection, e.id)}
-                  data-state={selected === e.id ? 'selected' : undefined}
+                  data-state={marked === e.id ? 'selected' : undefined}
                   aria-current={selected === e.id ? 'true' : undefined}
                   className={cn(stackedBreak, 'cursor-pointer stacked:hover:bg-muted/50 stacked:data-[state=selected]:bg-muted', selectRowClass(selection, e.id))}
                   onClick={(ev) => {
