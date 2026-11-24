@@ -404,7 +404,7 @@ export function EmployeeDetail({ id, place, navigate }: { id: string; place: Emp
               <IdentitySection employeeId={e.id} timeZone={tz} />
             </div>
             <div className="order-8">
-              <DocumentsSection kind="employee" id={e.id} label={e.full_name} timeZone={tz} navigate={navigate} />
+              <DocumentsSection kind="employee" id={e.id} label={e.full_name} timeZone={tz} navigate={navigate} employments={e.employments} />
             </div>
             </div>
 

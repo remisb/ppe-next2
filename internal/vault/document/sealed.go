@@ -65,8 +65,9 @@ func dataContext(version uuid.UUID) []byte { return []byte("ppe.vault.data.v1|" 
 
 // sealedData is what a sealed version keeps sealed.
 type sealedData struct {
-	FileName string `json:"file_name"`
-	Note     string `json:"note"`
+	FileName string          `json:"file_name"`
+	Note     string          `json:"note"`
+	Values   json.RawMessage `json:"values,omitempty"`
 }
 
 // today is the day in the organisation's timezone, YYYY-MM-DD.
@@ -95,18 +96,18 @@ func (s *Service) openKey(d Document) (*sealbox.Box, error) {
 	return box, nil
 }
 
-// sealVersion seals v's note and file name into DataSealed, and data (the
+// sealVersion seals v's note, file name and values (a generated one's) into DataSealed, and data (the
 // file) with box, leaving plain only the file's type, size and hash; the
 // stored file is named "document" with its extension.
 func sealVersion(box *sealbox.Box, v *Version, data []byte) ([]byte, error) {
-	raw, err := json.Marshal(sealedData{FileName: v.File.FileName, Note: v.Note})
+	raw, err := json.Marshal(sealedData{FileName: v.File.FileName, Note: v.Note, Values: v.Data})
 	if err != nil {
 		return nil, err
 	}
 	if v.DataSealed, err = box.Seal(raw, dataContext(v.ID)); err != nil {
 		return nil, err
 	}
-	v.Note = ""
+	v.Note, v.Data = "", nil
 	v.File.FileName = "document" + files.Ext(v.File.ContentType)
 	v.File.Sealed = true
 	return box.Seal(data, fileContext(v.File.ID))
@@ -142,7 +143,7 @@ func (s *Service) unseal(d *Document) error {
 		if err := json.Unmarshal(raw, &data); err != nil {
 			return err
 		}
-		v.Note, v.File.FileName = data.Note, data.FileName
+		v.Note, v.File.FileName, v.Data = data.Note, data.FileName, data.Values
 	}
 	return nil
 }

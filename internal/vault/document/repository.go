@@ -53,6 +53,8 @@ type Repository interface {
 	// Relabel sets the label of every link to subject, and rebuilds the search
 	// of the documents whose label changed; it returns how many changed.
 	Relabel(ctx context.Context, s Subject, label string) (int, error)
+	// NextNumber takes the next number of type in year (1, 2, …), never given twice.
+	NextNumber(ctx context.Context, typ string, year int) (int, error)
 	// Record writes an event that changes nothing (a sealed document opened).
 	Record(ctx context.Context, ev audit.Event) error
 	// Sealed are the sealed documents not shredded yet, removed ones included.

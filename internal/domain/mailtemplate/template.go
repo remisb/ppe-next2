@@ -17,6 +17,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
+	"github.com/remisb/ppe-next2/internal/placeholder"
 )
 
 // Limits of a template's parts, in characters.
@@ -99,39 +100,15 @@ func (p *TextParams) Validate(u UseCase) error {
 // text is p as a Text.
 func (p TextParams) text() Text { return Text{To: p.To, CC: p.CC, Subject: p.Subject, Body: p.Body} }
 
-// segment is a piece of a template: literal text, or the key of a field.
-type segment struct {
-	text  string
-	field string
-}
-
-// parse splits text into literal text and u's fields, naming part in its
-// errors: a {{ without its }} and an unknown field are ErrInvalid; a lone }}
-// is text.
-func parse(part, text string, u UseCase) ([]segment, error) {
-	var out []segment
-	for text != "" {
-		open := strings.Index(text, "{{")
-		if open < 0 {
-			out = append(out, segment{text: text})
-			break
-		}
-		if open > 0 {
-			out = append(out, segment{text: text[:open]})
-		}
-		rest := text[open+2:]
-		end := strings.Index(rest, "}}")
-		if end < 0 || strings.Contains(rest[:end], "{{") {
-			return nil, fieldError(part, "has a {{ without its }}")
-		}
-		key := strings.TrimSpace(rest[:end])
-		if _, ok := u.Field(key); !ok {
-			return nil, fieldError(part, fmt.Sprintf("uses an unknown field {{%s}}", key))
-		}
-		out = append(out, segment{field: key})
-		text = rest[end+2:]
+// parse splits text into literal text and u's fields (internal/placeholder),
+// naming part in its errors: a {{ without its }} and an unknown field are
+// ErrInvalid; a lone }} is text.
+func parse(part, text string, u UseCase) ([]placeholder.Segment, error) {
+	segs, err := placeholder.Parse(text, func(key string) bool { _, ok := u.Field(key); return ok })
+	if err != nil {
+		return nil, fieldError(part, err.Error())
 	}
-	return out, nil
+	return segs, nil
 }
 
 // render fills t in with values for u's fields. t must be valid for u: a
@@ -143,27 +120,21 @@ func render(u UseCase, t Text, values map[string]string) Message {
 		if err != nil {
 			return text
 		}
-		var b strings.Builder
-		for _, s := range segs {
-			if s.field == "" {
-				b.WriteString(s.text)
-				continue
-			}
-			v := strings.TrimSpace(values[s.field])
+		return placeholder.Render(segs, func(key string) string {
+			v := strings.TrimSpace(values[key])
 			if part != "body" {
 				// A value never breaks the recipient or subject onto two lines.
 				v = strings.Join(strings.Fields(v), " ")
 			}
 			if v == "" {
-				f, _ := u.Field(s.field)
+				f, _ := u.Field(key)
 				v = "[" + f.Label + "]"
-				if !slices.Contains(missing, s.field) {
-					missing = append(missing, s.field)
+				if !slices.Contains(missing, key) {
+					missing = append(missing, key)
 				}
 			}
-			b.WriteString(v)
-		}
-		return b.String()
+			return v
+		})
 	}
 	m := Message{To: fill("to", t.To), CC: fill("cc", t.CC), Subject: fill("subject", t.Subject), Body: fill("body", t.Body)}
 	m.Missing = missing

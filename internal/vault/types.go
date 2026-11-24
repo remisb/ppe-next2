@@ -115,6 +115,8 @@ type Type struct {
 	Expiring bool `json:"expiring"`
 	// Retention is how long its documents are kept.
 	Retention Retention `json:"retention"`
+	// NumberPrefix starts a generated document's number: EC-2026-0001.
+	NumberPrefix string `json:"number_prefix,omitempty"`
 }
 
 // Allows reports whether a document of t may come to be by o.
@@ -160,20 +162,20 @@ var types = []Type{
 	},
 	// Employment documents (phase 2): sealed, for the Employment Documents role
 	// alone, kept for a period after employment ends, then shredded.
-	employment("employment.contract", "employment contract darbo sutartis трудовой договор", 120),
-	employment("employment.annex", "annex amendment priedas pakeitimas приложение изменение", 120),
-	employment("employment.nda", "nda confidentiality non-disclosure konfidencialumo sutartis неразглашение конфиденциальность", 120),
-	employment("employment.other", "employment document darbo dokumentas трудовой документ", 36),
+	employment("employment.contract", "employment contract darbo sutartis трудовой договор", "EC", 120),
+	employment("employment.annex", "annex amendment priedas pakeitimas приложение изменение", "EA", 120),
+	employment("employment.nda", "nda confidentiality non-disclosure konfidencialumo sutartis неразглашение конфиденциальность", "NDA", 120),
+	employment("employment.other", "employment document darbo dokumentas трудовой документ", "ED", 36),
 }
 
 // employment is an employment document type: sealed, linked to an employee,
 // kept months after their employment ends.
-func employment(key, words string, months int) Type {
+func employment(key, words, prefix string, months int) Type {
 	return Type{
 		Key: key, Group: GroupEmployment, Words: words, Sealed: true,
 		Read: PermEmploymentRead, Manage: PermEmploymentManage, Links: []SubjectKind{Employee, Company}, Must: []SubjectKind{Employee},
-		Origins: []Origin{Uploaded}, FileTypes: uploads, MaxBytes: MaxUploadBytes, Dated: true, Expiring: true,
-		Retention: Retention{Rule: AfterEmploymentEnd, Months: months},
+		Origins: []Origin{Uploaded, Generated}, FileTypes: uploads, MaxBytes: MaxUploadBytes, Dated: true, Expiring: true,
+		Retention: Retention{Rule: AfterEmploymentEnd, Months: months}, NumberPrefix: prefix,
 	}
 }
 

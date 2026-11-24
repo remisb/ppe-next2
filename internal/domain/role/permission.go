@@ -55,6 +55,8 @@ const (
 	VaultEmploymentManage Permission = "vault.employment.manage"
 	SettingsManage        Permission = "settings.manage"
 	MailTemplatesManage   Permission = "mail_templates.manage"
+	// DocumentTemplatesManage is Administration's Document Templates (migration 0063, ADR 0008).
+	DocumentTemplatesManage Permission = "document_templates.manage"
 	// SuppliersManage is Administration's Suppliers: the companies catalogue
 	// items are bought from (migration 0054). Everyone sees them.
 	SuppliersManage Permission = "suppliers.manage"
@@ -110,6 +112,7 @@ var catalogue = []Info{
 	{RolesManage, GroupAdministration, []Permission{UsersRead}},
 	{SettingsManage, GroupAdministration, nil},
 	{MailTemplatesManage, GroupAdministration, nil},
+	{DocumentTemplatesManage, GroupAdministration, nil},
 	{SuppliersManage, GroupAdministration, nil},
 	{CompaniesManage, GroupAdministration, nil},
 	{BackupsRead, GroupAdministration, nil},

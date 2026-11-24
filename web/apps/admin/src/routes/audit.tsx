@@ -376,7 +376,7 @@ function recordName(e: AuditEntry): string {
   return e.entity_deleted ? `${name} (${t.audit.deleted})` : name
 }
 
-/** Where a record opens: the staff app's page for it, Roles or the mail template here, or nowhere (users, settings, deleted records). */
+/** Where a record opens: the staff app's page for it, Roles, the mail or document template here, or nowhere (users, settings, deleted records). */
 function recordHref(e: AuditEntry, navigate: (to: Route) => void): { href: string; onClick?: (ev: React.MouseEvent) => void } | null {
   if (e.entity_deleted) return null
   const id = encodeURIComponent(e.entity_id)
@@ -399,6 +399,8 @@ function recordHref(e: AuditEntry, navigate: (to: Route) => void): { href: strin
       return linkTo({ name: 'security', tab: 'review', filter: {} }, navigate)
     case 'mail_template':
       return e.entity_label ? linkTo({ name: 'mailTemplates', key: e.entity_label as MailTemplateKey }, navigate) : null
+    case 'document_template':
+      return linkTo({ name: 'documentTemplates', id: e.entity_id }, navigate)
     case 'app':
       return linkTo({ name: 'apps' }, navigate)
     default:

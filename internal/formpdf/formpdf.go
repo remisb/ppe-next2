@@ -10,38 +10,22 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	pdf "github.com/remisb/pdf-mini"
 	"github.com/remisb/pdf-mini/layout"
-	"golang.org/x/image/font/gofont/gobold"
-	"golang.org/x/image/font/gofont/goregular"
 
 	"github.com/remisb/ppe-next2/internal/domain/asset"
+	"github.com/remisb/ppe-next2/internal/pdffonts"
 )
 
-// The Go fonts cover Latin with Lithuanian letters and Cyrillic; the PDF's
-// standard fonts do not.
-var fonts = sync.OnceValues(func() (*[2]*pdf.Font, error) {
-	regular, err := pdf.ParseTTF(goregular.TTF)
-	if err != nil {
-		return nil, fmt.Errorf("formpdf: regular font: %w", err)
-	}
-	bold, err := pdf.ParseTTF(gobold.TTF)
-	if err != nil {
-		return nil, fmt.Errorf("formpdf: bold font: %w", err)
-	}
-	return &[2]*pdf.Font{regular, bold}, nil
-})
-
-// Fonts are the regular and bold fonts every printed document uses.
+// Fonts are the regular and bold fonts every printed document uses (internal/pdffonts).
 func Fonts() (regular, bold *pdf.Font, err error) {
-	fs, err := fonts()
+	f, err := pdffonts.Go()
 	if err != nil {
 		return nil, nil, err
 	}
-	return fs[0], fs[1], nil
+	return f.Regular, f.Bold, nil
 }
 
 var (

@@ -1,4 +1,4 @@
-import type { VaultSubjectKind } from '@ppe/api-client'
+import type { Employment, VaultSubjectKind } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
@@ -8,10 +8,11 @@ import { Loaded } from '@ppe/ui/components/states'
 import { formatDay } from '@ppe/ui/lib/dates'
 import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
 import { useLoad } from '@ppe/ui/lib/use-load'
-import { Upload } from 'lucide-react'
+import { FileCog, Upload } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { DocumentDetailsSheet, type DocumentSheet } from '@/components/document-sheets'
+import { GenerateSheet } from '@/components/generate-sheet'
 import { t } from '@/i18n'
 import { todayIn } from '@/lib/assets'
 import { useOpenKey } from '@/lib/open-sections'
@@ -30,6 +31,7 @@ export function DocumentsSection({
   label,
   timeZone,
   navigate,
+  employments,
 }: {
   kind: VaultSubjectKind
   id: string
@@ -37,6 +39,8 @@ export function DocumentsSection({
   label: string
   timeZone: string | undefined
   navigate: (to: Route) => void
+  /** An employee's employments: with them, Generate Document… is offered from published templates. */
+  employments?: readonly Employment[] | undefined
 }) {
   const { client } = useApi()
   const session = useSession()
@@ -44,6 +48,9 @@ export function DocumentsSection({
   const docs = useLoad(() => (can ? client.vault.bySubject(kind, id) : Promise.resolve([])), [kind, id, can])
   const types = useLoad(() => (can ? client.vault.types() : Promise.resolve([])), [can])
   const [sheet, setSheet] = useState<DocumentSheet | null>(null)
+  const [generating, setGenerating] = useState(false)
+  // The published templates the user may generate from: an employee's page only.
+  const templates = useLoad(() => (can && kind === 'employee' ? client.vault.templates() : Promise.resolve([])), [can, kind])
   const [message, setMessage] = useState('')
   // Kept as it was left; opened once a document is uploaded here, so it shows.
   const [open, setOpen] = useRememberedOpen(useOpenKey(`${kind}.documents`), false)
@@ -65,11 +72,21 @@ export function DocumentsSection({
       open={open}
       onOpenChange={setOpen}
       action={
-        canUpload ? (
-          <Button variant="outline" size="sm" onClick={() => setSheet(upload)}>
-            <Upload aria-hidden className="size-4" />
-            {t.vault.upload}
-          </Button>
+        canUpload || (templates.data?.length ?? 0) > 0 ? (
+          <span className="flex flex-wrap gap-2">
+            {(templates.data?.length ?? 0) > 0 ? (
+              <Button variant="outline" size="sm" onClick={() => setGenerating(true)}>
+                <FileCog aria-hidden className="size-4" />
+                {t.vault.generate}
+              </Button>
+            ) : null}
+            {canUpload ? (
+              <Button variant="outline" size="sm" onClick={() => setSheet(upload)}>
+                <Upload aria-hidden className="size-4" />
+                {t.vault.upload}
+              </Button>
+            ) : null}
+          </span>
         ) : undefined
       }
     >
@@ -100,6 +117,21 @@ export function DocumentsSection({
         )}
       </Loaded>
     </DisclosureSection>
+    {kind === 'employee' ? (
+      <GenerateSheet
+        open={generating}
+        employeeId={id}
+        employments={employments}
+        templates={templates.data ?? []}
+        onClose={() => setGenerating(false)}
+        onGenerated={(_, m) => {
+          setGenerating(false)
+          setMessage(m)
+          setOpen(true)
+          docs.reload()
+        }}
+      />
+    ) : null}
     {/* Outside the section, so Upload Document… opens it while the section is closed. */}
     <DocumentDetailsSheet
         sheet={sheet?.kind === 'upload' ? sheet : null}

@@ -39,7 +39,7 @@ type querier interface {
 const docColumns = `d.id, d.type, d.title, d.number, d.document_date::text, d.valid_from::text, d.valid_until::text,
 	d.origin, d.sealed, d.source_kind IS NOT NULL, d.requires, d.created_at, d.created_by_user_id, d.updated_at,
 	d.updated_by_user_id, d.deleted_at, d.deleted_by_user_id, d.retain_until::text, d.hold_until::text, d.hold_reason,
-	d.title_sealed, k.sealed_key, coalesce(k.key_id, 0)`
+	d.title_sealed, k.sealed_key, coalesce(k.key_id, 0), d.template_id, d.template_version`
 
 // read reads the document with id, locked FOR UPDATE when lock, live or not
 // as live says, with its versions and links.
@@ -56,7 +56,7 @@ func read(ctx context.Context, q querier, id uuid.UUID, live, lock bool) (Docume
 	err := q.QueryRow(ctx, sql, id).Scan(&d.ID, &d.Type, &d.Title, &d.Number, &d.DocumentDate, &d.ValidFrom, &d.ValidUntil,
 		&d.Origin, &d.Sealed, &d.Locked, &d.Requires, &d.CreatedAt, &d.CreatedByUserID, &d.UpdatedAt,
 		&d.UpdatedByUserID, &d.DeletedAt, &d.DeletedByUserID, &d.RetainUntil, &d.HoldUntil, &d.HoldReason,
-		&d.TitleSealed, &d.Key, &d.KeyID)
+		&d.TitleSealed, &d.Key, &d.KeyID, &d.TemplateID, &d.TemplateVersion)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Document{}, ErrNotFound
 	}
@@ -79,7 +79,7 @@ func versionsOf(ctx context.Context, q querier, id uuid.UUID) ([]Version, error)
 	rows, err := q.Query(ctx, `
 		SELECT v.id, v.number, v.origin, v.document_hash, v.note, v.created_at, v.created_by_user_id, coalesce(u.name, ''),
 			f.id, f.object_key, f.file_name, f.content_type, f.size_bytes, f.sha256, f.sealed,
-			coalesce(t.state, 'pending'), v.data_sealed
+			coalesce(t.state, 'pending'), v.data_sealed, v.data
 		FROM vault.versions v
 		JOIN vault.files f ON f.version_id = v.id AND f.role = 'main'
 		LEFT JOIN users u ON u.id = v.created_by_user_id
@@ -95,7 +95,7 @@ func versionsOf(ctx context.Context, q querier, id uuid.UUID) ([]Version, error)
 		var v Version
 		f := &v.File
 		if err := rows.Scan(&v.ID, &v.Number, &v.Origin, &v.DocumentHash, &v.Note, &v.CreatedAt, &v.CreatedByUserID, &v.CreatedByName,
-			&f.ID, &f.ObjectKey, &f.FileName, &f.ContentType, &f.SizeBytes, &f.SHA256, &f.Sealed, &v.TextState, &v.DataSealed); err != nil {
+			&f.ID, &f.ObjectKey, &f.FileName, &f.ContentType, &f.SizeBytes, &f.SHA256, &f.Sealed, &v.TextState, &v.DataSealed, &v.Data); err != nil {
 			return nil, err
 		}
 		v.CreatedAt = v.CreatedAt.UTC()
@@ -157,9 +157,9 @@ func insertLinks(ctx context.Context, tx pgx.Tx, id uuid.UUID, links []Link, at 
 // pending text row.
 func insertVersion(ctx context.Context, tx pgx.Tx, id uuid.UUID, v Version) error {
 	if _, err := tx.Exec(ctx, `
-		INSERT INTO vault.versions (id, document_id, number, origin, document_hash, note, data_sealed, created_at, created_by_user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-		v.ID, id, v.Number, v.Origin, v.DocumentHash, v.Note, v.DataSealed, v.CreatedAt, v.CreatedByUserID); err != nil {
+		INSERT INTO vault.versions (id, document_id, number, origin, document_hash, note, data_sealed, data, created_at, created_by_user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+		v.ID, id, v.Number, v.Origin, v.DocumentHash, v.Note, v.DataSealed, nullJSON(v.Data), v.CreatedAt, v.CreatedByUserID); err != nil {
 		return err
 	}
 	f := v.File
@@ -169,8 +169,28 @@ func insertVersion(ctx context.Context, tx pgx.Tx, id uuid.UUID, v Version) erro
 		f.ID, v.ID, f.ObjectKey, f.FileName, f.ContentType, f.SizeBytes, f.SHA256, f.Sealed, v.CreatedAt, v.CreatedByUserID); err != nil {
 		return err
 	}
-	_, err := tx.Exec(ctx, `INSERT INTO vault.version_text (version_id, state) VALUES ($1, 'pending')`, v.ID)
+	if v.Text == "" {
+		_, err := tx.Exec(ctx, `INSERT INTO vault.version_text (version_id, state) VALUES ($1, 'pending')`, v.ID)
+		return err
+	}
+	// A generated version's words are known: read already. A sealed one keeps
+	// only its search words, none holding a digit (codes, sums), and no text.
+	_, err := tx.Exec(ctx, `
+		INSERT INTO vault.version_text (version_id, state, method, content, tsv, read_at)
+		SELECT $1::uuid, 'read', 'blocks', CASE WHEN $3::boolean THEN NULL ELSE $2::text END,
+			CASE WHEN $3::boolean THEN array_to_tsvector(coalesce(
+				(SELECT array_agg(w) FROM unnest(tsvector_to_array(to_tsvector('vault.ppe', $2::text))) AS w WHERE w !~ '[0-9]'), '{}'))
+			ELSE to_tsvector('vault.ppe', $2::text) END,
+			$4`, v.ID, v.Text, f.Sealed, v.CreatedAt)
 	return err
+}
+
+// nullJSON keeps absent data as SQL NULL.
+func nullJSON(b json.RawMessage) any {
+	if len(b) == 0 {
+		return nil
+	}
+	return []byte(b)
 }
 
 // refresh rebuilds document id's search vector.
@@ -185,10 +205,11 @@ func (r *PostgresRepository) Create(ctx context.Context, d Document, links []Lin
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO vault.documents (id, type, type_words, title, number, document_date, valid_from, valid_until, origin,
-				sealed, requires, created_at, created_by_user_id, updated_at, updated_by_user_id, title_sealed)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+				sealed, requires, created_at, created_by_user_id, updated_at, updated_by_user_id, title_sealed, template_id, template_version)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
 			d.ID, d.Type, t.Words, d.Title, d.Number, d.DocumentDate, d.ValidFrom, d.ValidUntil, d.Origin,
-			d.Sealed, d.Requires, d.CreatedAt, d.CreatedByUserID, d.UpdatedAt, d.UpdatedByUserID, d.TitleSealed); err != nil {
+			d.Sealed, d.Requires, d.CreatedAt, d.CreatedByUserID, d.UpdatedAt, d.UpdatedByUserID, d.TitleSealed,
+			d.TemplateID, d.TemplateVersion); err != nil {
 			return err
 		}
 		if d.Sealed {
@@ -431,6 +452,14 @@ func (r *PostgresRepository) Relabel(ctx context.Context, s Subject, label strin
 		return nil
 	})
 	return n, translate(err)
+}
+
+// NextNumber takes the next number of typ in year.
+func (r *PostgresRepository) NextNumber(ctx context.Context, typ string, year int) (int, error) {
+	var n int
+	err := r.pool.QueryRow(ctx, `INSERT INTO vault.document_number_counters (type, year, last) VALUES ($1, $2, 1)
+		ON CONFLICT (type, year) DO UPDATE SET last = vault.document_number_counters.last + 1 RETURNING last`, typ, year).Scan(&n)
+	return n, err
 }
 
 // Record writes ev alone.

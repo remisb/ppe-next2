@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/supplier"
+	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/sealbox"
 	"github.com/remisb/ppe-next2/internal/vault"
@@ -26,11 +28,96 @@ import (
 // services and its files kept in store.
 func newVault(svc services, repo vaultdoc.Repository, store files.Store, keys *sealbox.Keyring, loc *time.Location) *vaultdoc.Service {
 	subjects := vaultSubjects{employees: svc.employees, companies: svc.companies, assets: svc.assets, suppliers: svc.suppliers}
-	opts := []vaultdoc.Option{vaultdoc.WithFiles(store), vaultdoc.WithEmployments(vaultEmployments{svc.employees}), vaultdoc.WithLocation(loc)}
+	opts := []vaultdoc.Option{vaultdoc.WithFiles(store), vaultdoc.WithEmployments(vaultEmployments{svc.employees}), vaultdoc.WithLocation(loc),
+		vaultdoc.WithGeneration(svc.docTemplates, vaultPeople{employees: svc.employees, companies: svc.companies}, vaultUsers{svc.users})}
 	if keys != nil {
 		opts = append(opts, vaultdoc.WithKeys(keys))
 	}
 	return vaultdoc.NewService(repo, subjects, opts...)
+}
+
+// vaultPeople answers vaultdoc.People: an employee's facts for a template's
+// fields, with one of their employments and its company (the chosen one, else
+// the open one, else the latest).
+type vaultPeople struct {
+	employees *employee.Service
+	companies *company.Service
+}
+
+var _ vaultdoc.People = vaultPeople{}
+
+func (p vaultPeople) Facts(ctx context.Context, id uuid.UUID, employmentID *uuid.UUID) (vaultdoc.Facts, error) {
+	e, err := p.employees.Get(ctx, id)
+	if errors.Is(err, employee.ErrNotFound) {
+		return vaultdoc.Facts{}, vaultdoc.ErrSubjectNotFound
+	}
+	if err != nil {
+		return vaultdoc.Facts{}, err
+	}
+	str := func(s *string) string {
+		if s == nil {
+			return ""
+		}
+		return *s
+	}
+	f := vaultdoc.Facts{EmployeeLabel: e.FullName(), Values: map[string]string{
+		"employee.name": e.FullName(), "employee.first_name": e.FirstName, "employee.last_name": e.LastName,
+		"employee.code": str(e.Code), "employee.birth_date": str(e.BirthDate), "employee.nationality": str(e.Nationality),
+	}}
+	job, ok := pickEmployment(e.Employments, employmentID)
+	if employmentID != nil && !ok {
+		return vaultdoc.Facts{}, vaultdoc.ErrSubjectNotFound
+	}
+	if !ok {
+		return f, nil
+	}
+	f.Values["employment.from"], f.Values["employment.until"] = str(job.StartedOn), str(job.EndedOn)
+	c, err := p.companies.Get(ctx, job.CompanyID)
+	if errors.Is(err, company.ErrNotFound) {
+		return f, nil
+	}
+	if err != nil {
+		return vaultdoc.Facts{}, err
+	}
+	address := strings.Join(slices.DeleteFunc([]string{c.Address, strings.TrimSpace(c.PostalCode + " " + c.City)}, func(s string) bool { return s == "" }), ", ")
+	f.Values["company.name"], f.Values["company.code"], f.Values["company.vat_code"], f.Values["company.address"] = c.Name, c.CompanyCode, c.VATCode, address
+	f.CompanyID, f.CompanyLabel = &c.ID, c.Name
+	return f, nil
+}
+
+// pickEmployment is the period with id, else the open one, else the latest started.
+func pickEmployment(periods []employee.Employment, id *uuid.UUID) (employee.Employment, bool) {
+	if id != nil {
+		i := slices.IndexFunc(periods, func(p employee.Employment) bool { return p.ID == *id })
+		if i < 0 {
+			return employee.Employment{}, false
+		}
+		return periods[i], true
+	}
+	if i := slices.IndexFunc(periods, func(p employee.Employment) bool { return p.EndedOn == nil }); i >= 0 {
+		return periods[i], true
+	}
+	if len(periods) == 0 {
+		return employee.Employment{}, false
+	}
+	latest := periods[0]
+	for _, p := range periods[1:] {
+		if p.StartedOn != nil && (latest.StartedOn == nil || *p.StartedOn > *latest.StartedOn) {
+			latest = p
+		}
+	}
+	return latest, true
+}
+
+// vaultUsers answers vaultdoc.Users.
+type vaultUsers struct{ users *user.Service }
+
+func (u vaultUsers) Name(ctx context.Context, id uuid.UUID) (string, error) {
+	got, err := u.users.Get(ctx, id)
+	if err != nil {
+		return "", err
+	}
+	return got.Name, nil
 }
 
 // vaultEmployments answers vaultdoc.Employments: when an employee's last

@@ -2,12 +2,14 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/remisb/ppe-next2/internal/domain/role"
 )
@@ -189,5 +191,89 @@ func TestPostgresVaultSealedHTTP(t *testing.T) {
 	}
 	if strings.Contains(rec.Body.String(), "Darbo sutartis") || strings.Contains(rec.Body.String(), "sutartis.pdf") {
 		t.Errorf("Changes hold the sealed title or file name: %s", rec.Body)
+	}
+}
+
+// TestPostgresDocumentTemplatesHTTP: Administration writes and publishes a
+// contract template (ADR 0008 phase 3); a user with Employment Documents
+// previews it for an employee and generates the contract, numbered, sealed,
+// its file the PDF; a stale preview is refused, and a published version
+// never changes.
+func TestPostgresDocumentTemplatesHTTP(t *testing.T) {
+	api, owner := newPostgresAPI(t)
+	admin := api.tokenWith(t, role.DocumentTemplatesManage)
+	_, mgr := api.userWith(t, role.KeyManager)
+	_, clerk := api.userWith(t, role.KeyEmployment)
+	rec := api.do(t, "POST", "/api/v1/employees", mgr, map[string]any{"first_name": "Ana", "last_name": "Žukauskaitė"})
+	ana := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+
+	rec = api.do(t, "POST", "/api/v1/document-templates", admin, map[string]any{"type": "employment.contract", "name": "Darbo sutartis", "language": "lt"})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create = %d %s", rec.Code, rec.Body)
+	}
+	id := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	body := map[string]any{"format": "ppe.blocks.v1", "blocks": []map[string]any{
+		{"type": "heading", "level": 1, "text": []map[string]any{{"text": "Darbo sutartis Nr. "}, {"field": "document.number"}}},
+		{"type": "paragraph", "text": []map[string]any{{"field": "employee.name", "bold": true}, {"text": ", alga "}, {"field": "input.salary"}}},
+		{"type": "signatures", "signatures": []map[string]any{{"label": []map[string]any{{"text": "Darbdavys"}}}, {"label": []map[string]any{{"text": "Darbuotojas"}}}}},
+	}}
+	asked := []map[string]any{{"key": "salary", "label": "Alga", "kind": "money", "required": true}}
+	if rec := api.do(t, "PUT", "/api/v1/document-templates/"+id+"/draft", admin, map[string]any{"body": map[string]any{"format": "ppe.blocks.v1", "blocks": []map[string]any{{"type": "paragraph", "html": "<b>x</b>"}}}}); rec.Code != http.StatusBadRequest {
+		t.Errorf("HTML in a block = %d", rec.Code)
+	}
+	if rec := api.do(t, "PUT", "/api/v1/document-templates/"+id+"/draft", admin, map[string]any{"body": body, "asked": asked}); rec.Code != http.StatusOK {
+		t.Fatalf("save draft = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "POST", "/api/v1/document-templates/preview", admin, map[string]any{"body": body, "asked": asked, "language": "lt", "name": "Darbo sutartis"})
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"pdf":"JVBERi0`) {
+		t.Fatalf("editor preview = %d %.200s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/vault/templates", clerk, nil); strings.TrimSpace(rec.Body.String()) != "[]" {
+		t.Errorf("a draft offered to Generate: %s", rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/document-templates/"+id+"/publish", admin, nil); rec.Code != http.StatusOK {
+		t.Fatalf("publish = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/vault/templates", mgr, nil); strings.TrimSpace(rec.Body.String()) != "[]" {
+		t.Errorf("a manager is offered a contract template: %s", rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/vault/templates", clerk, nil); !strings.Contains(rec.Body.String(), `"name":"Darbo sutartis"`) {
+		t.Fatalf("templates = %s", rec.Body)
+	}
+
+	req := map[string]any{"template_id": id, "employee_id": ana, "inputs": map[string]any{"salary": "2400"}}
+	rec = api.do(t, "POST", "/api/v1/vault/generate/preview", clerk, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("preview = %d %s", rec.Code, rec.Body)
+	}
+	hash := decode[map[string]any](t, rec.Body.Bytes())["values_hash"].(string)
+	stale := map[string]any{"template_id": id, "employee_id": ana, "inputs": map[string]any{"salary": "2500"}, "values_hash": hash}
+	if rec := api.do(t, "POST", "/api/v1/vault/generate", clerk, stale); rec.Code != http.StatusConflict {
+		t.Errorf("stale = %d %s", rec.Code, rec.Body)
+	}
+	req["values_hash"] = hash
+	rec = api.do(t, "POST", "/api/v1/vault/generate", clerk, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("generate = %d %s", rec.Code, rec.Body)
+	}
+	doc := decode[map[string]any](t, rec.Body.Bytes())
+	year := time.Now().UTC().Format("2006")
+	if doc["number"] != "EC-"+year+"-0001" || doc["sealed"] != true || doc["origin"] != "generated" || doc["title"] != "Darbo sutartis EC-"+year+"-0001" {
+		t.Fatalf("document = %v", doc)
+	}
+	rec = api.do(t, "POST", "/api/v1/vault/documents/"+doc["id"].(string)+"/versions/1/file", clerk, nil)
+	if rec.Code != http.StatusOK || !bytes.HasPrefix(rec.Body.Bytes(), []byte("%PDF-")) {
+		t.Errorf("open = %d", rec.Code)
+	}
+	// Found by the employee's name; the salary is in no event.
+	if rec := api.do(t, "POST", "/api/v1/vault/search", clerk, map[string]any{"query": "zukausk"}); !strings.Contains(rec.Body.String(), `"total":1`) {
+		t.Errorf("search = %s", rec.Body)
+	}
+	var leaked int
+	if err := owner.QueryRow(context.Background(), `SELECT count(*) FROM audit_events WHERE after::text LIKE '%2400%' OR before::text LIKE '%2400%'`).Scan(&leaked); err != nil || leaked != 0 {
+		t.Errorf("the salary is in %d events (%v)", leaked, err)
+	}
+	if _, err := owner.Exec(context.Background(), `UPDATE vault.template_versions SET body_sha256 = body_sha256 WHERE state = 'published'`); err == nil {
+		t.Error("a published version changed")
 	}
 }

@@ -52,6 +52,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/tsa"
 	"github.com/remisb/ppe-next2/internal/usage"
 	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
+	vaulttemplate "github.com/remisb/ppe-next2/internal/vault/template"
 )
 
 func main() {
@@ -170,6 +171,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
+	svc.docTemplates = vaulttemplate.NewService(vaulttemplate.NewPostgresRepository(pool))
 	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), store, vaultKeys, loc)
 	svc.shares = share.NewService(share.NewPostgresRepository(pool))
 	// App Launcher's default tiles, put back should the registry have been
@@ -284,6 +286,9 @@ type services struct {
 	scans *scan.Service
 	// vault is the Document Vault's documents (ADR 0008); run sets it.
 	vault *vaultdoc.Service
+	// docTemplates are the Document Vault's document templates; run sets them
+	// (templates are the mail templates).
+	docTemplates *vaulttemplate.Service
 	// shares are shared links (WARE-51); run sets them.
 	shares *share.Service
 	// ai is Settings → AI, AI Usage and Make Colour Photo (ADR 0007); run sets it.
@@ -372,6 +377,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerPersonnelRoutes(rt, svc.documents, sensitive)
 	registerPersonnelScanRoutes(rt, svc.scans)
 	registerVaultRoutes(rt, svc.vault, sensitive)
+	registerDocumentTemplateRoutes(rt, svc.docTemplates, svc.vault)
 	registerAIRoutes(rt, svc.ai, sensitive)
 	registerDashboardRoutes(rt, svc.dashboard)
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)

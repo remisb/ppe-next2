@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"slices"
 	"strings"
@@ -25,6 +26,7 @@ type memRepo struct {
 	docs     map[uuid.UUID]Document
 	events   []audit.Event
 	shredded []uuid.UUID
+	numbers  map[string]int
 }
 
 func newMemRepo() *memRepo { return &memRepo{docs: map[uuid.UUID]Document{}} }
@@ -134,6 +136,17 @@ func (m *memRepo) Relabel(_ context.Context, s Subject, label string) (int, erro
 		m.docs[id] = d
 	}
 	return n, nil
+}
+
+func (m *memRepo) NextNumber(_ context.Context, typ string, year int) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.numbers == nil {
+		m.numbers = map[string]int{}
+	}
+	k := fmt.Sprintf("%s/%d", typ, year)
+	m.numbers[k]++
+	return m.numbers[k], nil
 }
 
 func (m *memRepo) Record(_ context.Context, ev audit.Event) error {

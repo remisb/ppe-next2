@@ -25,6 +25,15 @@ describe('router', () => {
     expect(pathOf({ name: 'apps', app: 'sim-scan' })).toBe('/apps/sim-scan')
   })
 
+  it('opens a document template at its own address', () => {
+    expect(parsePath('/document-templates')).toEqual({ name: 'documentTemplates' })
+    expect(parsePath('/document-templates/')).toEqual({ name: 'documentTemplates' })
+    expect(pathOf({ name: 'documentTemplates' })).toBe('/document-templates')
+    expect(pathOf({ name: 'documentTemplates', id: 't1' })).toBe('/document-templates/t1')
+    expect(parsePath('/document-templates/t1')).toEqual({ name: 'documentTemplates', id: 't1' })
+    expect(parsePath('/document-templates/t1/x')).toEqual({ name: 'home' })
+  })
+
   it('keeps the System tab and the open error in its address; Backups moved there', () => {
     expect(parsePath('/system')).toEqual({ name: 'system', tab: 'status' })
     for (const tab of ['errors', 'backups'] as const) expect(parsePath(pathOf({ name: 'system', tab }))).toEqual({ name: 'system', tab })
@@ -74,6 +83,10 @@ describe('router', () => {
     expect(startRoute({ name: 'system', tab: 'errors' }, holding('system.read'))).toEqual({ name: 'system', tab: 'errors' })
     expect(startRoute({ name: 'system', tab: 'backups' }, holding('system.read'))).toEqual({ name: 'system', tab: 'status' })
     expect(startRoute({ name: 'system', tab: 'status' }, holding('audit.read'))).toEqual({ name: 'overview' })
+    // Document Templates is for whoever manages them, the template open kept.
+    const templates = holding('document_templates.manage')
+    expect(startRoute({ name: 'documentTemplates', id: 't1' }, templates)).toEqual({ name: 'documentTemplates', id: 't1' })
+    expect(startRoute({ name: 'documentTemplates' }, admin)).toEqual({ name: 'overview' })
     // users.read alone (a manager) opens nothing here.
     expect(startRoute({ name: 'home' }, holding('users.read', 'catalogue.manage'))).toBeNull()
   })
