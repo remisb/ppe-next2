@@ -56,6 +56,7 @@ export const roles = {
     'roles.manage': { label: 'Manage roles', grants: 'Add, change and delete roles, and give any permission.' },
     'settings.manage': { label: 'Change Settings', grants: 'The company, the supplier’s WhatsApp group and the SIM providers.' },
     'mail_templates.manage': { label: 'Change Mail Templates', grants: 'The text of the emails the app prepares, such as the SIM activation and blocking emails.' },
+    'document_templates.manage': { label: 'Manage Document Templates', grants: 'Write the templates employment contracts and other documents are generated from, and publish and retire them.' },
     'suppliers.manage': { label: 'Manage Suppliers', grants: 'Add, change and delete the suppliers that catalogue items are bought from.' },
     'companies.manage': { label: 'Manage Companies', grants: 'Add, change and delete the companies employees are employed by, and choose the default one.' },
     'backups.read': { label: 'See Backups', grants: 'Whether the database is backed up, and the recent backups.' },

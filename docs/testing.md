@@ -403,7 +403,7 @@ ADR 0006, `docs/specs/app-launcher.md`.
 | `make new-app` starts a published app from the template: its folder found by its manifest, the next free dev port, no placeholder left, the name escaped per file, its tile in POC above the marker in `defaults.go`; a slug that does not fit, is reserved, or is a folder's or a tile's already is refused with nothing changed; the template's app typechecks, passes its tests and builds | `@ppe/launcher` `new-app.ts`, `web/templates/published-app` | `new-app.test.ts`; `pnpm check:new-app` (CI's web job); `TestDefaultsAreValid` for the tile |
 | A small app's bar scrolls away; only the screen's header sticks | `@ppe/launcher` `AppFrame` | e2e *Scan SIMs: …* (scrolled, the page header is at the top and the bar out of view) |
 
-## Document Vault (phases 1 and 2)
+## Document Vault (phases 1 to 3)
 
 ADR 0008, [vault-service.md](specs/vault-service.md).
 
@@ -423,6 +423,9 @@ ADR 0008, [vault-service.md](specs/vault-service.md).
 | Retention: kept while the employee is employed; past the type's months after the last period ended, or once removed, shredded unless held: key, versions, files, read text and links gone, a tombstone kept, the objects deleted, `vault.document_shredded` by no one; again changes nothing | `document.Service.ShredDue`, `vault.shred_document` | `TestRetentionShredsWhatIsDue`, `TestRemovedSealedIsShredded`, `TestPostgresSealedDocuments`, `TestEmploymentEnded` |
 | Legal Hold: a day from today and a reason; while held, no shredding (the SQL function refuses too) or removal (409); set and cleared recorded | `document.Service.SetHold` | `TestHoldRules`, `TestRetentionShredsWhatIsDue`, `TestPostgresSealedDocuments`, `TestPostgresVaultSealedHTTP` |
 | `API_VAULT_KEY`: none, or 64 hex of its own with an id and previous keys that differ | `config.vaultKeyErrors` | `TestVaultKeyErrors` |
+| Templates: a body of known blocks (decoded strictly: no unknown key, no HTML), every `{{field}}` an app field or a declared asked field, asked fields of their own keys and kinds; a draft saved, published only with `{{document.number}}`, a published version never changed (trigger) and a new draft after it; retired ones not offered | `internal/vault/template`, migration 0063 | `TestTemplateLifecycle`, `TestDecodeBodyIsStrict`, `TestPostgresDocumentTemplatesHTTP`; Administration's `document-templates.test.ts` |
+| Generate: fields filled from the employee, employment and company, dates and money written in the template's language, asked answers checked; Generate makes only what the preview showed (409 otherwise); the type's next number; a hash of the canonical values in the footer; sealed for employment types; no value in an event | `document.Service.Preview`, `Generate`, `docpdf`, `template.Inputs` | `TestGenerateAfterPreview`, `TestGenerateRefuses`, `TestWritten`, `TestInputs`, `TestRenderIsDeterministic`, `TestPostgresDocumentTemplatesHTTP`; `generate.test.ts` |
+| Mail Templates' `{{field}}` parsing is the shared `internal/placeholder`, its behaviour unchanged | `internal/placeholder` | `TestParse`, Mail Templates' tests unchanged |
 | `internal/vault` imports no domain or Personnel files | ADR 0008 decision 1 | `TestVaultImportsNoContext` |
 | The staff app: a type's name in the language in use; expired and expiring soon (30 days); a file refused before sending; the draft's problems; the types offered where the sheet was opened; the export's columns | `lib/vault.ts`, `lib/vault-export.ts` | `vault.test.ts`; e2e *Document Vault: …* |
 

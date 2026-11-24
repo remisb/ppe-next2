@@ -13,7 +13,7 @@ const (
 	AreaItemSets  Area = "item_sets"
 	AreaOrders    Area = "orders"
 	AreaAssets    Area = "assets"   // Company Assets
-	AreaVault     Area = "vault"    // Document Vault's documents
+	AreaVault     Area = "vault"    // Document Vault's documents and templates
 	AreaSettings  Area = "settings" // Settings, AI settings, companies, mail templates and App Launcher's tiles
 	AreaSecurity  Area = "security" // the access review
 	AreaAudit     Area = "audit"    // the Audit log's own exports and purges
@@ -43,7 +43,7 @@ var areas = []struct {
 	{AreaItemSets, []string{"item_set"}},
 	{AreaOrders, []string{"order"}},
 	{AreaAssets, []string{"asset"}},
-	{AreaVault, []string{"vault_document"}},
+	{AreaVault, []string{"vault_document", "document_template"}},
 	{AreaSettings, []string{"settings", "company", "mail_template", "app"}},
 	{AreaSecurity, []string{"access_review"}},
 	{AreaAudit, []string{EntityLog}},
@@ -77,7 +77,9 @@ var events = []string{
 	"asset.sim_codes_changed", "asset.sim_codes_shown",
 	"vault.document_uploaded", "vault.version_added", "vault.document_updated", "vault.document_linked",
 	"vault.document_unlinked", "vault.document_removed", "vault.document_opened", "vault.hold_set", "vault.hold_cleared",
-	"vault.document_shredded",
+	"vault.document_shredded", "vault.document_generated",
+	"document_template.created", "document_template.updated", "document_template.draft_saved", "document_template.published",
+	"document_template.retired",
 	"settings.company_changed", "settings.supplier_chat_changed", "settings.default_sim_provider_changed", "settings.sim_providers_changed",
 	"settings.ai_changed", "settings.ai_key_set", "settings.ai_key_removed",
 	"company.created", "company.updated", "company.made_default", "company.deleted",

@@ -22,6 +22,8 @@ export const shell = {
   shortSettings: 'Settings',
   mailTemplates: 'Mail Templates',
   shortMailTemplates: 'Mail',
+  documentTemplates: 'Document Templates',
+  shortDocumentTemplates: 'Documents',
   suppliers: 'Suppliers',
   shortSuppliers: 'Suppliers',
   companies: 'Companies',
@@ -37,7 +39,7 @@ export const shell = {
   shortAccount: 'Account',
   signOut: 'Sign out',
   notForYouTitle: 'Administration is for administrators',
-  notForYou: 'Your roles do not let you manage users, roles, settings, mail templates, suppliers, companies, apps or backups, or read the Audit log, Security or System. Ask an administrator if you need to.',
+  notForYou: 'Your roles do not let you manage users, roles, settings, mail templates, document templates, suppliers, companies, apps or backups, or read the Audit log, Security or System. Ask an administrator if you need to.',
   backToWorkwear: 'Back to Workwear & Equipment',
 }
 

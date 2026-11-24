@@ -44,7 +44,8 @@ const entityLabel = `CASE a.entity_type
 		WHEN 'asset' THEN (SELECT x.inventory_no FROM assets x WHERE x.id = a.entity_id)
 		WHEN 'mail_template' THEN (SELECT x.key FROM mail_templates x WHERE x.id = a.entity_id)
 		WHEN 'app' THEN (SELECT x.name_en FROM launcher_apps x WHERE x.id = a.entity_id)
-		WHEN 'vault_document' THEN (SELECT x.title FROM vault.documents x WHERE x.id = a.entity_id)
+		WHEN 'vault_document' THEN (SELECT coalesce(nullif(x.title, ''), x.number) FROM vault.documents x WHERE x.id = a.entity_id)
+		WHEN 'document_template' THEN (SELECT x.name FROM vault.templates x WHERE x.id = a.entity_id)
 	END`
 
 // entityDeleted is whether the record is soft-deleted now; false for the

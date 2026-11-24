@@ -988,6 +988,7 @@ export type AuditEntityType =
   | 'access_review'
   | 'personnel_scan'
   | 'vault_document'
+  | 'document_template'
   | 'audit_log'
 
 /** Where a change was made, by a name the apps word themselves. */
@@ -2142,6 +2143,8 @@ export interface VaultType {
   expiring: boolean
   /** How long its documents are kept: a sealed type's rule is applied by the API (shredded). */
   retention: { rule: 'keep' | 'forever' | 'after_document_date' | 'after_employment_end'; months?: number }
+  /** Starts a generated document's number: EC-2026-0001. */
+  number_prefix?: string
 }
 
 /** A subject a document is linked to, with its name now. */
@@ -2246,3 +2249,118 @@ export interface VaultDetails {
   valid_until: string | null
   links: VaultLinkRef[]
 }
+
+// Document templates and generation (ADR 0008 phase 3, docs/specs/document-template-service.md).
+
+/** Inline text: words (bold, italic) or a field, {{key}}. */
+export interface TemplateRun {
+  text?: string
+  field?: string
+  bold?: boolean
+  italic?: boolean
+}
+
+export type TemplateBlockType = 'heading' | 'paragraph' | 'list' | 'table' | 'fields' | 'signatures' | 'page_break' | 'spacer'
+
+/** One block of a template's body; which parts it uses depends on its type. */
+export interface TemplateBlock {
+  type: TemplateBlockType
+  /** A heading's, 1 to 3. */
+  level?: number
+  /** A paragraph's. */
+  align?: '' | 'left' | 'center' | 'justify'
+  text?: TemplateRun[]
+  ordered?: boolean
+  items?: TemplateRun[][]
+  /** A table's rows of cells; header: the first row is a header; widths: each column's share, 1 to 12. */
+  rows?: TemplateRun[][][]
+  header?: boolean
+  widths?: number[]
+  pairs?: { label: TemplateRun[]; value: TemplateRun[] }[]
+  signatures?: { label: TemplateRun[]; under?: TemplateRun[] }[]
+  /** A spacer's, in points. */
+  height?: number
+}
+
+/** A template's body: ppe.blocks.v1, no HTML and no logic. */
+export interface TemplateBody {
+  format: 'ppe.blocks.v1'
+  blocks: TemplateBlock[]
+}
+
+export type AskedKind = 'text' | 'long_text' | 'date' | 'number' | 'money' | 'choice'
+
+/** A field a template asks for when a document is generated: {{input.<key>}}. */
+export interface AskedField {
+  key: string
+  label: string
+  kind: AskedKind
+  required: boolean
+  options?: string[]
+}
+
+export interface TemplateVersion {
+  number: number
+  state: 'draft' | 'published'
+  body: TemplateBody
+  asked: AskedField[]
+  body_sha256: string
+  updated_at: string
+  published_at: string | null
+}
+
+export type TemplateLanguage = 'lt' | 'en' | 'ru'
+
+/** A document template: its versions newest first, the draft (if any) and the published ones. */
+export interface DocumentTemplate {
+  id: string
+  type: string
+  name: string
+  language: TemplateLanguage
+  /** The published version Generate uses; null before the first. */
+  current_version: number | null
+  retired: boolean
+  versions: TemplateVersion[]
+  created_at: string
+  updated_at: string
+}
+
+/** A field the app fills in, for the editor's Fields panel. */
+export interface TemplateField {
+  key: string
+  label: string
+  sample: string
+  date: boolean
+}
+
+/** GET /api/v1/document-templates/fields: the app's fields and the types templates may be for. */
+export interface TemplateFields {
+  fields: TemplateField[]
+  types: VaultType[]
+}
+
+/** A published template Generate Document… offers. */
+export interface GeneratableTemplate {
+  id: string
+  type: string
+  name: string
+  language: TemplateLanguage
+  version: number
+  asked: AskedField[]
+}
+
+/** Generate Document…'s choices; Generate also gives back the preview's values_hash. */
+export interface GenerateInput {
+  template_id: string
+  employee_id: string
+  employment_id?: string | null
+  inputs: Record<string, string>
+  values_hash?: string
+}
+
+/** A PDF as base64, and, for a document's preview, the hash Generate must be given back. */
+export interface PdfAnswer {
+  pdf: string
+  values_hash?: string
+}
+

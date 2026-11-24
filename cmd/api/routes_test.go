@@ -42,6 +42,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/system"
 	"github.com/remisb/ppe-next2/internal/usage"
 	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
+	vaulttemplate "github.com/remisb/ppe-next2/internal/vault/template"
 )
 
 // memRepo is a minimal in-memory user.Repository for exercising the HTTP layer.
@@ -842,6 +843,7 @@ func newTestAPI(t *testing.T) *testAPI {
 	svc.ready = stubReady{}
 	svc.documents = document.NewService(stubDocuments{}, document.Keys{}, nil)
 	svc.scans = scan.NewService(nil, document.Keys{}, nil)
+	svc.docTemplates = vaulttemplate.NewService(stubDocTemplates{})
 	svc.vault = vaultdoc.NewService(stubVault{}, vaultSubjects{})
 	svc.shares = share.NewService(nil)
 	svc.ai = newTestAI()
@@ -1144,7 +1146,33 @@ var policy = map[string]rule{
 	"POST /api/v1/vault/documents/{id}/versions":                                {"", "documents"},
 	"GET /api/v1/vault/documents/{id}/versions/{n}/file":                        {"", "documents"},
 	"PUT /api/v1/vault/documents/{id}/hold":                                     {"", "documents"},
+	"GET /api/v1/document-templates":                                            {role.DocumentTemplatesManage, "admins"},
+	"GET /api/v1/document-templates/fields":                                     {role.DocumentTemplatesManage, "admins"},
+	"POST /api/v1/document-templates":                                           {role.DocumentTemplatesManage, "admins"},
+	"GET /api/v1/document-templates/{id}":                                       {role.DocumentTemplatesManage, "admins"},
+	"PUT /api/v1/document-templates/{id}":                                       {role.DocumentTemplatesManage, "admins"},
+	"PUT /api/v1/document-templates/{id}/draft":                                 {role.DocumentTemplatesManage, "admins"},
+	"POST /api/v1/document-templates/{id}/publish":                              {role.DocumentTemplatesManage, "admins"},
+	"POST /api/v1/document-templates/{id}/retire":                               {role.DocumentTemplatesManage, "admins"},
+	"POST /api/v1/document-templates/preview":                                   {role.DocumentTemplatesManage, "admins"},
+	"GET /api/v1/vault/templates":                                               {"", "documents"},
+	"POST /api/v1/vault/generate/preview":                                       {"", "documents"},
+	"POST /api/v1/vault/generate":                                               {"", "documents"},
 	"POST /api/v1/vault/documents/{id}/versions/{n}/file":                       {role.VaultEmploymentRead, "employment"},
+}
+
+// stubDocTemplates is a vaulttemplate.Repository with no templates.
+type stubDocTemplates struct{}
+
+func (stubDocTemplates) Create(context.Context, vaulttemplate.Template, vaulttemplate.Version, audit.Event) error {
+	return nil
+}
+func (stubDocTemplates) Get(context.Context, uuid.UUID) (vaulttemplate.Template, error) {
+	return vaulttemplate.Template{}, vaulttemplate.ErrNotFound
+}
+func (stubDocTemplates) List(context.Context) ([]vaulttemplate.Template, error) { return nil, nil }
+func (stubDocTemplates) Update(context.Context, uuid.UUID, vaulttemplate.Mutation) (vaulttemplate.Template, error) {
+	return vaulttemplate.Template{}, vaulttemplate.ErrNotFound
 }
 
 // stubVault is a vaultdoc.Repository with no documents.
@@ -1169,6 +1197,7 @@ func (stubVault) Subjects(context.Context) ([]vaultdoc.Subject, error) { return 
 func (stubVault) Relabel(context.Context, vaultdoc.Subject, string) (int, error) {
 	return 0, nil
 }
+func (stubVault) NextNumber(context.Context, string, int) (int, error)     { return 1, nil }
 func (stubVault) Record(context.Context, audit.Event) error                { return nil }
 func (stubVault) Sealed(context.Context) ([]vaultdoc.Candidate, error)     { return nil, nil }
 func (stubVault) SetRetainUntil(context.Context, uuid.UUID, *string) error { return nil }
@@ -1216,6 +1245,7 @@ func init() {
 	for _, pattern := range []string{
 		"POST /api/v1/vault/documents", "PUT /api/v1/vault/documents/{id}", "DELETE /api/v1/vault/documents/{id}",
 		"PUT /api/v1/vault/documents/{id}/hold", "POST /api/v1/vault/documents/{id}/versions",
+		"GET /api/v1/vault/templates", "POST /api/v1/vault/generate/preview", "POST /api/v1/vault/generate",
 	} {
 		anyOf[pattern] = []role.Permission{role.VaultManage, role.VaultEmploymentManage}
 	}

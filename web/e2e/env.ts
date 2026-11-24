@@ -95,7 +95,7 @@ const resetPictures = `UPDATE catalogue_pictures SET size_group = CASE
  */
 export async function prepareDatabase(query: (sql: string) => Promise<unknown>, ...more: string[]): Promise<void> {
   await query(
-    `BEGIN; SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges, asset_number_counters CASCADE; ${resetPictures}; ${more.join('; ')}${more.length ? ';' : ''} COMMIT`,
+    `BEGIN; SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges, asset_number_counters, vault.document_number_counters CASCADE; ${resetPictures}; ${more.join('; ')}${more.length ? ';' : ''} COMMIT`,
   )
   await allowAppRole(query)
 }

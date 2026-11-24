@@ -24,6 +24,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/personnel/scan"
 	"github.com/remisb/ppe-next2/internal/security"
 	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
+	vaulttemplate "github.com/remisb/ppe-next2/internal/vault/template"
 )
 
 // TestEveryDomainEventIsKnown keeps audit's event catalogue, which the Audit
@@ -54,7 +55,8 @@ func TestEveryDomainEventIsKnown(t *testing.T) {
 		asset.EventSIMCodesChanged, asset.EventSIMCodesShown,
 		vaultdoc.EventUploaded, vaultdoc.EventVersionAdded, vaultdoc.EventUpdated, vaultdoc.EventLinked,
 		vaultdoc.EventUnlinked, vaultdoc.EventRemoved, vaultdoc.EventOpened, vaultdoc.EventHoldSet, vaultdoc.EventHoldCleared,
-		vaultdoc.EventShredded,
+		vaultdoc.EventShredded, vaultdoc.EventGenerated,
+		vaulttemplate.EventCreated, vaulttemplate.EventUpdated, vaulttemplate.EventDraftSaved, vaulttemplate.EventPublished, vaulttemplate.EventRetired,
 		settings.EventCompanyChanged, settings.EventSupplierChatChanged, settings.EventDefaultSIMProviderChanged, settings.EventSIMProvidersChanged,
 		aiusage.EventSettingsChanged, aiusage.EventKeySet, aiusage.EventKeyRemoved,
 		company.EventCreated, company.EventUpdated, company.EventMadeDefault, company.EventDeleted,

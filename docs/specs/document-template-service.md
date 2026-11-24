@@ -6,22 +6,26 @@ employment's values and the user's answers, and drawn as a locked PDF that is st
 Document Vault. Decisions in [ADR 0008](../architecture/adr/0008-document-vault.md) (6, 7);
 documents, types and storage in [vault-service.md](vault-service.md).
 
-**Status: decided, not built** (phase 3; DOCX templates phase 8).
+**Status: phase 3 built** (migration 0063); DOCX templates are phase 8.
 
 - **Packages:** `internal/vault/template` (entity, service, repository, Postgres, `fields.go`,
   `blocks.go`), `internal/placeholder` (`Parse`, `Render`: extracted from
   `internal/domain/mailtemplate/template.go`, which then uses it with its tests unchanged),
   `internal/pdffonts` (the embedded fonts, adding italic and bold italic; `formpdf.Fonts()` wraps
   it), `internal/docpdf` (draws blocks on pdf-mini's `layout`), later `internal/vault/docx`.
-- **Routes:** `cmd/api/document-template-routes.go`, generation in `cmd/api/vault-routes.go`.
-- **Migration:** `0063_document_templates`: `vault.templates`, `vault.template_versions`,
-  `vault.document_number_counters`, the permission `document_templates.manage` (Administrator).
+- **Routes:** `cmd/api/document-template-routes.go` (Administration's and generation's); generation itself is
+  `internal/vault/document/generate.go`, through the ports `Templates`, `People` and `Users` (`cmd/api/wire_vault.go`).
+- **Migration:** `0063_document_templates`: `vault.templates`, `vault.template_versions` (a trigger
+  refuses changing or deleting a published one), `vault.document_number_counters` (references nothing,
+  so test setup names it in its `TRUNCATE`), `documents.template_id`/`template_version`,
+  `versions.data` (a generated version's values), the permission `document_templates.manage`
+  (Administrator).
 - **Apps:** Administration's **Document Templates** (`/admin/document-templates`,
   `routes/document-templates.tsx`, rules `lib/document-templates.ts`); the staff app's
   **Generate Document…** on the employee page.
 
-**To check first:** pdf-mini v0.7.0 must offer rich text runs, tables and page breaks in
-`layout`. If one is missing, pdf-mini is extended before `internal/docpdf` is written.
+pdf-mini v0.7.0's `layout` has what the renderer needs (rich spans, tables with header rows, page
+breaks, spacers, rules); it was not extended.
 
 ## Template
 
@@ -72,19 +76,21 @@ A version's body is a list of blocks, decoded strictly (unknown keys refused, as
 no links, no images, no conditions or loops. A field whose value is empty prints its label in
 brackets in a preview and refuses Generate when it is required.
 
-The editor in Administration (tiptap on ProseMirror, its schema limited to these blocks and
-marks) reads and writes this JSON; `lib/document-templates.ts` converts both ways, tested for
-round trips. Field chips are inserted from the **Fields** panel; **Add Asked Field** declares an
-`input.*` field.
+The editor in Administration is **structured**, not a rich-text editor (no new dependency): the
+body is a list of block cards, each with its kind's controls, and inline text is typed as plain
+text with a light markup, `**bold**`, `*italic*` and `{{field}}`, which `lib/document-templates.ts`
+converts to runs and back (tested for round trips). The **Fields** panel inserts a `{{key}}`;
+**Add Asked Field** declares an `input.*` field. **Preview** draws the unsaved draft on the server
+with the fields' samples.
 
 ## Fields (`internal/vault/template/fields.go`)
 
 | Field | Value |
 | --- | --- |
-| `employee.name`, `.first_name`, `.last_name`, `.code`, `.birth_date`, `.nationality` | the employee (People), through the vault's `Subjects` port |
-| `company.name`, `.code`, `.vat_code`, `.address`, `.iban` | the company of the chosen employment |
-| `employment.from`, `.until`, `.position` | the chosen employment period (`position` once People records it) |
-| `document.number`, `.date`, `.hash` | the new document's number, date and (in the footer only) hash |
+| `employee.name`, `.first_name`, `.last_name`, `.code`, `.birth_date`, `.nationality` | the employee (People), through the vault's `People` port |
+| `company.name`, `.code`, `.vat_code`, `.address` | the company of the chosen employment (its registration code, VAT code, and address with postal code and city) |
+| `employment.from`, `.until` | the chosen employment period (else the open one, else the latest) |
+| `document.number`, `.date` | the new document's number and date; the hash is in the footer only |
 | `user.name` | who generates it |
 | `today` | the day in `API_ORG_TIMEZONE` |
 | `input.<key>` | an **asked field** the template declares |
@@ -96,8 +102,10 @@ Dates and money are written in the template's language (*2026 m. lapkričio 24 d
 
 ## Generate
 
-On the employee page, **Generate Document…** (the type's `manage` permission): type → template
-→ employment (when the person has several) → asked fields → **Preview** → **Generate**.
+On the employee page's Documents section, **Generate Document…** (shown when a published template
+of a type the user may change exists): template → employment (when the person has several) →
+asked fields → **Preview** (the PDF in the preview sheet) → **Generate**, enabled only while the
+choices are those previewed (`lib/generate.ts`).
 
 1. `POST /api/v1/vault/generate/preview` with `{template_id, employee_id, employment_id,
    inputs}`: resolves every field, draws the PDF with *PREVIEW* in the footer and no number, and
@@ -105,20 +113,23 @@ On the employee page, **Generate Document…** (the type's `manage` permission):
    recorded. `no-store`.
 2. `POST /api/v1/vault/generate` with the same and `values_hash`: resolves again and refuses
    with 409 (`stale`) when the hash differs (a value changed since the preview, as Give refuses
-   a stale form hash). Then, in one transaction: takes the next **document number** from
-   `vault.document_number_counters` (per type and year: `EC-2026-0001`), computes the document
+   a stale form hash). Then it takes the next **document number** from
+   `vault.document_number_counters` (per type and year, the type's prefix: `EC-2026-0001`; a
+   number given to a generation that then fails is not given again), computes the document
    hash over the canonical JSON of {type, template id, version, body SHA-256, number, date,
    values}, draws the PDF (`internal/docpdf`, its creation date passed in, so the same input
    draws the same bytes) with the footer *Document <number> v1 · SHA-256 <hash>*, seals it for
-   a sealed type, writes the object, then the document (`origin` `generated`), version 1
-   (`generated`, the values in `data` or `data_sealed`), the file, links to the employee and the
-   company (locked), read text from the blocks (`method` `blocks`) and the event
+   a sealed type, writes the object, then, in one transaction, the document (`origin`
+   `generated`, titled the template's name and the number), version 1 (`generated`, the values
+   in `data`, or sealed with the note and file name in `data_sealed`), the file
+   (`<number>.pdf`), links to the employee and the company (locked), its text from the blocks
+   (`read`, `method` `blocks`; for a sealed type only its search words without digits) and the event
    `vault.document_generated` (type, template and version, number; never a value).
-3. **Upload Signed Copy** on the document adds version 2 (`signed`) with the scanned, signed
-   paper; its text is read by the worker (phase 4).
+3. The signed paper is added to the document as a new version (**Add Version…**, origin
+   `added`; a separate **Upload Signed Copy** with origin `signed` is to come); its text is read
+   by the worker (phase 4).
 
-An annex is generated from the contract's page (its `parent_id`), with the contract's employee
-and company.
+To come: an annex generated from its contract's page (its `parent_id`).
 
 ## DOCX templates (phase 8)
 
@@ -140,10 +151,12 @@ the worker.
 | `PUT /api/v1/document-templates/{id}/draft` | `document_templates.manage` | |
 | `POST /api/v1/document-templates/{id}/publish` | `document_templates.manage` | 400 with problems |
 | `POST /api/v1/document-templates/{id}/retire` | `document_templates.manage` | |
-| `POST /api/v1/document-templates/{id}/preview` | `document_templates.manage` | sample values; the PDF |
-| `GET /api/v1/vault/templates?type=` | the type's `manage` | published templates for Generate |
-| `POST /api/v1/vault/generate/preview` | the type's `manage` | the PDF and `values_hash` |
-| `POST /api/v1/vault/generate` | the type's `manage` | 409 `stale`; 503 for a sealed type without keys |
+| `GET /api/v1/document-templates/fields` | `document_templates.manage` | the app's fields and the types a template may be for |
+| `PUT /api/v1/document-templates/{id}` | `document_templates.manage` | name and language |
+| `POST /api/v1/document-templates/preview` | `document_templates.manage` | a body as edited, with the fields' samples: `{pdf}` (base64) |
+| `GET /api/v1/vault/templates` | `vault.manage` or `vault.employment.manage` | published, not retired templates of the types the user may change |
+| `POST /api/v1/vault/generate/preview` | the same, the type's checked | `{pdf, values_hash}` |
+| `POST /api/v1/vault/generate` | the same | 409 when the values changed since the preview; 503 for a sealed type without keys |
 
 ## Tests
 
@@ -154,4 +167,8 @@ the worker.
 - Service: publish refuses unknown fields; a published version cannot change; stale
   `values_hash` is 409; numbers never repeat under concurrent generation (Postgres); the event
   holds no value.
-- e2e: publish a template, generate a contract, upload its signed copy.
+- Built: `internal/placeholder` and Mail Templates' tests; `internal/docpdf` `TestRenderIsDeterministic`;
+  `internal/vault/template` (`TestTemplateLifecycle`, `TestWritten`, `TestInputs`, `TestDecodeBodyIsStrict`);
+  `internal/vault/document` `TestGenerateAfterPreview`, `TestGenerateRefuses`; `TestPostgresDocumentTemplatesHTTP`;
+  the apps' `lib/document-templates.test.ts` and `lib/generate.test.ts`.
+- To come: an e2e step (publish a template in Administration, generate a contract, upload its signed copy).

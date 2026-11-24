@@ -69,6 +69,8 @@ export type Route =
   | { name: 'companies' }
   /** The templates of the emails the app prepares; key is the one open (/mail-templates/<key>). */
   | { name: 'mailTemplates'; key?: MailTemplateKey }
+  /** The templates documents are generated from; id is the one open in its editor (/document-templates/<id>). */
+  | { name: 'documentTemplates'; id?: string }
   /** The API, the database, the error list (error: the one open beside it) and the backups. */
   | { name: 'system'; tab: SystemTab; error?: string }
   /** Manage apps: App Launcher's apps and shortcuts; app is the one open beside the list (/apps/<slug>). */
@@ -79,7 +81,7 @@ export type Screen = Exclude<Route['name'], 'home'>
 /** The Users screen's status tabs, All being none. */
 export type UserStatus = 'active' | 'inactive'
 
-const paths: Record<Exclude<Route['name'], 'audit' | 'security' | 'system' | 'mailTemplates' | 'apps' | 'users' | 'home'>, string> = {
+const paths: Record<Exclude<Route['name'], 'audit' | 'security' | 'system' | 'mailTemplates' | 'documentTemplates' | 'apps' | 'users' | 'home'>, string> = {
   overview: '/',
   roles: '/roles',
   usage: '/usage',
@@ -99,6 +101,7 @@ export const screens: readonly { name: Screen; permissions: readonly Permission[
   { name: 'usage', permissions: ['usage.read'] },
   { name: 'settings', permissions: ['settings.manage'] },
   { name: 'mailTemplates', permissions: ['mail_templates.manage'] },
+  { name: 'documentTemplates', permissions: ['document_templates.manage'] },
   { name: 'suppliers', permissions: ['suppliers.manage'] },
   { name: 'companies', permissions: ['companies.manage'] },
   { name: 'apps', permissions: ['apps.manage'] },
@@ -138,6 +141,8 @@ export function parsePath(pathname: string, search = ''): Route {
     const key = decodeURIComponent(mail[1]) as MailTemplateKey
     return mailTemplateKeys.includes(key) ? { name: 'mailTemplates', key } : { name: 'mailTemplates' }
   }
+  const documents = /^\/document-templates(?:\/([^/]+))?$/.exec(path)
+  if (documents) return documents[1] ? { name: 'documentTemplates', id: decodeURIComponent(documents[1]) } : { name: 'documentTemplates' }
   if (path === '/users') {
     const query = new URLSearchParams(search)
     const status = query.get('status')
@@ -175,6 +180,7 @@ export function pathOf(route: Route): string {
   }
   if (route.name === 'home') return '/'
   if (route.name === 'mailTemplates') return route.key ? `/mail-templates/${encodeURIComponent(route.key)}` : '/mail-templates'
+  if (route.name === 'documentTemplates') return route.id ? `/document-templates/${encodeURIComponent(route.id)}` : '/document-templates'
   if (route.name === 'apps') return route.app ? `/apps/${encodeURIComponent(route.app)}` : '/apps'
   if (route.name === 'users') {
     const query = new URLSearchParams()

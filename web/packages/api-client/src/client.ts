@@ -114,6 +114,14 @@ import type {
   SimEmailKind,
   SignedCopy,
   VaultDetails,
+  AskedField,
+  DocumentTemplate,
+  GenerateInput,
+  GeneratableTemplate,
+  PdfAnswer,
+  TemplateBody,
+  TemplateFields,
+  TemplateLanguage,
   VaultDocument,
   VaultHit,
   VaultPage,
@@ -747,6 +755,24 @@ export function createClient(options: ClientOptions) {
       view: (token: string) => request<SharedView>('POST', '/api/v1/shares/view', { token }),
     },
 
+    /** Document templates (Administration, document_templates.manage). */
+    documentTemplates: {
+      list: () => request<DocumentTemplate[]>('GET', '/api/v1/document-templates'),
+      /** The fields the app fills in and the types a template may be for. */
+      fields: () => request<TemplateFields>('GET', '/api/v1/document-templates/fields'),
+      create: (input: { type: string; name: string; language: TemplateLanguage }) => request<DocumentTemplate>('POST', '/api/v1/document-templates', input),
+      get: (id: string) => request<DocumentTemplate>('GET', `/api/v1/document-templates/${seg(id)}`),
+      update: (id: string, input: { name: string; language: TemplateLanguage }) => request<DocumentTemplate>('PUT', `/api/v1/document-templates/${seg(id)}`, input),
+      saveDraft: (id: string, body: TemplateBody, asked: AskedField[]) =>
+        request<DocumentTemplate>('PUT', `/api/v1/document-templates/${seg(id)}/draft`, { body, asked }),
+      /** Publish: the draft becomes the version Generate uses, never to change; 400 without {{document.number}}. */
+      publish: (id: string) => request<DocumentTemplate>('POST', `/api/v1/document-templates/${seg(id)}/publish`),
+      retire: (id: string) => request<DocumentTemplate>('POST', `/api/v1/document-templates/${seg(id)}/retire`),
+      /** A body as edited, drawn by the API with the fields' samples. */
+      preview: (input: { body: TemplateBody; asked: AskedField[]; language: TemplateLanguage; name: string }) =>
+        request<PdfAnswer>('POST', '/api/v1/document-templates/preview', input),
+    },
+
     /** Document Vault (ADR 0008): typed documents, their versions and links, and search. */
     vault: {
       /** The document types the reader may see. */
@@ -776,6 +802,12 @@ export function createClient(options: ClientOptions) {
       file: (id: string, version: number) => download(`/api/v1/vault/documents/${seg(id)}/versions/${version}/file`),
       /** A sealed document's file: a POST that asks Confirm your password when the sign-in is not recent, and is recorded. */
       openSealed: (id: string, version: number) => download(`/api/v1/vault/documents/${seg(id)}/versions/${version}/file`, 'POST'),
+      /** The published templates Generate Document… offers: those of the types the user may change. */
+      templates: () => request<GeneratableTemplate[]>('GET', '/api/v1/vault/templates'),
+      /** Generate Document…'s preview: the PDF, PREVIEW in its footer, and the hash Generate needs. */
+      generatePreview: (input: GenerateInput) => request<PdfAnswer>('POST', '/api/v1/vault/generate/preview', input),
+      /** Generate: 409 when a value changed since the preview. */
+      generate: (input: GenerateInput) => request<VaultDocument>('POST', '/api/v1/vault/generate', input),
       /** Legal Hold until a day, with its reason; null clears it. */
       setHold: (id: string, holdUntil: string | null, holdReason = '') =>
         request<VaultDocument>('PUT', `/api/v1/vault/documents/${seg(id)}/hold`, { hold_until: holdUntil, hold_reason: holdReason }),

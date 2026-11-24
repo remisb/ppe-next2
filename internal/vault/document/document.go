@@ -4,6 +4,7 @@
 package document
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -51,7 +52,10 @@ type Document struct {
 	HoldReason *string `json:"hold_reason"`
 	// TitleSealed, Key and KeyID are a sealed document's: its title sealed with
 	// its data key, and the data key sealed by the master keyring.
-	TitleSealed     []byte     `json:"-"`
+	TitleSealed []byte `json:"-"`
+	// TemplateID and TemplateVersion are a generated document's template.
+	TemplateID      *uuid.UUID `json:"template_id"`
+	TemplateVersion *int       `json:"template_version"`
 	Key             []byte     `json:"-"`
 	KeyID           int16      `json:"-"`
 	Versions        []Version  `json:"versions"`
@@ -83,10 +87,13 @@ type Version struct {
 	// TextState is what the worker made of its file (vault.version_text); pending until it runs.
 	TextState string `json:"text_state"`
 	// DataSealed is a sealed version's note and file name (sealedData), sealed with the document's key.
-	DataSealed      []byte    `json:"-"`
-	CreatedAt       time.Time `json:"created_at"`
-	CreatedByUserID uuid.UUID `json:"created_by_user_id"`
-	CreatedByName   string    `json:"created_by_name"`
+	DataSealed []byte `json:"-"`
+	// Data are a generated version's values as they printed (not sealed types'); Text its words, for search.
+	Data            json.RawMessage `json:"-"`
+	Text            string          `json:"-"`
+	CreatedAt       time.Time       `json:"created_at"`
+	CreatedByUserID uuid.UUID       `json:"created_by_user_id"`
+	CreatedByName   string          `json:"created_by_name"`
 }
 
 // File is the bytes a version holds, in the files store.

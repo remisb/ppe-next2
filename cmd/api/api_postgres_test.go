@@ -50,6 +50,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/system"
 	"github.com/remisb/ppe-next2/internal/usage"
 	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
+	vaulttemplate "github.com/remisb/ppe-next2/internal/vault/template"
 )
 
 // newPostgresAPI wires the real repositories against API_TEST_DB_DSN, skipping
@@ -78,9 +79,9 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	// audit_seals, audit_purges and asset_number_counters reference nothing, so
+	// audit_seals, audit_purges, asset_number_counters and vault.document_number_counters reference nothing, so
 	// the cascade misses them.
-	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges, asset_number_counters CASCADE`); err != nil {
+	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges, asset_number_counters, vault.document_number_counters CASCADE`); err != nil {
 		t.Fatal(err)
 	}
 	// The truncation reaches roles and App Launcher's tiles through their actor keys.
@@ -123,6 +124,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	)
 	svc.documents = document.NewService(document.NewPostgresRepository(pool), testPersonnelKeys(t), testFiles(t), document.WithPeople(peopleOf(svc)))
 	svc.scans = scan.NewService(scan.NewPostgresRepository(pool), testPersonnelKeys(t), testFiles(t))
+	svc.docTemplates = vaulttemplate.NewService(vaulttemplate.NewPostgresRepository(pool))
 	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), testFiles(t), testVaultKeys(t), time.UTC)
 	svc.shares = share.NewService(share.NewPostgresRepository(pool))
 	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123", []uuid.UUID{role.AdminID})

@@ -57,6 +57,12 @@ of its own under the optional `API_VAULT_KEY` (`vault.document_keys`; without it
 Documents** alone (`vault.employment.read`/`.manage`, Administrator included only when holding it); a sealed file opens only by
 `POST …/versions/{n}/file` behind `sensitive`, recorded first; the upkeep's `ShredDue` keeps each for its type's months after the
 employee's employment ended, then shreds it through the owner's `vault.shred_document` (a tombstone stays) unless under a **Legal Hold**.
+Phase 3 (migration 0063, spec `docs/specs/document-template-service.md`): **document templates** (`internal/vault/template`: a body of blocks,
+`ppe.blocks.v1`, with `{{field}}` placeholders, `internal/placeholder` shared with Mail Templates, and asked fields), edited in Administration's
+**Document Templates** (`document_templates.manage`, Administrator; a structured editor, no rich-text dependency) and published as versions
+that never change; the staff app's **Generate Document…** on the employee page previews, then generates a numbered (`EC-2026-0001`),
+hashed, locked PDF (`internal/docpdf` on pdf-mini, fonts `internal/pdffonts`), sealed for employment types. `vault.document_number_counters`
+references nothing: Postgres tests and e2e name it in their `TRUNCATE`.
 **Mail templates** (`internal/domain/mailtemplate`, migration 0040, spec
 `docs/specs/mail-template-service.md`): one template per use case fixed in code (`sim.activation`,
 `sim.blocking`), To/Cc/Subject/Message with `{{field}}` placeholders, edited on Administration's
@@ -435,7 +441,7 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   ADR 0008 makes the Document Vault: typed documents with versions and links,
   sealed Employment documents with retention and shredding, templates made into locked PDFs,
   Postgres search, and a worker on an outbox (specs `vault-service.md`,
-  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 and 2 are built.
+  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 to 3 are built.
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and

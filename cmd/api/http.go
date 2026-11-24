@@ -36,6 +36,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
 	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
+	vaulttemplate "github.com/remisb/ppe-next2/internal/vault/template"
 )
 
 const maxBodyBytes = 1 << 20
@@ -99,6 +100,7 @@ var errorStatuses = []struct {
 	{catalogue.ErrActorNotFound, http.StatusUnauthorized},
 	{supplier.ErrActorNotFound, http.StatusUnauthorized},
 	{vaultdoc.ErrActorNotFound, http.StatusUnauthorized},
+	{vaulttemplate.ErrActorNotFound, http.StatusUnauthorized},
 	{share.ErrActorNotFound, http.StatusUnauthorized},
 	{company.ErrActorNotFound, http.StatusUnauthorized},
 	{itemset.ErrActorNotFound, http.StatusUnauthorized},
@@ -120,6 +122,7 @@ var errorStatuses = []struct {
 	{catalogue.ErrNotFound, http.StatusNotFound},
 	{supplier.ErrNotFound, http.StatusNotFound},
 	{vaultdoc.ErrNotFound, http.StatusNotFound},
+	{vaulttemplate.ErrNotFound, http.StatusNotFound},
 	{vaultdoc.ErrSubjectNotFound, http.StatusNotFound},
 	{share.ErrNotFound, http.StatusNotFound},
 	{company.ErrNotFound, http.StatusNotFound},
@@ -181,6 +184,9 @@ var errorStatuses = []struct {
 	{supplier.ErrCodeTaken, http.StatusConflict},
 	{vaultdoc.ErrLocked, http.StatusConflict},
 	{vaultdoc.ErrHeld, http.StatusConflict},
+	{vaultdoc.ErrStale, http.StatusConflict},
+	{vaulttemplate.ErrNameTaken, http.StatusConflict},
+	{vaulttemplate.ErrNotPublished, http.StatusConflict},
 	{vaultdoc.ErrSealed, http.StatusConflict},
 	{company.ErrCodeTaken, http.StatusConflict},
 	{company.ErrDefaultTaken, http.StatusConflict},
@@ -216,6 +222,7 @@ var errorStatuses = []struct {
 	{catalogue.ErrInvalid, http.StatusBadRequest},
 	{supplier.ErrInvalid, http.StatusBadRequest},
 	{vaultdoc.ErrInvalid, http.StatusBadRequest},
+	{vaulttemplate.ErrInvalid, http.StatusBadRequest},
 	{share.ErrInvalid, http.StatusBadRequest},
 	{company.ErrInvalid, http.StatusBadRequest},
 	{itemset.ErrInvalid, http.StatusBadRequest},

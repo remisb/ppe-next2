@@ -41,7 +41,7 @@ const (
 // Events are every event this package writes, for the audit registry's test.
 func Events() []string {
 	return []string{EventUploaded, EventVersionAdded, EventUpdated, EventLinked, EventUnlinked, EventRemoved,
-		EventOpened, EventHoldSet, EventHoldCleared, EventShredded}
+		EventOpened, EventHoldSet, EventHoldCleared, EventShredded, EventGenerated}
 }
 
 // SubjectInfo is what the vault learns of a subject: its name, and the
@@ -89,6 +89,9 @@ type Service struct {
 	store       files.Store
 	keys        sealbox.Sealer
 	employments Employments
+	templates   Templates
+	people      People
+	users       Users
 	loc         *time.Location
 	now         func() time.Time
 	newID       func() uuid.UUID
