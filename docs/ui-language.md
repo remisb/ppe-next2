@@ -706,11 +706,14 @@ one.
 ### List and detail
 A list screen whose records have more to show opens a record **beside** the list from `lg`
 and **in its place** below, at the record's own address; the list keeps its filters and page
-behind it, its open row marked. J / K step through the list as shown and Esc closes the
+behind it, its open row marked: one mark, the open record's, with no separate cursor, and only
+the user opens a record (ui-ux-guidelines.md §2, "The list and its open record"). J / K step
+through the list as shown and Esc closes the
 record beside it (what is on top of it first). Closed, the list is where it was left, its row
 still marked (ui-ux-guidelines.md §2, "Closing a record"). A filter, search or tab that leaves the
 open record out of the list closes it, and nothing opens in its place ("When the list changes").
-Orders, Employees, SIM Cards, Equipment, Item Catalogue, the Audit log, System's Errors.
+Orders, Employees, SIM Cards, Equipment, Item Catalogue, the Audit log, System's Errors,
+Manage apps.
 - **Code:** `ListDetail` (`width` `md` 26rem, `lg` 30rem for an item or an employee),
   `DetailPane`, `PaneBar` (Back below `lg`, Close in the corner beside), `useListKeys`,
   `useCloseFilteredOut` and `useMarkedRow` (`@ppe/ui`).
