@@ -40,6 +40,8 @@ export const users = {
   testersGrants: 'Sees App Launcher’s apps in testing.',
   personnel: 'Personnel Documents',
   personnelGrants: 'Scans, saves and shows identity documents.',
+  employment: 'Employment Documents',
+  employmentGrants: 'Sees and keeps employment contracts and other sealed employment documents.',
 
   // Add User / Edit User
   editUser: (name: string) => `Edit User: ${name}`,

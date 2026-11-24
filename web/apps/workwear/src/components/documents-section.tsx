@@ -16,7 +16,7 @@ import { t } from '@/i18n'
 import { todayIn } from '@/lib/assets'
 import { useOpenKey } from '@/lib/open-sections'
 import { type Route, linkTo } from '@/lib/router'
-import { expiry, typeLabel, uploadTypes } from '@/lib/vault'
+import { displayTitle, expiry, seesVault, typeLabel, uploadTypes } from '@/lib/vault'
 
 /**
  * Documents on an employee's page or an asset (ADR 0008): the Document Vault's
@@ -40,7 +40,7 @@ export function DocumentsSection({
 }) {
   const { client } = useApi()
   const session = useSession()
-  const can = session.can('vault.read')
+  const can = seesVault((p) => session.can(p))
   const docs = useLoad(() => (can ? client.vault.bySubject(kind, id) : Promise.resolve([])), [kind, id, can])
   const types = useLoad(() => (can ? client.vault.types() : Promise.resolve([])), [can])
   const [sheet, setSheet] = useState<DocumentSheet | null>(null)
@@ -84,8 +84,9 @@ export function DocumentsSection({
               return (
                 <li key={d.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <a {...linkTo({ name: 'vault', document: d.id }, navigate)} className={linkVariants({ weight: 'medium' })}>
-                    {d.title}
+                    {displayTitle(d)}
                   </a>
+                  {d.sealed ? <Badge variant="outline">{t.vault.sealed}</Badge> : null}
                   <span className="text-xs text-muted-foreground">
                     {typeLabel(d.type)}
                     {d.valid_until ? ` · ${t.vault.validUntil} ${formatDay(d.valid_until)}` : ''}

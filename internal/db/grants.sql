@@ -50,5 +50,11 @@ GRANT USAGE ON SCHEMA vault TO ppe_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA vault TO ppe_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA vault GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ppe_app;
 REVOKE UPDATE, DELETE ON vault.versions, vault.files FROM ppe_app;
+-- A sealed document's data key is written once and deleted by the shredding,
+-- never changed in place (re-sealing under a new master key is the owner's);
+-- the shredding runs as the owner.
+REVOKE UPDATE ON vault.document_keys FROM ppe_app;
+REVOKE EXECUTE ON FUNCTION vault.shred_document(UUID, TIMESTAMPTZ, DATE) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION vault.shred_document(UUID, TIMESTAMPTZ, DATE) TO ppe_app;
 -- Other sessions' state on System (connections, the oldest transaction).
 GRANT pg_read_all_stats TO ppe_app;

@@ -157,3 +157,35 @@ func ParseKeys(s string) (map[int16][]byte, error) {
 	}
 	return keys, nil
 }
+
+// Sealer seals and opens under a master keyring (a *Keyring): what data keys
+// are sealed by.
+type Sealer interface {
+	Seal(plain, context []byte) (sealed []byte, keyID int16, err error)
+	Open(sealed []byte, keyID int16, context []byte) ([]byte, error)
+}
+
+// NewDataKey is a fresh data key, as a Box, and it sealed by master under
+// context (what the key is for: a document), so it opens nowhere else.
+func NewDataKey(master Sealer, context []byte) (*Box, []byte, int16, error) {
+	raw := make([]byte, KeySize)
+	if _, err := rand.Read(raw); err != nil {
+		return nil, nil, 0, err
+	}
+	sealed, keyID, err := master.Seal(raw, context)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	box, err := New(raw)
+	return box, sealed, keyID, err
+}
+
+// OpenDataKey opens a data key NewDataKey sealed under context; ErrOpen when
+// it does not open (another key, another context, a changed byte).
+func OpenDataKey(master Sealer, sealed []byte, keyID int16, context []byte) (*Box, error) {
+	raw, err := master.Open(sealed, keyID, context)
+	if err != nil {
+		return nil, err
+	}
+	return New(raw)
+}

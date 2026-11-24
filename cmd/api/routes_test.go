@@ -1133,16 +1133,18 @@ var policy = map[string]rule{
 	"POST /api/v1/client-errors":                                                {"", "any"},
 	"GET /api/v1/overview":                                                      {"", "any"},
 	"GET /api/v1/usage":                                                         {role.UsageRead, "admins"},
-	"GET /api/v1/audit-events/vault/{id}":                                       {role.VaultRead, "managers"},
-	"GET /api/v1/vault/types":                                                   {role.VaultRead, "managers"},
-	"POST /api/v1/vault/search":                                                 {role.VaultRead, "managers"},
-	"GET /api/v1/vault/by-subject/{kind}/{id}":                                  {role.VaultRead, "managers"},
-	"POST /api/v1/vault/documents":                                              {role.VaultManage, "managers"},
-	"GET /api/v1/vault/documents/{id}":                                          {role.VaultRead, "managers"},
-	"PUT /api/v1/vault/documents/{id}":                                          {role.VaultManage, "managers"},
-	"DELETE /api/v1/vault/documents/{id}":                                       {role.VaultManage, "managers"},
-	"POST /api/v1/vault/documents/{id}/versions":                                {role.VaultManage, "managers"},
-	"GET /api/v1/vault/documents/{id}/versions/{n}/file":                        {role.VaultRead, "managers"},
+	"GET /api/v1/audit-events/vault/{id}":                                       {"", "documents"},
+	"GET /api/v1/vault/types":                                                   {"", "documents"},
+	"POST /api/v1/vault/search":                                                 {"", "documents"},
+	"GET /api/v1/vault/by-subject/{kind}/{id}":                                  {"", "documents"},
+	"POST /api/v1/vault/documents":                                              {"", "documents"},
+	"GET /api/v1/vault/documents/{id}":                                          {"", "documents"},
+	"PUT /api/v1/vault/documents/{id}":                                          {"", "documents"},
+	"DELETE /api/v1/vault/documents/{id}":                                       {"", "documents"},
+	"POST /api/v1/vault/documents/{id}/versions":                                {"", "documents"},
+	"GET /api/v1/vault/documents/{id}/versions/{n}/file":                        {"", "documents"},
+	"PUT /api/v1/vault/documents/{id}/hold":                                     {"", "documents"},
+	"POST /api/v1/vault/documents/{id}/versions/{n}/file":                       {role.VaultEmploymentRead, "employment"},
 }
 
 // stubVault is a vaultdoc.Repository with no documents.
@@ -1167,6 +1169,12 @@ func (stubVault) Subjects(context.Context) ([]vaultdoc.Subject, error) { return 
 func (stubVault) Relabel(context.Context, vaultdoc.Subject, string) (int, error) {
 	return 0, nil
 }
+func (stubVault) Record(context.Context, audit.Event) error                { return nil }
+func (stubVault) Sealed(context.Context) ([]vaultdoc.Candidate, error)     { return nil, nil }
+func (stubVault) SetRetainUntil(context.Context, uuid.UUID, *string) error { return nil }
+func (stubVault) Shred(context.Context, uuid.UUID, time.Time, string, audit.Event) ([]string, error) {
+	return nil, nil
+}
 
 // allowedRoles is who each audience was before permissions: the three fixed
 // roles, and Equipment Assignments, which reaches what any signed-in user does
@@ -1174,8 +1182,11 @@ func (stubVault) Relabel(context.Context, vaultdoc.Subject, string) (int, error)
 // Testers and Personnel Documents reach what any signed-in user does, and
 // "personnel" is what Personnel Documents alone reaches (ADR 0007).
 var allowedRoles = map[string][]string{
-	"any":       {role.KeyAdmin, role.KeyManager, role.KeyEmployee, role.KeyEquipment, role.KeyTesters, role.KeyPersonnel},
-	"personnel": {role.KeyPersonnel},
+	"any": {role.KeyAdmin, role.KeyManager, role.KeyEmployee, role.KeyEquipment, role.KeyTesters, role.KeyPersonnel, role.KeyEmployment},
+	// documents: the Document Vault's routes, open to its own documents' readers or the employment documents' (ADR 0008).
+	"documents":  {role.KeyAdmin, role.KeyManager, role.KeyEmployment},
+	"employment": {role.KeyEmployment},
+	"personnel":  {role.KeyPersonnel},
 	// "nobody": what no built-in role holds, given by an administrator (AI colouring).
 	"nobody": {},
 	// staff+personnel: an employee's photo, added by staff or by Import Documents' portrait.
@@ -1196,6 +1207,18 @@ var anyOf = map[string][]role.Permission{}
 func init() {
 	managers := []role.Permission{role.SIMCardsManage, role.AssetsManage}
 	anyOf["POST /api/v1/employee-photos/{id}"] = []role.Permission{role.EmployeeProfilesManage, role.PersonnelDocumentsManage}
+	for _, pattern := range []string{
+		"GET /api/v1/vault/types", "POST /api/v1/vault/search", "GET /api/v1/vault/by-subject/{kind}/{id}",
+		"GET /api/v1/vault/documents/{id}", "GET /api/v1/vault/documents/{id}/versions/{n}/file", "GET /api/v1/audit-events/vault/{id}",
+	} {
+		anyOf[pattern] = []role.Permission{role.VaultRead, role.VaultEmploymentRead}
+	}
+	for _, pattern := range []string{
+		"POST /api/v1/vault/documents", "PUT /api/v1/vault/documents/{id}", "DELETE /api/v1/vault/documents/{id}",
+		"PUT /api/v1/vault/documents/{id}/hold", "POST /api/v1/vault/documents/{id}/versions",
+	} {
+		anyOf[pattern] = []role.Permission{role.VaultManage, role.VaultEmploymentManage}
+	}
 	for _, pattern := range []string{
 		"GET /api/v1/assets/next-number/{prefix}",
 		"POST /api/v1/assets",
@@ -1247,6 +1270,7 @@ func TestSeededRolesKeepPolicy(t *testing.T) {
 func TestRoutePolicy(t *testing.T) {
 	api := newTestAPI(t)
 	clerk, _ := api.userWith(t, role.KeyPersonnel)
+	employmentClerk, _ := api.userWith(t, role.KeyEmployment)
 	roleTokens := map[string]string{}
 	for _, key := range role.BuiltinKeys() {
 		_, roleTokens[key] = api.userWith(t, key)
@@ -1306,10 +1330,14 @@ func TestRoutePolicy(t *testing.T) {
 				check("every other permission", api.tokenWith(t, others...), false)
 				for _, p := range need {
 					only := api.tokenWith(t, p)
-					if rule.audience == "personnel" {
-						// Show Document checks the user's roles as they are now
-						// (sensitive): the token's user must hold the permission too.
+					// Show Document and opening a sealed document check the
+					// user's roles as they are now (sensitive): the token's user
+					// must hold the permission too.
+					switch rule.audience {
+					case "personnel":
 						only = api.tokenAs(t, clerk, p)
+					case "employment":
+						only = api.tokenAs(t, employmentClerk, p)
 					}
 					check("only "+string(p), only, true)
 				}

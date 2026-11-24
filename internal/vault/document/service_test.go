@@ -21,9 +21,10 @@ import (
 
 // memRepo is an in-memory Repository.
 type memRepo struct {
-	mu     sync.Mutex
-	docs   map[uuid.UUID]Document
-	events []audit.Event
+	mu       sync.Mutex
+	docs     map[uuid.UUID]Document
+	events   []audit.Event
+	shredded []uuid.UUID
 }
 
 func newMemRepo() *memRepo { return &memRepo{docs: map[uuid.UUID]Document{}} }
@@ -32,6 +33,7 @@ func (m *memRepo) Create(_ context.Context, d Document, links []Link, ev audit.E
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	d.Links = slices.Clone(links)
+	d.Versions = slices.Clone(d.Versions)
 	m.docs[d.ID] = d
 	m.events = append(m.events, ev)
 	return nil
@@ -44,6 +46,8 @@ func (m *memRepo) Get(_ context.Context, id uuid.UUID) (Document, error) {
 	if !ok || d.DeletedAt != nil {
 		return Document{}, ErrNotFound
 	}
+	// A copy, as a database read is: the caller may change it.
+	d.Versions, d.Links = slices.Clone(d.Versions), slices.Clone(d.Links)
 	return d, nil
 }
 
@@ -130,6 +134,56 @@ func (m *memRepo) Relabel(_ context.Context, s Subject, label string) (int, erro
 		m.docs[id] = d
 	}
 	return n, nil
+}
+
+func (m *memRepo) Record(_ context.Context, ev audit.Event) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.events = append(m.events, ev)
+	return nil
+}
+
+func (m *memRepo) Sealed(context.Context) ([]Candidate, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []Candidate
+	for _, d := range m.docs {
+		if !d.Sealed {
+			continue
+		}
+		c := Candidate{ID: d.ID, Type: d.Type, Number: d.Number, DocumentDate: d.DocumentDate, RetainUntil: d.RetainUntil,
+			HoldUntil: d.HoldUntil, Removed: d.DeletedAt != nil}
+		for _, l := range d.Links {
+			if l.Kind == vault.Employee {
+				c.Employees = append(c.Employees, l.ID)
+			}
+		}
+		out = append(out, c)
+	}
+	return out, nil
+}
+
+func (m *memRepo) SetRetainUntil(_ context.Context, id uuid.UUID, day *string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	d := m.docs[id]
+	d.RetainUntil = day
+	m.docs[id] = d
+	return nil
+}
+
+func (m *memRepo) Shred(_ context.Context, id uuid.UUID, _ time.Time, _ string, ev audit.Event) ([]string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	d := m.docs[id]
+	var keys []string
+	for _, v := range d.Versions {
+		keys = append(keys, v.File.ObjectKey)
+	}
+	delete(m.docs, id)
+	m.shredded = append(m.shredded, id)
+	m.events = append(m.events, ev)
+	return keys, nil
 }
 
 // eventNames are the recorded events' names in order.
@@ -464,8 +518,11 @@ func TestTypesAreTheReadersOnly(t *testing.T) {
 	if got := svc.Types(Reader{Perms: []string{"equipment.read"}}); len(got) != 0 {
 		t.Errorf("without vault.read: %v", got)
 	}
-	if got := svc.Types(reader); len(got) != len(vault.Types()) {
+	if got := svc.Types(reader); len(got) != 5 || slices.ContainsFunc(got, func(ty vault.Type) bool { return ty.Sealed }) {
 		t.Errorf("with vault.read: %d types", len(got))
+	}
+	if got := svc.Types(Reader{Perms: []string{vault.PermRead, vault.PermEmploymentRead}}); len(got) != len(vault.Types()) {
+		t.Errorf("with both: %d types", len(got))
 	}
 }
 

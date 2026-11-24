@@ -19,7 +19,33 @@ import (
 const (
 	PermRead   = "vault.read"
 	PermManage = "vault.manage"
+	// PermEmploymentRead and PermEmploymentManage are the employment
+	// documents' (role.VaultEmploymentRead, role.VaultEmploymentManage).
+	PermEmploymentRead   = "vault.employment.read"
+	PermEmploymentManage = "vault.employment.manage"
 )
+
+// Rule is how long a type's documents are kept.
+type Rule string
+
+const (
+	// Keep: until removed.
+	Keep Rule = "keep"
+	// Forever: never removed by a rule.
+	Forever Rule = "forever"
+	// AfterDocDate: Months after the document's date.
+	AfterDocDate Rule = "after_document_date"
+	// AfterEmploymentEnd: Months after the linked employee's last employment
+	// ended; while they are employed (or never were), kept.
+	AfterEmploymentEnd Rule = "after_employment_end"
+)
+
+// Retention is a type's rule and its period. Applied to sealed types (phase
+// 2); the periods are defaults until the DPO answers (ADR 0008, open question 1).
+type Retention struct {
+	Rule   Rule `json:"rule"`
+	Months int  `json:"months,omitempty"`
+}
 
 // Origin is how a document came to be.
 type Origin string
@@ -87,6 +113,8 @@ type Type struct {
 	// Dated types ask for the document's date; Expiring ones for valid until.
 	Dated    bool `json:"dated"`
 	Expiring bool `json:"expiring"`
+	// Retention is how long its documents are kept.
+	Retention Retention `json:"retention"`
 }
 
 // Allows reports whether a document of t may come to be by o.
@@ -104,27 +132,49 @@ var types = []Type{
 		Key: "employee.certificate", Group: GroupEmployee, Words: "certificate pažymėjimas sertifikatas сертификат удостоверение",
 		Read: PermRead, Manage: PermManage, Links: []SubjectKind{Employee, Company}, Must: []SubjectKind{Employee},
 		Origins: []Origin{Uploaded}, FileTypes: uploads, MaxBytes: MaxUploadBytes, Dated: true, Expiring: true,
+		Retention: Retention{Rule: Keep},
 	},
 	{
 		Key: "employee.training", Group: GroupEmployee, Words: "training mokymai instruktažas обучение инструктаж",
 		Read: PermRead, Manage: PermManage, Links: []SubjectKind{Employee, Company}, Must: []SubjectKind{Employee},
 		Origins: []Origin{Uploaded}, FileTypes: uploads, MaxBytes: MaxUploadBytes, Dated: true, Expiring: true,
+		Retention: Retention{Rule: Keep},
 	},
 	{
 		Key: "invoice", Group: GroupFinance, Words: "invoice sąskaita faktūra счёт счет фактура",
 		Read: PermRead, Manage: PermManage, Links: []SubjectKind{Supplier, Company, Asset, Employee},
 		Origins: []Origin{Uploaded}, FileTypes: uploads, MaxBytes: MaxUploadBytes, Dated: true,
+		Retention: Retention{Rule: Keep},
 	},
 	{
 		Key: "asset.document", Group: GroupAssets, Words: "asset document turtas dokumentas имущество документ",
 		Read: PermRead, Manage: PermManage, Links: []SubjectKind{Asset, Supplier, Employee}, Must: []SubjectKind{Asset},
 		Origins: []Origin{Uploaded}, FileTypes: uploads, MaxBytes: MaxUploadBytes, Dated: true, Expiring: true,
+		Retention: Retention{Rule: Keep},
 	},
 	{
 		Key: "other", Group: GroupOther, Words: "other document kita dokumentas другое документ",
 		Read: PermRead, Manage: PermManage, Links: []SubjectKind{Employee, Company, Asset, Supplier},
 		Origins: []Origin{Uploaded}, FileTypes: uploads, MaxBytes: MaxUploadBytes, Dated: true, Expiring: true,
+		Retention: Retention{Rule: Keep},
 	},
+	// Employment documents (phase 2): sealed, for the Employment Documents role
+	// alone, kept for a period after employment ends, then shredded.
+	employment("employment.contract", "employment contract darbo sutartis трудовой договор", 120),
+	employment("employment.annex", "annex amendment priedas pakeitimas приложение изменение", 120),
+	employment("employment.nda", "nda confidentiality non-disclosure konfidencialumo sutartis неразглашение конфиденциальность", 120),
+	employment("employment.other", "employment document darbo dokumentas трудовой документ", 36),
+}
+
+// employment is an employment document type: sealed, linked to an employee,
+// kept months after their employment ends.
+func employment(key, words string, months int) Type {
+	return Type{
+		Key: key, Group: GroupEmployment, Words: words, Sealed: true,
+		Read: PermEmploymentRead, Manage: PermEmploymentManage, Links: []SubjectKind{Employee, Company}, Must: []SubjectKind{Employee},
+		Origins: []Origin{Uploaded}, FileTypes: uploads, MaxBytes: MaxUploadBytes, Dated: true, Expiring: true,
+		Retention: Retention{Rule: AfterEmploymentEnd, Months: months},
+	}
 }
 
 // Types returns every type in display order.

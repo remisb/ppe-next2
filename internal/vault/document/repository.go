@@ -2,6 +2,7 @@ package document
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -52,4 +53,25 @@ type Repository interface {
 	// Relabel sets the label of every link to subject, and rebuilds the search
 	// of the documents whose label changed; it returns how many changed.
 	Relabel(ctx context.Context, s Subject, label string) (int, error)
+	// Record writes an event that changes nothing (a sealed document opened).
+	Record(ctx context.Context, ev audit.Event) error
+	// Sealed are the sealed documents not shredded yet, removed ones included.
+	Sealed(ctx context.Context) ([]Candidate, error)
+	// SetRetainUntil sets a sealed document's retain_until.
+	SetRetainUntil(ctx context.Context, id uuid.UUID, day *string) error
+	// Shred makes a sealed document unreadable (vault.shred_document) and
+	// records ev in one transaction, returning its files' object keys.
+	Shred(ctx context.Context, id uuid.UUID, at time.Time, day string, ev audit.Event) ([]string, error)
+}
+
+// Candidate is a sealed document as the retention sees it.
+type Candidate struct {
+	ID           uuid.UUID
+	Type         string
+	Number       *string
+	DocumentDate *string
+	RetainUntil  *string
+	HoldUntil    *string
+	Removed      bool
+	Employees    []uuid.UUID
 }

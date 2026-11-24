@@ -47,10 +47,14 @@ const (
 	PersonnelPortraitsColorize Permission = "personnel.portraits.colorize"
 	// Document Vault (ADR 0008): see documents, and upload, change and remove
 	// them (migration 0061). Each type names its own pair; these are phase 1's.
-	VaultRead           Permission = "vault.read"
-	VaultManage         Permission = "vault.manage"
-	SettingsManage      Permission = "settings.manage"
-	MailTemplatesManage Permission = "mail_templates.manage"
+	VaultRead   Permission = "vault.read"
+	VaultManage Permission = "vault.manage"
+	// Employment documents (migration 0062): sealed contracts, annexes, NDAs;
+	// only the add-on role Employment Documents holds them.
+	VaultEmploymentRead   Permission = "vault.employment.read"
+	VaultEmploymentManage Permission = "vault.employment.manage"
+	SettingsManage        Permission = "settings.manage"
+	MailTemplatesManage   Permission = "mail_templates.manage"
 	// SuppliersManage is Administration's Suppliers: the companies catalogue
 	// items are bought from (migration 0054). Everyone sees them.
 	SuppliersManage Permission = "suppliers.manage"
@@ -138,6 +142,8 @@ var catalogue = []Info{
 	{PersonnelPortraitsColorize, GroupPersonnel, []Permission{PersonnelDocumentsManage}},
 	{VaultRead, GroupVault, nil},
 	{VaultManage, GroupVault, []Permission{VaultRead}},
+	{VaultEmploymentRead, GroupVault, nil},
+	{VaultEmploymentManage, GroupVault, []Permission{VaultEmploymentRead}},
 	{DashboardOverview, GroupDashboards, nil},
 	{DashboardManager, GroupDashboards, nil},
 	{DashboardEmployee, GroupDashboards, nil},

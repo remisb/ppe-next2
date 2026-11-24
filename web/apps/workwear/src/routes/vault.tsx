@@ -23,7 +23,7 @@ import { DocumentDetailsSheet, type DocumentSheet } from '@/components/document-
 import { t } from '@/i18n'
 import { todayIn } from '@/lib/assets'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
-import { expiry, linkLabels, typeLabel, uploadTypes } from '@/lib/vault'
+import { displayTitle, expiry, linkLabels, typeLabel, uploadTypes } from '@/lib/vault'
 import { vaultExportColumns } from '@/lib/vault-export'
 
 /** A document's key in the selection; a module constant, so the hook's memos hold. */
@@ -219,13 +219,14 @@ export function Vault({ selected, navigate }: { selected: string | undefined; na
                   >
                     {selection.active ? (
                       <TableCell className={selectCellClass}>
-                        <RowCheckbox selection={selection} id={d.id} name={d.title} />
+                        <RowCheckbox selection={selection} id={d.id} name={displayTitle(d)} />
                       </TableCell>
                     ) : null}
                     <TableCell className="whitespace-normal font-medium stacked:order-1 stacked:w-auto stacked:min-w-0 stacked:flex-1">
                       <a {...linkTo({ name: 'vault', document: d.id }, () => open(d.id))} className={linkVariants()}>
-                        {d.title}
+                        {displayTitle(d)}
                       </a>
+                      {d.sealed ? <Badge variant="outline" className="ml-2 align-middle">{t.vault.sealed}</Badge> : null}
                       {d.number ? <span className="font-normal text-muted-foreground"> · {d.number}</span> : null}
                     </TableCell>
                     <TableCell className="stacked:order-3 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">{typeLabel(d.type)}</TableCell>

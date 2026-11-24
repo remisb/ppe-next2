@@ -59,7 +59,8 @@ func (j *jobRuns) get() JobRun {
 //     the Overview reports on;
 //   - shreds personnel files whose retention has ended, erases expired kept scans
 //     and the rows of expired shared links;
-//   - names documents' links as their subjects are called now.
+//   - shreds sealed documents past their retention and names documents' links
+//     as their subjects are called now.
 func runJobs(ctx context.Context, svc services, logger *slog.Logger) {
 	tick := time.NewTicker(jobEvery)
 	defer tick.Stop()
@@ -157,6 +158,17 @@ func upkeep(ctx context.Context, svc services, logger *slog.Logger) JobRun {
 			logger.Error("shared links erasing failed", slog.Any("error", err))
 		} else if run.SharesErased > 0 {
 			logger.Info("shared links erased", slog.Int("shares", run.SharesErased))
+		}
+	}
+	// Sealed documents past their retention, or removed, are shredded unless held (ADR 0008).
+	if svc.vault != nil {
+		if res, err := svc.vault.ShredDue(ctx, logger); err != nil && ctx.Err() == nil {
+			run.Failed = true
+			logger.Error("document shredding failed", slog.Any("error", err))
+		} else if res.Failed > 0 {
+			run.Failed = true
+		} else if res.Documents > 0 {
+			logger.Info("documents shredded", slog.Int("documents", res.Documents))
 		}
 	}
 	// Documents' links are named as their subjects are called now (a renamed

@@ -53,6 +53,12 @@ type config struct {
 	// PersonnelScanDays is how many days Import Documents' kept scans stay on
 	// the server for the user who made them (internal/personnel/scan), 1 to 14.
 	PersonnelScanDays int
+	// VaultKey seals each sealed document's data key in the Document Vault
+	// (ADR 0008), with VaultKeyID and VaultPreviousKeys as the SIM codes key
+	// has. Optional: without it sealed document types answer 503.
+	VaultKey          string
+	VaultKeyID        int
+	VaultPreviousKeys string
 	// SecretsKey seals the secrets an administrator enters in Settings, first
 	// the OpenAI API key (ADR 0007): 64 hex, with SecretsKeyID and
 	// SecretsPreviousKeys as the SIM codes key has. Optional: without it no
@@ -207,6 +213,11 @@ func loadConfig(args []string) (config, error) {
 	if c.PersonnelScanDays, err = envInt("API_PERSONNEL_SCAN_DAYS", scan.DefaultDays); err != nil {
 		return c, err
 	}
+	c.VaultKey = env("API_VAULT_KEY", "")
+	c.VaultPreviousKeys = env("API_VAULT_PREVIOUS_KEYS", "")
+	if c.VaultKeyID, err = envInt("API_VAULT_KEY_ID", 1); err != nil {
+		return c, err
+	}
 	c.SecretsKey = env("API_SECRETS_KEY", "")
 	c.OpenAIBaseURL = strings.TrimRight(env("API_OPENAI_BASE_URL", "https://api.openai.com"), "/")
 	c.SecretsPreviousKeys = env("API_SECRETS_PREVIOUS_KEYS", "")
@@ -331,6 +342,7 @@ func (c config) validate() error {
 	errs = append(errs, c.simCodesKeyErrors()...)
 	errs = append(errs, c.personnelKeyErrors()...)
 	errs = append(errs, c.secretsKeyErrors()...)
+	errs = append(errs, c.vaultKeyErrors()...)
 	if u, err := url.Parse(c.OpenAIBaseURL); c.OpenAIBaseURL != "" && (err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "") {
 		errs = append(errs, errors.New("API_OPENAI_BASE_URL must be an http(s) address"))
 	}
@@ -481,6 +493,58 @@ func (c config) personnelKeyErrors() []error {
 		}
 	}
 	return errs
+}
+
+// vaultKeyErrors checks the Document Vault's keyring (ADR 0008): none, or
+// the key with its id and previous keys, none of them another key here.
+func (c config) vaultKeyErrors() []error {
+	if c.VaultKey == "" && c.VaultPreviousKeys == "" {
+		return nil
+	}
+	var errs []error
+	key, err := sealbox.ParseKey(c.VaultKey)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("API_VAULT_KEY %w", err))
+	}
+	for name, v := range map[string]string{"API_JWT_SECRET": c.JWTSecret, "API_SIM_CODES_KEY": c.SIMCodesKey, "API_PERSONNEL_KEY": c.PersonnelKey,
+		"API_PERSONNEL_INDEX_KEY": c.PersonnelIndexKey, "API_SECRETS_KEY": c.SecretsKey} {
+		if v != "" && v == c.VaultKey {
+			errs = append(errs, fmt.Errorf("API_VAULT_KEY must not be %s", name))
+		}
+	}
+	if c.VaultKeyID < 1 || c.VaultKeyID > math.MaxInt16 {
+		errs = append(errs, fmt.Errorf("API_VAULT_KEY_ID must be from 1 to %d", math.MaxInt16))
+	}
+	previous, err := sealbox.ParseKeys(c.VaultPreviousKeys)
+	if err != nil {
+		return append(errs, fmt.Errorf("API_VAULT_PREVIOUS_KEYS %w", err))
+	}
+	for id, k := range previous {
+		if int(id) == c.VaultKeyID {
+			errs = append(errs, fmt.Errorf("API_VAULT_PREVIOUS_KEYS has key %d, which is API_VAULT_KEY_ID: a previous key needs an id of its own", id))
+		}
+		if key != nil && bytes.Equal(k, key) {
+			errs = append(errs, fmt.Errorf("API_VAULT_PREVIOUS_KEYS key %d is API_VAULT_KEY", id))
+		}
+	}
+	return errs
+}
+
+// vaultKeyring is the Document Vault's master keyring; nil without API_VAULT_KEY.
+func vaultKeyring(cfg config) (*sealbox.Keyring, error) {
+	if cfg.VaultKey == "" {
+		return nil, nil
+	}
+	key, err := sealbox.ParseKey(cfg.VaultKey)
+	if err != nil {
+		return nil, fmt.Errorf("API_VAULT_KEY %w", err)
+	}
+	keys, err := sealbox.ParseKeys(cfg.VaultPreviousKeys)
+	if err != nil {
+		return nil, fmt.Errorf("API_VAULT_PREVIOUS_KEYS %w", err)
+	}
+	keys[int16(cfg.VaultKeyID)] = key
+	return sealbox.NewKeyring(int16(cfg.VaultKeyID), keys)
 }
 
 // secretsKeyErrors checks the Settings secrets' keyring: none, or the key

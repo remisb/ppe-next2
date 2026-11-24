@@ -13,16 +13,17 @@ import { formatDate, formatDay } from '@ppe/ui/lib/dates'
 import { saveFile } from '@ppe/ui/lib/save-file'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { useLoad } from '@ppe/ui/lib/use-load'
-import { FileDown } from 'lucide-react'
+import { FileDown, Lock, ShieldAlert } from 'lucide-react'
+import { InfoTip } from '@ppe/ui/components/info-tip'
 import { useMemo, useState } from 'react'
 
-import { AddVersionSheet, DocumentDetailsSheet } from '@/components/document-sheets'
+import { AddVersionSheet, DocumentDetailsSheet, HoldSheet } from '@/components/document-sheets'
 import { t } from '@/i18n'
 import { todayIn } from '@/lib/assets'
 import { documentActions } from '@/lib/document-actions'
 import { useOpenKey } from '@/lib/open-sections'
 import { type Route, linkTo } from '@/lib/router'
-import { expiry, linkRoute, typeLabel } from '@/lib/vault'
+import { displayTitle, expiry, linkRoute, typeLabel } from '@/lib/vault'
 
 const link = linkVariants({ weight: 'medium', className: 'inline-flex min-h-11 items-center gap-1 md:min-h-0' })
 
@@ -52,7 +53,7 @@ export function DocumentDetail({
   const { client } = useApi()
   const doc = useLoad(() => client.vault.get(id), [id])
   return (
-    <article aria-label={doc.data ? t.vault.documentLabel(doc.data.title) : t.vault.document} className="@container flex flex-col gap-4">
+    <article aria-label={doc.data ? t.vault.documentLabel(displayTitle(doc.data)) : t.vault.document} className="@container flex flex-col gap-4">
       <PaneBar backLabel={t.vault.title} closeLabel={t.vault.closeDocument} onClose={onClose} className="self-start" />
       <Loaded load={doc}>
         {(d) => (
@@ -96,7 +97,7 @@ function DocumentBody({
   const session = useSession()
   const action = useAction()
   const [downloading, setDownloading] = useState(false)
-  const [sheet, setSheet] = useState<'edit' | 'version' | null>(null)
+  const [sheet, setSheet] = useState<'edit' | 'version' | 'hold' | null>(null)
   const [message, setMessage] = useState('')
   const type = types?.find((ty) => ty.key === d.type)
   const current = d.versions[0]
@@ -107,8 +108,9 @@ function DocumentBody({
     if (!v) return
     setDownloading(true)
     await action.run(async () => {
-      const f = await client.vault.file(d.id, v.number)
-      saveFile(f.blob, v.file.file_name)
+      // A sealed document's file asks Confirm your password when the sign-in is not recent, and is recorded.
+      const f = d.sealed ? await client.vault.openSealed(d.id, v.number) : await client.vault.file(d.id, v.number)
+      saveFile(f.blob, v.file.file_name || f.filename)
     })
     setDownloading(false)
   }
@@ -116,13 +118,13 @@ function DocumentBody({
     void action.run(
       async () => {
         await client.vault.remove(d.id)
-        onRemoved(t.vault.removed(d.title))
+        onRemoved(t.vault.removed(displayTitle(d)))
       },
-      { confirm: t.vault.removeQuestion(d.title) },
+      { confirm: t.vault.removeQuestion(displayTitle(d)) },
     )
   const actions = documentActions(
-    { manage: session.can((type?.manage ?? 'vault.manage') as never), locked: d.locked, downloading },
-    { download: () => void download(current), edit: () => setSheet('edit'), addVersion: () => setSheet('version'), remove },
+    { manage: session.can((type?.manage ?? 'vault.manage') as never), locked: d.locked, downloading, hold: d.sealed },
+    { download: () => void download(current), edit: () => setSheet('edit'), addVersion: () => setSheet('version'), remove, hold: () => setSheet('hold') },
   )
   // One object per opening, so the sheet starts afresh only when opened.
   const editSheet = useMemo(() => (sheet === 'edit' ? ({ kind: 'edit', document: d } as const) : null), [sheet, d])
@@ -134,9 +136,17 @@ function DocumentBody({
 
   return (
     <>
-      <RecordHeader className="mb-0" nav={nav} title={<RecordTitle>{d.title}</RecordTitle>} actions={actions} moreLabel={t.vault.moreActions(d.title)}>
+      <RecordHeader className="mb-0" nav={nav} title={<RecordTitle>{displayTitle(d)}</RecordTitle>} actions={actions} moreLabel={t.vault.moreActions(displayTitle(d))}>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{typeLabel(d.type)}</Badge>
+          {d.sealed ? (
+            <span className="inline-flex items-center gap-1">
+              <Badge variant="outline">
+                <Lock aria-hidden className="size-3" /> {t.vault.sealed}
+              </Badge>
+              <InfoTip section={t.vault.sealed}>{t.vault.sealedInfo}</InfoTip>
+            </span>
+          ) : null}
           {ends === 'expired' ? <Badge variant="destructive">{t.vault.expired}</Badge> : null}
           {ends === 'soon' ? <Badge variant="outline">{t.vault.expiresSoon}</Badge> : null}
         </div>
@@ -145,6 +155,12 @@ function DocumentBody({
         {message}
       </p>
       <ActionError error={action.error} />
+      {d.hold_until ? (
+        <p className="flex items-start gap-2 text-sm">
+          <ShieldAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
+          {t.vault.held(formatDay(d.hold_until), d.hold_reason ?? '')}
+        </p>
+      ) : null}
 
       <FactGrid>
         {d.number ? <Fact label={t.vault.number}>{d.number}</Fact> : null}
@@ -152,6 +168,14 @@ function DocumentBody({
         {d.valid_from ? <Fact label={t.vault.validFrom}>{formatDay(d.valid_from)}</Fact> : null}
         {d.valid_until ? <Fact label={t.vault.validUntil}>{formatDay(d.valid_until)}</Fact> : null}
         <Fact label={t.vault.origin}>{t.vault.origins[d.origin]}</Fact>
+        {d.retain_until ? (
+          <Fact label={t.vault.keptUntil}>
+            <span className="inline-flex items-center gap-1">
+              {formatDay(d.retain_until)}
+              <InfoTip section={t.vault.keptUntil}>{t.vault.keptUntilHint}</InfoTip>
+            </span>
+          </Fact>
+        ) : null}
         <Fact label={t.vault.linkedTo} wide>
           {d.links.length === 0 ? (
             <span className="text-muted-foreground">{t.vault.notLinked}</span>
@@ -201,6 +225,7 @@ function DocumentBody({
 
       <DocumentDetailsSheet sheet={editSheet} types={types} onClose={() => setSheet(null)} onSaved={saved} />
       <AddVersionSheet document={sheet === 'version' ? d : null} types={types} onClose={() => setSheet(null)} onSaved={saved} />
+      <HoldSheet document={sheet === 'hold' ? d : null} onClose={() => setSheet(null)} onSaved={saved} />
     </>
   )
 }

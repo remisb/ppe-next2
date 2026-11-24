@@ -184,6 +184,10 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['links', 'labels'],
   ['origin', 'text'],
   ['note', 'text'],
+  // A sealed document's title changes without its words; retention's day and a removal.
+  ['title_changed', 'changed'],
+  ['retain_until', 'date'],
+  ['removed', 'bool'],
   ['file_name', 'text'],
   ['content_type', 'text'],
   ['size_bytes', 'text'],

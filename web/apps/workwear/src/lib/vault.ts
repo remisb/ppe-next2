@@ -4,7 +4,7 @@
  * to expire, and the checks Upload Document…, Edit… and Add Version… make
  * before sending, which the API makes again.
  */
-import type { VaultDetails, VaultDocument, VaultLink, VaultLinkRef, VaultSubjectKind, VaultType } from '@ppe/api-client'
+import type { Permission, VaultDetails, VaultDocument, VaultLink, VaultLinkRef, VaultSubjectKind, VaultType } from '@ppe/api-client'
 
 import { t } from '@/i18n'
 import type { Route } from '@/lib/router'
@@ -21,6 +21,24 @@ export const EXPIRES_SOON_DAYS = 30
 /** A type's name in the language in use; one the app does not know shows its key. */
 export function typeLabel(key: string): string {
   return t.vault.types[key] ?? key
+}
+
+/** A document's name in a list: its title, or a sealed one's type, whose title only its page shows. */
+export function displayTitle(d: { title: string; type: string }): string {
+  return d.title || typeLabel(d.type)
+}
+
+/** Whether the user may open the Document Vault: its own documents' readers, or the employment documents'. */
+export function seesVault(can: (p: Permission) => boolean): boolean {
+  return can('vault.read') || can('vault.employment.read')
+}
+
+/** What a Legal Hold lacks; empty when it may be set. */
+export function holdProblems(until: string, reason: string): Partial<Record<'until' | 'reason', string>> {
+  const out: Partial<Record<'until' | 'reason', string>> = {}
+  if (!until) out.until = t.vault.holdDayRequired
+  if (!reason.trim()) out.reason = t.vault.holdReasonRequired
+  return out
 }
 
 /** The links' names in one line: "Ana Žukauskaitė, EQ-0001 Laptop". */

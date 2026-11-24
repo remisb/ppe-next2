@@ -16,6 +16,7 @@ import (
 
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/files"
+	"github.com/remisb/ppe-next2/internal/sealbox"
 	"github.com/remisb/ppe-next2/internal/vault"
 )
 
@@ -39,7 +40,8 @@ const (
 
 // Events are every event this package writes, for the audit registry's test.
 func Events() []string {
-	return []string{EventUploaded, EventVersionAdded, EventUpdated, EventLinked, EventUnlinked, EventRemoved}
+	return []string{EventUploaded, EventVersionAdded, EventUpdated, EventLinked, EventUnlinked, EventRemoved,
+		EventOpened, EventHoldSet, EventHoldCleared, EventShredded}
 }
 
 // SubjectInfo is what the vault learns of a subject: its name, and the
@@ -82,11 +84,14 @@ type Upload struct {
 
 // Service holds the documents' use cases.
 type Service struct {
-	repo     Repository
-	subjects Subjects
-	store    files.Store
-	now      func() time.Time
-	newID    func() uuid.UUID
+	repo        Repository
+	subjects    Subjects
+	store       files.Store
+	keys        sealbox.Sealer
+	employments Employments
+	loc         *time.Location
+	now         func() time.Time
+	newID       func() uuid.UUID
 }
 
 // Option configures a Service.
@@ -100,7 +105,7 @@ func WithFiles(store files.Store) Option { return func(s *Service) { s.store = s
 
 // NewService is the document service over repo, describing links through subjects.
 func NewService(repo Repository, subjects Subjects, opts ...Option) *Service {
-	s := &Service{repo: repo, subjects: subjects, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}
+	s := &Service{repo: repo, subjects: subjects, loc: time.UTC, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}
 	for _, o := range opts {
 		o(s)
 	}
@@ -236,6 +241,9 @@ func (s *Service) Upload(ctx context.Context, reader Reader, typeKey string, p D
 	if !t.Allows(vault.Uploaded) {
 		return Document{}, fieldError("type", "is not uploaded")
 	}
+	if t.Sealed && s.keys == nil {
+		return Document{}, ErrNotConfigured
+	}
 	if err := p.Validate(t); err != nil {
 		return Document{}, err
 	}
@@ -263,26 +271,46 @@ func (s *Service) Upload(ctx context.Context, reader Reader, typeKey string, p D
 		ID: s.newID(), Number: 1, Origin: VersionOriginal, DocumentHash: f.SHA256, Note: note, File: f,
 		CreatedAt: now, CreatedByUserID: reader.ID,
 	}
-	d.Versions = []Version{v}
 	ls := make([]map[string]any, len(links))
 	for i, l := range links {
 		ls[i] = linkJSON(l)
 	}
-	ev, err := s.event(reader.ID, EventUploaded, d.ID, now, nil, map[string]any{
-		"type": d.Type, "title": d.Title, "file_name": f.FileName, "content_type": f.ContentType,
-		"size_bytes": f.SizeBytes, "sha256": f.SHA256, "links": ls,
-	})
+	after := map[string]any{"type": d.Type, "content_type": f.ContentType, "size_bytes": f.SizeBytes, "sha256": f.SHA256, "links": ls}
+	if t.Sealed {
+		// Sealed: the title, file name and note under a key of the document's own; no title or name in the event.
+		box, key, keyID, err := s.newKey(d.ID)
+		if err != nil {
+			return Document{}, err
+		}
+		d.Sealed, d.Key, d.KeyID = true, key, keyID
+		if d.TitleSealed, err = box.Seal([]byte(d.Title), titleContext(d.ID)); err != nil {
+			return Document{}, err
+		}
+		d.Title = ""
+		if data, err = sealVersion(box, &v, data); err != nil {
+			return Document{}, err
+		}
+		f = v.File
+	} else {
+		after["title"], after["file_name"] = d.Title, f.FileName
+	}
+	d.Versions = []Version{v}
+	ev, err := s.event(reader.ID, EventUploaded, d.ID, now, nil, after)
 	if err != nil {
 		return Document{}, err
 	}
 	// The file first, so a row never names a missing file.
-	if err := s.store.Put(ctx, f.ObjectKey, bytes.NewReader(data), f.SizeBytes, f.ContentType); err != nil {
+	if err := s.store.Put(ctx, f.ObjectKey, bytes.NewReader(data), int64(len(data)), f.ContentType); err != nil {
 		return Document{}, fmt.Errorf("vault: storing file: %w", err)
 	}
 	if err := s.repo.Create(ctx, d, links, ev); err != nil {
 		return Document{}, err
 	}
-	return s.repo.Get(ctx, d.ID)
+	out, err := s.repo.Get(ctx, d.ID)
+	if err != nil {
+		return Document{}, err
+	}
+	return out, s.unseal(&out)
 }
 
 // Get is the document when reader may see it, else ErrNotFound.
@@ -294,7 +322,7 @@ func (s *Service) Get(ctx context.Context, reader Reader, id uuid.UUID) (Documen
 	if !reader.holdsAll(d.Requires) {
 		return Document{}, ErrNotFound
 	}
-	return d, nil
+	return d, s.unseal(&d)
 }
 
 // manageable is the live document and its type when reader may change it.
@@ -338,21 +366,32 @@ func (s *Service) AddVersion(ctx context.Context, reader Reader, id uuid.UUID, u
 	}
 	f.ID = s.newID()
 	f.ObjectKey = "vault/" + d.ID.String() + "/" + f.ID.String() + files.Ext(f.ContentType)
-	if err := s.store.Put(ctx, f.ObjectKey, bytes.NewReader(data), f.SizeBytes, f.ContentType); err != nil {
+	v := Version{ID: s.newID(), Origin: VersionAdded, DocumentHash: f.SHA256, Note: note, File: f, CreatedByUserID: reader.ID}
+	after := map[string]any{"origin": v.Origin, "content_type": f.ContentType, "size_bytes": f.SizeBytes, "sha256": f.SHA256}
+	if d.Sealed {
+		box, err := s.openKey(d)
+		if err != nil {
+			return Document{}, err
+		}
+		if data, err = sealVersion(box, &v, data); err != nil {
+			return Document{}, err
+		}
+	} else {
+		after["file_name"] = f.FileName
+	}
+	if err := s.store.Put(ctx, v.File.ObjectKey, bytes.NewReader(data), int64(len(data)), f.ContentType); err != nil {
 		return Document{}, fmt.Errorf("vault: storing file: %w", err)
 	}
-	return s.repo.AddVersion(ctx, id, func(cur Document) (Version, []audit.Event, error) {
-		now := s.now()
-		v := Version{
-			ID: s.newID(), Number: cur.Current().Number + 1, Origin: VersionAdded, DocumentHash: f.SHA256, Note: note, File: f,
-			CreatedAt: now, CreatedByUserID: reader.ID,
-		}
-		ev, err := s.event(reader.ID, EventVersionAdded, id, now, nil, map[string]any{
-			"number": v.Number, "origin": v.Origin, "file_name": f.FileName, "content_type": f.ContentType,
-			"size_bytes": f.SizeBytes, "sha256": f.SHA256,
-		})
+	out, err := s.repo.AddVersion(ctx, id, func(cur Document) (Version, []audit.Event, error) {
+		v.Number, v.CreatedAt = cur.Current().Number+1, s.now()
+		after["number"] = v.Number
+		ev, err := s.event(reader.ID, EventVersionAdded, id, v.CreatedAt, nil, after)
 		return v, []audit.Event{ev}, err
 	})
+	if err != nil {
+		return Document{}, err
+	}
+	return out, s.unseal(&out)
 }
 
 // fields are a document's editable fields as events record them.
@@ -389,8 +428,18 @@ func (s *Service) Update(ctx context.Context, reader Reader, id uuid.UUID, p Det
 	if err != nil {
 		return Document{}, err
 	}
-	return s.repo.Update(ctx, id, func(cur Document) (Change, error) {
+	var box *sealbox.Box
+	if d.Sealed {
+		if box, err = s.openKey(d); err != nil {
+			return Document{}, err
+		}
+	}
+	out, err := s.repo.Update(ctx, id, func(cur Document) (Change, error) {
 		next := cur
+		if cur.Sealed {
+			// The title as it is, to compare; only a changed one is sealed again.
+			cur.Title = d.Title
+		}
 		next.Title, next.DocumentDate, next.ValidFrom, next.ValidUntil = p.Title, p.DocumentDate, p.ValidFrom, p.ValidUntil
 		next.Requires = requires(t, links)
 		now := s.now()
@@ -398,7 +447,20 @@ func (s *Service) Update(ctx context.Context, reader Reader, id uuid.UUID, p Det
 		before, after := map[string]any{}, map[string]any{}
 		was, is := fields(cur), fields(next)
 		if cur.Title != next.Title {
-			before["title"], after["title"] = was["title"], is["title"]
+			if cur.Sealed {
+				// A sealed title's words stay out of the trail.
+				after["title_changed"] = true
+				sealed, err := box.Seal([]byte(next.Title), titleContext(cur.ID))
+				if err != nil {
+					return Change{}, err
+				}
+				next.TitleSealed = sealed
+			} else {
+				before["title"], after["title"] = was["title"], is["title"]
+			}
+		}
+		if cur.Sealed {
+			next.Title = ""
 		}
 		for _, k := range []string{"document_date", "valid_from", "valid_until"} {
 			if !sameDate(was[k].(*string), is[k].(*string)) {
@@ -435,6 +497,10 @@ func (s *Service) Update(ctx context.Context, reader Reader, id uuid.UUID, p Det
 		}
 		return Change{Document: next, Links: links, Events: evs}, nil
 	})
+	if err != nil {
+		return Document{}, err
+	}
+	return out, s.unseal(&out)
 }
 
 // Remove soft-deletes the document with vault.document_removed. A locked
@@ -447,12 +513,19 @@ func (s *Service) Remove(ctx context.Context, reader Reader, id uuid.UUID) error
 	if d.Locked {
 		return ErrLocked
 	}
+	if d.HoldUntil != nil && *d.HoldUntil >= s.today() {
+		return ErrHeld
+	}
 	_, err = s.repo.Update(ctx, id, func(cur Document) (Change, error) {
 		now := s.now()
 		next := cur
 		next.DeletedAt, next.DeletedByUserID = &now, &reader.ID
 		next.UpdatedAt, next.UpdatedByUserID = now, reader.ID
-		ev, err := s.event(reader.ID, EventRemoved, id, now, map[string]any{"type": cur.Type, "title": cur.Title}, nil)
+		before := map[string]any{"type": cur.Type, "title": cur.Title}
+		if cur.Sealed {
+			before = map[string]any{"type": cur.Type, "number": cur.Number}
+		}
+		ev, err := s.event(reader.ID, EventRemoved, id, now, before, nil)
 		if err != nil {
 			return Change{}, err
 		}
@@ -470,6 +543,9 @@ func (s *Service) Open(ctx context.Context, reader Reader, id uuid.UUID, n int) 
 	d, err := s.Get(ctx, reader, id)
 	if err != nil {
 		return File{}, nil, err
+	}
+	if d.Sealed {
+		return File{}, nil, ErrSealed
 	}
 	i := slices.IndexFunc(d.Versions, func(v Version) bool { return v.Number == n })
 	if i < 0 {

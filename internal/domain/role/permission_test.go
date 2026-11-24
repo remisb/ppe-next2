@@ -51,11 +51,12 @@ func TestBuiltinsGrantKnownPermissionsWithTheirRequirements(t *testing.T) {
 	// The administrator holds everything but the other roles' own dashboards,
 	// deleting orders, which is the manager's, seeing Equipment &
 	// Furniture, which only Equipment Assignments grants, seeing apps in
-	// testing, which only Testers grants, and Personnel files (ADR 0007).
+	// testing, which only Testers grants, Personnel files (ADR 0007) and
+	// employment documents, which only Employment Documents grants (ADR 0008).
 	admin := BuiltinPermissions([]string{KeyAdmin})
 	for _, p := range Catalogue() {
 		want := p.Key != DashboardManager && p.Key != DashboardEmployee && p.Key != OrdersDelete && p.Key != EquipmentRead && p.Key != AppsPreview &&
-			p.Group != GroupPersonnel
+			p.Group != GroupPersonnel && p.Key != VaultEmploymentRead && p.Key != VaultEmploymentManage
 		if slices.Contains(admin, p.Key) != want {
 			t.Errorf("admin has %s = %v, want %v", p.Key, !want, want)
 		}
@@ -141,6 +142,15 @@ func TestExportIsTheStaffRoles(t *testing.T) {
 		want := key == KeyAdmin || key == KeyManager || key == KeyEmployee
 		if got := slices.Contains(BuiltinPermissions([]string{key}), DataExport); got != want {
 			t.Errorf("built-in role %s has data.export = %v, want %v", key, got, want)
+		}
+	}
+}
+
+// Employment Documents is the only built-in role that sees employment documents.
+func TestOnlyEmploymentDocumentsSeesEmploymentDocuments(t *testing.T) {
+	for _, key := range BuiltinKeys() {
+		if got, want := slices.Contains(BuiltinPermissions([]string{key}), VaultEmploymentRead), key == KeyEmployment; got != want {
+			t.Errorf("built-in role %s has vault.employment.read = %v, want %v", key, got, want)
 		}
 	}
 }

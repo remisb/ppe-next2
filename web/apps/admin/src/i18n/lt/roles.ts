@@ -149,6 +149,14 @@ export const roles: RolesText = {
       label: 'Tvarkyti dokumentus',
       grants: 'Įkelti dokumentus ir naujesnes versijas, keisti jų duomenis ir susiejimus, juos pašalinti. Reikia teisės „Matyti dokumentus“.',
     },
+    'vault.employment.read': {
+      label: 'Matyti darbo dokumentus',
+      grants: 'Darbo sutartys, jų priedai, konfidencialumo sutartys ir kiti darbo dokumentai Dokumentų saugykloje ir darbuotojų puslapiuose: atidaryti patvirtinus slaptažodį. Kiekvienas atidarymas įrašomas.',
+    },
+    'vault.employment.manage': {
+      label: 'Tvarkyti darbo dokumentus',
+      grants: 'Įkelti darbo dokumentus ir naujesnes versijas, juos keisti ir šalinti, nustatyti draudimą naikinti. Reikia teisės „Matyti darbo dokumentus“.',
+    },
     'dashboard.overview': { label: 'Suvestinė', grants: 'Išlaidos, laukiantys užsakymai ir trūkumai.' },
     'dashboard.manager': { label: 'Vadovo suvestinė', grants: 'Prekės, kainos ir pirkimai.' },
     'dashboard.employee': { label: 'Darbuotojo suvestinė', grants: 'Paties naudotojo užsakymai ir ką užsakyti toliau.' },

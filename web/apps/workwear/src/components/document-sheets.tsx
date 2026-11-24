@@ -12,7 +12,7 @@ import { type FormEvent, useEffect, useId, useRef, useState } from 'react'
 
 import { EmployeePicker } from '@/components/employee-picker'
 import { t } from '@/i18n'
-import { type ChosenLink, VAULT_ACCEPT, detailsOf, draftProblems, fileProblem, typeLabel, uploadRefusal, uploadTypes, withLink } from '@/lib/vault'
+import { type ChosenLink, VAULT_ACCEPT, detailsOf, draftProblems, fileProblem, holdProblems, typeLabel, uploadRefusal, uploadTypes, withLink } from '@/lib/vault'
 
 /** What a sheet was opened to do: upload a new document (with links the place gives), or edit one. */
 export type DocumentSheet = { kind: 'upload'; links: ChosenLink[]; type?: string } | { kind: 'edit'; document: VaultDocument } | { kind: 'version'; document: VaultDocument }
@@ -318,6 +318,82 @@ export function AddVersionSheet({
         <Field label={t.vault.note} hint={t.vault.noteHint}>
           {(p) => <Textarea {...controlProps(p)} rows={2} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />}
         </Field>
+      </form>
+      <ActionError error={save.error} />
+    </FormSheet>
+  )
+}
+
+/**
+ * Legal Hold…: until a day, with its reason, the document is neither removed
+ * nor shredded; Clear Legal Hold ends it. Recorded either way.
+ */
+export function HoldSheet({
+  document: doc,
+  onClose,
+  onSaved,
+}: {
+  document: VaultDocument | null
+  onClose: () => void
+  onSaved: (d: VaultDocument, message: string) => void
+}) {
+  const { client } = useApi()
+  const formId = useId()
+  const save = useAction()
+  const [until, setUntil] = useState('')
+  const [reason, setReason] = useState('')
+  const [tried, setTried] = useState(false)
+  const [badDay, setBadDay] = useState<string>()
+
+  useEffect(() => {
+    setUntil(doc?.hold_until ?? '')
+    setReason(doc?.hold_reason ?? '')
+    setTried(false)
+    setBadDay(undefined)
+    save.clear()
+  }, [doc])
+
+  const problems = tried ? holdProblems(until, reason) : {}
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    setTried(true)
+    if (!doc || badDay || Object.keys(holdProblems(until, reason)).length > 0) return
+    await save.run(async () => onSaved(await client.vault.setHold(doc.id, until, reason.trim()), t.vault.holdSet))
+  }
+  const clear = () => {
+    if (!doc) return
+    void save.run(async () => onSaved(await client.vault.setHold(doc.id, null), t.vault.holdCleared))
+  }
+
+  return (
+    <FormSheet
+      open={doc !== null}
+      onClose={onClose}
+      title={t.vault.holdTitle}
+      description={t.vault.holdInfo}
+      footer={<FormSheetActions form={formId} onCancel={onClose} busy={save.pending} />}
+    >
+      <form id={formId} onSubmit={(e) => void submit(e)} className="grid gap-4" noValidate>
+        <Field label={t.vault.holdUntil} required error={badDay ?? problems.until}>
+          {(p) => (
+            <DateInput
+              {...controlProps(p)}
+              value={until}
+              onChange={(v, problem) => {
+                setUntil(v)
+                setBadDay(problem)
+              }}
+            />
+          )}
+        </Field>
+        <Field label={t.vault.holdReason} required hint={t.vault.holdReasonHint} error={problems.reason}>
+          {(p) => <Textarea {...controlProps(p)} rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />}
+        </Field>
+        {doc?.hold_until ? (
+          <Button type="button" variant="outline" className="justify-self-start" disabled={save.pending} onClick={clear}>
+            {t.vault.clearHold}
+          </Button>
+        ) : null}
       </form>
       <ActionError error={save.error} />
     </FormSheet>

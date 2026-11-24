@@ -2,12 +2,12 @@ import type { VaultHit } from '@ppe/api-client'
 import type { ExportColumn } from '@ppe/ui/lib/table-export'
 
 import { t } from '@/i18n'
-import { linkLabels, typeLabel } from '@/lib/vault'
+import { displayTitle, linkLabels, typeLabel } from '@/lib/vault'
 
 /** The columns Document Vault's Export offers: what its list shows, and the rest of a document's facts. */
 export function vaultExportColumns(): ExportColumn<VaultHit>[] {
   return [
-    { key: 'title', label: t.vault.colTitle, value: (d) => d.title, shown: true },
+    { key: 'title', label: t.vault.colTitle, value: (d) => displayTitle(d), shown: true },
     { key: 'type', label: t.vault.colType, value: (d) => typeLabel(d.type), shown: true },
     { key: 'number', label: t.vault.number, value: (d) => d.number },
     { key: 'linked', label: t.vault.colLinked, value: (d) => linkLabels(d.links) || null, shown: true },

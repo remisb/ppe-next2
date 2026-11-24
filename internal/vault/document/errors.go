@@ -29,6 +29,12 @@ var (
 	ErrActorNotFound = errors.New("acting user not found")
 	// ErrDamaged: a stored file no longer matches its hash.
 	ErrDamaged = errors.New("the stored file does not match its hash")
+	// ErrNotConfigured: a sealed type without API_VAULT_KEY.
+	ErrNotConfigured = errors.New("sealed documents cannot be kept or opened: the vault's key (API_VAULT_KEY) is not set up")
+	// ErrSealed: a sealed document's file opens only through its own route, after Confirm your password.
+	ErrSealed = errors.New("a sealed document opens only with a recent sign-in, through POST")
+	// ErrHeld: the document is under a Legal Hold and cannot be removed.
+	ErrHeld = errors.New("the document is under a Legal Hold")
 )
 
 // fieldError is ErrInvalid naming field and its problem.
