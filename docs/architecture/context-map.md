@@ -7,7 +7,8 @@ as separate services, is [ADR 0001](adr/0001-modular-monolith-with-bounded-conte
 Status: **proposed**. Workwear and the platform modules exist today (as flat
 `internal/domain/<name>` packages); Company Assets is specified
 ([ADR 0004](adr/0004-company-assets.md)); Personnel files is decided and being built
-([ADR 0007](adr/0007-personnel-files-identity-documents.md)); People, Competence, Projects & crew,
+([ADR 0007](adr/0007-personnel-files-identity-documents.md)); Document Vault and Events & jobs are
+decided ([ADR 0008](adr/0008-document-vault.md)); People, Competence, Projects & crew,
 Timesheets and Reporting are planned. Each new context gets its product contract and
 `docs/specs/<name>-service.md` before code, and its terms in
 [ubiquitous-language.md](../ubiquitous-language.md) before they are used.
@@ -30,6 +31,7 @@ flowchart BT
     assets[Company Assets]
     competence[Competence]
     personnel["Personnel files<br/>(sensitive)"]
+    vault["Document Vault<br/>(sealed types)"]
     projects[Projects & crew]
     time[Timesheets]
     reporting["Reporting<br/>(read-only)"]
@@ -41,6 +43,12 @@ flowchart BT
     competence --> people
     personnel --> people
     personnel --> ai
+    vault --> people
+    vault --> files
+    vault --> events
+    vault -.->|metadata only| personnel
+    assets --> vault
+    workwear --> vault
     projects --> people
     projects --> workwear
     projects --> competence
@@ -58,10 +66,12 @@ flowchart BT
 
 An arrow points from a context to one it depends on (reads from). Every context also
 depends on the platform. Dotted arrows are Reporting's read-only access. **Nothing depends
-on Personnel files**: no other context reads it, so it can be locked down, and later
-extracted, on its own. (One screen reads it: the staff app's employee page shows the documents
-a scan added to the employee record, through Personnel files' own API and permissions;
-ADR 0007.)
+on Personnel files** for its data: no other context reads its tables, so it can be locked down,
+and later extracted, on its own. Two readers see its metadata: the staff app's employee page
+shows the documents a scan added to the employee record, through Personnel files' own API and
+permissions (ADR 0007), and Document Vault lists an employee's identity documents (kind, issuing
+state, expiry) through a port over Personnel files' service, never storing or opening them
+(the dotted *metadata only* arrow, ADR 0008).
 
 ## Contexts
 
@@ -71,14 +81,15 @@ ADR 0007.)
 | Audit log | append-only change (and, for Personnel files, read) events | `internal/platform/audit` | `audit` | metadata only | exists (`internal/audit`) |
 | Files | encrypted blobs in object storage, their metadata and keys | `internal/platform/files` (the first part, a store and upload checks, is `internal/files`) | `files` | inherits the owner's | started: signed copies (ADR 0004) |
 | Mail templates | the templates of the emails the app prepares, one per use case, rendered to a recipient, subject and body; nothing is sent | `internal/domain/mailtemplate` (target `internal/platform/mail`) | `public` | none | exists ([spec](../specs/mail-template-service.md)) |
-| Events & jobs | transactional outbox, worker, reminders, purges | `internal/platform/outbox` | `outbox` | none | planned |
+| Events & jobs | transactional outbox (jobs and their state), the worker (`api -worker`, the docworker image) and its heartbeat, reminders, purges | `internal/outbox` (target `internal/platform/outbox`) | `outbox` | none | decided ([ADR 0008](adr/0008-document-vault.md), [spec](../specs/outbox-service.md)) |
 | AI usage | every call to an AI model: operation, model, tokens, cost, who and when; the price table and monthly budget; the OpenAI key (sealed) | `internal/aiusage` | `public` | metadata only | decided ([ADR 0007](adr/0007-personnel-files-identity-documents.md), [spec](../specs/ai-usage-service.md)) |
 | Settings, Backups | organisation settings; dbbackup runs (read-only) | `internal/platform/{settings,backup}` | `public` | none | exists |
 | People | a person's identity and employment: name, code, language, employment status and dates, link to a user | `internal/people` | `people` | personal | planned (split from `employee`) |
 | Workwear | catalogue and its suppliers, item sets, orders and snapshot lines, confirmations, receipts, a person's size defaults (wearer profile) | `internal/workwear` | `workwear` | low | exists |
 | Company Assets | SIM cards, equipment and furniture as individual assets; their assignments, connection status, assignment forms and signed copies | `internal/domain/asset` (target `internal/assets`) | `assets` | low (names, signed forms) | built ([spec](../specs/asset-service.md)); go-live tools to come |
 | Competence | certificate and qualification types, certificates held, validity and expiry, the evidence file | `internal/competence` | `competence` | personal | planned |
-| Personnel files | identity documents and ID numbers, their copies and portraits, contracts and other personal documents later, the end of employment, retention and legal holds | `internal/personnel` | `personnel` | **special care** | decided, being built ([ADR 0007](adr/0007-personnel-files-identity-documents.md), [spec](../specs/personnel-service.md); `internal/personnel/mrz` built) |
+| Personnel files | identity documents and ID numbers, their copies and portraits, the end of employment, retention and legal holds (contracts live in Document Vault as sealed Employment documents, ADR 0008) | `internal/personnel` | `personnel` | **special care** | decided, being built ([ADR 0007](adr/0007-personnel-files-identity-documents.md), [spec](../specs/personnel-service.md); `internal/personnel/mrz` built) |
+| Document Vault | typed documents, their versions, files and links to subjects; document templates and generation; text read from files and search; sealed types (Employment documents) with their keys, retention, Legal Hold and shredding; archived assignment forms and Items Given Records, and signed copies' storage | `internal/vault` | `vault` | personal; **special care** for sealed types | decided ([ADR 0008](adr/0008-document-vault.md), [spec](../specs/vault-service.md), [templates](../specs/document-template-service.md)) |
 | Projects & crew | clients, sites, projects and their requirements (qualifications, item sets), teams, crew assignments, eligibility | `internal/projects` | `projects` | low | planned |
 | Timesheets | entries, periods, approval, locking, corrections, export | `internal/time` | `time` | personal | planned |
 | Reporting | dashboards and read models across contexts; writes nothing | `internal/reporting` | none (views) | as read | exists as `dashboard` |
@@ -93,6 +104,13 @@ ADR 0007.)
 | Company Assets | People | customer–supplier | the employee an asset is assigned to (`employee_id` foreign key); an employee leaving never ends an assignment |
 | Company Assets | Files | customer–supplier | the signed copy of an assignment form |
 | Company Assets | Mail templates, Settings | customer–supplier | a SIM card's activation and blocking emails (`asset.Mailer`, adapted in `cmd/api/checkers.go`): the card's values in, the email out, with the provider's e-mail and the company's name from Settings |
+| Company Assets | Document Vault | customer–supplier | signed copies' storage (`SignedForms` port: add, list, open, which assignments hold one); the assignment form archived as a PDF after Give (`asset.Archiver`, through the outbox); Company Assets keeps its snapshot, hash, routes and event names |
+| Workwear | Document Vault | customer–supplier | the Items Given Record archived as a PDF after a confirmation (`order.Archiver`, through the outbox); the order keeps its snapshot and document hash |
+| Document Vault | People | customer–supplier | the employees, companies and employments documents link to, their names for labels and search, and employment end dates for retention (ports `Subjects`, `Employments`); generation's `employee.*`, `company.*`, `employment.*` fields |
+| Document Vault | Files | customer–supplier | documents' files under `vault/…`, sealed with a data key per document for sealed types |
+| Document Vault | Events & jobs | customer–supplier | text reading, archiving and DOCX rendering as outbox jobs, run by the worker |
+| Document Vault | Company Assets, Workwear | customer–supplier (port `Sources`) | an assignment form's or Items Given Record's PDF, hash, title and links for archiving, and their snapshot for **verify** |
+| Document Vault | Personnel files | read through a port, metadata only | an employee's identity documents: kind, issuing state, expiry, holder (`IdentityDocuments` over `document.Service.Documents`/`Validity`); never a number, code or copy |
 | Competence | Files | customer–supplier | the evidence file of a certificate |
 | Personnel files | Files | customer–supplier | Document Copies and portraits, sealed with per-person keys Personnel files can destroy |
 | Personnel files | AI usage | customer–supplier | the colour photo's call to OpenAI goes through its client, which records it |
@@ -101,7 +119,7 @@ ADR 0007.)
 | Projects & crew | Competence | customer–supplier | "valid certificates of type T for person P over period D", for eligibility |
 | Projects & crew | Workwear | customer–supplier | "item set S given to person P and within its service period on date D", for readiness |
 | Timesheets | Projects & crew | customer–supplier | assignments a person may book hours on; project and client names snapshotted on approval |
-| Reporting | all except Personnel files | read-only | SQL views over the other schemas, through a role with `SELECT` grants only |
+| Reporting | all except Personnel files and Document Vault's sealed types | read-only | SQL views over the other schemas, through a role with `SELECT` grants only |
 | data-sync-ui | People | anti-corruption layer (planned) | imports through an API that validates and audits, instead of writing tables directly |
 
 Rules that follow from the map:
@@ -120,8 +138,13 @@ Rules that follow from the map:
 - **No context imports another's package.** An architecture test fails the build when one
   does; the same rule holds for frontend modules.
 - **Personnel files is read only by itself.** Other contexts may learn *that* a document
-  exists and is valid ("ID document valid until 2029-04") through an event, never its
-  number or file. The employee page reads it through its API, never its tables (ADR 0007).
+  exists and is valid ("ID document valid until 2029-04") through an event or a port, never its
+  number or file. The employee page reads it through its API, never its tables (ADR 0007);
+  Document Vault reads the same metadata through a port (ADR 0008).
+- **Document Vault imports no context's package.** Everything it needs comes through ports it
+  declares, adapted in `cmd/api/wire_vault.go`; `internal/vault/imports_test.go` enforces it.
+  Contexts that store in it do so through ports of their own, so their event names and routes
+  stay theirs.
 
 ## One person, several models
 
@@ -135,6 +158,7 @@ needs:
 | Company Assets | Holder | the assets assigned to them, open and past |
 | Competence | Certificate holder | certificates held and their validity |
 | Personnel files | Personnel file (Subject) | identity documents, their copies, ID numbers, the end of employment, retention and holds |
+| Document Vault | Subject (linked to) | the documents linked to them, with their name as a label |
 | Projects & crew | Crew member | assignments to projects and teams |
 | Timesheets | Timesheet owner | entries and periods |
 
