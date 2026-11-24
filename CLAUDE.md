@@ -351,6 +351,11 @@ Both builds keep their cache between deploys: the API's Go build cache is a Buil
 mount (the modules stay in a layer, so an emptied cache never needs the token), and the web
 image runs `pnpm fetch` from the lockfile alone before copying the sources (`web/.dockerignore`
 keeps tests and e2e out) and only `vite build`, since CI's web job typechecks.
+`make prod-build` ends by trimming Docker's build cache to the newest `PROD_BUILD_CACHE` (6 GB,
+`make prod-prune-cache`): an emptied cache (`docker builder prune` without it) makes the next build
+compile the API and the backup agent afresh, about ten minutes on the droplet's one CPU (WARE-53).
+Caddy retries a connection the API refused for up to 15 s (the `api` snippet), so the API's restart
+in a deploy holds requests rather than answering 502.
 Caddy also sends the security headers, including a Content-Security-Policy that allows
 `index.html`'s inline theme script, the same in every app, by its hash
 (every app's `web/apps/<app>/src/csp.test.ts` keeps them in step; rules in `web/AGENTS.md`);
