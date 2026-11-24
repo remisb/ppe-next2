@@ -389,15 +389,15 @@ were redirected until 2026-11-22 and no longer answer. Deploy a pushed commit on
 cd /opt/ppe-next2 && git pull && make prod-build && make prod-up
 ```
 
-`prod-up` runs migrations before the API starts and recreates what changed; then, because compose
-has left `api` or `caddy` running the previous image after a rebuild, it recreates each of `api`,
-`caddy` and `backup` whose container still runs another image than its tag names, once (about a
-second of downtime each; certificates live in the `caddy-data` volume), and `caddy` again when the
-Caddyfile it runs with (mounted from the checkout, so a change to it alone changes no image) differs
-from the checkout's. `db` is recreated only when its
-config changes. It ends when the API's `GET /ready` answers (database reachable, every
-migration the build embeds applied; `internal/db.Migrations`), else it fails with the API's
-log. `GET /health` is liveness only. The image's `HEALTHCHECK` runs `/api -healthcheck` (the
+`prod-up` runs migrations before the API starts and recreates what changed, Caddy last (WARE-53): it
+first brings up `db`, `migrate`, `api` and `backup` (`PROD_BEHIND_CADDY`) while the old Caddy keeps
+serving and holds requests through the API's restart, recreates `api` or `backup` if compose left it on
+the previous image, waits until the API's `GET /ready` answers (database reachable, every migration the
+build embeds applied; `internal/db.Migrations`), else fails with the API's log, and only then replaces
+`caddy` on its own (about 2 s without connections; certificates live in the `caddy-data` volume), again
+when the Caddyfile it runs with (mounted from the checkout, so a change to it alone changes no image)
+differs from the checkout's. Recreated with the API, Caddy refused connections from its stop until the
+API had started (about 9 s). `db` is recreated only when its config changes. `GET /health` is liveness only. The image's `HEALTHCHECK` runs `/api -healthcheck` (the
 binary probes its own `/ready`, as scratch has no curl); Docker shows but never acts on it.
 `make prod-build` stamps `git describe` into the binary (`API_COMMIT` → `-X main.commit`),
 shown by `/ready` and `make prod-ready`. Every prod service rotates its logs (`x-logging`, 5 × 10 MB).
