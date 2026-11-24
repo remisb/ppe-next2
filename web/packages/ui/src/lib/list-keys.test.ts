@@ -2,7 +2,7 @@ import { act, createElement } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, expect, it } from 'vitest'
 
-import { isTyping, stepTo, useCloseFilteredOut } from './list-keys.ts'
+import { isTyping, stepTo, useCloseFilteredOut, useMarkedRow } from './list-keys.ts'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
@@ -77,5 +77,42 @@ describe('useCloseFilteredOut', () => {
     show({ filters: 'b', current: false, ids: undefined, selected: 'x' })
     show({ filters: 'a', current: true, ids: ['y'], selected: 'x' })
     expect(seen.closes).toBe(0)
+  })
+})
+
+describe('useMarkedRow', () => {
+  /** The hook rendered with `selected` and `filters`; `show` renders it again and answers the row it marks. */
+  function list(selected: string | undefined, filters: string) {
+    const root = createRoot(document.body.appendChild(document.createElement('div')))
+    const seen = { marked: undefined as string | undefined }
+    const Probe = (props: { selected: string | undefined; filters: string }) => {
+      seen.marked = useMarkedRow(props.selected, props.filters)
+      return null
+    }
+    const show = (s: string | undefined, f: string) => {
+      act(() => root.render(createElement(Probe, { selected: s, filters: f })))
+      return seen.marked
+    }
+    show(selected, filters)
+    return show
+  }
+
+  it('marks the open row, and the one just closed', () => {
+    const show = list(undefined, 'all')
+    expect(show(undefined, 'all')).toBeUndefined()
+    expect(show('a', 'all')).toBe('a')
+    expect(show(undefined, 'all')).toBe('a')
+    // Opening another moves the mark.
+    expect(show('b', 'all')).toBe('b')
+    expect(show(undefined, 'all')).toBe('b')
+  })
+
+  it('forgets the closed row when the filters change, not while one is open', () => {
+    const show = list('a', 'all')
+    // A record the new filters still list stays open, and stays marked once closed.
+    expect(show('a', 'given')).toBe('a')
+    expect(show(undefined, 'given')).toBe('a')
+    expect(show(undefined, 'ordered')).toBeUndefined()
+    expect(show(undefined, 'given')).toBeUndefined()
   })
 })

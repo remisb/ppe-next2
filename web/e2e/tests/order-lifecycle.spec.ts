@@ -2243,6 +2243,10 @@ test('Orders beside an open order: one line a row; J and K move through it, Esca
   await page.keyboard.press('Escape')
   await expect(page).toHaveURL(/\/orders$/)
   await expect(page.getByRole('columnheader', { name: 'Usage time' })).toHaveCount(0)
+  // WARE-25: the order just closed stays marked in the list, no longer the open one.
+  const closedRow = page.getByRole('row', { name: new RegExp(recordNumber) })
+  await expect(closedRow).toHaveAttribute('data-state', 'selected')
+  await expect(closedRow).not.toHaveAttribute('aria-current', 'true')
 
   // WARE-42: a tab that leaves the open (given) order out of the list closes it, its row mark
   // with it, and nothing opens in its place; a tab that still lists it keeps it open and marked.

@@ -14,7 +14,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
-import { besideList, useCloseFilteredOut, useListKeys } from '@ppe/ui/lib/list-keys'
+import { besideList, useCloseFilteredOut, useListKeys, useMarkedRow } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
 import { RowCheckbox, SelectAllCheckbox, SelectModeBar, selectCellClass, selectRowClass } from '@ppe/ui/components/selection-bar'
@@ -262,6 +262,8 @@ export function Assets({
     selected,
     onClose: () => navigate({ name: register, ...at }, { replace: true, scroll: false }),
   })
+  // The open row, or the one just closed, stays marked (WARE-25).
+  const marked = useMarkedRow(selected, filterKey)
 
   // Beside an open SIM or item the register keeps the columns that find the next one: one line a row; the rest is in the pane.
   const beside = selected !== undefined
@@ -511,7 +513,7 @@ export function Assets({
                   return (
                     <TableRow
                       key={a.id}
-                      data-state={selected === a.id ? 'selected' : undefined}
+                      data-state={marked === a.id ? 'selected' : undefined}
                       aria-current={selected === a.id ? 'true' : undefined}
                       // In select mode a click anywhere on the row ticks it instead.
                       {...selectRowProps(selection, a.id)}

@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { type ReactNode, useLayoutEffect, useRef } from 'react'
 
+import { besideList } from '../lib/list-keys.ts'
 import { cn } from '../lib/utils.ts'
 import { uiText } from '../text.ts'
 import { BackButton } from './back-button.tsx'
@@ -31,12 +32,47 @@ export function ListDetail({
   children: ReactNode
 }) {
   const open = pane !== null && pane !== undefined && pane !== false
+  useListPlace(open)
   return (
     <div className={cn(open && 'lg:grid lg:items-start lg:gap-6', open && paneWidths[width])}>
       <div className={cn('min-w-0', open && 'max-lg:hidden')}>{children}</div>
       {pane}
     </div>
   )
+}
+
+/**
+ * The list keeps its place when its record closes (WARE-25): below lg, where
+ * the record took the list's place and the window's scroll, the list's own
+ * scroll comes back; at any width the marked row (useMarkedRow) is then
+ * brought into view if the list's new layout moved it out.
+ */
+function useListPlace(open: boolean): void {
+  // Where the list was last scrolled to while it showed, read from its scroll events: by the time
+  // a record opens, the window has already gone to its top for it.
+  const listScroll = useRef(0)
+  const wasOpen = useRef(open)
+  useLayoutEffect(() => {
+    const closed = wasOpen.current && !open
+    wasOpen.current = open
+    if (!closed) return
+    if (!besideList()) window.scrollTo(0, listScroll.current)
+    // One frame later, once the list has its full width again.
+    const frame = requestAnimationFrame(() =>
+      document.querySelector('[data-slot=table-row][data-state=selected]')?.scrollIntoView({ block: 'nearest' }),
+    )
+    return () => cancelAnimationFrame(frame)
+  }, [open])
+  // After the restore above, so it starts from the list's place, not the record's.
+  useLayoutEffect(() => {
+    if (open) return
+    listScroll.current = window.scrollY
+    const onScroll = () => {
+      listScroll.current = window.scrollY
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [open])
 }
 
 /**

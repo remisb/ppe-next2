@@ -15,7 +15,7 @@ import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { Segmented } from '@ppe/ui/components/segmented'
 import { ActionError, EmptyState, ErrorState, Loaded, ListSkeleton, Loading, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, stackedBreak } from '@ppe/ui/components/table'
-import { useListKeys } from '@ppe/ui/lib/list-keys'
+import { useListKeys, useMarkedRow } from '@ppe/ui/lib/list-keys'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -59,6 +59,8 @@ export function AppsPage({ route, navigate }: { route: Extract<Route, { name: 'a
   const close = () => navigate({ name: 'apps' }, { scroll: false })
   const list = useMemo(() => apps.data ?? [], [apps.data])
   useListKeys({ ids: useMemo(() => list.map((a) => a.slug), [list]), selected, onOpen: open, onClose: close })
+  // The open row, or the one just closed, stays marked (WARE-25).
+  const marked = useMarkedRow(selected, '')
   const beside = selected !== undefined
   const current = list.find((a) => a.slug === selected)
   // The tiles ticked for Export, by slug as the list names them.
@@ -120,7 +122,7 @@ export function AppsPage({ route, navigate }: { route: Extract<Route, { name: 'a
                 {all.map((a) => (
                   <TableRow
                     key={a.slug} {...selectRowProps(selection, a.slug)}
-                    data-state={selected === a.slug ? 'selected' : undefined}
+                    data-state={marked === a.slug ? 'selected' : undefined}
                     aria-current={selected === a.slug ? 'true' : undefined}
                     className={cn(
                       stackedBreak,
