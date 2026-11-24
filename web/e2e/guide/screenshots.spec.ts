@@ -6,7 +6,7 @@ import { type Browser, type Page, expect, test } from '@playwright/test'
 import { type ShotName, shotPath } from '../../apps/workwear/src/help/index.ts'
 import { admin, repoRoot } from '../env.ts'
 import { writeDocs } from './docs.ts'
-import { A, S, T, agents, device, deviceWindow, lang, locale } from './lang.ts'
+import { A, S, T, U, agents, device, deviceWindow, lang, locale } from './lang.ts'
 
 // Screenshots for the Help screen, taken from the demo data in order: each
 // step leaves the app where the next one starts. GUIDE_LANG and GUIDE_DEVICE
@@ -207,7 +207,7 @@ test('employees, catalogue, item sets, users, roles, settings, backups', async (
   await expect(providers.getByRole('radio', { name: 'Telia' })).toBeChecked()
   await shot('sim-providers')
   // The backup history guide/setup.ts inserted.
-  await page.goto('/admin/backups')
+  await page.goto('/admin/system/backups')
   await expect(page.getByRole('heading', { name: A.backups.recent })).toBeVisible()
   await shot('backups')
 })
@@ -233,7 +233,7 @@ test('company assets: the SIMs, a card, giving one', async () => {
     await expect(toggle).toHaveAttribute('aria-expanded', 'true')
     return section
   }
-  await page.goto('/assets')
+  await page.goto('/assets/sim-cards')
   await expect(sim(sim3)).toBeVisible()
   await shot('assets')
 
@@ -251,7 +251,7 @@ test('company assets: the SIMs, a card, giving one', async () => {
   await expect(codes).toBeHidden()
 
   // A signed copy uploaded: SIM-000001's, scanned the day after it was given (cmd/api/seed-demo.go).
-  await page.goto('/assets')
+  await page.goto('/assets/sim-cards')
   await sim(sim1).click()
   const assignments = await openAssignments()
   await expect(assignments.getByText(T.assets.signedCopyUploaded)).toBeVisible()
@@ -259,7 +259,7 @@ test('company assets: the SIMs, a card, giving one', async () => {
   await shot('signed-copy')
 
   // Give SIM up to the signed paper, and no further: the demo keeps the card in the office.
-  await page.goto('/assets')
+  await page.goto('/assets/sim-cards')
   await sim(sim5).click()
   await page.getByRole('main').getByRole('button', { name: T.assets.giveSimCard }).click()
   const give = page.getByRole('dialog')
@@ -396,6 +396,8 @@ test('possible duplicates: Add New Employee warns, Merge Employees makes one rec
   await add.getByLabel(T.employees.lastName).fill('JONAS')
   await expect(add.getByRole('status').filter({ hasText: T.employees.duplicates.mayExist })).toContainText('Jonas Petraitis')
   await shot('duplicate-warning')
+  // As a candidate: Merge Employees refuses two records employed now (companies and employments, migration 0058).
+  await add.getByRole('button', { name: T.employment.asCandidate, exact: true }).click()
   await add.getByRole('button', { name: T.employees.duplicates.addAsNew }).click()
   await expect(add).toBeHidden()
 
@@ -413,6 +415,41 @@ test('possible duplicates: Add New Employee warns, Merge Employees makes one rec
   page.once('dialog', (d) => void d.accept())
   await merge.getByRole('button', { name: T.employees.merge.submit }).click()
   await expect(merge).toBeHidden()
+})
+
+test('share a few employees: Share Link, the page it opens on a phone, Shared Links', async ({ browser }) => {
+  await page.goto('/employees')
+  await expect(page.getByRole('row', { name: /Jonas Petraitis/ })).toBeVisible()
+  // Export: in the header from md, under the screen's ⋯ on a phone.
+  if (device === 'phone') {
+    await page.getByRole('button', { name: U.moreActions(T.employees.title) }).click()
+    await page.getByRole('menuitem', { name: T.common.export }).click()
+  } else {
+    await page.getByRole('button', { name: T.common.export, exact: true }).click()
+  }
+  for (const name of ['Jonas Petraitis', 'Ona Kazlauskienė']) await page.getByRole('checkbox', { name: U.selectRow(name) }).check()
+  await page.getByRole('button', { name: U.exportPicked(2) }).click()
+  const sheet = page.getByRole('dialog', { name: U.exportTitle(T.employees.title) })
+  await sheet.getByRole('radio', { name: new RegExp(`^${U.shareLink}`) }).check()
+  await sheet.getByRole('textbox', { name: U.shareName }).fill({ en: 'Sizes for the supplier', lt: 'Dydžiai tiekėjui', ru: 'Размеры для поставщика' }[lang])
+  // By its number: the test's plural rules are English, the page's the language's (30 дней, not 30 дня).
+  await sheet.getByRole('button', { name: /^30\b/ }).click()
+  await shot('share-link')
+  await sheet.getByRole('button', { name: U.createLinkCount(2) }).click()
+  const made = page.getByRole('dialog', { name: U.linkCreated })
+  const url = await made.getByRole('textbox', { name: U.shareLink }).inputValue()
+  await made.getByRole('button', { name: U.done }).click()
+
+  // Whoever the link is sent to, on their phone, not signed in.
+  const phone = await phoneOf(browser)
+  await phone.goto(url)
+  await expect(phone.getByText('Ona Kazlauskienė')).toBeVisible()
+  await shot('shared-page', { target: phone, phone: true })
+  await phone.close()
+
+  await page.goto('/shared-links')
+  await expect(page.getByRole('heading', { level: 1, name: T.shares.title })).toBeVisible()
+  await shot('shared-links')
 })
 
 test('docs/guide: the page and Markdown copy in this language, from the Help screen text', () => {

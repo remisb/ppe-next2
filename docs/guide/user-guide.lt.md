@@ -229,6 +229,8 @@ Languose **Pridėti prekę** ir **Redaguoti prekę** pasirinkite **Tiekėją** i
 
 **Eksportuoti** išsaugo sąrašą kaip failą skaičiuoklei: **Excel (.xlsx)** arba **CSV**. Šis mygtukas yra ekranų **Užsakymai**, **Darbuotojai**, **Prekių katalogas**, **SIM kortelės** ir **Įranga** viršuje. Ekranuose **Prekių rinkiniai**, **Reikia pakeisti** ir darbuotojo **Išduotos prekės** jis iš karto atveria langą **Eksportuoti** su visomis eilutėmis.
 
+**Eksportuoti** rodomas tik tada, kai bent viena jūsų rolė turi teisę **Eksportuoti duomenis**. Ją turi **Administratorius**, **Vadovas** ir **Darbuotojas**, o administratorius gali ją suteikti kitoms rolėms ekrane **Rolės ir teisės**. Be jos jokiame sąraše **Eksportuoti** nėra.
+
 Sąrašo viršuje pasirinkite **Eksportuoti**. Šalia eilučių atsiranda žymimieji langeliai, o juosta virš sąrašo nurodo, ką darote ir kiek eilučių pažymėta, pavyzdžiui, **Eksportuoti: Darbuotojai · Pažymėta 3**. Kol ji rodoma, spustelėjus eilutę ji pažymima, o ne atidaroma, o pačios eilutės mygtukai paslepiami. Langelis stulpelio viršuje pažymi visas rodomas eilutes.
 
 - **Eksportuoti 3…** eksportuoja jūsų pažymėtas eilutes.
@@ -241,9 +243,34 @@ Lange **Eksportuoti** nurodytos jūsų pasirinktos eilutės, pavyzdžiui, **Paž
 
 *Tik administratoriams:*
 
-**Administravime** tas pats **Eksportuoti** yra ekranuose **Naudotojai**, **Rolės ir teisės**, **Tiekėjai**, **Programų tvarkymas**, taip pat **Saugos** skirtuke **Prisijungę įrenginiai** ir **Sistemos** skirtuke **Klaidos**.
+**Administravime** tas pats **Eksportuoti** yra ekranuose **Naudotojai**, **Rolės ir teisės**, **Tiekėjai**, **Įmonės**, **Programų tvarkymas**, taip pat **Saugos** skirtuke **Prisijungę įrenginiai** ir **Sistemos** skirtuke **Klaidos**.
 
-## 12. Įmonės turtas
+## 12. Kelių darbuotojų bendrinimas
+
+Norėdami nusiųsti kelių žmonių duomenis kam nors už programos ribų, pavyzdžiui, tiekėjui, naudokite langą **Eksportuoti** ekrane **Darbuotojai**. Skiltyje **Kaip** šalia failų yra du būdai bendrinti iki 10 žmonių: **Kopijuoti kaip tekstą** ir **Bendrinimo nuoroda**.
+
+Ekrano **Darbuotojai** viršuje pasirinkite **Eksportuoti**, pažymėkite žmones, tada **Eksportuoti 3…**. Pažymėkite stulpelius, kuriuos norite nusiųsti, ir pasirinkite būdą.
+
+- **Kopijuoti kaip tekstą** nukopijuoja žmones kaip paprastą tekstą, vieną po kito, su eilute kiekvienam stulpeliui, pavyzdžiui, **Avalynės dydis: 43**. Įklijuokite jį į el. laišką arba WhatsApp pokalbį. Programoje niekas neišsaugoma. Jei naršyklė nenukopijuoja, tekstas parodomas pažymėtas, kad nukopijuotumėte patys.
+- **Bendrinimo nuoroda** sukuria nuorodą, kurią gali atverti kiekvienas ją turintis, neprisijungęs. Suteikite jai **Pavadinimą**, kurį matote tik jūs, pasirinkite, kiek ji galioja (**1 diena**, **7 dienos** arba **30 dienų**), tada **Sukurti nuorodą (3)**. Pasirinkite **Kopijuoti nuorodą** ir ją nusiųskite. Nuoroda parodoma tik šį kartą.
+
+![Langas „Eksportuoti“ su pasirinkta bendrinimo nuoroda: pavadinimas ir kiek ji galioja](../../web/apps/workwear/public/help-img/lt/desktop/share-link.png)
+
+Nuoroda rodo žmones tokius, kokie jie buvo bendrinant, tik su jūsų pažymėtais stulpeliais ir tik tai, ką matote patys. Vėlesni darbuotojo pakeitimai jos nepasiekia.
+
+![Bendrinimo nuoroda, atverta telefone](../../web/apps/workwear/public/help-img/lt/phone/shared-page.png)
+
+Bendrinti galima iki 10 žmonių; pažymėjus daugiau, langas tai pasako. Bendrinti gali visi. Tas, kurio rolės neleidžia **Eksportuoti duomenis**, ekrano **Darbuotojai** viršuje mato **Bendrinti**, o ne **Eksportuoti**, ir langas siūlo tik du bendrinimo būdus.
+
+**Bendrinimo nuorodos** rodo jūsų bendrintas dar galiojančias nuorodas: pavadinimą, kiek žmonių, kada bendrinote ir iki kada jos galioja. Atidarykite jas per **⋯** ekrano **Darbuotojai** viršuje arba per **Paiešką**. **Atšaukti** iškart uždaro nuorodą (prieš tai paklausus) ir ištrina joje buvusius duomenis. Pasibaigus laikui nuoroda užsidaro ir pati, o jos duomenys tada ištrinami.
+
+![Bendrinimo nuorodos su mygtuku „Atšaukti“](../../web/apps/workwear/public/help-img/lt/desktop/shared-links.png)
+
+*Tik administratoriams:*
+
+Kiekviena sukurta ir atšaukta nuoroda matoma **Audito žurnale**.
+
+## 13. Įmonės turtas
 
 Skyriuje **Įmonės turtas** registruojamos darbuotojams išduodamos įmonės SIM, įranga ir baldai: kur kiekvienas daiktas yra, pas ką jis ir koks aktas pasirašytas jį išduodant. Jame yra du ekranai: **SIM kortelės** ir **Įranga**, kurioje registruojama ir įranga, ir baldai; ją mato tik tie, kam suteikta rolė **Įrangos išdavimai**. Kiekvienas daiktas – atskiras įrašas su savo inventoriaus numeriu, todėl trys vienodi nešiojamieji kompiuteriai yra trys turto vienetai.
 
@@ -309,7 +336,7 @@ Išėjus iš darbo, niekas negrąžinama savaime. Kai darbuotojas negrąžina ko
 
 Paieška randa SIM pagal SIM, telefono ar inventoriaus numerį, o daiktą – pagal inventoriaus numerį.
 
-## 13. Skenuoti SIM
+## 14. Skenuoti SIM
 
 *Tik administratoriams ir vadovams.*
 
@@ -327,7 +354,7 @@ Sąrašas apačioje patikrina visas SIM iš karto ir nurodo, ką taisyti: numeri
 
 **PIN ir PUK** viršuje randa SIM pagal SIM Nr. arba telefono numerį, bent 4 skaitmenis. **Rodyti PIN ir PUK** juos parodo, kaip ir raktas prie SIM ekrane **SIM kortelės**; kiekvienas kartas įrašomas į SIM **Pakeitimai**, bet ne kodai. SIM be jų turi **Pridėti PIN ir PUK**. Jie saugomi užšifruoti ir niekada nerodomi sąraše. Parodyti kodai vėl paslepiami po minutės arba išėjus iš skirtuko. Skenuojamos SIM lieka savo sąraše, kol čia ieškote kurios nors.
 
-## 14. Administravimas
+## 15. Administravimas
 
 *Tik administratoriams.*
 
@@ -337,7 +364,7 @@ Atidarykite jį mygtuku **Administravimas** šoninės juostos apačioje. Jis tur
 
 Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo abiejų. **Administravimą** mato visi, kurių rolės leidžia tvarkyti naudotojus, roles, nustatymus ar tiekėjus arba skaityti audito žurnalą, saugą, sistemą, naudojimą ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.
 
-## 15. Apžvalga
+## 16. Apžvalga
 
 *Tik administratoriams.*
 
@@ -354,7 +381,7 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 
 ![Apžvalga: kam reikia dėmesio, toliau rodikliai](../../web/apps/workwear/public/help-img/lt/desktop/overview.png)
 
-## 16. Naudotojai
+## 17. Naudotojai
 
 *Tik administratoriams.*
 
@@ -366,13 +393,14 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 
 ![Naudotojų ekranas](../../web/apps/workwear/public/help-img/lt/desktop/users.png)
 
-## 17. Rolės ir teisės
+## 18. Rolės ir teisės
 
 *Tik administratoriams.*
 
 **Rolės ir teisės** rodo kiekvieną rolę, ką ji leidžia ir kiek naudotojų ją turi. Rolė – tai teisių rinkinys, pavyzdžiui, **Tvarkyti prekių katalogą** ar **Trinti darbuotojus**. Roles naudotojams skiriate skiltyje **Naudotojai**.
 
 - **Administratorius**, **Vadovas** ir **Darbuotojas** yra įtaisytos rolės. **Administratorius** gali viską ir jo pakeisti negalima: **Peržiūrėti** parodo, ką jis leidžia. Ką leidžia **Vadovas** ir **Darbuotojas**, galite keisti, bet ne jų pavadinimus ar aprašymus, o ištrinti jų negalima.
+- Teisė **Eksportuoti duomenis** leidžia rolės naudotojams eksportuoti sąrašus. Įtaisytos rolės ją turi; jūsų pridėta rolė – tik jei ją pažymite. Nuimkite žymę **Vadovo** ar **Darbuotojo** rolėje, kad jie nebeeksportuotų. **Audito žurnalo** eksportui reikia atskiros teisės.
 - **Pridėti rolę** sukuria naują: pavadinimas, kam ji skirta, ir jos teisės. Kai kurioms teisėms reikia kitos, kuri pažymima kartu: teisei **Tvarkyti naudotojus** reikia teisės **Matyti naudotojus**.
 - Pakeitimas rolę turinčius naudotojus pasiekia per kelias minutes.
 - **⋯ → Ištrinti rolę…** ištrina rolę, kurios neturi nė vienas naudotojas. Pirmiausia atimkite ją iš naudotojų skiltyje **Naudotojai**.
@@ -381,7 +409,7 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 ![Rolės ir teisės: įtaisytos rolės ir jas turintys naudotojai](../../web/apps/workwear/public/help-img/lt/desktop/roles.png)
 ![Rolės teisės, sugrupuotos, prie kiekvienos – ką ji leidžia](../../web/apps/workwear/public/help-img/lt/desktop/role.png)
 
-## 18. Audito žurnalas
+## 19. Audito žurnalas
 
 *Tik administratoriams.*
 
@@ -397,7 +425,7 @@ Filtruokite pagal **Sritis**, **Pakeitimas**, **Naudotojas** ir datas. Spustelė
 
 ![Audito žurnalas: atidarytas kainos pakeitimas su laukais prieš ir po](../../web/apps/workwear/public/help-img/lt/desktop/audit-log.png)
 
-## 19. Sauga
+## 20. Sauga
 
 *Tik administratoriams.*
 
@@ -412,7 +440,7 @@ Filtruokite pagal **Sritis**, **Pakeitimas**, **Naudotojas** ir datas. Spustelė
 ![Sauga: prisijungimai su adresu ir įrenginiu](../../web/apps/workwear/public/help-img/lt/desktop/security.png)
 ![Prieigos peržiūra: naudotojai, jų rolės ir paskutinis prisijungimas](../../web/apps/workwear/public/help-img/lt/desktop/access-review.png)
 
-## 20. Sistema
+## 21. Sistema
 
 *Tik administratoriams.*
 
@@ -427,7 +455,7 @@ Kai kas nors nepavyksta, programėlė parodo **Nuoroda į užklausą**, pvz., `9
 ![Sistema: programėlė, jos užklausos ir duomenų bazė](../../web/apps/workwear/public/help-img/lt/desktop/system.png)
 ![Klaidos: atidaryta klaida su nuoroda į užklausą](../../web/apps/workwear/public/help-img/lt/desktop/errors.png)
 
-## 21. Atsarginės kopijos
+## 22. Atsarginės kopijos
 
 *Tik administratoriams.*
 
@@ -446,7 +474,7 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 
 ![Atsarginės kopijos: paskutinė kopija, naujausios kopijos ir nustatymai](../../web/apps/workwear/public/help-img/lt/desktop/backups.png)
 
-## 22. Naudojimas
+## 23. Naudojimas
 
 *Tik administratoriams.*
 
@@ -461,7 +489,7 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 
 ![Naudojimas: aktyvūs asmenys, prisijungimai ir kita](../../web/apps/workwear/public/help-img/lt/desktop/usage.png)
 
-## 23. Nustatymai
+## 24. Nustatymai
 
 *Tik administratoriams.*
 
@@ -477,7 +505,7 @@ Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš
 
 ![Nustatymai: SIM tiekėjai, vienas iš jų numatytasis, ir numatytoji negrąžinimo vertė](../../web/apps/workwear/public/help-img/lt/desktop/sim-providers.png)
 
-## 24. Tiekėjai
+## 25. Tiekėjai
 
 *Tik administratoriams.*
 
@@ -491,7 +519,7 @@ Prekės tiekėjas pasirenkamas prekių kataloge, lange **Redaguoti prekę**. Š�
 
 ![Tiekėjai: kiekvieno vidinis kodas, vieta, prekės ir kontaktai](../../web/apps/workwear/public/help-img/lt/desktop/suppliers.png)
 
-## 25. Programų tvarkymas
+## 26. Programų tvarkymas
 
 *Tik administratoriams.*
 
@@ -509,7 +537,7 @@ Programai, kurios niekas nebando pirma, įjunkite **Stabili seka diegimus**: tad
 
 ![Programų tvarkymas: „Skenuoti SIM“ šalia sąrašo, su versijomis ir kanalais](../../web/apps/workwear/public/help-img/lt/desktop/manage-apps.png)
 
-## 26. Jūsų paskyra
+## 27. Jūsų paskyra
 
 - **Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis. Datos rašomos pagal kalbą: 2026-10-15 anglų, 2026.10.15 lietuvių, 15.10.2026 rusų kalba.
 - **Tema**: **Šviesi**, **Tamsi** arba **Kaip įrenginyje**. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.
@@ -521,7 +549,7 @@ Programai, kurios niekas nebando pirma, įjunkite **Stabili seka diegimus**: tad
 ![Paskyra: kalba, tema ir slaptažodis](../../web/apps/workwear/public/help-img/lt/desktop/account.png)
 ![Prisijungę įrenginiai: šis įrenginys ir telefonas](../../web/apps/workwear/public/help-img/lt/desktop/devices.png)
 
-## 27. Programos įdiegimas
+## 28. Programos įdiegimas
 
 Įtraukite programą į telefono pradžios ekraną ir atidarykite ją kaip bet kurią kitą: savo lange, be naršyklės adreso juostos, pavadinimu **Workwear**.
 
@@ -543,7 +571,7 @@ Kompiuteryje ją taip pat galima įdiegti naršyklėmis Chrome ir Edge: paskyroj
 - Be ryšio programa rodo **Nepavyksta pasiekti serverio**. Ryšiui atsiradus, ji pati vėl atidaro puslapį, arba pasirinkite **Bandyti dar kartą**.
 - Piktogramos nuorodos yra ta kalba, kurią naudojote pridėdami programą. Pakeitę kalbą, pašalinkite programą iš pradžios ekrano ir pridėkite iš naujo.
 
-## 28. Paieška ir spartieji klavišai
+## 29. Paieška ir spartieji klavišai
 
 | Klavišas | Ką daro |
 | --- | --- |

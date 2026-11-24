@@ -333,15 +333,18 @@ export const en: Guide = {
             '**Share Link** makes a link that anyone who has it can open, without signing in. Give it a **Name**, which only you see, choose how long it stays open (**1 day**, **7 days** or **30 days**), then **Create Link (3)**. Choose **Copy Link** and send it. The link is shown only this once.',
           ],
         },
+        { shots: [{ name: 'share-link', alt: 'The Export window with Share Link chosen: its name and how long it opens' }] },
         {
           p: 'A link shows the people as they were when you shared them, with only the columns you ticked and only what you can see yourself. Later changes to an employee do not reach it.',
         },
+        { shots: [{ name: 'shared-page', alt: 'A shared link opened on a phone', phone: true }] },
         {
           p: 'Sharing takes up to 10 people; with more ticked, the window says so. Anyone can share. Someone whose roles do not allow **Export data** sees **Share** at the top of **Employees** instead of **Export**, and the window offers only the two ways to share.',
         },
         {
           p: '**Shared Links** lists the links you have shared that are still open, with their name, how many people, when you shared them and until when they open. Open it from **⋯** at the top of **Employees**, or with **Search**. **Revoke** closes a link at once, after asking, and deletes the details it held. A link also closes by itself when its time is up, and its details are deleted then.',
         },
+        { shots: [{ name: 'shared-links', alt: 'Shared Links, with Revoke' }] },
         { p: 'Each link made and revoked is on the **Audit log**.', roles: ['admin'] },
       ],
     },

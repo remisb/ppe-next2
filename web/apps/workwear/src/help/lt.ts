@@ -336,15 +336,18 @@ export const lt: Guide = {
             '**Bendrinimo nuoroda** sukuria nuorodą, kurią gali atverti kiekvienas ją turintis, neprisijungęs. Suteikite jai **Pavadinimą**, kurį matote tik jūs, pasirinkite, kiek ji galioja (**1 diena**, **7 dienos** arba **30 dienų**), tada **Sukurti nuorodą (3)**. Pasirinkite **Kopijuoti nuorodą** ir ją nusiųskite. Nuoroda parodoma tik šį kartą.',
           ],
         },
+        { shots: [{ name: 'share-link', alt: 'Langas „Eksportuoti“ su pasirinkta bendrinimo nuoroda: pavadinimas ir kiek ji galioja' }] },
         {
           p: 'Nuoroda rodo žmones tokius, kokie jie buvo bendrinant, tik su jūsų pažymėtais stulpeliais ir tik tai, ką matote patys. Vėlesni darbuotojo pakeitimai jos nepasiekia.',
         },
+        { shots: [{ name: 'shared-page', alt: 'Bendrinimo nuoroda, atverta telefone', phone: true }] },
         {
           p: 'Bendrinti galima iki 10 žmonių; pažymėjus daugiau, langas tai pasako. Bendrinti gali visi. Tas, kurio rolės neleidžia **Eksportuoti duomenis**, ekrano **Darbuotojai** viršuje mato **Bendrinti**, o ne **Eksportuoti**, ir langas siūlo tik du bendrinimo būdus.',
         },
         {
           p: '**Bendrinimo nuorodos** rodo jūsų bendrintas dar galiojančias nuorodas: pavadinimą, kiek žmonių, kada bendrinote ir iki kada jos galioja. Atidarykite jas per **⋯** ekrano **Darbuotojai** viršuje arba per **Paiešką**. **Atšaukti** iškart uždaro nuorodą (prieš tai paklausus) ir ištrina joje buvusius duomenis. Pasibaigus laikui nuoroda užsidaro ir pati, o jos duomenys tada ištrinami.',
         },
+        { shots: [{ name: 'shared-links', alt: 'Bendrinimo nuorodos su mygtuku „Atšaukti“' }] },
         { p: 'Kiekviena sukurta ir atšaukta nuoroda matoma **Audito žurnale**.', roles: ['admin'] },
       ],
     },
