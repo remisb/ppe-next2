@@ -316,6 +316,39 @@ export const lt: Guide = {
       ],
     },
     {
+      id: 'share',
+      title: 'Kelių darbuotojų bendrinimas',
+      blocks: [
+        {
+          p: 'Norėdami nusiųsti kelių žmonių duomenis kam nors už programos ribų, pavyzdžiui, tiekėjui, naudokite langą **Eksportuoti** ekrane **Darbuotojai**. Skiltyje **Kaip** šalia failų yra du būdai bendrinti iki 10 žmonių: **Kopijuoti kaip tekstą** ir **Bendrinimo nuoroda**.',
+        },
+        {
+          p: 'Ekrano **Darbuotojai** viršuje pasirinkite **Eksportuoti**, pažymėkite žmones, tada **Eksportuoti 3…**. Pažymėkite stulpelius, kuriuos norite nusiųsti, ir pasirinkite būdą.',
+          devices: ['tablet', 'desktop'],
+        },
+        {
+          p: 'Ekrano **Darbuotojai** viršuje atidarykite **⋯**, pasirinkite **Eksportuoti**, pažymėkite žmones, tada **Eksportuoti 3…**. Pažymėkite stulpelius, kuriuos norite nusiųsti, ir pasirinkite būdą.',
+          devices: ['phone'],
+        },
+        {
+          ul: [
+            '**Kopijuoti kaip tekstą** nukopijuoja žmones kaip paprastą tekstą, vieną po kito, su eilute kiekvienam stulpeliui, pavyzdžiui, **Avalynės dydis: 43**. Įklijuokite jį į el. laišką arba WhatsApp pokalbį. Programoje niekas neišsaugoma. Jei naršyklė nenukopijuoja, tekstas parodomas pažymėtas, kad nukopijuotumėte patys.',
+            '**Bendrinimo nuoroda** sukuria nuorodą, kurią gali atverti kiekvienas ją turintis, neprisijungęs. Suteikite jai **Pavadinimą**, kurį matote tik jūs, pasirinkite, kiek ji galioja (**1 diena**, **7 dienos** arba **30 dienų**), tada **Sukurti nuorodą (3)**. Pasirinkite **Kopijuoti nuorodą** ir ją nusiųskite. Nuoroda parodoma tik šį kartą.',
+          ],
+        },
+        {
+          p: 'Nuoroda rodo žmones tokius, kokie jie buvo bendrinant, tik su jūsų pažymėtais stulpeliais ir tik tai, ką matote patys. Vėlesni darbuotojo pakeitimai jos nepasiekia.',
+        },
+        {
+          p: 'Bendrinti galima iki 10 žmonių; pažymėjus daugiau, langas tai pasako. Bendrinti gali visi. Tas, kurio rolės neleidžia **Eksportuoti duomenis**, ekrano **Darbuotojai** viršuje mato **Bendrinti**, o ne **Eksportuoti**, ir langas siūlo tik du bendrinimo būdus.',
+        },
+        {
+          p: '**Bendrinimo nuorodos** rodo jūsų bendrintas dar galiojančias nuorodas: pavadinimą, kiek žmonių, kada bendrinote ir iki kada jos galioja. Atidarykite jas per **⋯** ekrano **Darbuotojai** viršuje arba per **Paiešką**. **Atšaukti** iškart uždaro nuorodą (prieš tai paklausus) ir ištrina joje buvusius duomenis. Pasibaigus laikui nuoroda užsidaro ir pati, o jos duomenys tada ištrinami.',
+        },
+        { p: 'Kiekviena sukurta ir atšaukta nuoroda matoma **Audito žurnale**.', roles: ['admin'] },
+      ],
+    },
+    {
       id: 'assets',
       title: 'Įmonės turtas',
       blocks: [
