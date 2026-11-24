@@ -399,6 +399,24 @@ ADR 0006, `docs/specs/app-launcher.md`.
 | `make new-app` starts a published app from the template: its folder found by its manifest, the next free dev port, no placeholder left, the name escaped per file, its tile in POC above the marker in `defaults.go`; a slug that does not fit, is reserved, or is a folder's or a tile's already is refused with nothing changed; the template's app typechecks, passes its tests and builds | `@ppe/launcher` `new-app.ts`, `web/templates/published-app` | `new-app.test.ts`; `pnpm check:new-app` (CI's web job); `TestDefaultsAreValid` for the tile |
 | A small app's bar scrolls away; only the screen's header sticks | `@ppe/launcher` `AppFrame` | e2e *Scan SIMs: …* (scrolled, the page header is at the top and the bar out of view) |
 
+## Document Vault (phase 1)
+
+ADR 0008, [vault-service.md](specs/vault-service.md).
+
+| Rule | Where it is decided | Covered by |
+| --- | --- | --- |
+| Types are fixed in code; a reader sees the types whose read permission they hold; the keys the types name are the catalogue's | `vault.Types()`, `document.Service.Types` | `TestTypesAreTheReadersOnly`, `TestVaultPermissionsAreTheCatalogues` |
+| Upload: the type's manage permission (403), a title, dates as YYYY-MM-DD in order, only the kinds the type may link and every kind it must (400), a PDF, JPEG or PNG by its bytes (415) up to 20 MB (413), every link existing and visible to the reader (404); nothing kept when refused; the file stored first, then the rows and `vault.document_uploaded` | `document.Service.Upload`, `cmd/api/vault-routes.go` | `TestUploadRefuses`, `TestUploadKeepsTheFileAndRecordsIt`, `TestUploadWithoutStorage`, `TestPostgresVaultHTTP` |
+| A document needs every permission its type and links require (an equipment item's `equipment.read`): without them it is 404 and absent from search | `requires`, `document.Service.Get`, the search's `requires <@` | `TestALinksRequirementsHideTheDocument`, `TestPostgresDocuments` |
+| Update replaces the title, dates and unlocked links, recording what changed (nothing for nothing); locked links stay; Add Version adds the next version, the earlier ones kept; a locked document is not removed or given versions (409) | `document.Service.Update`, `AddVersion`, `Remove` | `TestUpdateRecordsWhatChanged`, `TestUpdateKeepsLockedLinks`, `TestAddVersionAndOpen`, `TestRemove` |
+| A file opens only when its bytes still match the SHA-256 taken when it was stored; it downloads as an attachment, `nosniff`, `no-store` | `document.Service.Open`, `writeAttachment` | `TestAddVersionAndOpen`, `TestPostgresVaultHTTP` |
+| Search: words as prefixes, accents folded (`vault.ppe`), over title, number, the type's names in three languages, link names and file names; near spellings (trigrams, 0.45) only when nothing matches, said so; a POST, `no-store` | `vault.refresh_search`, `PostgresRepository.Search`, `tsQuery` | `TestTSQuery`, `TestPostgresDocuments`, `TestPostgresVaultHTTP`; e2e *Document Vault: …* |
+| Versions and files are never changed or deleted, by `ppe_app` or the owner; an archived source is unique | migration 0060 (triggers, UNIQUE), `grants.sql` | `TestPostgresDocuments`, `TestPostgresAPIRoleIsLeastPrivileged` |
+| Merge Employees moves the vault's links to the record kept, named as it is | `employee` `moveDocumentLinks` | `TestPostgresVaultHTTP` |
+| The upkeep names links as their subjects are called now; a subject gone keeps its name | `document.Service.RefreshLabels`, `cmd/api/jobs.go` | `TestRefreshLabels`, `TestPostgresDocuments` |
+| `internal/vault` imports no domain or Personnel files | ADR 0008 decision 1 | `TestVaultImportsNoContext` |
+| The staff app: a type's name in the language in use; expired and expiring soon (30 days); a file refused before sending; the draft's problems; the types offered where the sheet was opened; the export's columns | `lib/vault.ts`, `lib/vault-export.ts` | `vault.test.ts`; e2e *Document Vault: …* |
+
 ## Identity documents (docs-import, phase 1)
 
 `docs/apps/docs-import-plan.md` (FR-4 to FR-7, NFR-5, NFR-7). The parser is `@ppe/mrz`; its cases are

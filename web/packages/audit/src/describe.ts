@@ -48,6 +48,8 @@ type Format =
   | 'photoUses'
   | 'simCodes'
   | 'count'
+  | 'vaultType'
+  | 'labels'
 
 /**
  * The fields shown, in the order shown, and how their values read. A field not
@@ -172,6 +174,16 @@ const fields: [key: keyof AuditText['fields'], format: Format][] = [
   ['given_date', 'text'],
   ['returned_date', 'text'],
   ['whereabouts', 'whereabouts'],
+  // A document's (vault.document_uploaded …): its type by name, its dates as written, its links by name.
+  ['title', 'text'],
+  ['type', 'vaultType'],
+  ['number', 'text'],
+  ['document_date', 'date'],
+  ['valid_from', 'date'],
+  ['valid_until', 'date'],
+  ['links', 'labels'],
+  ['origin', 'text'],
+  ['note', 'text'],
   ['file_name', 'text'],
   ['content_type', 'text'],
   ['size_bytes', 'text'],
@@ -328,6 +340,12 @@ function format(value: unknown, how: Format, options: DescribeOptions): string |
       // A calendar date as it is (no timezone moves it); a moment in this browser's time.
       if (typeof value !== 'string') return String(value)
       return /^\d{4}-\d{2}-\d{2}$/.test(value) ? formatDay(value) : formatDateTime(value, undefined)
+    case 'vaultType':
+      return t.vaultTypes[String(value)] ?? String(value)
+    case 'labels':
+      // Linked records by their names then: [{kind, id, label}].
+      if (!Array.isArray(value)) return String(value)
+      return value.length === 0 ? t.none : value.map((l) => (typeof l === 'object' && l !== null && 'label' in l ? String(l.label) : String(l))).join(', ')
     case 'text':
       return value === '' ? null : typeof value === 'object' ? JSON.stringify(value) : String(value)
   }

@@ -72,7 +72,7 @@ export interface RoleInput {
 /** GET /api/v1/permissions: one permission of the catalogue, and those it cannot work without. */
 export interface PermissionInfo {
   key: Permission
-  group: 'administration' | 'launcher' | 'workwear' | 'personnel' | 'dashboards'
+  group: 'administration' | 'launcher' | 'workwear' | 'personnel' | 'vault' | 'dashboards'
   requires: Permission[]
 }
 
@@ -987,6 +987,7 @@ export type AuditEntityType =
   | 'app'
   | 'access_review'
   | 'personnel_scan'
+  | 'vault_document'
   | 'audit_log'
 
 /** Where a change was made, by a name the apps word themselves. */
@@ -996,7 +997,7 @@ export type KnownAuditSource = 'workwear' | 'admin' | 'launcher' | 'api' | 'publ
 export type AuditSource = string
 
 /** The records with a History of their own (GET /api/v1/audit-events/{record}/{id}). */
-export type AuditRecordKind = 'employees' | 'catalogue' | 'item-sets' | 'orders' | 'assets' | 'users' | 'apps'
+export type AuditRecordKind = 'employees' | 'catalogue' | 'item-sets' | 'orders' | 'assets' | 'users' | 'apps' | 'vault'
 
 /**
  * One recorded change (GET /api/v1/audit-events). `event` is one of
@@ -2057,4 +2058,132 @@ export interface AICallsQuery {
   outcome?: 'ok' | 'failed' | 'refused'
   limit?: number
   offset?: number
+}
+
+// Document Vault (ADR 0008, docs/specs/vault-service.md).
+
+/** What a document may be linked to. */
+export type VaultSubjectKind = 'employee' | 'company' | 'employment' | 'asset' | 'order' | 'supplier'
+
+/** How a document came to be. */
+export type VaultOrigin = 'uploaded' | 'generated' | 'archived'
+
+/** How a version came to be. */
+export type VaultVersionOrigin = 'original' | 'added' | 'generated' | 'signed' | 'archived'
+
+/** What the worker made of a version's file (phase 4); pending until it runs. */
+export type VaultTextState = 'pending' | 'reading' | 'read' | 'none' | 'failed' | 'skipped'
+
+/** A document type, fixed in the API (GET /api/v1/vault/types: those the reader may see). */
+export interface VaultType {
+  key: string
+  group: 'employee' | 'employment' | 'assets' | 'workwear' | 'finance' | 'other'
+  sealed: boolean
+  read: string
+  manage: string
+  links: VaultSubjectKind[]
+  must: VaultSubjectKind[]
+  origins: VaultOrigin[]
+  file_types: string[]
+  max_bytes: number
+  dated: boolean
+  expiring: boolean
+}
+
+/** A subject a document is linked to, with its name now. */
+export interface VaultLink {
+  kind: VaultSubjectKind
+  id: string
+  label: string
+  locked: boolean
+}
+
+/** A link as a request names it. */
+export interface VaultLinkRef {
+  kind: VaultSubjectKind
+  id: string
+}
+
+export interface VaultFile {
+  id: string
+  file_name: string
+  content_type: string
+  size_bytes: number
+  sha256: string
+}
+
+export interface VaultVersion {
+  id: string
+  number: number
+  origin: VaultVersionOrigin
+  document_hash: string
+  note: string
+  file: VaultFile
+  text_state: VaultTextState
+  created_at: string
+  created_by_user_id: string
+  created_by_name: string
+}
+
+/** A document with its versions (newest first) and links. Dates are YYYY-MM-DD. */
+export interface VaultDocument {
+  id: string
+  type: string
+  title: string
+  number: string | null
+  document_date: string | null
+  valid_from: string | null
+  valid_until: string | null
+  origin: VaultOrigin
+  sealed: boolean
+  locked: boolean
+  versions: VaultVersion[]
+  links: VaultLink[]
+  created_at: string
+  created_by_user_id: string
+  updated_at: string
+  updated_by_user_id: string
+}
+
+/** A document as a list or search shows it. */
+export interface VaultHit {
+  id: string
+  type: string
+  title: string
+  number: string | null
+  document_date: string | null
+  valid_until: string | null
+  origin: VaultOrigin
+  sealed: boolean
+  versions: number
+  content_type: string
+  links: VaultLink[]
+  created_at: string
+  updated_at: string
+}
+
+/** POST /api/v1/vault/search: words (prefixes, accents folded) and filters; a POST so names stay out of URLs. */
+export interface VaultQuery {
+  query?: string
+  types?: string[]
+  subject?: VaultLinkRef
+  page?: number
+}
+
+export interface VaultPage {
+  documents: VaultHit[]
+  total: number
+  page: number
+  page_size: number
+  /** Nothing matched the words: these are near spellings. */
+  near: boolean
+}
+
+/** A document's editable fields, as Upload Document… and Edit send them. */
+export interface VaultDetails {
+  title: string
+  document_date: string | null
+  valid_from: string | null
+  valid_until: string | null
+  links: VaultLinkRef[]
 }

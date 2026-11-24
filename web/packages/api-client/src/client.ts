@@ -113,6 +113,13 @@ import type {
   Settings,
   SimEmailKind,
   SignedCopy,
+  VaultDetails,
+  VaultDocument,
+  VaultHit,
+  VaultPage,
+  VaultQuery,
+  VaultSubjectKind,
+  VaultType,
   SignedInDevice,
   SimProvidersInput,
   Sizes,
@@ -725,6 +732,35 @@ export function createClient(options: ClientOptions) {
       /** One signed copy, as the file it is. */
       signedCopy: (id: string, assignmentId: string, copyId: string) =>
         download(`/api/v1/assets/${seg(id)}/assignments/${seg(assignmentId)}/signed-copies/${seg(copyId)}`),
+    },
+
+    /** Document Vault (ADR 0008): typed documents, their versions and links, and search. */
+    vault: {
+      /** The document types the reader may see. */
+      types: () => request<VaultType[]>('GET', '/api/v1/vault/types'),
+      /** A page of documents; a POST, so a name searched for is never in a URL. */
+      search: (query: VaultQuery) => request<VaultPage>('POST', '/api/v1/vault/search', query),
+      /** The documents linked to a subject, newest first. */
+      bySubject: (kind: VaultSubjectKind, id: string) => request<VaultHit[]>('GET', `/api/v1/vault/by-subject/${seg(kind)}/${seg(id)}`),
+      get: (id: string) => request<VaultDocument>('GET', `/api/v1/vault/documents/${seg(id)}`),
+      /** Upload Document…: the file and its details; 413, 415 or 503 for a file the API will not keep. */
+      upload: (type: string, details: VaultDetails, file: File, note = '') => {
+        const body = new FormData()
+        body.append('document', JSON.stringify({ type, ...details, note }))
+        body.append('file', file)
+        return request<VaultDocument>('POST', '/api/v1/vault/documents', body)
+      },
+      update: (id: string, details: VaultDetails) => request<VaultDocument>('PUT', `/api/v1/vault/documents/${seg(id)}`, details),
+      remove: (id: string) => request<void>('DELETE', `/api/v1/vault/documents/${seg(id)}`),
+      /** Add Version: a newer file of the document. */
+      addVersion: (id: string, file: File, note = '') => {
+        const body = new FormData()
+        if (note) body.append('document', JSON.stringify({ note }))
+        body.append('file', file)
+        return request<VaultDocument>('POST', `/api/v1/vault/documents/${seg(id)}/versions`, body)
+      },
+      /** A version's file, as the file it is. */
+      file: (id: string, version: number) => download(`/api/v1/vault/documents/${seg(id)}/versions/${version}/file`),
     },
 
     /** Public, token-only routes for the employee's confirmation page. */

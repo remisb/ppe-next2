@@ -55,7 +55,8 @@ func (j *jobRuns) get() JobRun {
 //   - seals the audit days that have ended, purges audit events older than
 //     API_AUDIT_RETENTION (sealed days only), and verifies every seal, which
 //     the Overview reports on;
-//   - shreds personnel files whose retention has ended and erases expired kept scans.
+//   - shreds personnel files whose retention has ended and erases expired kept scans;
+//   - names documents' links as their subjects are called now.
 func runJobs(ctx context.Context, svc services, logger *slog.Logger) {
 	tick := time.NewTicker(jobEvery)
 	defer tick.Stop()
@@ -144,6 +145,16 @@ func upkeep(ctx context.Context, svc services, logger *slog.Logger) JobRun {
 			logger.Error("kept scans purge failed", slog.Any("error", err))
 		} else if run.ScansPurged > 0 {
 			logger.Info("kept scans purged", slog.Int("scans", run.ScansPurged))
+		}
+	}
+	// Documents' links are named as their subjects are called now (a renamed
+	// employee, asset or company), for the lists and search.
+	if svc.vault != nil {
+		if n, err := svc.vault.RefreshLabels(ctx); err != nil && ctx.Err() == nil {
+			run.Failed = true
+			logger.Error("document link names failed", slog.Any("error", err))
+		} else if n > 0 {
+			logger.Info("document link names refreshed", slog.Int("links", n))
 		}
 	}
 	if run.AuthEventsDeleted > 0 || run.ErrorEventsDeleted > 0 || run.AuditEventsDeleted > 0 {

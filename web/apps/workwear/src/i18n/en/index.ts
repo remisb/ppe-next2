@@ -10,5 +10,6 @@ import { history } from './history'
 import { identity } from './identity'
 import { order } from './order'
 import { shell } from './shell'
+import { vault } from './vault'
 
-export const en = { common, shell, order, history, dashboard, employees, employment, catalogue, account, backups, assets, identity }
+export const en = { common, shell, order, history, dashboard, employees, employment, catalogue, account, backups, assets, identity, vault }

@@ -50,6 +50,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/system"
 	"github.com/remisb/ppe-next2/internal/tsa"
 	"github.com/remisb/ppe-next2/internal/usage"
+	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
 )
 
 func main() {
@@ -164,6 +165,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	svc.personnelRetentionMonths = cfg.PersonnelRetentionMonths
 	svc.scans = scan.NewService(scan.NewPostgresRepository(pool), personnel, store, scan.WithDays(cfg.PersonnelScanDays),
 		scan.WithLocation(loc))
+	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), store)
 	// App Launcher's default tiles, put back should the registry have been
 	// emptied, and its apps' slugs, which tell requests' apps apart.
 	if err := launcher.EnsureDefaults(ctx, pool); err != nil {
@@ -274,6 +276,8 @@ type services struct {
 	personnelRetentionMonths int
 	// scans are Import Documents' kept scans (ADR 0007 amendment); run sets them.
 	scans *scan.Service
+	// vault is the Document Vault's documents (ADR 0008); run sets it.
+	vault *vaultdoc.Service
 	// ai is Settings → AI, AI Usage and Make Colour Photo (ADR 0007); run sets it.
 	ai        *aiHandler
 	dashboard *dashboard.Service
@@ -358,6 +362,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerAssetRoutes(rt, svc.assets, svc.users)
 	registerPersonnelRoutes(rt, svc.documents, sensitive)
 	registerPersonnelScanRoutes(rt, svc.scans)
+	registerVaultRoutes(rt, svc.vault)
 	registerAIRoutes(rt, svc.ai, sensitive)
 	registerDashboardRoutes(rt, svc.dashboard)
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)

@@ -2574,6 +2574,45 @@ test('Company Assets on the employee page, in ⌘K and on the Dashboard; a holde
   await expect(page.getByRole('combobox', { name: 'Location' })).toHaveText(/Any location/)
 })
 
+test('Document Vault: a certificate uploaded on the employee page, found by her name typed without accents, its Changes recorded', async () => {
+  // Documents on her page: Upload Document… links the certificate to her (ADR 0008).
+  await openTab('Employees')
+  await page.getByRole('link', { name: 'Ona Kazlauskienė', exact: true }).click()
+  const documents = page.getByRole('region', { name: /^Documents/ })
+  await documents.getByRole('button', { name: 'Upload Document…' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Upload Document' })
+  await expect(sheet.getByText('Employee: Ona Kazlauskienė')).toBeVisible()
+  // A web page is not a PDF: refused before anything is kept.
+  const file = sheet.getByLabel('Choose File…')
+  await file.setInputFiles({ name: 'cert.html', mimeType: 'text/html', buffer: Buffer.from('<html></html>') })
+  await expect(sheet.getByText('Choose a PDF, JPEG or PNG file.')).toBeVisible()
+  await file.setInputFiles({ name: 'Darbas_aukštyje.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF\n') })
+  // Named after its file until the user names it.
+  await expect(sheet.getByLabel('Title')).toHaveValue('Darbas aukštyje')
+  await sheet.getByLabel('Title').fill('Darbas aukštyje')
+  await sheet.getByRole('button', { name: 'Upload', exact: true }).click()
+  await expect(page.getByText('Uploaded Darbas aukštyje.')).toBeVisible()
+  await expect(documents.getByRole('link', { name: 'Darbas aukštyje' })).toBeVisible()
+
+  // Document Vault finds it by her surname without its accents, and opens it beside the list.
+  await openTab('Document Vault')
+  await page.getByRole('searchbox').fill('kazlausk')
+  await page.getByRole('link', { name: 'Darbas aukštyje' }).click()
+  const pane = page.getByRole('complementary', { name: 'Document' })
+  await expect(pane.getByRole('heading', { name: 'Darbas aukštyje' })).toBeVisible()
+  await expect(pane.getByRole('link', { name: 'Ona Kazlauskienė' })).toBeVisible()
+  await expect(pane.getByRole('button', { name: 'Download Darbas_aukštyje.pdf' })).toBeVisible()
+  // Edit… renames it; its Changes say so.
+  await pane.getByRole('button', { name: 'Edit…' }).click()
+  const edit = page.getByRole('dialog', { name: 'Edit Document' })
+  await edit.getByLabel('Title').fill('Darbas aukštyje 2026')
+  await edit.getByRole('button', { name: 'Save' }).click()
+  await expect(pane.getByRole('heading', { name: 'Darbas aukštyje 2026' })).toBeVisible()
+  await pane.getByRole('button', { name: /^Changes/ }).click()
+  await expect(pane.getByText('Document changed')).toBeVisible()
+  await expect(pane.getByText('Document uploaded')).toBeVisible()
+})
+
 test('Company Assets: a SIM card held since the import prints a form built now, dated 2026 08 03', async () => {
   // The go-live import gives a held card with no form (spec "Import SIM cards").
   execFileSync('go', ['run', './cmd/api', '-import-sims', '-', '-commit'], {

@@ -48,6 +48,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
 	"github.com/remisb/ppe-next2/internal/usage"
+	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
 )
 
 // newPostgresAPI wires the real repositories against API_TEST_DB_DSN, skipping
@@ -121,6 +122,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	)
 	svc.documents = document.NewService(document.NewPostgresRepository(pool), testPersonnelKeys(t), testFiles(t), document.WithPeople(peopleOf(svc)))
 	svc.scans = scan.NewService(scan.NewPostgresRepository(pool), testPersonnelKeys(t), testFiles(t))
+	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), testFiles(t))
 	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123", []uuid.UUID{role.AdminID})
 	if err != nil {
 		t.Fatal(err)
@@ -2004,6 +2006,10 @@ func TestPostgresAPIRoleIsLeastPrivileged(t *testing.T) {
 		`UPDATE asset_signed_copies SET file_name = file_name`,
 		`DELETE FROM asset_signed_copies`,
 		`DELETE FROM catalogue_pictures`,
+		`UPDATE vault.versions SET note = note`,
+		`DELETE FROM vault.versions`,
+		`UPDATE vault.files SET file_name = file_name`,
+		`DELETE FROM vault.files`,
 		`INSERT INTO catalogue_pictures (icon, id, size_group) VALUES ('boot', gen_random_uuid(), 'NONE')`,
 		`DROP TRIGGER audit_events_no_update_delete ON audit_events`,
 		`ALTER TABLE users ADD COLUMN x int`,
@@ -2017,6 +2023,8 @@ func TestPostgresAPIRoleIsLeastPrivileged(t *testing.T) {
 		`SELECT purge_auth_events(now() - interval '31 days')`,
 		`SELECT purge_audit_events(now() - interval '366 days')`,
 		`SELECT count(*) FROM pg_stat_activity WHERE state IS NOT NULL`,
+		`UPDATE vault.documents SET title = title`,
+		`DELETE FROM vault.links WHERE false`,
 	} {
 		if _, err := app.Exec(ctx, sql); err != nil {
 			t.Errorf("%s: %v", sql, err)

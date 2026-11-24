@@ -15,6 +15,7 @@ describe('router', () => {
       'equipment',
       'catalogue',
       'itemSets',
+      'vault',
       'history',
       'account',
       'replacements',
@@ -51,6 +52,9 @@ describe('router', () => {
     expect(parsePath(pathOf({ name: 'record', id: 'a b' }))).toEqual({ name: 'record', id: 'a b' })
     expect(parsePath(pathOf({ name: 'confirm', token: 'Ab-_9' }))).toEqual({ name: 'confirm', token: 'Ab-_9' })
     expect(parsePath(pathOf({ name: 'history', order: 'o 1' }))).toEqual({ name: 'history', order: 'o 1' })
+    // A document open beside Document Vault.
+    expect(pathOf({ name: 'vault', document: 'd/1' })).toBe('/vault/d%2F1')
+    expect(parsePath(pathOf({ name: 'vault', document: 'd/1' }))).toEqual({ name: 'vault', document: 'd/1' })
   })
   it('opens retired addresses at the start screen, as any unknown one', () => {
     for (const [path, search] of [['/history', ''], ['/history/o1', ''], ['/assets', '?kind=equipment'], ['/users', ''], ['/settings/', ''], ['/backups', '']] as const)
@@ -135,6 +139,8 @@ describe('router', () => {
     expect(startRoute({ name: 'itemSets' }, holding('item_sets.read', 'dashboard.employee'))).toEqual({ name: 'itemSets' })
     expect(startRoute({ name: 'itemSets' }, holding('dashboard.employee'))).toEqual({ name: 'employeeDashboard' })
     expect(startRoute({ name: 'itemSets' }, holding())).toEqual({ name: 'createOrder' })
+    expect(startRoute({ name: 'vault' }, holding('vault.read'))).toEqual({ name: 'vault' })
+    expect(startRoute({ name: 'vault', document: 'd1' }, holding('dashboard.manager'))).toEqual({ name: 'managerDashboard' })
   })
   it('keeps Equipment to the Equipment Assignments role: anyone else gets the SIM cards, on the same tile', () => {
     const admin = (p: string) => p !== 'equipment.read'

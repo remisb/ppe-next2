@@ -44,5 +44,11 @@ REVOKE UPDATE ON personnel.subject_keys FROM ppe_app;
 -- change it gets is being saved as a document (migration 0056): its state and links, nothing sealed.
 REVOKE UPDATE ON personnel.scans FROM ppe_app;
 GRANT UPDATE (state, document_id, employee_id) ON personnel.scans TO ppe_app;
+-- Document Vault (ADR 0008), in its own schema: the same DML, except that a
+-- document's versions and files are written once and never changed or deleted.
+GRANT USAGE ON SCHEMA vault TO ppe_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA vault TO ppe_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA vault GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ppe_app;
+REVOKE UPDATE, DELETE ON vault.versions, vault.files FROM ppe_app;
 -- Other sessions' state on System (connections, the oldest transaction).
 GRANT pg_read_all_stats TO ppe_app;

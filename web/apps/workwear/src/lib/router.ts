@@ -54,6 +54,11 @@ export type Route =
   | { name: 'catalogue'; item?: string; status?: ItemStatus }
   | { name: 'itemSets' }
   /**
+   * Document Vault (ADR 0008); document opens one document beside the list,
+   * or on its own on a narrow screen, as Orders opens an order.
+   */
+  | { name: 'vault'; document?: string }
+  /**
    * A screen in Administration, at path there (a link or G then U): the app
    * sends the browser on to it.
    */
@@ -102,6 +107,7 @@ const fixed = {
   equipment: '/assets/equipment',
   catalogue: '/catalogue',
   itemSets: '/item-sets',
+  vault: '/vault',
   replacements: '/replacements',
   account: '/account',
   help: '/help',
@@ -138,6 +144,8 @@ export function parsePath(pathname: string, search = ''): Route {
   if (employee?.[1]) return { name: 'employee', id: decodeURIComponent(employee[1]) }
   const employeePage = /^\/employees\/([^/]+)\/page$/.exec(path)
   if (employeePage?.[1]) return { name: 'employeePage', id: decodeURIComponent(employeePage[1]) }
+  const document = /^\/vault\/([^/]+)$/.exec(path)
+  if (document?.[1]) return { name: 'vault', document: decodeURIComponent(document[1]) }
   const item = /^\/catalogue\/([^/]+)$/.exec(path)
   if (item?.[1]) return { name: 'catalogue', item: decodeURIComponent(item[1]) }
   const opened = /^\/assets\/(sim-cards|equipment)\/([^/]+)$/.exec(path)
@@ -211,6 +219,8 @@ export function pathOf(route: Route): string {
     case 'catalogue':
       if (route.item) return `${fixed.catalogue}/${encodeURIComponent(route.item)}`
       return route.status ? `${fixed.catalogue}?status=${route.status}` : fixed.catalogue
+    case 'vault':
+      return route.document ? `${fixed.vault}/${encodeURIComponent(route.document)}` : fixed.vault
     case 'simCards':
     case 'equipment': {
       const base = route.asset ? `${fixed[route.name]}/${encodeURIComponent(route.asset)}` : fixed[route.name]
@@ -305,5 +315,6 @@ export function startRoute(route: Route, can: (p: Permission) => boolean): Route
   if (route.name === 'simCards' && !can('sim_cards.read'))
     return can('equipment.read') ? { name: 'equipment', ...(route.tile ? { tile: route.tile } : {}) } : home
   if (route.name === 'itemSets' && !can('item_sets.read')) return home
+  if (route.name === 'vault' && !can('vault.read')) return home
   return route
 }
