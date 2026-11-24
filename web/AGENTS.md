@@ -267,7 +267,9 @@ The workwear app is the reference.
   `/assets/equipment/<id>`; Item Catalogue: `/catalogue/<id>`; Administration's Audit log and
   System's Errors). From `lg` the detail sits beside the list; below it, it replaces the
   list, which keeps its filters and page behind it. Build it with `ListDetail`, `DetailPane`,
-  `PaneBar` and `useListKeys` (`@ppe/ui`), and give the record's `RecordHeader` its `nav`
+  `PaneBar`, `useListKeys` and `useCloseFilteredOut` (`@ppe/ui`: a filter, search or tab that
+  leaves the open record out of the list closes it; ui-ux-guidelines.md §2 "When the list
+  changes"), and give the record's `RecordHeader` its `nav`
   (back to the list, Close): its first row sticks in the pane and on a phone, and holds the
   way out once the record is loaded (`PaneBar` then hides; `styles.css`). The record's
   parts are siblings in its `<article>`, so the row sticks the length of the record: never

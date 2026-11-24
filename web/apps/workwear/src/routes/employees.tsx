@@ -13,7 +13,7 @@ import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Segmented } from '@ppe/ui/components/segmented'
 import { useAction } from '@ppe/ui/lib/use-action'
-import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
+import { besideList, useCloseFilteredOut, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
 import type { ShareOptions } from '@ppe/ui/components/export-sheet'
@@ -187,6 +187,14 @@ export function Employees({
   // The employees ticked for Export: only those the tab and search show count.
   const selection = useSelection(shown, employeeId)
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: 'employee', id }, { scroll: false }), onClose: close })
+  // A search, tab or company that leaves the open employee out of the list closes them (WARE-42).
+  useCloseFilteredOut({
+    filters: JSON.stringify([filter.trim().toLowerCase(), tab, companyShown ? company : '']),
+    current: employees.data !== undefined,
+    ids: shownIds,
+    selected,
+    onClose: () => navigate({ name: 'employees' }, { replace: true, scroll: false }),
+  })
 
   return (
     // An employee opens beside the list from lg (S17), with more room than an order: her sections hold tables.

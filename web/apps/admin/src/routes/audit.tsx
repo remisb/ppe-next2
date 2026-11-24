@@ -30,7 +30,7 @@ import { InfoTip } from '@ppe/ui/components/info-tip'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { StatusLine } from '@ppe/ui/components/status-line'
 import { StickyFilters } from '@ppe/ui/components/sticky-filters'
-import { useListKeys } from '@ppe/ui/lib/list-keys'
+import { useCloseFilteredOut, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail, PaneBar } from '@ppe/ui/components/list-detail'
 import { Download, ExternalLink, ShieldAlert, ShieldCheck, X } from 'lucide-react'
 import { type FormEvent, type ReactNode, useMemo, useState } from 'react'
@@ -107,6 +107,14 @@ export function AuditPage({ route, navigate }: { route: AuditRoute; navigate: (t
   // J and K: the next or previous one in the list as shown, while one is open; Escape closes it beside the list.
   const shownIds = useMemo(() => events.map((e) => e.id), [events])
   useListKeys({ ids: shownIds, selected, onOpen: open, onClose: close })
+  // A filter that leaves the open change out of the list closes it (WARE-42).
+  useCloseFilteredOut({
+    filters: filterKey,
+    current: pages.current,
+    ids: shownIds,
+    selected,
+    onClose: () => navigate({ name: 'audit', filter }, { replace: true, scroll: false }),
+  })
 
   const options: DescribeOptions = useMemo(() => {
     const byId = new Map((roles.data ?? []).map((r) => [r.id, roleName(r)]))

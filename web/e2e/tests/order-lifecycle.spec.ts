@@ -2243,6 +2243,26 @@ test('Orders beside an open order: one line a row; J and K move through it, Esca
   await page.keyboard.press('Escape')
   await expect(page).toHaveURL(/\/orders$/)
   await expect(page.getByRole('columnheader', { name: 'Usage time' })).toHaveCount(0)
+
+  // WARE-42: a tab that leaves the open (given) order out of the list closes it, its row mark
+  // with it, and nothing opens in its place; a tab that still lists it keeps it open and marked.
+  const tabs = page.locator('[data-slot=filter-bar]')
+  const row = page.getByRole('row', { name: new RegExp(recordNumber) })
+  await openOrder(recordNumber)
+  await tabs.getByRole('button', { name: /^Given/ }).click()
+  await expect(row).toHaveAttribute('aria-current', 'true')
+  await expect(detail.getByRole('heading', { name: recordNumber })).toBeVisible()
+  await tabs.getByRole('button', { name: /^Ordered/ }).click()
+  await expect(page).toHaveURL(/\/orders$/)
+  await expect(detail).toHaveCount(0)
+  await tabs.getByRole('button', { name: /^All/ }).click()
+  await expect(row).toBeVisible()
+  await expect(page.locator('[data-slot=table-row][aria-current=true]')).toHaveCount(0)
+  await expect(detail).toHaveCount(0)
+  // The user opens the next one.
+  await openOrder(recordNumber)
+  await expect(detail.getByRole('heading', { name: recordNumber })).toBeVisible()
+  await page.keyboard.press('Escape')
 })
 
 test('desktop power layer: relative dates, a record previewed on hover, Compact rows kept per user', async () => {

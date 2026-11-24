@@ -24,7 +24,7 @@ import { RelativeDate } from '@ppe/ui/components/relative-date'
 import { isoDay } from '@ppe/ui/lib/dates'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Segmented } from '@ppe/ui/components/segmented'
-import { besideList, useListKeys } from '@ppe/ui/lib/list-keys'
+import { besideList, useCloseFilteredOut, useListKeys } from '@ppe/ui/lib/list-keys'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { t } from '@/i18n'
 import { loadAllOrders } from '@/lib/employee-items'
@@ -144,9 +144,12 @@ export function History({
     page_size: PAGE_SIZE,
   }
   const key = JSON.stringify(query)
-  const orders = useLoad(() => client.orders.list(query), [key])
-  // The tabs' counts, within the other filters.
+  // The filters and tab, not the sort or page: what an open order must stay in to stay open (useCloseFilteredOut).
   const scopeKey = JSON.stringify(scope)
+  const filterKey = JSON.stringify([scope, filters.status])
+  // Each page remembers the filters it was loaded for, so a list still on screen while the next loads is not taken for it.
+  const orders = useLoad(() => client.orders.list(query).then((p) => ({ ...p, filters: filterKey })), [key])
+  // The tabs' counts, within the other filters.
   const counts = useLoad(
     () =>
       Promise.all(
@@ -186,6 +189,7 @@ export function History({
 
   const open = (id: string) => navigate({ name: 'history', order: id }, { scroll: !besideList() })
   const close = () => navigate({ name: 'history' }, { scroll: false })
+  const closeFilteredOut = () => navigate({ name: 'history' }, { replace: true, scroll: false })
 
   // J and K: the next or previous order on this page, while one is open; Escape closes it beside the list.
   const shownIds = useMemo(() => orders.data?.orders.map((o) => o.id), [orders.data])
@@ -193,6 +197,8 @@ export function History({
   // Export's select mode (WARE-45): ticks are kept across pages; Export all takes every page matching the filters.
   const selection = useSelection(useMemo(() => orders.data?.orders ?? [], [orders.data]), orderId, { acrossPages: true })
   useListKeys({ ids: shownIds, selected, onOpen: (id) => navigate({ name: 'history', order: id }, { scroll: false }), onClose: close })
+  // A filter or tab that leaves the open order out of the list closes it; the user opens the next one (WARE-42).
+  useCloseFilteredOut({ filters: filterKey, current: orders.data?.filters === filterKey, ids: shownIds, selected, onClose: closeFilteredOut })
 
   const tz = settings.data?.timezone
   // An order is open beside the list (from lg): the list keeps its short columns.

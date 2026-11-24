@@ -14,6 +14,8 @@ export interface CursorPages<T> extends Loaded<T[]> {
   /** Loading an older page: whether it is on its way, and why it failed. */
   older: { loading: boolean; error: unknown }
   loadOlder: () => void
+  /** Whether the rows shown were loaded for the deps as they now are, not the ones before still on screen while those load. */
+  current: boolean
 }
 
 /**
@@ -25,7 +27,7 @@ export interface CursorPages<T> extends Loaded<T[]> {
  */
 export function useCursorPages<T>(load: (after: string | undefined) => Promise<CursorPage<T>>, deps: readonly unknown[]): CursorPages<T> {
   const key = JSON.stringify(deps)
-  const first = useLoad(() => load(undefined), [key])
+  const first = useLoad(() => load(undefined).then((page) => ({ ...page, key })), [key])
   const [older, setOlder] = useState<{ key: string; items: T[]; next: string | null } | null>(null)
   const [olderState, setOlderState] = useState<{ loading: boolean; error: unknown }>({ loading: false, error: undefined })
   const pages = older?.key === key ? older : null
@@ -56,5 +58,6 @@ export function useCursorPages<T>(load: (after: string | undefined) => Promise<C
     next,
     older: olderState,
     loadOlder,
+    current: first.data?.key === key,
   }
 }
