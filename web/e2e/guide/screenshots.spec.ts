@@ -282,6 +282,37 @@ test('company assets: the SIMs, a card, giving one', async () => {
   await expect(give).toBeHidden()
 })
 
+test('the Document Vault: the list, a document, a kept form verified, a template', async () => {
+  // The demo's documents (cmd/api/seed-demo.go): uploads over the months, Tomas's certificate expiring in 28 days,
+  // the SIM cards' assignment forms and the given orders' records kept automatically.
+  const vault = page.getByRole('main')
+  const pane = page.getByRole('complementary', { name: T.vault.document, exact: true })
+  const docLink = (name: RegExp) => vault.getByRole('link', { name }).filter({ visible: true }).first()
+  await page.goto('/vault')
+  await expect(docLink(/^Darbas aukštyje/)).toBeVisible()
+  await shot('vault')
+
+  // A certificate: its dates, Expires soon, what it is linked to, its version.
+  await docLink(/^Darbas aukštyje/).click()
+  await expect(pane.getByRole('heading', { name: 'Darbas aukštyje' })).toBeVisible()
+  await expect(pane.getByText(T.vault.expiresSoon).first()).toBeVisible()
+  await shot('vault-document')
+
+  // A kept assignment form, checked against its record.
+  await page.goto('/vault')
+  await docLink(/^SIM-000003 · /).click()
+  await pane.getByRole('button', { name: T.vault.verify, exact: true }).click()
+  await expect(pane.getByText(T.vault.verifyMatches, { exact: true })).toBeVisible()
+  await shot('vault-verify')
+
+  // The demo's published contract template, in the editor.
+  await page.goto('/admin/document-templates')
+  await page.getByRole('link', { name: A.documentTemplates.open('Darbo sutartis, neterminuota') }).click()
+  // Its Save Draft, not its title: on a tablet the header's actions leave the title little room, in Russian none.
+  await expect(page.getByRole('button', { name: A.documentTemplates.saveDraft })).toBeVisible()
+  await shot('document-templates')
+})
+
 test('Scan SIMs and Manage apps', async () => {
   // Scan SIMs, the trial: two made-up cards (fixtures/sim-cards/make.ts) read from photos and checked, not added.
   await page.goto('/apps/sim-scan/')
