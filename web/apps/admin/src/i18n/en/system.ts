@@ -1,4 +1,4 @@
-import type { ErrorKind } from '@ppe/api-client'
+import type { ErrorKind, JobKind } from '@ppe/api-client'
 import { plural } from '@ppe/i18n'
 
 /** System: the API and its requests, the database, the error list and the backups. */
@@ -98,7 +98,11 @@ export const system = {
   jobsFailed: 'Failed',
   failedJobs: (n: number) => plural(n, { one: 'Failed in the last 7 days', other: 'Failed in the last 7 days (#)' }),
   attempts: (n: number) => plural(n, { one: '# attempt', other: '# attempts' }),
-  jobKinds: { 'vault.extract_text': 'Read documents’ text' } as Record<string, string>,
+  jobKinds: {
+    'vault.extract_text': 'Read documents’ text',
+    'vault.archive': 'Keep forms and records as PDFs',
+    'vault.render_docx': 'Make PDFs from DOCX templates',
+  } satisfies Record<JobKind, string>,
   // Errors
   kind: 'Kind',
   allKinds: 'All kinds',

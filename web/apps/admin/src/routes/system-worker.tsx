@@ -10,7 +10,7 @@ import { cn } from '@ppe/ui/lib/utils'
 import { t } from '@/i18n'
 
 /** A job kind's words; one the app does not know yet is shown as it is. */
-const kindLabel = (kind: string) => t.system.jobKinds[kind] ?? kind
+const kindLabel = (kind: string) => (t.system.jobKinds as Record<string, string | undefined>)[kind] ?? kind
 
 /**
  * System → Worker (ADR 0008 decision 9): whether a worker is running, its
