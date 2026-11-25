@@ -16,6 +16,17 @@ import (
 
 type stubTemplates map[uuid.UUID]template.Template
 
+// docxFiles are the stub templates' DOCX files, by their hash.
+var docxFiles = map[string][]byte{}
+
+func (stubTemplates) DocxBytes(_ context.Context, v template.Version) ([]byte, error) {
+	b, ok := docxFiles[v.Body.DocxSHA256]
+	if !ok {
+		return nil, template.ErrNotFound
+	}
+	return b, nil
+}
+
 func (s stubTemplates) ForGenerate(_ context.Context, id uuid.UUID) (template.Template, template.Version, error) {
 	t, ok := s[id]
 	if !ok {
@@ -65,17 +76,19 @@ func TestGenerateAfterPreview(t *testing.T) {
 	f, tpl := generating(t)
 	ctx := context.Background()
 	req := GenerateRequest{TemplateID: tpl.ID, EmployeeID: ana, Inputs: map[string]string{"salary": "2400"}}
-	pdf, hash, err := f.svc.Preview(ctx, clerk, req)
-	if err != nil || !bytes.HasPrefix(pdf, []byte("%PDF-")) || len(hash) != 64 {
+	p, err := f.svc.Preview(ctx, clerk, req)
+	pdf, hash := p.PDF, p.ValuesHash
+	if err != nil || !bytes.HasPrefix(pdf, []byte("%PDF-")) || len(hash) != 64 || p.Render != nil {
 		t.Fatalf("preview = %d bytes, %q, %v", len(pdf), hash, err)
 	}
 	if _, err := f.svc.Generate(ctx, clerk, GenerateRequest{TemplateID: tpl.ID, EmployeeID: ana, Inputs: map[string]string{"salary": "2500"}}, hash); !errors.Is(err, ErrStale) {
 		t.Fatalf("another salary: %v", err)
 	}
-	d, err := f.svc.Generate(ctx, clerk, req, hash)
-	if err != nil {
-		t.Fatal(err)
+	g, err := f.svc.Generate(ctx, clerk, req, hash)
+	if err != nil || g.Document == nil || g.Render != nil {
+		t.Fatal(g, err)
 	}
+	d := *g.Document
 	if *d.Number != "EC-2026-0001" || d.Title != "Darbo sutartis EC-2026-0001" || d.Origin != vault.Generated || !d.Sealed || len(d.Links) != 2 || !d.Links[0].Locked {
 		t.Fatalf("document = %+v", d)
 	}
@@ -97,9 +110,9 @@ func TestGenerateAfterPreview(t *testing.T) {
 		t.Errorf("an event holds a value: %s", raw)
 	}
 	// The next one takes the next number.
-	_, hash, _ = f.svc.Preview(ctx, clerk, req)
-	if d2, err := f.svc.Generate(ctx, clerk, req, hash); err != nil || *d2.Number != "EC-2026-0002" {
-		t.Errorf("second = %v %v", d2.Number, err)
+	p, _ = f.svc.Preview(ctx, clerk, req)
+	if d2, err := f.svc.Generate(ctx, clerk, req, p.ValuesHash); err != nil || *d2.Document.Number != "EC-2026-0002" {
+		t.Errorf("second = %v %v", d2, err)
 	}
 	// The PDF opens and is what the hash was taken of.
 	if _, data, err := f.svc.OpenSealed(ctx, clerk, d.ID, 1); err != nil || !bytes.HasPrefix(data, []byte("%PDF-")) {
@@ -122,7 +135,7 @@ func TestGenerateRefuses(t *testing.T) {
 		"no such template":  {clerk, GenerateRequest{TemplateID: uuid.New(), EmployeeID: ana}, template.ErrNotPublished},
 		"vault.manage only": {manager, GenerateRequest{TemplateID: tpl.ID, EmployeeID: ana, Inputs: map[string]string{"salary": "1"}}, ErrInvalid},
 	} {
-		if _, _, err := f.svc.Preview(ctx, c.reader, c.req); !errors.Is(err, c.want) {
+		if _, err := f.svc.Preview(ctx, c.reader, c.req); !errors.Is(err, c.want) {
 			t.Errorf("%s: %v, want %v", name, err, c.want)
 		}
 	}

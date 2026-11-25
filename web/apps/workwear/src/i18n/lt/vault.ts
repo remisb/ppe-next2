@@ -155,6 +155,8 @@ export const vault: VaultText = {
   generateButton: 'Generuoti',
   generated: (number: string) => `Sugeneruota: ${number}.`,
   stale: 'Po peržiūros kažkas pasikeitė: peržiūrėkite dar kartą.',
+  renderSlow: 'Dokumentas dar ruošiamas: bandykite po minutės.',
+  renderFailed: 'Word šablono nepavyko paversti PDF. Praneškite šablonus tvarkančiam asmeniui.',
   inputRequired: 'Užpildykite.',
   inputNumber: 'Įveskite skaičių.',
   previewLabel: 'Dokumento peržiūra',

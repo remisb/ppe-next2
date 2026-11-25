@@ -12,6 +12,9 @@ const (
 	PDF  = "application/pdf"
 	JPEG = "image/jpeg"
 	PNG  = "image/png"
+	// DOCX is a Word document: a template, or a generated version's source
+	// (internal/vault/docx tells one; Sniff does not, as uploads never are one).
+	DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
 
 // ErrMalformed is a file that starts as a known type but does not hold together.
@@ -41,6 +44,8 @@ func Ext(contentType string) string {
 		return ".jpg"
 	case PNG:
 		return ".png"
+	case DOCX:
+		return ".docx"
 	}
 	return ""
 }

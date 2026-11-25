@@ -171,6 +171,14 @@ func insertVersion(ctx context.Context, tx pgx.Tx, id uuid.UUID, v Version) erro
 		f.ID, v.ID, f.ObjectKey, f.FileName, f.ContentType, f.SizeBytes, f.SHA256, f.Sealed, v.CreatedAt, v.CreatedByUserID); err != nil {
 		return err
 	}
+	if s := v.Source; s != nil {
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO vault.files (id, version_id, role, object_key, file_name, content_type, size_bytes, sha256, sealed, created_at, created_by_user_id)
+			VALUES ($1, $2, 'source', $3, $4, $5, $6, $7, $8, $9, $10)`,
+			s.ID, v.ID, s.ObjectKey, s.FileName, s.ContentType, s.SizeBytes, s.SHA256, s.Sealed, v.CreatedAt, v.CreatedByUserID); err != nil {
+			return err
+		}
+	}
 	if v.Text == "" {
 		// Its words are read by the worker: the job is written with the version.
 		if _, err := tx.Exec(ctx, `INSERT INTO vault.version_text (version_id, state) VALUES ($1, 'pending')`, v.ID); err != nil {
@@ -209,8 +217,13 @@ func refresh(ctx context.Context, tx pgx.Tx, id uuid.UUID) error {
 
 // Create inserts d with its first version, links and ev.
 func (r *PostgresRepository) Create(ctx context.Context, d Document, links []Link, ev audit.Event) error {
+	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error { return createDocument(ctx, tx, d, links, ev) }))
+}
+
+// createDocument inserts d with its versions, links and ev in tx.
+func createDocument(ctx context.Context, tx pgx.Tx, d Document, links []Link, ev audit.Event) error {
 	t, _ := vault.TypeOf(d.Type)
-	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+	{
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO vault.documents (id, type, type_words, title, number, document_date, valid_from, valid_until, origin,
 				sealed, requires, created_at, created_by_user_id, updated_at, updated_by_user_id, title_sealed, template_id, template_version)
@@ -238,8 +251,7 @@ func (r *PostgresRepository) Create(ctx context.Context, d Document, links []Lin
 			return err
 		}
 		return refresh(ctx, tx, d.ID)
-	})
-	return translate(err)
+	}
 }
 
 // Get reads the live document.
@@ -788,4 +800,84 @@ func (r *PostgresRepository) Unarchived(ctx context.Context, kind string, ids []
 		return nil, err
 	}
 	return pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+}
+
+// CreateRender inserts r and the job that converts it, waking the worker.
+func (r *PostgresRepository) CreateRender(ctx context.Context, rd Render) error {
+	return translate(pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO vault.renders (id, purpose, state, sealed_key, key_id, data_sealed, values_hash, created_at, created_by_user_id)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+			rd.ID, rd.Purpose, rd.State, rd.SealedKey, rd.KeyID, rd.DataSealed, rd.ValuesHash, rd.CreatedAt, rd.CreatedBy); err != nil {
+			return err
+		}
+		return outbox.Insert(ctx, tx, KindRenderDocx, rd.ID.String(), RenderJob{Render: rd.ID}, rd.CreatedAt)
+	}))
+}
+
+const renderColumns = `id, purpose, state, sealed_key, key_id, data_sealed, values_hash, document_id, error, created_at, created_by_user_id`
+
+func scanRender(row pgx.Row) (Render, error) {
+	var rd Render
+	err := row.Scan(&rd.ID, &rd.Purpose, &rd.State, &rd.SealedKey, &rd.KeyID, &rd.DataSealed, &rd.ValuesHash, &rd.DocumentID,
+		&rd.Error, &rd.CreatedAt, &rd.CreatedBy)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Render{}, ErrNotFound
+	}
+	return rd, err
+}
+
+// GetRender reads render id.
+func (r *PostgresRepository) GetRender(ctx context.Context, id uuid.UUID) (Render, error) {
+	return scanRender(r.pool.QueryRow(ctx, `SELECT `+renderColumns+` FROM vault.renders WHERE id = $1`, id))
+}
+
+// FinishRender sets a pending render done or failed.
+func (r *PostgresRepository) FinishRender(ctx context.Context, id uuid.UUID, state string, code *string, at time.Time) error {
+	_, err := r.pool.Exec(ctx, `UPDATE vault.renders SET state = $2, error = $3, finished_at = $4 WHERE id = $1 AND state = 'pending'`,
+		id, state, code, at)
+	return err
+}
+
+// CompleteRender makes a done document render's document, once: with the
+// render locked, it inserts d with its links and ev and marks the render
+// finished; a render finished already answers its document.
+func (r *PostgresRepository) CompleteRender(ctx context.Context, id uuid.UUID, d Document, links []Link, ev audit.Event, at time.Time) (uuid.UUID, error) {
+	var out uuid.UUID
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		rd, err := scanRender(tx.QueryRow(ctx, `SELECT `+renderColumns+` FROM vault.renders WHERE id = $1 FOR UPDATE`, id))
+		if err != nil {
+			return err
+		}
+		if rd.State == RenderFinished {
+			out = *rd.DocumentID
+			return nil
+		}
+		if rd.State != RenderDone || rd.Purpose != RenderDocument {
+			return fmt.Errorf("vault: render %s is %s", id, rd.State)
+		}
+		if err := createDocument(ctx, tx, d, links, ev); err != nil {
+			return err
+		}
+		out = d.ID
+		_, err = tx.Exec(ctx, `UPDATE vault.renders SET state = 'finished', document_id = $2, finished_at = coalesce(finished_at, $3)
+			WHERE id = $1`, id, d.ID, at)
+		return err
+	})
+	return out, translate(err)
+}
+
+// StaleRenders are the renders made before before.
+func (r *PostgresRepository) StaleRenders(ctx context.Context, before time.Time) ([]uuid.UUID, error) {
+	rows, err := r.pool.Query(ctx, `SELECT id FROM vault.renders WHERE created_at < $1 ORDER BY created_at`, before)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+}
+
+// DeleteRender removes render id.
+func (r *PostgresRepository) DeleteRender(ctx context.Context, id uuid.UUID) error {
+	_, err := r.pool.Exec(ctx, `DELETE FROM vault.renders WHERE id = $1`, id)
+	return err
 }

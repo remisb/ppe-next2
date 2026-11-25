@@ -1,4 +1,4 @@
-import type { AskedField, AskedKind, DocumentTemplate, TemplateBlock, TemplateBlockType, TemplateBody, TemplateRun, TemplateVersion } from '@ppe/api-client'
+import type { AskedField, AskedKind, DocumentTemplate, DocxTemplateBody, TemplateBlock, TemplateBlockType, TemplateBody, TemplateRun, TemplateVersion } from '@ppe/api-client'
 
 /**
  * Document Templates' editing rules, as pure functions (ADR 0008 phase 3,
@@ -337,8 +337,8 @@ export function toBlock(b: EditBlock): TemplateBlock {
   }
 }
 
-export function editBody(body: TemplateBody | undefined): EditBlock[] {
-  return (body?.blocks ?? []).map(editBlock)
+export function editBody(body: TemplateBody | DocxTemplateBody | undefined): EditBlock[] {
+  return body?.format === 'ppe.blocks.v1' ? body.blocks.map(editBlock) : []
 }
 
 export function toBody(blocks: readonly EditBlock[]): TemplateBody {
@@ -565,13 +565,48 @@ export function templateState(t: DocumentTemplate): TemplateState {
 }
 
 /** The draft as the API saves it, as one string: equal strings, the same draft. */
-export function draftKey(body: TemplateBody, asked: readonly AskedField[]): string {
+export function draftKey(body: TemplateBody | DocxTemplateBody, asked: readonly AskedField[]): string {
   return JSON.stringify({ body, asked })
 }
 
 /** A saved version as the editor would save it again, for telling whether anything changed. */
 export function savedKey(v: TemplateVersion | undefined): string {
-  return draftKey(toBody(editBody(v?.body)), (v?.asked ?? []).map(editAsked).map(toAsked))
+  const asked = (v?.asked ?? []).map(editAsked).map(toAsked)
+  return v?.body.format === 'ppe.docx.v1' ? draftKey(v.body, asked) : draftKey(toBody(editBody(v?.body)), asked)
+}
+
+// ---------------------------------------------------------------------------
+// DOCX templates (phase 8)
+
+/** A DOCX version's body, or null for a version of blocks. */
+export function docxBody(v: TemplateVersion | undefined): DocxTemplateBody | null {
+  return v?.body.format === 'ppe.docx.v1' ? v.body : null
+}
+
+/** The field every DOCX must print besides the number: its footer is its own. */
+export const DOCUMENT_HASH = 'document.hash'
+
+/**
+ * A DOCX's problems: the fields its placeholders name that are no field the
+ * app fills and no asked field (one dropped since it was uploaded), and,
+ * for Publish, whether it prints the number and the hash.
+ */
+export function docxProblems(
+  body: DocxTemplateBody,
+  asked: readonly EditAsked[],
+  appFields: readonly { key: string }[],
+): { unknown: string[]; missing: string[] } {
+  const known = knownField(appFields, asked)
+  return {
+    unknown: body.fields.filter((f) => !known(f)),
+    missing: [DOCUMENT_NUMBER, DOCUMENT_HASH].filter((f) => !body.fields.includes(f)),
+  }
+}
+
+/** A file's size as Administration writes it: 18 KB, 1.2 MB. */
+export function fileSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 // ---------------------------------------------------------------------------

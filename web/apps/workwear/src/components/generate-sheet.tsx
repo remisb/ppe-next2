@@ -11,7 +11,7 @@ import { type FormEvent, useEffect, useId, useMemo, useState } from 'react'
 
 import { type PdfFile, PdfPreview } from '@/components/pdf-preview'
 import { t } from '@/i18n'
-import { defaultEmployment, generateInput, inputProblems, pdfBlob, samePreview } from '@/lib/generate'
+import { awaitRender, defaultEmployment, generateInput, inputProblems, isRender, pdfBlob, samePreview } from '@/lib/generate'
 import { typeLabel } from '@/lib/vault'
 
 /**
@@ -68,21 +68,28 @@ export function GenerateSheet({
   }
   const showPreview = () => {
     if (!check()) return
-    void action.run(async () => {
-      const got = await client.vault.generatePreview(input)
-      setPreview({ input, hash: got.values_hash ?? '' })
-      setPdf({ blob: pdfBlob(got.pdf), filename: `${tpl?.name ?? 'preview'}.pdf` })
-    })
+    void action.run(
+      async () => {
+        let got = await client.vault.generatePreview(input)
+        // A DOCX template: the worker makes its PDF; ask until it has.
+        if (isRender(got)) got = await awaitRender(client.vault.render, got.render_id)
+        setPreview({ input, hash: got.values_hash ?? '' })
+        setPdf({ blob: pdfBlob(got.pdf ?? ''), filename: `${tpl?.name ?? 'preview'}.pdf` })
+      },
+      { mapError: renderError },
+    )
   }
   const generate = async (e: FormEvent) => {
     e.preventDefault()
     if (!check() || !preview || !previewed) return
     await action.run(
       async () => {
-        const d = await client.vault.generate({ ...input, values_hash: preview.hash })
+        const got = await client.vault.generate({ ...input, values_hash: preview.hash })
+        const d = isRender(got) ? (await awaitRender(client.vault.render, got.render_id)).document : got
+        if (!d) throw new Error(t.vault.renderSlow)
         onGenerated(d, t.vault.generated(d.number ?? ''))
       },
-      { mapError: (err) => (err instanceof ApiError && err.status === 409 ? new Error(t.vault.stale) : err) },
+      { mapError: (err) => (err instanceof ApiError && err.status === 409 ? new Error(t.vault.stale) : renderError(err)) },
     )
   }
 
@@ -172,4 +179,9 @@ export function GenerateSheet({
       <PdfPreview file={pdf} label={t.vault.previewLabel} onClose={() => setPdf(null)} />
     </>
   )
+}
+
+/** A conversion the worker could not make, in words. */
+function renderError(err: unknown): unknown {
+  return err instanceof ApiError && err.status === 422 ? new Error(t.vault.renderFailed) : err
 }

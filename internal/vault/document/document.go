@@ -87,6 +87,9 @@ type Version struct {
 	DocumentHash string    `json:"document_hash"`
 	Note         string    `json:"note"`
 	File         File      `json:"file"`
+	// Source is the file the main one was made from: a DOCX template's
+	// filled DOCX (phase 8); nil for the rest.
+	Source *File `json:"source,omitempty"`
 	// TextState is what the worker made of its file (vault.version_text); pending until it runs.
 	TextState string `json:"text_state"`
 	// TextMethod (pdf_text, ocr, blocks), TextLanguage, TextPages and TextError

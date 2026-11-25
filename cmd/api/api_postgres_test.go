@@ -125,7 +125,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	)
 	svc.documents = document.NewService(document.NewPostgresRepository(pool), testPersonnelKeys(t), testFiles(t), document.WithPeople(peopleOf(svc)))
 	svc.scans = scan.NewService(scan.NewPostgresRepository(pool), testPersonnelKeys(t), testFiles(t))
-	svc.docTemplates = vaulttemplate.NewService(vaulttemplate.NewPostgresRepository(pool))
+	svc.docTemplates = vaulttemplate.NewService(vaulttemplate.NewPostgresRepository(pool), vaulttemplate.WithFiles(testFiles(t)))
 	vaultFiles := testFiles(t)
 	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), vaultFiles, testVaultKeys(t), time.UTC)
 	svc.shares = share.NewService(share.NewPostgresRepository(pool))

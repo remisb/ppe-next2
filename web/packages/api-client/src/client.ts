@@ -120,6 +120,8 @@ import type {
   GeneratableTemplate,
   PdfAnswer,
   TemplateBody,
+  DocxTemplateBody,
+  RenderAnswer,
   TemplateFields,
   TemplateLanguage,
   VaultDocument,
@@ -769,8 +771,17 @@ export function createClient(options: ClientOptions) {
       create: (input: { type: string; name: string; language: TemplateLanguage }) => request<DocumentTemplate>('POST', '/api/v1/document-templates', input),
       get: (id: string) => request<DocumentTemplate>('GET', `/api/v1/document-templates/${seg(id)}`),
       update: (id: string, input: { name: string; language: TemplateLanguage }) => request<DocumentTemplate>('PUT', `/api/v1/document-templates/${seg(id)}`, input),
-      saveDraft: (id: string, body: TemplateBody, asked: AskedField[]) =>
+      saveDraft: (id: string, body: TemplateBody | DocxTemplateBody, asked: AskedField[]) =>
         request<DocumentTemplate>('PUT', `/api/v1/document-templates/${seg(id)}/draft`, { body, asked }),
+      /** Upload DOCX Template: the Word document becomes the draft, with the asked fields; 400 for a field it does not know, 415 for another file. */
+      uploadDocx: (id: string, file: File, asked: AskedField[]) => {
+        const body = new FormData()
+        body.append('asked', JSON.stringify(asked))
+        body.append('file', file)
+        return request<DocumentTemplate>('POST', `/api/v1/document-templates/${seg(id)}/draft/docx`, body)
+      },
+      /** A DOCX version's file, as uploaded. */
+      docx: (id: string, version: number) => download(`/api/v1/document-templates/${seg(id)}/versions/${version}/docx`),
       /** Publish: the draft becomes the version Generate uses, never to change; 400 without {{document.number}}. */
       publish: (id: string) => request<DocumentTemplate>('POST', `/api/v1/document-templates/${seg(id)}/publish`),
       retire: (id: string) => request<DocumentTemplate>('POST', `/api/v1/document-templates/${seg(id)}/retire`),
@@ -816,9 +827,11 @@ export function createClient(options: ClientOptions) {
       /** The published templates Generate Document… offers: those of the types the user may change. */
       templates: () => request<GeneratableTemplate[]>('GET', '/api/v1/vault/templates'),
       /** Generate Document…'s preview: the PDF, PREVIEW in its footer, and the hash Generate needs. */
-      generatePreview: (input: GenerateInput) => request<PdfAnswer>('POST', '/api/v1/vault/generate/preview', input),
+      generatePreview: (input: GenerateInput) => request<PdfAnswer | RenderAnswer>('POST', '/api/v1/vault/generate/preview', input),
       /** Generate: 409 when a value changed since the preview. */
-      generate: (input: GenerateInput) => request<VaultDocument>('POST', '/api/v1/vault/generate', input),
+      generate: (input: GenerateInput) => request<VaultDocument | RenderAnswer>('POST', '/api/v1/vault/generate', input),
+      /** A DOCX template's render: pending, then its PDF or the document made from it (422 when it could not be converted). */
+      render: (id: string) => request<RenderAnswer>('GET', `/api/v1/vault/renders/${seg(id)}`),
       /** Legal Hold until a day, with its reason; null clears it. */
       setHold: (id: string, holdUntil: string | null, holdReason = '') =>
         request<VaultDocument>('PUT', `/api/v1/vault/documents/${seg(id)}/hold`, { hold_until: holdUntil, hold_reason: holdReason }),

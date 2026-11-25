@@ -7,7 +7,7 @@ and generation are [document-template-service.md](document-template-service.md);
 worker are [outbox-service.md](outbox-service.md); the data-protection note is
 [document-vault-dpia-note.md](../privacy/document-vault-dpia-note.md).
 
-**Status: phases 1 to 7 built** (migrations 0061 to 0066, `internal/vault`, `internal/vault/document`,
+**Status: phases 1 to 8 built** (migrations 0061 to 0067, `internal/vault`, `internal/vault/document`,
 `internal/vault/extract`, `cmd/api/vault-routes.go`, `cmd/api/wire_vault.go`, the staff app's Document
 Vault and Documents sections, Company Assets' signed copies kept here, assignment forms and Items Given
 Records archived by the worker; ID documents listed from Personnel files; phases 6 and 7 needed no
@@ -25,7 +25,8 @@ identity documents, 8 DOCX).
   `internal/files`, `internal/sealbox`, `internal/outbox`, `internal/placeholder`.
 - **Migrations:** `0061_vault` (phase 1), `0062_vault_sealed` (phase 2),
   `0063_document_templates` (phase 3), `0064_outbox` (phase 4), `0065_vault_signed_copies`
-  (phase 5), `0066_vault_retention` (retention for every type), `0067_document_template_docx` (phase 8).
+  (phase 5), `0066_vault_retention` (retention for every type), `0067_document_template_docx` (phase 8: DOCX
+  templates, a generated version's DOCX source file, `vault.renders`).
 - **Apps:** the staff app's **Document Vault** (`/vault`, list and detail at `/vault/<id>`) and a
   **Documents** section on the employee page and an asset's detail; Administration's **Document
   Templates** (phase 3).

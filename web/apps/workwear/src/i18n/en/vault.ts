@@ -161,6 +161,8 @@ export const vault = {
   generateButton: 'Generate',
   generated: (number: string) => `Generated ${number}.`,
   stale: 'Something changed since the preview: preview it again.',
+  renderSlow: 'The document is still being made: try again in a minute.',
+  renderFailed: 'The Word template could not be turned into a PDF. Tell whoever keeps the templates.',
   inputRequired: 'Fill this in.',
   inputNumber: 'Enter a number.',
   previewLabel: 'Preview of the document',

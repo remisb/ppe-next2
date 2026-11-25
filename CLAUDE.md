@@ -96,6 +96,13 @@ Phase 7 (no migration): **ID documents are listed, metadata only**: the `Identit
 adapter `vaultIdentity` over Personnel files' `Documents`) adds `identity` to a search about an employee (filtered by them, or words
 naming a linked employee; at most 10; first page): kind, issuing state, expiry, and with `personnel.documents.read` superseded ones and
 issue dates. The Document Vault shows them above its list; the holder opens `/employees/<id>/page#identity`. By-subject lists none.
+Phase 8 (migration 0067): **DOCX templates**: Administration's ⋯ → Upload DOCX Template… makes a Word document the draft
+(`internal/vault/docx`: placeholders joined across Word's runs, checked, filled; `template.Service.UploadDocx`, stored as
+`vault-templates/<template>/<sha>.docx`; Publish also needs `{{document.hash}}`). Generating from one is asynchronous: the API fills the
+DOCX, keeps it as a sealed **render** (`vault.renders`, needs `API_VAULT_KEY`) and answers 202 `{render_id}`; the worker's
+`vault.render_docx` converts it with LibreOffice (`docx.Converter`, `soffice` in the docworker image); the app polls
+`GET /api/v1/vault/renders/{id}` (`awaitRender`) for the preview's PDF or the document, made once with the PDF as main file and the filled
+DOCX as source. The upkeep purges renders after an hour.
 **Mail templates** (`internal/domain/mailtemplate`, migration 0040, spec
 `docs/specs/mail-template-service.md`): one template per use case fixed in code (`sim.activation`,
 `sim.blocking`), To/Cc/Subject/Message with `{{field}}` placeholders, edited on Administration's
@@ -474,7 +481,7 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   ADR 0008 makes the Document Vault: typed documents with versions and links,
   sealed Employment documents with retention and shredding, templates made into locked PDFs,
   Postgres search, and a worker on an outbox (specs `vault-service.md`,
-  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 to 7 are built.
+  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 to 8 are built.
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and

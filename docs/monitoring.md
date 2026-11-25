@@ -20,7 +20,7 @@ attention and **System** shows the API, the database, the error list and the bac
 | Caddy | Proxies `/health` and `/ready` to the API, so both are reachable at the site's address. |
 | Request references | Every request has an `X-Request-ID`; every log line written for it carries it as `request_id`, and a 500 answers with it as `reference`, which the apps show as its first 8 characters. |
 | Error list | 5xx answers, recovered panics and errors the apps report from the browser, folded by kind, kept 30 days: Administration → System → Errors. |
-| Worker | The `docworker` service (`api -worker`, ADR 0008): reads documents' text for search and archives stored forms and given orders' records as PDFs. Its image's `HEALTHCHECK` runs `/api -healthcheck-worker` (a heartbeat in the last 2 minutes); Administration → System → Status has its **Worker** card (heartbeat, tools, jobs by kind, recent failures), and the Overview warns when jobs wait with no worker or jobs fail. |
+| Worker | The `docworker` service (`api -worker`, ADR 0008): reads documents' text for search, archives stored forms and given orders' records as PDFs, and converts DOCX templates' documents to PDF with LibreOffice. Its image's `HEALTHCHECK` runs `/api -healthcheck-worker` (a heartbeat in the last 2 minutes); Administration → System → Status has its **Worker** card (heartbeat, tools, jobs by kind, recent failures), and the Overview warns when jobs wait with no worker or jobs fail. |
 | Metrics | Prometheus `/metrics` on `API_METRICS_ADDR` (`:9090` in production, compose network only): requests and latency by route, sign-in failures, errors, the database pool, Go runtime. |
 
 On the droplet:

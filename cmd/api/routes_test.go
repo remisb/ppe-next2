@@ -1158,12 +1158,15 @@ var policy = map[string]rule{
 	"GET /api/v1/document-templates/{id}":                                       {role.DocumentTemplatesManage, "admins"},
 	"PUT /api/v1/document-templates/{id}":                                       {role.DocumentTemplatesManage, "admins"},
 	"PUT /api/v1/document-templates/{id}/draft":                                 {role.DocumentTemplatesManage, "admins"},
+	"POST /api/v1/document-templates/{id}/draft/docx":                           {role.DocumentTemplatesManage, "admins"},
+	"GET /api/v1/document-templates/{id}/versions/{n}/docx":                     {role.DocumentTemplatesManage, "admins"},
 	"POST /api/v1/document-templates/{id}/publish":                              {role.DocumentTemplatesManage, "admins"},
 	"POST /api/v1/document-templates/{id}/retire":                               {role.DocumentTemplatesManage, "admins"},
 	"POST /api/v1/document-templates/preview":                                   {role.DocumentTemplatesManage, "admins"},
 	"GET /api/v1/vault/templates":                                               {"", "documents"},
 	"POST /api/v1/vault/generate/preview":                                       {"", "documents"},
 	"POST /api/v1/vault/generate":                                               {"", "documents"},
+	"GET /api/v1/vault/renders/{id}":                                            {"", "documents"},
 	"POST /api/v1/vault/documents/{id}/versions/{n}/file":                       {role.VaultEmploymentRead, "employment"},
 }
 
@@ -1229,6 +1232,18 @@ func (stubVault) Sources(context.Context, string) ([]uuid.UUID, error) { return 
 func (stubVault) QueueArchives(context.Context, string, []uuid.UUID, time.Time) (int64, error) {
 	return 0, nil
 }
+func (stubVault) CreateRender(context.Context, vaultdoc.Render) error { return nil }
+func (stubVault) GetRender(context.Context, uuid.UUID) (vaultdoc.Render, error) {
+	return vaultdoc.Render{}, vaultdoc.ErrNotFound
+}
+func (stubVault) FinishRender(context.Context, uuid.UUID, string, *string, time.Time) error {
+	return nil
+}
+func (stubVault) CompleteRender(context.Context, uuid.UUID, vaultdoc.Document, []vaultdoc.Link, audit.Event, time.Time) (uuid.UUID, error) {
+	return uuid.Nil, vaultdoc.ErrNotFound
+}
+func (stubVault) StaleRenders(context.Context, time.Time) ([]uuid.UUID, error) { return nil, nil }
+func (stubVault) DeleteRender(context.Context, uuid.UUID) error                { return nil }
 func (stubVault) Unarchived(context.Context, string, []uuid.UUID) ([]uuid.UUID, error) {
 	return nil, nil
 }
@@ -1275,6 +1290,7 @@ func init() {
 		"POST /api/v1/vault/documents", "PUT /api/v1/vault/documents/{id}", "DELETE /api/v1/vault/documents/{id}",
 		"PUT /api/v1/vault/documents/{id}/hold", "POST /api/v1/vault/documents/{id}/versions",
 		"POST /api/v1/vault/documents/{id}/versions/{n}/read-again", "GET /api/v1/vault/templates", "POST /api/v1/vault/generate/preview", "POST /api/v1/vault/generate",
+		"GET /api/v1/vault/renders/{id}",
 	} {
 		anyOf[pattern] = []role.Permission{role.VaultManage, role.VaultEmploymentManage}
 	}

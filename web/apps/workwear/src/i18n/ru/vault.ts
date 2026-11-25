@@ -155,6 +155,8 @@ export const vault: VaultText = {
   generateButton: 'Сформировать',
   generated: (number: string) => `Сформировано: ${number}.`,
   stale: 'После предпросмотра что-то изменилось: просмотрите ещё раз.',
+  renderSlow: 'Документ ещё готовится: попробуйте через минуту.',
+  renderFailed: 'Шаблон Word не удалось превратить в PDF. Сообщите тому, кто ведёт шаблоны.',
   inputRequired: 'Заполните.',
   inputNumber: 'Введите число.',
   previewLabel: 'Предпросмотр документа',

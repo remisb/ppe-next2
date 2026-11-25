@@ -15,6 +15,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/docpdf"
 	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/vault"
+	"github.com/remisb/ppe-next2/internal/vault/docx"
 	"github.com/remisb/ppe-next2/internal/vault/template"
 )
 
@@ -37,6 +38,8 @@ var ErrStale = errors.New("the values changed since the preview: preview again")
 // Templates is the port to the published templates.
 type Templates interface {
 	ForGenerate(ctx context.Context, id uuid.UUID) (template.Template, template.Version, error)
+	// DocxBytes is a DOCX version's file (phase 8), checked against its hash.
+	DocxBytes(ctx context.Context, v template.Version) ([]byte, error)
 }
 
 // Facts are what People says of an employee and one of their employments:
@@ -150,18 +153,64 @@ func (f filled) value(key string) string {
 	return "[" + template.Label(key, f.ver.Asked) + "]"
 }
 
-// Preview draws the document reader would generate, PREVIEW in its footer
-// and no number, and the hash of its values, which Generate must be given back.
-func (s *Service) Preview(ctx context.Context, reader Reader, req GenerateRequest) ([]byte, string, error) {
+// Previewed is a preview: its PDF, or, for a DOCX template, the render the
+// worker is converting (GetRender answers its PDF), and the hash of its
+// values, which Generate must be given back.
+type Previewed struct {
+	PDF        []byte
+	ValuesHash string
+	Render     *uuid.UUID
+}
+
+// Preview draws the document reader would generate, PREVIEW for its number
+// (and its footer), and the hash of its values.
+func (s *Service) Preview(ctx context.Context, reader Reader, req GenerateRequest) (Previewed, error) {
 	f, err := s.fill(ctx, reader, req)
 	if err != nil {
-		return nil, "", err
+		return Previewed{}, err
+	}
+	if f.ver.Body.IsDocx() {
+		value := func(key string) string {
+			if key == "document.number" || key == "document.hash" {
+				return "PREVIEW"
+			}
+			return f.value(key)
+		}
+		filled, err := s.fillDocx(ctx, f, value)
+		if err != nil {
+			return Previewed{}, err
+		}
+		id, err := s.startRender(ctx, reader, RenderPreview, filled, &f.hash, nil)
+		if err != nil {
+			return Previewed{}, err
+		}
+		return Previewed{ValuesHash: f.hash, Render: &id}, nil
 	}
 	words := pageWords[f.tpl.Language]
 	pdf, err := docpdf.Render(f.ver.Body, f.value, docpdf.Options{
 		Title: f.tpl.Name, Footer: "PREVIEW · " + f.tpl.Name, PageWord: words[1], OfWord: words[2], Created: s.now(),
 	})
-	return pdf, f.hash, err
+	return Previewed{PDF: pdf, ValuesHash: f.hash}, err
+}
+
+// fillDocx is f's DOCX template filled with value.
+func (s *Service) fillDocx(ctx context.Context, f filled, value func(string) string) ([]byte, error) {
+	if s.keys == nil {
+		// A render's files are sealed while they wait for the worker.
+		return nil, ErrNotConfigured
+	}
+	data, err := s.templates.DocxBytes(ctx, f.ver)
+	if err != nil {
+		return nil, err
+	}
+	return docx.Merge(data, value)
+}
+
+// Generated is what Generate made: the document, or, for a DOCX template,
+// the render that makes it once the worker has its PDF (GetRender).
+type Generated struct {
+	Document *Document
+	Render   *uuid.UUID
 }
 
 // formatNumber is a generated document's number: EC-2026-0001.
@@ -175,21 +224,24 @@ func formatNumber(prefix string, year, n int) string {
 // hash in the footer, seals it for a sealed type, and keeps it as version 1
 // (generated), linked (locked) to the employee and the company, with
 // vault.document_generated, which holds no value.
-func (s *Service) Generate(ctx context.Context, reader Reader, req GenerateRequest, valuesHash string) (Document, error) {
+func (s *Service) Generate(ctx context.Context, reader Reader, req GenerateRequest, valuesHash string) (Generated, error) {
 	if s.store == nil {
-		return Document{}, ErrNoStorage
+		return Generated{}, ErrNoStorage
 	}
 	f, err := s.fill(ctx, reader, req)
 	if err != nil {
-		return Document{}, err
+		return Generated{}, err
 	}
 	if f.hash != valuesHash {
-		return Document{}, ErrStale
+		return Generated{}, ErrStale
+	}
+	if f.ver.Body.IsDocx() && s.keys == nil {
+		return Generated{}, ErrNotConfigured
 	}
 	year, _ := strconv.Atoi(f.today[:4])
 	n, err := s.repo.NextNumber(ctx, f.typ.Key, year)
 	if err != nil {
-		return Document{}, err
+		return Generated{}, err
 	}
 	number := formatNumber(f.typ.NumberPrefix, year, n)
 	f.values["document.number"] = number
@@ -203,21 +255,15 @@ func (s *Service) Generate(ctx context.Context, reader Reader, req GenerateReque
 		Values   map[string]string `json:"values"`
 	}{f.typ.Key, f.tpl.ID, f.ver.Number, f.ver.BodySHA256, number, f.today, f.values})
 	if err != nil {
-		return Document{}, err
+		return Generated{}, err
 	}
 	sum := sha256.Sum256(canonical)
 	docHash := hex.EncodeToString(sum[:])
-	words := pageWords[f.tpl.Language]
+	// The hash prints where a template asks for it (a DOCX's footer); it is
+	// of the values without it.
+	f.values["document.hash"] = docHash
 	now := s.now()
 	title := f.tpl.Name + " " + number
-	pdf, err := docpdf.Render(f.ver.Body, f.value, docpdf.Options{
-		Title:  title,
-		Footer: fmt.Sprintf("%s %s v1 · SHA-256 %s", words[0], number, docHash), PageWord: words[1], OfWord: words[2], Created: now,
-	})
-	if err != nil {
-		return Document{}, err
-	}
-	fileSum := sha256.Sum256(pdf)
 	d := Document{
 		ID: s.newID(), Type: f.typ.Key, Title: title, Number: &number, DocumentDate: &f.today, Origin: vault.Generated,
 		TemplateID: &f.tpl.ID, TemplateVersion: &f.ver.Number,
@@ -230,30 +276,55 @@ func (s *Service) Generate(ctx context.Context, reader Reader, req GenerateReque
 	d.Requires, d.Links = requires(f.typ, links), links
 	values, err := json.Marshal(f.values)
 	if err != nil {
-		return Document{}, err
+		return Generated{}, err
 	}
-	file := File{
-		ID: s.newID(), FileName: number + ".pdf", ContentType: files.PDF, SizeBytes: int64(len(pdf)), SHA256: hex.EncodeToString(fileSum[:]),
-	}
+	file := File{ID: s.newID(), FileName: number + ".pdf", ContentType: files.PDF}
 	file.ObjectKey = "vault/" + d.ID.String() + "/" + file.ID.String() + ".pdf"
-	v := Version{
-		ID: s.newID(), Number: 1, Origin: VersionGenerated, DocumentHash: docHash, File: file, Data: values,
-		Text:      f.ver.Body.PlainText(f.value),
-		CreatedAt: now, CreatedByUserID: reader.ID,
+	v := Version{ID: s.newID(), Number: 1, Origin: VersionGenerated, DocumentHash: docHash, File: file, Data: values,
+		CreatedAt: now, CreatedByUserID: reader.ID}
+
+	// A DOCX template: filled now, converted by the worker; the document is
+	// made once its PDF is there (GetRender).
+	var filledDocx, pdf []byte
+	if f.ver.Body.IsDocx() {
+		if filledDocx, err = s.fillDocx(ctx, f, f.value); err != nil {
+			return Generated{}, err
+		}
+		if v.Text, err = docx.Text(filledDocx, f.value); err != nil {
+			return Generated{}, err
+		}
+		src := &File{ID: s.newID(), FileName: number + ".docx", ContentType: files.DOCX}
+		src.ObjectKey = "vault/" + d.ID.String() + "/" + src.ID.String() + ".docx"
+		v.Source = src
+	} else {
+		words := pageWords[f.tpl.Language]
+		pdf, err = docpdf.Render(f.ver.Body, f.value, docpdf.Options{
+			Title:  title,
+			Footer: fmt.Sprintf("%s %s v1 · SHA-256 %s", words[0], number, docHash), PageWord: words[1], OfWord: words[2], Created: now,
+		})
+		if err != nil {
+			return Generated{}, err
+		}
+		fileSum := sha256.Sum256(pdf)
+		v.File.SizeBytes, v.File.SHA256 = int64(len(pdf)), hex.EncodeToString(fileSum[:])
+		v.Text = f.ver.Body.PlainText(f.value)
 	}
 	data := pdf
 	if f.typ.Sealed {
 		box, key, keyID, err := s.newKey(d.ID)
 		if err != nil {
-			return Document{}, err
+			return Generated{}, err
 		}
 		d.Sealed, d.Key, d.KeyID = true, key, keyID
 		if d.TitleSealed, err = box.Seal([]byte(d.Title), titleContext(d.ID)); err != nil {
-			return Document{}, err
+			return Generated{}, err
 		}
 		d.Title = ""
 		if data, err = sealVersion(box, &v, pdf); err != nil {
-			return Document{}, err
+			return Generated{}, err
+		}
+		if v.Source != nil {
+			v.Source.FileName, v.Source.Sealed = "document.docx", true
 		}
 	}
 	d.Versions = []Version{v}
@@ -261,17 +332,24 @@ func (s *Service) Generate(ctx context.Context, reader Reader, req GenerateReque
 		"type": d.Type, "number": number, "template_id": f.tpl.ID, "template_version": f.ver.Number, "sha256": docHash,
 	})
 	if err != nil {
-		return Document{}, err
+		return Generated{}, err
+	}
+	if filledDocx != nil {
+		id, err := s.startRender(ctx, reader, RenderDocument, filledDocx, nil, &pendingDocument{Document: d, Links: links, Event: ev})
+		if err != nil {
+			return Generated{}, err
+		}
+		return Generated{Render: &id}, nil
 	}
 	if err := s.store.Put(ctx, v.File.ObjectKey, bytes.NewReader(data), int64(len(data)), files.PDF); err != nil {
-		return Document{}, fmt.Errorf("vault: storing file: %w", err)
+		return Generated{}, fmt.Errorf("vault: storing file: %w", err)
 	}
 	if err := s.repo.Create(ctx, d, links, ev); err != nil {
-		return Document{}, err
+		return Generated{}, err
 	}
 	out, err := s.repo.Get(ctx, d.ID)
 	if err != nil {
-		return Document{}, err
+		return Generated{}, err
 	}
-	return out, s.unseal(&out)
+	return Generated{Document: &out}, s.unseal(&out)
 }

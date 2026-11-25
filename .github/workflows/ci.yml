@@ -63,6 +63,11 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends poppler-utils tesseract-ocr tesseract-ocr-lit tesseract-ocr-rus
           go test -tags tools -count=1 ./internal/vault/extract
+      # DOCX templates' conversion with LibreOffice Writer, as the docworker image has it.
+      - name: DOCX conversion with LibreOffice
+        run: |
+          sudo apt-get install -y -q --no-install-recommends libreoffice-writer-nogui fonts-liberation2 fonts-dejavu-core
+          go test -tags tools -count=1 ./internal/vault/docx
 
   web:
     name: Web (typecheck, unit tests, build)

@@ -47,12 +47,15 @@ RUN mkdir -p /out/published /out/root/tmp && chmod 1777 /out/root/tmp
 # The worker (`api -worker`, ADR 0008 decision 9, docs/specs/outbox-service.md):
 # the same binary on Debian with the tools it runs, Poppler (pdftotext,
 # pdftoppm) and Tesseract with English, Lithuanian, Russian and orientation
-# and script detection (eng and osd come with tesseract-ocr). Built with
+# and script detection (eng and osd come with tesseract-ocr), and LibreOffice
+# Writer, headless, with fonts for Lithuanian and Russian and Word's Calibri
+# and Cambria metrics, for DOCX templates (phase 8). Built with
 # `--target docworker`; the API's image below stays scratch, and is the
 # default target as the last stage (TestAPIImageHasTmp).
 FROM debian:trixie-slim AS docworker
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends poppler-utils tesseract-ocr tesseract-ocr-lit tesseract-ocr-rus && \
+    apt-get install -y --no-install-recommends poppler-utils tesseract-ocr tesseract-ocr-lit tesseract-ocr-rus \
+        libreoffice-writer-nogui fonts-liberation2 fonts-dejavu-core fonts-crosextra-carlito fonts-crosextra-caladea && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /out/api /api

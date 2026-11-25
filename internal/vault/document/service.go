@@ -94,6 +94,7 @@ type Service struct {
 	users       Users
 	text        TextReader
 	records     Records
+	converter   Converter
 	identity    IdentityDocuments
 	loc         *time.Location
 	now         func() time.Time

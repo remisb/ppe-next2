@@ -1,4 +1,4 @@
-import type { DocumentTemplate, TemplateBlock, TemplateRun, TemplateVersion } from '@ppe/api-client'
+import type { DocumentTemplate, DocxTemplateBody, TemplateBlock, TemplateRun, TemplateVersion } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -12,6 +12,9 @@ import {
   draftKey,
   draftNumber,
   draftProblems,
+  docxBody,
+  docxProblems,
+  fileSize,
   editAsked,
   editBlock,
   editBody,
@@ -262,6 +265,7 @@ describe('state and versions', () => {
   const version = (number: number, state: 'draft' | 'published'): TemplateVersion => ({
     number,
     state,
+    kind: 'blocks',
     body: { format: 'ppe.blocks.v1', blocks: [{ type: 'paragraph', text: [{ text: `v${number}` }] }] },
     asked: [],
     body_sha256: '',
@@ -330,5 +334,25 @@ describe('the preview', () => {
 
   it('names the file after the template', () => {
     expect(previewFilename('Contract: LT/full time')).toBe('Contract- LT-full time (preview).pdf')
+  })
+})
+
+describe('DOCX templates', () => {
+  const body: DocxTemplateBody = { format: 'ppe.docx.v1', blocks: [], docx_sha256: 'a'.repeat(64), fields: ['document.number', 'employee.name', 'input.salary'] }
+  const app = [{ key: 'document.number' }, { key: 'document.hash' }, { key: 'employee.name' }]
+  it('names the fields the DOCX uses that are not known, and what Publish needs', () => {
+    expect(docxProblems({ ...body, fields: [...body.fields] }, [], app)).toEqual({ unknown: ['input.salary'], missing: ['document.hash'] })
+    const salary = { ...editAsked({ key: 'salary', label: 'Alga', kind: 'money', required: true }) }
+    expect(docxProblems({ ...body, fields: [...body.fields, 'document.hash'] }, [salary], app)).toEqual({ unknown: [], missing: [] })
+  })
+  it('keeps a DOCX draft as it is saved, and tells it from blocks', () => {
+    const v: TemplateVersion = { number: 2, state: 'draft', kind: 'docx', body: { ...body, fields: [...body.fields] }, asked: [], body_sha256: 'b', updated_at: '', published_at: null }
+    expect(docxBody(v)?.docx_sha256).toBe('a'.repeat(64))
+    expect(savedKey(v)).toBe(draftKey(v.body, []))
+    expect(editBody(v.body)).toEqual([])
+  })
+  it('writes a size', () => {
+    expect(fileSize(18_000)).toBe('18 KB')
+    expect(fileSize(1_300_000)).toBe('1.2 MB')
   })
 })

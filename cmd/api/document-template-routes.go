@@ -4,6 +4,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"slices"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +15,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/vault"
 	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
+	"github.com/remisb/ppe-next2/internal/vault/docx"
 	vaulttemplate "github.com/remisb/ppe-next2/internal/vault/template"
 )
 
@@ -32,12 +36,15 @@ func registerDocumentTemplateRoutes(rt *router, templates *vaulttemplate.Service
 	rt.restricted("GET /api/v1/document-templates/{id}", h.get, role.DocumentTemplatesManage)
 	rt.restricted("PUT /api/v1/document-templates/{id}", h.update, role.DocumentTemplatesManage)
 	rt.restricted("PUT /api/v1/document-templates/{id}/draft", h.saveDraft, role.DocumentTemplatesManage)
+	rt.restricted("POST /api/v1/document-templates/{id}/draft/docx", h.uploadDocx, role.DocumentTemplatesManage)
+	rt.restricted("GET /api/v1/document-templates/{id}/versions/{n}/docx", h.downloadDocx, role.DocumentTemplatesManage)
 	rt.restricted("POST /api/v1/document-templates/{id}/publish", h.publish, role.DocumentTemplatesManage)
 	rt.restricted("POST /api/v1/document-templates/{id}/retire", h.retire, role.DocumentTemplatesManage)
 	rt.restricted("POST /api/v1/document-templates/preview", h.previewDraft, role.DocumentTemplatesManage)
 	rt.restrictedAny("GET /api/v1/vault/templates", h.forGenerate, vaultManagers...)
 	rt.restrictedAny("POST /api/v1/vault/generate/preview", h.previewDocument, vaultManagers...)
 	rt.restrictedAny("POST /api/v1/vault/generate", h.generate, vaultManagers...)
+	rt.restrictedAny("GET /api/v1/vault/renders/{id}", h.render, vaultManagers...)
 }
 
 func (h *templateHandler) list(w http.ResponseWriter, r *http.Request) {
@@ -310,13 +317,18 @@ func (h *templateHandler) previewDocument(w http.ResponseWriter, r *http.Request
 		writeError(w, r, err)
 		return
 	}
-	pdf, hash, err := h.documents.Preview(r.Context(), reader, req.request())
+	p, err := h.documents.Preview(r.Context(), reader, req.request())
 	if err != nil {
 		writeError(w, r, err)
 		return
 	}
 	w.Header().Set("Cache-Control", "private, no-store")
-	writeJSON(w, http.StatusOK, pdfAnswer{PDF: base64.StdEncoding.EncodeToString(pdf), ValuesHash: hash})
+	if p.Render != nil {
+		// A DOCX template: the worker converts it; GET /vault/renders/{id} answers its PDF.
+		writeJSON(w, http.StatusAccepted, renderAnswer{RenderID: p.Render, State: vaultdoc.RenderPending, ValuesHash: p.ValuesHash})
+		return
+	}
+	writeJSON(w, http.StatusOK, pdfAnswer{PDF: base64.StdEncoding.EncodeToString(p.PDF), ValuesHash: p.ValuesHash})
 }
 
 func (h *templateHandler) generate(w http.ResponseWriter, r *http.Request) {
@@ -330,10 +342,120 @@ func (h *templateHandler) generate(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	d, err := h.documents.Generate(r.Context(), reader, req.request(), req.ValuesHash)
+	g, err := h.documents.Generate(r.Context(), reader, req.request(), req.ValuesHash)
 	if err != nil {
 		writeError(w, r, err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, d)
+	if g.Render != nil {
+		// A DOCX template: the document is made once the worker has its PDF.
+		writeJSON(w, http.StatusAccepted, renderAnswer{RenderID: g.Render, State: vaultdoc.RenderPending})
+		return
+	}
+	writeJSON(w, http.StatusCreated, g.Document)
+}
+
+// renderAnswer is a render as the app polls it (phase 8): 202 while the
+// worker converts it; then a preview's PDF and values hash, or the document.
+type renderAnswer struct {
+	RenderID   *uuid.UUID         `json:"render_id,omitempty"`
+	State      string             `json:"state"`
+	PDF        string             `json:"pdf,omitempty"`
+	ValuesHash string             `json:"values_hash,omitempty"`
+	Document   *vaultdoc.Document `json:"document,omitempty"`
+}
+
+// render answers the reader's own render: 202 pending; 200 with a preview's
+// PDF; 201 with the document made from it (the same document when asked again).
+func (h *templateHandler) render(w http.ResponseWriter, r *http.Request) {
+	reader, err := vaultReader(r)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	got, err := h.documents.GetRender(r.Context(), reader, id)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "private, no-store")
+	switch {
+	case got.State == vaultdoc.RenderPending:
+		writeJSON(w, http.StatusAccepted, renderAnswer{RenderID: &id, State: got.State})
+	case got.Document != nil:
+		writeJSON(w, http.StatusCreated, renderAnswer{RenderID: &id, State: got.State, Document: got.Document})
+	default:
+		writeJSON(w, http.StatusOK, renderAnswer{RenderID: &id, State: got.State, PDF: base64.StdEncoding.EncodeToString(got.PDF), ValuesHash: got.ValuesHash})
+	}
+}
+
+// uploadDocx is Upload DOCX Template: the file, and the asked fields as JSON
+// in the "asked" part; it becomes the template's draft.
+func (h *templateHandler) uploadDocx(w http.ResponseWriter, r *http.Request) {
+	id, ok := templateID(w, r)
+	if !ok {
+		return
+	}
+	actor, ok := actorOf(w, r)
+	if !ok {
+		return
+	}
+	const shape = `send multipart/form-data with the DOCX as "file" and the asked fields as JSON in "asked"`
+	if !parseMultipart(w, r, docx.MaxBytes+64<<10, vaulttemplate.ErrTooLarge, shape) {
+		return
+	}
+	defer r.MultipartForm.RemoveAll()
+	asked := []vaulttemplate.Asked{}
+	if raw := r.FormValue("asked"); raw != "" {
+		dec := json.NewDecoder(strings.NewReader(raw))
+		dec.DisallowUnknownFields()
+		if err := dec.Decode(&asked); err != nil {
+			writeErrorMessage(w, http.StatusBadRequest, "asked: "+err.Error())
+			return
+		}
+	}
+	data, name, ok := formFile(w, r, "file", docx.MaxBytes, shape)
+	if !ok {
+		return
+	}
+	t, err := h.templates.UploadDocx(r.Context(), id, name, data, asked, actor)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, t)
+}
+
+// downloadDocx sends a DOCX version's file, as uploaded.
+func (h *templateHandler) downloadDocx(w http.ResponseWriter, r *http.Request) {
+	id, ok := templateID(w, r)
+	if !ok {
+		return
+	}
+	n, err := strconv.Atoi(r.PathValue("n"))
+	if err != nil {
+		writeError(w, r, vaulttemplate.ErrNotFound)
+		return
+	}
+	t, err := h.templates.Get(r.Context(), id)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	i := slices.IndexFunc(t.Versions, func(v vaulttemplate.Version) bool { return v.Number == n })
+	if i < 0 || t.Versions[i].Docx == nil {
+		writeError(w, r, vaulttemplate.ErrNotFound)
+		return
+	}
+	data, err := h.templates.DocxBytes(r.Context(), t.Versions[i])
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeAttachment(w, t.Versions[i].Docx.Name, docx.ContentType, data)
 }

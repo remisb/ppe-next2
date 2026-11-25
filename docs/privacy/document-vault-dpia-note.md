@@ -60,6 +60,7 @@ A **Legal Hold** (a date and reason, recorded) stops the shredding for a dispute
 | Risk | Measures |
 | --- | --- |
 | A contract read by someone who should not | sealed per document; its own add-on role, Administrator not included; a recent sign-in to open; every opening recorded before the file is sent; never in a URL, log line or error |
+| A contract from a DOCX template waits for the worker to turn it into a PDF (phase 8) | the filled DOCX and its PDF are sealed with a key of their own under `API_VAULT_KEY` while they wait, only their maker may read them, and the upkeep deletes them, files and all, an hour later; the document itself is sealed as any contract |
 | Text read from scans exposes more than the document's title (pay, codes) | sealed types keep no text and no word with a digit; other types' text is reachable only by those who may read the document; search is a POST, so searched names are not logged |
 | Search makes it easy to collect everything about a person | results filtered in the database by the reader's permissions; Export needs `data.export`; sealed types show only type and number in results |
 | Erasure is incomplete | shredding deletes the key, so the sealed files and values are unreadable at once; the database backups still hold the sealed rows and the key until they expire (14 days today), and the files store's versioning keeps sealed objects that no key opens. Text and search words of types that are not sealed are in the backups for 14 days too. **The DPIA and every erasure answer say "within 14 days".** |

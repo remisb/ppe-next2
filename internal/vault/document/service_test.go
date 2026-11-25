@@ -32,6 +32,8 @@ type memRepo struct {
 	queued []uuid.UUID
 	// archives are the records QueueArchives queued.
 	archives []uuid.UUID
+	// renders are the renders, by id.
+	renders map[uuid.UUID]Render
 }
 
 func newMemRepo() *memRepo { return &memRepo{docs: map[uuid.UUID]Document{}} }
@@ -655,4 +657,70 @@ func TestTSQuery(t *testing.T) {
 			t.Errorf("tsQuery(%q) = %q, want %q", in, got, want)
 		}
 	}
+}
+
+func (m *memRepo) CreateRender(_ context.Context, r Render) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.renders == nil {
+		m.renders = map[uuid.UUID]Render{}
+	}
+	m.renders[r.ID] = r
+	return nil
+}
+
+func (m *memRepo) GetRender(_ context.Context, id uuid.UUID) (Render, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	r, ok := m.renders[id]
+	if !ok {
+		return Render{}, ErrNotFound
+	}
+	return r, nil
+}
+
+func (m *memRepo) FinishRender(_ context.Context, id uuid.UUID, state string, code *string, _ time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if r, ok := m.renders[id]; ok && r.State == RenderPending {
+		r.State, r.Error = state, code
+		m.renders[id] = r
+	}
+	return nil
+}
+
+func (m *memRepo) CompleteRender(ctx context.Context, id uuid.UUID, d Document, links []Link, ev audit.Event, _ time.Time) (uuid.UUID, error) {
+	m.mu.Lock()
+	r := m.renders[id]
+	if r.State == RenderFinished {
+		m.mu.Unlock()
+		return *r.DocumentID, nil
+	}
+	if r.State != RenderDone {
+		m.mu.Unlock()
+		return uuid.Nil, errors.New("not done")
+	}
+	r.State, r.DocumentID = RenderFinished, &d.ID
+	m.renders[id] = r
+	m.mu.Unlock()
+	return d.ID, m.Create(ctx, d, links, ev)
+}
+
+func (m *memRepo) StaleRenders(_ context.Context, before time.Time) ([]uuid.UUID, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []uuid.UUID
+	for id, r := range m.renders {
+		if r.CreatedAt.Before(before) {
+			out = append(out, id)
+		}
+	}
+	return out, nil
+}
+
+func (m *memRepo) DeleteRender(_ context.Context, id uuid.UUID) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.renders, id)
+	return nil
 }
