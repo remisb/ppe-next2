@@ -214,6 +214,9 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	if cfg.ImportSIMs != "" {
 		return importSIMs(ctx, svc, cfg, os.Stdout)
 	}
+	if cfg.VaultBackfill {
+		return vaultBackfill(ctx, pool, store, cfg.ImportCommit, os.Stdout)
+	}
 	if cfg.VaultReindex {
 		return vaultReindex(ctx, svc, cfg.VaultReindexFailed, os.Stdout)
 	}
@@ -335,7 +338,7 @@ func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, s
 		security:  sec,
 		roles:     roles,
 		users:     users,
-		assets:    asset.NewService(assets, asset.WithLocation(loc), asset.WithFiles(store), asset.WithSealer(codes)),
+		assets:    asset.NewService(assets, asset.WithLocation(loc), asset.WithSealer(codes)),
 		suppliers: supplier.NewService(suppliers),
 		companies: company.NewService(companies),
 		dashboard: dashboard.NewService(board, dashboard.WithLocation(loc)),

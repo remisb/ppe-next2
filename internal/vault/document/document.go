@@ -42,8 +42,11 @@ type Document struct {
 	Sealed       bool         `json:"sealed"`
 	// Locked documents (archived or migrated) are their source's: never removed
 	// or relinked by a user.
-	Locked   bool     `json:"locked"`
-	Requires []string `json:"-"`
+	Locked bool `json:"locked"`
+	// SourceKind and SourceID are a sourced document's record (vault.Type.Source).
+	SourceKind *string    `json:"-"`
+	SourceID   *uuid.UUID `json:"-"`
+	Requires   []string   `json:"-"`
 	// RetainUntil is the day the retention rule removes a sealed document
 	// (shredded); nil while it cannot be known (still employed) or never.
 	RetainUntil *string `json:"retain_until"`

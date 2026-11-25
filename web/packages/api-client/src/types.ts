@@ -2193,6 +2193,11 @@ export interface VaultType {
   retention: { rule: 'keep' | 'forever' | 'after_document_date' | 'after_employment_end'; months?: number }
   /** Starts a generated document's number: EC-2026-0001. */
   number_prefix?: string
+  /**
+   * The context that alone adds documents of the type (asset_signed_form:
+   * Company Assets' Upload Signed Form); its manage is then '', no one's.
+   */
+  source?: string
 }
 
 /** A subject a document is linked to, with its name now. */

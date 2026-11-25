@@ -126,7 +126,8 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	svc.documents = document.NewService(document.NewPostgresRepository(pool), testPersonnelKeys(t), testFiles(t), document.WithPeople(peopleOf(svc)))
 	svc.scans = scan.NewService(scan.NewPostgresRepository(pool), testPersonnelKeys(t), testFiles(t))
 	svc.docTemplates = vaulttemplate.NewService(vaulttemplate.NewPostgresRepository(pool))
-	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), testFiles(t), testVaultKeys(t), time.UTC)
+	vaultFiles := testFiles(t)
+	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), vaultFiles, testVaultKeys(t), time.UTC)
 	svc.shares = share.NewService(share.NewPostgresRepository(pool))
 	svc.outbox = outbox.NewQueue(pool)
 	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123", []uuid.UUID{role.AdminID})
@@ -138,7 +139,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	}
 	tok := testTokens(time.Now())
 	svc.ready = dbReadiness{pool: pool, want: db.Migrations()}
-	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin}, owner
+	return &testAPI{handler: routes(testConfig(), svc, tok, testLogger), svc: svc, tokens: tok, admin: admin, files: vaultFiles}, owner
 }
 
 func decode[T any](t *testing.T, body []byte) T {
@@ -948,7 +949,7 @@ func (a *testAPI) upload(t *testing.T, path, token, name string, data []byte) *h
 
 // Upload Signed Form (§9): what is accepted, how a copy downloads, and its event.
 func TestPostgresAssetsSignedCopyHTTP(t *testing.T) {
-	api, _ := newPostgresAPI(t)
+	api, pool := newPostgresAPI(t)
 	_, mgr := api.userWith(t, role.KeyManager)
 	_, staff := api.userWith(t, role.KeyEmployee)
 	rec := api.do(t, "POST", "/api/v1/employees", mgr, map[string]any{"first_name": "Jonas", "last_name": "Petraitis"})
@@ -1017,6 +1018,49 @@ func TestPostgresAssetsSignedCopyHTTP(t *testing.T) {
 	}
 	if rec := api.do(t, "GET", "/api/v1/audit-events/assets/"+id, mgr, nil); !strings.Contains(rec.Body.String(), "asset.signed_copy_uploaded") {
 		t.Errorf("changes = %s", rec.Body)
+	}
+
+	// Kept in the Document Vault (phase 5): one document for the assignment,
+	// each copy a version with its id, linked to the asset and the employee,
+	// its reading queued, and no event but the asset's.
+	again := api.upload(t, path, mgr, "photo.pdf", []byte("%PDF-1.7 again\n%%EOF\n"))
+	if again.Code != http.StatusCreated {
+		t.Fatalf("second upload = %d %s", again.Code, again.Body)
+	}
+	second := decode[map[string]any](t, again.Body.Bytes())["id"].(string)
+	ctx := context.Background()
+	var docs, links, locked, jobs, vaultEvents int
+	var title, origins string
+	if err := pool.QueryRow(ctx, `SELECT
+		(SELECT count(*) FROM vault.documents WHERE type = 'asset.signed_form' AND source_kind = 'asset_signed_form' AND source_id = $1),
+		(SELECT count(*) FROM vault.links l JOIN vault.documents d ON d.id = l.document_id WHERE d.source_id = $1),
+		(SELECT count(*) FROM vault.links l JOIN vault.documents d ON d.id = l.document_id WHERE d.source_id = $1 AND l.locked),
+		(SELECT count(*) FROM outbox.jobs WHERE kind = 'vault.extract_text' AND key IN ($2, $3) AND state = 'pending'),
+		(SELECT count(*) FROM audit_events WHERE entity_type = 'vault_document'),
+		(SELECT title FROM vault.documents WHERE source_id = $1),
+		(SELECT string_agg(v.origin || ':' || v.id, ',' ORDER BY v.number) FROM vault.versions v
+		 JOIN vault.documents d ON d.id = v.document_id WHERE d.source_id = $1)`,
+		assignment, c["id"], second).Scan(&docs, &links, &locked, &jobs, &vaultEvents, &title, &origins); err != nil {
+		t.Fatal(err)
+	}
+	if docs != 1 || links != 2 || locked != 2 || jobs != 2 || vaultEvents != 0 || title != "SIM-000001 · "+today ||
+		origins != "original:"+c["id"].(string)+",added:"+second {
+		t.Errorf("vault: %d documents, %d links (%d locked), %d jobs, %d vault events, title %q, versions %s",
+			docs, links, locked, jobs, vaultEvents, title, origins)
+	}
+	rec = api.do(t, "GET", "/api/v1/vault/by-subject/asset/"+id, mgr, nil)
+	hits := decode[[]map[string]any](t, rec.Body.Bytes())
+	if rec.Code != http.StatusOK || len(hits) != 1 || hits[0]["type"] != "asset.signed_form" || hits[0]["versions"] != float64(2) {
+		t.Fatalf("the asset's documents = %d %s", rec.Code, rec.Body)
+	}
+	// No one changes it in the vault: its source keeps it.
+	if rec := api.do(t, "DELETE", "/api/v1/vault/documents/"+hits[0]["id"].(string), api.tokenWith(t, role.VaultRead, role.VaultManage, role.SIMCardsRead), nil); rec.Code != http.StatusForbidden {
+		t.Errorf("removed in the vault = %d %s", rec.Code, rec.Body)
+	}
+	rec = api.do(t, "GET", "/api/v1/assets/"+id, mgr, nil)
+	copies = decode[map[string]any](t, rec.Body.Bytes())["assignments"].([]any)[0].(map[string]any)["signed_copies"].([]any)
+	if len(copies) != 2 || copies[0].(map[string]any)["id"] != second {
+		t.Errorf("copies newest first = %v", copies)
 	}
 }
 
@@ -2160,6 +2204,7 @@ func TestPostgresAPIRoleIsLeastPrivileged(t *testing.T) {
 		`DELETE FROM asset_numbers`,
 		`UPDATE asset_signed_copies SET file_name = file_name`,
 		`DELETE FROM asset_signed_copies`,
+		`INSERT INTO asset_signed_copies SELECT * FROM asset_signed_copies WHERE false`,
 		`DELETE FROM catalogue_pictures`,
 		`UPDATE vault.versions SET note = note`,
 		`DELETE FROM vault.versions`,

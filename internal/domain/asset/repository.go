@@ -62,8 +62,8 @@ type Repository interface {
 	Create(ctx context.Context, a Asset, bump *Bump, ev audit.Event) error
 	// Get is the live asset with its open assignment, or ErrNotFound.
 	Get(ctx context.Context, id uuid.UUID) (Record, error)
-	// Assignments are the asset's assignments, newest given date first, each
-	// with its signed copies, newest first.
+	// Assignments are the asset's assignments, newest given date first
+	// (their signed copies are SignedForms').
 	Assignments(ctx context.Context, assetID uuid.UUID) ([]Assignment, error)
 	// List is f's page of the register and how many assets f matches in all.
 	List(ctx context.Context, f ListFilter) ([]Record, int, error)
@@ -122,11 +122,6 @@ type Repository interface {
 	// UpdateOpen locks the asset and its open assignment, calls fn and writes
 	// the assignment's return and Not Returned fields and the events.
 	UpdateOpen(ctx context.Context, assetID uuid.UUID, fn OpenMutation) (Assignment, error)
-	// AddSignedCopy locks the asset, reads its assignment (ErrAssignmentNotFound),
-	// calls fn and writes the signed copy and its event.
-	AddSignedCopy(ctx context.Context, assetID, assignmentID uuid.UUID, fn SignedCopyFunc) error
 	// Record writes ev alone: an action on the asset that changes nothing.
 	Record(ctx context.Context, ev audit.Event) error
-	// SignedCopy is one signed copy of the asset's assignment, or ErrNotFound.
-	SignedCopy(ctx context.Context, assetID, assignmentID, copyID uuid.UUID) (SignedCopy, error)
 }

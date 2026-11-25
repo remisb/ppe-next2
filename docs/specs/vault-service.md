@@ -7,9 +7,9 @@ and generation are [document-template-service.md](document-template-service.md);
 worker are [outbox-service.md](outbox-service.md); the data-protection note is
 [document-vault-dpia-note.md](../privacy/document-vault-dpia-note.md).
 
-**Status: phases 1 to 4 built** (migrations 0061 to 0064, `internal/vault`, `internal/vault/document`,
+**Status: phases 1 to 5 built** (migrations 0061 to 0065, `internal/vault`, `internal/vault/document`,
 `internal/vault/extract`, `cmd/api/vault-routes.go`, `cmd/api/wire_vault.go`, the staff app's Document
-Vault and Documents sections); the rest decided, not built. Each section names the phase that builds it (ADR 0008's
+Vault and Documents sections, Company Assets' signed copies kept here); the rest decided, not built. Each section names the phase that builds it (ADR 0008's
 plan: 1 core, 2 sealed types, 3 templates, 4 worker and text, 5 signed copies, 6 archiving, 7
 identity documents, 8 DOCX).
 
@@ -60,7 +60,7 @@ Templates' use cases are. Administrators edit templates, never types. A type has
 | `employment.annex` | Employment | yes | `AfterEmploymentEnd(120)`, as a contract | employee (its contract as parent from phase 3) | the same | the same | 2 |
 | `employment.nda` | Employment | yes | `AfterEmploymentEnd(120)` | employee | the same | the same | 2 |
 | `employment.other` | Employment | yes | `AfterEmploymentEnd(36)` | employee | the same | the same | 2 |
-| `asset.signed_form` | Company Assets | no | `Keep` | asset, employee | `vault.read` and the asset kind's read / the asset kind's manage (`sim_cards.manage`, `assets.manage`) | uploaded | 5 |
+| `asset.signed_form` | Company Assets | no | `Keep` | asset, employee | `vault.read` and the asset kind's read / none here: added by Company Assets' Upload Signed Form alone, with its permissions (`sim_cards.manage`, `assets.manage`) | uploaded (source `asset_signed_form`) | 5 |
 | `asset.assignment_form` | Company Assets | no | `Keep` | asset, employee | `vault.read` and the asset kind's read / none (archived only) | archived | 6 |
 | `order.record` | Workwear | no | `Keep` | order, employee | `vault.read` (orders are every signed-in user's) / none (archived only) | archived | 6 |
 
@@ -83,7 +83,7 @@ vault's routes show them to readers who also have `vault.read`.
 | `number` | the document number, unique per type among live documents, for numbered types |
 | `document_date`, `valid_from`, `valid_until` | optional dates; `valid_until` drives "expires" for certificates |
 | `origin` | `uploaded`, `generated`, `archived` |
-| `source_kind`, `source_id` | for archived and migrated documents (`asset_assignment`, `order`); UNIQUE together among all rows, so archiving twice is impossible |
+| `source_kind`, `source_id` | the record a sourced, archived or migrated document belongs to: `asset_signed_form` (an assignment's signed copies, phase 5), `asset_assignment` (its archived form, phase 6), `order`; UNIQUE together among all rows, so archiving twice is impossible |
 | `parent_id` | an annex's contract |
 | `template_id`, `template_version` | for generated documents (phase 3) |
 | `sealed` | copied from the type when created |
@@ -360,19 +360,39 @@ Signed copies keep **their** event: an upload through Company Assets records
 
 ## Signed copies (phase 5)
 
-Migration `0065_vault_signed_copies`, pure SQL: each assignment with copies becomes a document
-of type `asset.signed_form` (`source_kind` `asset_assignment`, `source_id` its id, links to the
-asset and employee, locked); each copy becomes a version (`original`, then `added`) and a file
-with **the same id**, object key, name, type, size, SHA-256, time and uploader; read text starts
-`pending`. No object is copied. `asset_signed_copies` loses INSERT for `ppe_app` and is dropped a
-release later.
+Company Assets' signed copies are kept here, its routes, JSON, event and `signed-copies.tsx`
+unchanged. A type with a **source** (`vault.Type.Source`) is added by its source's context
+alone, through its port: `asset.signed_form`'s source kind is `asset_signed_form`, its record
+an assignment (not `asset_assignment`, which phase 6's archived form takes: the source is
+unique). Its `manage` is empty, so no one changes such a document in the vault (Upload, Add
+Version, Update, Remove are 403); its links are locked.
 
-Company Assets declares `SignedForms{Add, Of, Open, Holding}` (`internal/domain/asset/
-signed_copy.go`): Upload Signed Form keeps its checks (an assignment with a form, the file's
-type and size), then calls `Add`; the register's Documents column and `signed_copy=missing`
-filter use `Holding`. Its routes, JSON and `signed-copies.tsx` do not change.
-`api -vault-backfill [-commit]` checks, then moves, any copy written after the migration ran
-(on the `-import-sims` pattern) and enqueues their reading.
+- **Company Assets** declares `SignedForms{Add, Of, Open, Holding}`
+  (`internal/domain/asset/signed_copy.go`), adapted by `assetSignedForms` in
+  `cmd/api/wire_vault.go`. Upload Signed Form keeps its checks (an assignment with a form, the
+  file's type and size), then calls `Add`. The register's Documents column, the
+  `signed_copy=missing` filter and the employee page's holdings use `Holding` (the assignments
+  with a document, given to the register's query as an array); an asset's page reads its copies
+  with `Of`, and a download opens one with `Open` (its SHA-256 checked).
+- **The vault's side** (`internal/vault/document/source.go`): `AddSourced` stores the file
+  first (`vault/<document>/<copy><ext>`), then, in one transaction, makes the assignment's
+  document with the first copy (title `<inventory no.> · <given date>`, document date the
+  given date, links to the asset and the employee, locked, named by Company Assets), adds the
+  copy as the next version (`original`, then `added`) whose id and file's id are the copy's,
+  its read text `pending` with its job, and the event Company Assets makes of the stored file
+  (`asset.signed_copy_uploaded`); the vault records none of its own. `SourcedFiles`,
+  `OpenSourced` and `Sources` answer the port's reads.
+- **Migration `0065_vault_signed_copies`**, pure SQL, defines `vault.move_signed_copies()` and
+  runs it: each assignment with copies becomes a document as above; each copy a version and a
+  file with **the same id**, object key (`signed-copies/…`, no object copied), name, type,
+  size, SHA-256, time and uploader; read text `pending`, a job for each. `asset_signed_copies`
+  loses INSERT for `ppe_app` (`grants.sql`) and is dropped a release later with the function.
+  Its down migration puts copies uploaded since back into `asset_signed_copies` and removes the
+  documents.
+- **`api -vault-backfill`** (`make prod-vault-backfill`) checks that every copy moved is in the
+  vault with its id, key, size and hash and that each signed form's file is in the store with
+  that hash, and counts the copies not moved yet (the previous release may write one while the
+  migration deploys); with `-commit` it moves them through the same function.
 
 ## Archiving (phase 6)
 
@@ -407,7 +427,9 @@ Worker settings are in [outbox-service.md](outbox-service.md).
   unaccented prefix search and the trigram fallback; `requires` filtering (an equipment document
   invisible without `equipment.read`); merge moves links; seal round trip; shredding leaves
   nothing that opens and running it again changes nothing; a hold stops it; the signed-copy
-  migration keeps ids, keys and hashes; `TestPostgresAPIRoleIsLeastPrivileged` extended.
+  migration keeps ids, keys and hashes (`TestPostgresSignedCopiesMove`), and uploads through
+  Company Assets land in the vault (`TestPostgresAssetsSignedCopyHTTP`);
+  `TestPostgresAPIRoleIsLeastPrivileged` extended.
 - `internal/vault/imports_test.go`; `TestRoutePolicy`, `TestSeededRolesKeepPolicy`,
   `TestEveryDomainEventIsKnown`, `TestLoadConfigDefaults`.
 - e2e: upload a certificate and find it by its unaccented name; the existing signed-copy steps

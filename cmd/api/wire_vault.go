@@ -1,14 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/company"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
@@ -33,7 +36,90 @@ func newVault(svc services, repo vaultdoc.Repository, store files.Store, keys *s
 	if keys != nil {
 		opts = append(opts, vaultdoc.WithKeys(keys))
 	}
-	return vaultdoc.NewService(repo, subjects, opts...)
+	v := vaultdoc.NewService(repo, subjects, opts...)
+	if svc.assets != nil {
+		// Company Assets keeps its signed copies here (phase 5).
+		asset.WithSignedForms(assetSignedForms{v})(svc.assets)
+	}
+	return v
+}
+
+// assetSignedForms answers asset.SignedForms from the vault: an assignment's
+// signed copies are one document of type asset.signed_form, its source the
+// assignment, each copy a version with the copy's id (migration 0065 moved the
+// earlier ones in).
+type assetSignedForms struct{ vault *vaultdoc.Service }
+
+var _ asset.SignedForms = assetSignedForms{}
+
+func (f assetSignedForms) Add(ctx context.Context, sf asset.SignedForm) (asset.SignedCopy, error) {
+	a, as := sf.Asset, sf.Assignment
+	given := as.GivenDate
+	got, err := f.vault.AddSourced(ctx, vaultdoc.Sourced{
+		Type: vault.SignedFormType, SourceID: as.ID,
+		// Named and linked as migration 0065 names and links the ones it moved.
+		Title: a.InventoryNo + " · " + as.GivenDate, DocumentDate: &given,
+		Links: []vaultdoc.Link{
+			{Kind: vault.Asset, ID: a.ID, Label: assetLabel(a), Requires: []string{string(assetSight(a.Kind))}},
+			{Kind: vault.Employee, ID: as.EmployeeID, Label: as.EmployeeName},
+		},
+		FileID: sf.Copy.ID, Upload: vaultdoc.Upload{FileName: sf.Copy.FileName, Data: sf.Data}, Actor: sf.Copy.UploadedByUserID,
+		Event: func(v vaultdoc.SourcedFile) (audit.Event, error) { return sf.Event(signedCopyOf(v)) },
+	})
+	if err != nil {
+		return asset.SignedCopy{}, signedFormError(err)
+	}
+	return signedCopyOf(got), nil
+}
+
+func (f assetSignedForms) Of(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID][]asset.SignedCopy, error) {
+	got, err := f.vault.SourcedFiles(ctx, vault.SignedFormType, ids)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[uuid.UUID][]asset.SignedCopy, len(got))
+	for id, vs := range got {
+		for _, v := range vs {
+			out[id] = append(out[id], signedCopyOf(v))
+		}
+	}
+	return out, nil
+}
+
+func (f assetSignedForms) Open(ctx context.Context, assignmentID, copyID uuid.UUID) (asset.SignedCopy, io.ReadCloser, error) {
+	got, data, err := f.vault.OpenSourced(ctx, vault.SignedFormType, assignmentID, copyID)
+	if err != nil {
+		return asset.SignedCopy{}, nil, signedFormError(err)
+	}
+	return signedCopyOf(got), io.NopCloser(bytes.NewReader(data)), nil
+}
+
+func (f assetSignedForms) Holding(ctx context.Context) ([]uuid.UUID, error) {
+	return f.vault.Sources(ctx, vault.SignedFormType)
+}
+
+// signedCopyOf is a vault version as Company Assets shows a signed copy.
+func signedCopyOf(v vaultdoc.SourcedFile) asset.SignedCopy {
+	return asset.SignedCopy{
+		ID: v.ID, AssignmentID: v.SourceID, FileName: v.FileName, ContentType: v.ContentType, SizeBytes: v.SizeBytes,
+		SHA256: v.SHA256, UploadedAt: v.CreatedAt, UploadedByUserID: v.CreatedByUserID, UploadedByName: v.CreatedByName,
+	}
+}
+
+// signedFormError is the vault's refusal in Company Assets' words, so its
+// routes answer as before.
+func signedFormError(err error) error {
+	switch {
+	case errors.Is(err, vaultdoc.ErrNoStorage):
+		return asset.ErrNoStorage
+	case errors.Is(err, vaultdoc.ErrFileType):
+		return asset.ErrFileType
+	case errors.Is(err, vaultdoc.ErrTooLarge):
+		return asset.ErrFileTooLarge
+	case errors.Is(err, vaultdoc.ErrNotFound):
+		return asset.ErrNotFound
+	}
+	return err
 }
 
 // vaultPeople answers vaultdoc.People: an employee's facts for a template's

@@ -44,6 +44,7 @@ export const vault = {
     'employee.training': 'Training',
     invoice: 'Invoice',
     'asset.document': 'Asset document',
+    'asset.signed_form': 'Signed form',
     other: 'Other',
     'employment.contract': 'Employment contract',
     'employment.annex': 'Annex',

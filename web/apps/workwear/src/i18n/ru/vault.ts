@@ -43,6 +43,7 @@ export const vault: VaultText = {
     'employee.training': 'Обучение',
     invoice: 'Счёт-фактура',
     'asset.document': 'Документ на имущество',
+    'asset.signed_form': 'Подписанный акт',
     other: 'Другое',
     'employment.contract': 'Трудовой договор',
     'employment.annex': 'Приложение',

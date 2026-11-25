@@ -36,6 +36,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/share"
 	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
+	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
 	"github.com/remisb/ppe-next2/internal/personnel/scan"
 	"github.com/remisb/ppe-next2/internal/security"
@@ -698,12 +699,6 @@ func (stubAssets) Give(context.Context, uuid.UUID, uuid.UUID, asset.GiveFunc) (a
 func (stubAssets) UpdateOpen(context.Context, uuid.UUID, asset.OpenMutation) (asset.Assignment, error) {
 	return asset.Assignment{}, asset.ErrNotFound
 }
-func (stubAssets) AddSignedCopy(context.Context, uuid.UUID, uuid.UUID, asset.SignedCopyFunc) error {
-	return asset.ErrNotFound
-}
-func (stubAssets) SignedCopy(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (asset.SignedCopy, error) {
-	return asset.SignedCopy{}, asset.ErrNotFound
-}
 
 type stubDashboard struct{}
 
@@ -823,6 +818,8 @@ type testAPI struct {
 	admin   user.User
 	log     *memSecurity
 	errors  *memSystem
+	// files is the vault's store, in the Postgres tests.
+	files files.Store
 }
 
 func newTestAPI(t *testing.T) *testAPI {
@@ -1212,6 +1209,16 @@ func (stubVault) VersionDocument(context.Context, uuid.UUID) (uuid.UUID, error) 
 func (stubVault) SetText(context.Context, uuid.UUID, vaultdoc.TextUpdate) error { return nil }
 func (stubVault) ReadAgain(context.Context, uuid.UUID, time.Time) error         { return nil }
 func (stubVault) QueueUnread(context.Context, bool, time.Time) (int64, error)   { return 0, nil }
+func (stubVault) SourceDocument(context.Context, string, uuid.UUID) (uuid.UUID, error) {
+	return uuid.Nil, vaultdoc.ErrNotFound
+}
+func (stubVault) AddSourced(context.Context, vaultdoc.Document, vaultdoc.VersionMutation) (vaultdoc.Document, error) {
+	return vaultdoc.Document{}, nil
+}
+func (stubVault) SourcedFiles(context.Context, string, []uuid.UUID) ([]vaultdoc.SourcedFile, error) {
+	return nil, nil
+}
+func (stubVault) Sources(context.Context, string) ([]uuid.UUID, error) { return nil, nil }
 
 // allowedRoles is who each audience was before permissions: the three fixed
 // roles, and Equipment Assignments, which reaches what any signed-in user does

@@ -652,3 +652,106 @@ func (r *PostgresRepository) QueueUnread(ctx context.Context, failed bool, at ti
 	})
 	return n, err
 }
+
+// SourceDocument is the live document of source kind's record id.
+func (r *PostgresRepository) SourceDocument(ctx context.Context, kind string, id uuid.UUID) (uuid.UUID, error) {
+	var doc uuid.UUID
+	err := r.pool.QueryRow(ctx, `SELECT id FROM vault.documents
+		WHERE source_kind = $1 AND source_id = $2 AND deleted_at IS NULL AND shredded_at IS NULL`, kind, id).Scan(&doc)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return uuid.Nil, ErrNotFound
+	}
+	return doc, err
+}
+
+// AddSourced makes d unless its source has a document (the unique source
+// decides between two first uploads), locks the source's document, applies m
+// and writes the version.
+func (r *PostgresRepository) AddSourced(ctx context.Context, d Document, m VersionMutation) (Document, error) {
+	t, _ := vault.TypeOf(d.Type)
+	var out Document
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		tag, err := tx.Exec(ctx, `
+			INSERT INTO vault.documents (id, type, type_words, title, document_date, origin, source_kind, source_id, sealed,
+				requires, created_at, created_by_user_id, updated_at, updated_by_user_id)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10, $11, $10, $11)
+			ON CONFLICT (source_kind, source_id) DO NOTHING`,
+			d.ID, d.Type, t.Words, d.Title, d.DocumentDate, d.Origin, d.SourceKind, d.SourceID, d.Requires, d.CreatedAt, d.CreatedByUserID)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 1 {
+			if err := insertLinks(ctx, tx, d.ID, d.Links, d.CreatedAt, d.CreatedByUserID); err != nil {
+				return err
+			}
+		}
+		var id uuid.UUID
+		if err := tx.QueryRow(ctx, `SELECT id FROM vault.documents WHERE source_kind = $1 AND source_id = $2 FOR UPDATE`,
+			d.SourceKind, d.SourceID).Scan(&id); err != nil {
+			return err
+		}
+		cur, err := read(ctx, tx, id, true, false)
+		if err != nil {
+			return err
+		}
+		v, evs, err := m(cur)
+		if err != nil {
+			return err
+		}
+		if err := insertVersion(ctx, tx, id, v); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE vault.documents SET updated_at = $2, updated_by_user_id = $3 WHERE id = $1`,
+			id, v.CreatedAt, v.CreatedByUserID); err != nil {
+			return err
+		}
+		if err := audit.InsertAll(ctx, tx, evs); err != nil {
+			return err
+		}
+		if err := refresh(ctx, tx, id); err != nil {
+			return err
+		}
+		out, err = read(ctx, tx, id, true, false)
+		return err
+	})
+	return out, translate(err)
+}
+
+// SourcedFiles reads the versions' main files of source kind's records ids.
+func (r *PostgresRepository) SourcedFiles(ctx context.Context, kind string, ids []uuid.UUID) ([]SourcedFile, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT d.source_id, f.id, f.object_key, f.file_name, f.content_type, f.size_bytes, f.sha256, f.sealed,
+			v.created_at, v.created_by_user_id, coalesce(u.name, '')
+		FROM vault.documents d
+		JOIN vault.versions v ON v.document_id = d.id
+		JOIN vault.files f ON f.version_id = v.id AND f.role = 'main'
+		LEFT JOIN users u ON u.id = v.created_by_user_id
+		WHERE d.source_kind = $1 AND d.source_id = ANY($2) AND d.deleted_at IS NULL AND d.shredded_at IS NULL
+		ORDER BY d.source_id, v.number DESC`, kind, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]SourcedFile, 0)
+	for rows.Next() {
+		var s SourcedFile
+		f := &s.File
+		if err := rows.Scan(&s.SourceID, &f.ID, &f.ObjectKey, &f.FileName, &f.ContentType, &f.SizeBytes, &f.SHA256, &f.Sealed,
+			&s.CreatedAt, &s.CreatedByUserID, &s.CreatedByName); err != nil {
+			return nil, err
+		}
+		s.CreatedAt = s.CreatedAt.UTC()
+		out = append(out, s)
+	}
+	return out, rows.Err()
+}
+
+// Sources reads the records of source kind that have a live document.
+func (r *PostgresRepository) Sources(ctx context.Context, kind string) ([]uuid.UUID, error) {
+	rows, err := r.pool.Query(ctx, `SELECT source_id FROM vault.documents
+		WHERE source_kind = $1 AND deleted_at IS NULL AND shredded_at IS NULL`, kind)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+}

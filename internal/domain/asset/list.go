@@ -60,10 +60,12 @@ type ListFilter struct {
 	Status            *Status
 	NotReturned       bool
 	SignedCopyMissing bool
-	Sort              SortKey
-	Desc              bool
-	Limit             int
-	Offset            int
+	// Holding are the assignments that hold a signed copy (SignedForms), for SignedCopyMissing.
+	Holding []uuid.UUID
+	Sort    SortKey
+	Desc    bool
+	Limit   int
+	Offset  int
 }
 
 // ListResult is one page of the register.

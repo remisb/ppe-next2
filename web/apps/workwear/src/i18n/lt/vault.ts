@@ -43,6 +43,7 @@ export const vault: VaultText = {
     'employee.training': 'Mokymai',
     invoice: 'Sąskaita faktūra',
     'asset.document': 'Turto dokumentas',
+    'asset.signed_form': 'Pasirašytas aktas',
     other: 'Kita',
     'employment.contract': 'Darbo sutartis',
     'employment.annex': 'Priedas',

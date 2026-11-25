@@ -3,12 +3,13 @@ package asset
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"image"
 	"image/jpeg"
 	"io"
 	"maps"
-	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -32,7 +33,6 @@ type fakeRepo struct {
 	counters    map[string]int64
 	assignments []Assignment
 	employees   map[uuid.UUID]EmployeeView
-	copies      []SignedCopy
 	codes       map[uuid.UUID]SealedCodes
 	events      []audit.Event
 }
@@ -113,53 +113,75 @@ func (f *fakeRepo) Assignments(_ context.Context, assetID uuid.UUID) ([]Assignme
 	for i := len(f.assignments) - 1; i >= 0; i-- {
 		if a := f.assignments[i]; a.AssetID == assetID {
 			a.EmployeeName = f.employees[a.EmployeeID].FullName()
-			a.SignedCopies = make([]SignedCopy, 0)
-			for j := len(f.copies) - 1; j >= 0; j-- {
-				if f.copies[j].AssignmentID == a.ID {
-					a.SignedCopies = append(a.SignedCopies, f.copies[j])
-				}
-			}
-			a.SignedCopyUploaded = len(a.SignedCopies) > 0
 			out = append(out, a)
 		}
 	}
 	return out, nil
 }
 
-func (f *fakeRepo) AddSignedCopy(_ context.Context, assetID, assignmentID uuid.UUID, fn SignedCopyFunc) error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	cur, ok := f.assets[assetID]
-	if !ok || cur.Deleted() {
-		return ErrNotFound
-	}
-	for _, as := range f.assignments {
-		if as.ID == assignmentID && as.AssetID == assetID {
-			c, ev, err := fn(cur, as)
-			if err != nil {
-				return err
-			}
-			f.copies = append(f.copies, c)
-			f.events = append(f.events, ev)
-			return nil
-		}
-	}
-	return ErrAssignmentNotFound
+// fakeForms is SignedForms in memory, recording its events on repo when set.
+type fakeForms struct {
+	mu     sync.Mutex
+	repo   *fakeRepo
+	copies []SignedCopy
+	data   map[uuid.UUID][]byte
 }
 
-func (f *fakeRepo) SignedCopy(_ context.Context, assetID, assignmentID, copyID uuid.UUID) (SignedCopy, error) {
+func (f *fakeForms) Add(_ context.Context, sf SignedForm) (SignedCopy, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	c := sf.Copy
+	sum := sha256.Sum256(sf.Data)
+	c.SizeBytes, c.SHA256, c.UploadedByName = int64(len(sf.Data)), hex.EncodeToString(sum[:]), "Actor"
+	ev, err := sf.Event(c)
+	if err != nil {
+		return SignedCopy{}, err
+	}
+	if f.data == nil {
+		f.data = map[uuid.UUID][]byte{}
+	}
+	f.copies, f.data[c.ID] = append(f.copies, c), sf.Data
+	if f.repo != nil {
+		f.repo.mu.Lock()
+		f.repo.events = append(f.repo.events, ev)
+		f.repo.mu.Unlock()
+	}
+	return c, nil
+}
+
+func (f *fakeForms) Of(_ context.Context, ids []uuid.UUID) (map[uuid.UUID][]SignedCopy, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := map[uuid.UUID][]SignedCopy{}
+	for j := len(f.copies) - 1; j >= 0; j-- {
+		if c := f.copies[j]; slices.Contains(ids, c.AssignmentID) {
+			out[c.AssignmentID] = append(out[c.AssignmentID], c)
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeForms) Open(_ context.Context, assignmentID, copyID uuid.UUID) (SignedCopy, io.ReadCloser, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	for _, c := range f.copies {
 		if c.ID == copyID && c.AssignmentID == assignmentID {
-			for _, as := range f.assignments {
-				if as.ID == assignmentID && as.AssetID == assetID {
-					return c, nil
-				}
-			}
+			return c, io.NopCloser(bytes.NewReader(f.data[c.ID])), nil
 		}
 	}
-	return SignedCopy{}, ErrNotFound
+	return SignedCopy{}, nil, ErrNotFound
+}
+
+func (f *fakeForms) Holding(context.Context) ([]uuid.UUID, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var out []uuid.UUID
+	for _, c := range f.copies {
+		if !slices.Contains(out, c.AssignmentID) {
+			out = append(out, c.AssignmentID)
+		}
+	}
+	return out, nil
 }
 
 func (f *fakeRepo) List(_ context.Context, lf ListFilter) ([]Record, int, error) {
@@ -392,7 +414,7 @@ func (f *fakeRepo) ImportSIMs(_ context.Context, items []Imported, commit bool) 
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	next := &fakeRepo{assets: maps.Clone(f.assets), numbers: maps.Clone(f.numbers), counters: maps.Clone(f.counters),
-		assignments: slices.Clone(f.assignments), employees: f.employees, copies: f.copies, codes: maps.Clone(f.codes), events: slices.Clone(f.events)}
+		assignments: slices.Clone(f.assignments), employees: f.employees, codes: maps.Clone(f.codes), events: slices.Clone(f.events)}
 	for i, it := range items {
 		if next.simTaken(it.Asset) {
 			return &ImportRowError{Index: i, Err: ErrSIMNoTaken}
@@ -1125,12 +1147,8 @@ func TestUploadSignedCopy(t *testing.T) {
 	if _, err := f.svc.UploadSignedCopy(f.ctx, v.ID, given.ID, pdf, testActor); !errors.Is(err, ErrNoStorage) {
 		t.Errorf("without storage: %v", err)
 	}
-	root := t.TempDir()
-	store, err := files.NewDir(root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	svc := NewService(f.repo, WithClock(func() time.Time { return testNow }), WithLocation(vilnius), WithFiles(store))
+	forms := &fakeForms{repo: f.repo}
+	svc := NewService(f.repo, WithClock(func() time.Time { return testNow }), WithLocation(vilnius), WithSignedForms(forms))
 	for name, c := range map[string]struct {
 		id   uuid.UUID
 		u    Upload
@@ -1146,8 +1164,8 @@ func TestUploadSignedCopy(t *testing.T) {
 			t.Errorf("%s: %v, want %v", name, err, c.want)
 		}
 	}
-	if stored, _ := filepath.Glob(filepath.Join(root, "signed-copies", "*", "*")); len(stored) != 0 {
-		t.Errorf("refused uploads left files: %v", stored)
+	if len(forms.copies) != 0 {
+		t.Errorf("refused uploads were kept: %v", forms.copies)
 	}
 
 	first, err := svc.UploadSignedCopy(f.ctx, v.ID, given.ID, pdf, testActor)
@@ -1176,6 +1194,17 @@ func TestUploadSignedCopy(t *testing.T) {
 	d, _ := svc.Get(f.ctx, v.ID)
 	if as := d.Assignments[0]; !as.SignedCopyUploaded || len(as.SignedCopies) != 2 || as.SignedCopies[0].ID != second.ID {
 		t.Errorf("assignment = %+v", as.Assignment)
+	}
+	if d.Open == nil || !d.Open.SignedCopyUploaded {
+		t.Errorf("open assignment = %+v", d.Open)
+	}
+	// The register says so too, and its filter of missing copies leaves the card out.
+	list, err := svc.List(f.ctx, ListParams{Kind: "SIM"}, all)
+	if err != nil || len(list.Assets) != 1 || !list.Assets[0].Open.SignedCopyUploaded {
+		t.Errorf("list = %+v, %v", list, err)
+	}
+	if held, _ := svc.ByEmployee(f.ctx, f.emp.ID, all); len(held) == 0 || !held[0].SignedCopyUploaded {
+		t.Errorf("held = %+v", held)
 	}
 	if _, _, err := svc.SignedCopy(f.ctx, v.ID, uuid.New(), first.ID); !errors.Is(err, ErrNotFound) {
 		t.Errorf("another assignment's copy: %v", err)

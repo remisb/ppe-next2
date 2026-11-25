@@ -5,7 +5,8 @@ migration `0029_company_assets`, `internal/domain/asset`, every route below. The
 Return, Mark as Not Returned and Prepare Blocking Email (slice 4) are on
 screen, and so are Given SIM on the employee page, card numbers in ⌘K Search and the
 dashboards' Company Assets card (slice 6), Equipment & Furniture (slice 7) and Upload Signed
-Form (slice 5: migration `0030_asset_signed_copies`, `internal/files`); see below.** The product contract is the assets
+Form (slice 5: migration `0030_asset_signed_copies`, `internal/files`; kept in the Document Vault since its phase 5,
+migration `0065_vault_signed_copies`); see below.** The product contract is the assets
 brief, `../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf` (v1.0,
 2026-10-08); § numbers below point to it. Terms are in
 [ubiquitous-language.md §12](../ubiquitous-language.md#12-company-assets). The screens are
@@ -424,27 +425,35 @@ stays with its assignment when the asset later goes to someone else.
   it still shows the right way up; a PNG loses its text and EXIF chunks. A PDF is kept as sent.
 - **Uploading again** adds a copy: the newest is the one shown, the earlier ones stay, listed
   under the assignment. Nothing is replaced or deleted.
-- **Where the file goes**: `internal/files`, a `Store` behind `API_FILES_TARGET`, in
-  production a private Spaces bucket of its own with versioning on (`docs/backups.md`,
-  "Uploaded files"), in development the folder `.files`, in tests a temporary one. The file is
-  stored first under `signed-copies/<assignment>/<copy>.<ext>`, then its row and event in one
-  transaction, so a row never names a missing file (a failed write may leave an unnamed
-  file, which nothing reads). Without a store, uploads are 503 `ErrNoStorage`.
-- **The row**, table `asset_signed_copies`: `id`, `assignment_id`, `object_key`, `file_name`
-  (the device's name, cleaned, with the true extension), `content_type`, `size_bytes`,
-  `sha256` (of the stored bytes), `uploaded_at`, `uploaded_by_user_id`. A trigger refuses
-  UPDATE and DELETE, and `ppe_app` has neither.
+- **Where it is kept**: the Document Vault (ADR 0008 decision 10; `vault-service.md`, "Signed
+  copies"), through the `SignedForms` port (`signed_copy.go`: `Add`, `Of`, `Open`, `Holding`),
+  adapted in `cmd/api/wire_vault.go`. An assignment's copies are one document of type
+  `asset.signed_form`, each copy a version (and its file) with the copy's id, linked to the asset
+  and the employee. The file goes into `internal/files`' `Store` behind `API_FILES_TARGET` (in
+  production a private Spaces bucket of its own with versioning on, `docs/backups.md`,
+  "Uploaded files"; in development the folder `.files`), first, under
+  `vault/<document>/<copy>.<ext>`, then the vault's rows, the job reading its text and this
+  event in one transaction, so a row never names a missing file. Without a store, uploads are
+  503 `ErrNoStorage`. The service keeps its own checks (the type, the size, an assignment with a
+  form) before it calls `Add`.
+- **Before the vault** (migrations 0030 to 0064) each copy was a row of `asset_signed_copies`
+  under `signed-copies/<assignment>/<copy>.<ext>`. Migration 0065 moved every row into the
+  vault with the same id, object key, name, type, size, SHA-256, time and uploader (no object
+  moved); the table is frozen (`ppe_app` may only read it) and is dropped a release later.
+  `api -vault-backfill` checks the move and the files, and with `-commit` moves a copy the
+  previous release wrote during the deploy.
 - **Reading** a copy streams it through the API as an attachment
   (`Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, `Cache-Control:
   private, no-store`), with the type checked on upload: never shown inside the page, so the
   CSP is unchanged. Anyone who may see the asset (its kind's read permission) may read it,
   as they read the form.
-- **Assignments** say `signed_copy_uploaded`; the asset's page also lists `signed_copies`,
-  newest first, with the uploader's name. The register's Documents column and the employee
+- **Assignments** say `signed_copy_uploaded` (from `SignedForms.Holding`, the assignments
+  with a document); the asset's page also lists `signed_copies` (`SignedForms.Of`), newest
+  first, with the uploader's name. The register's Documents column and the employee
   page show **Signed Copy Uploaded** or **Signed Copy Missing** for a holding on a form, and
   the register filters by `signed_copy=missing`.
 - Event `asset.signed_copy_uploaded`, naming the assignment, the file's name, type, size and
-  SHA-256.
+  SHA-256, on the asset; the vault records no event of its own for it.
 
 ## Routes
 
