@@ -39,6 +39,7 @@ describe('the toolbar overflow', () => {
     expect(moreShownBelow([addSim], false)).toBeNull()
     expect(moreShownBelow([previewPdf, addSim], false)).toBe('md')
     expect(moreShownBelow([previewPdf, exportCsv], false)).toBe('lg')
+    expect(moreShownBelow([previewPdf, { label: 'Publish…', showFrom: 'xl' }], false)).toBe('xl')
     expect(moreShownBelow([{ label: 'Pictures', showFrom: 'never' }], false)).toBe('always')
     // A screen's rare actions are always under ⋯.
     expect(moreShownBelow([addSim], true)).toBe('always')

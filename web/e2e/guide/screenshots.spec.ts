@@ -308,8 +308,7 @@ test('the Document Vault: the list, a document, a kept form verified, a template
   // The demo's published contract template, in the editor.
   await page.goto('/admin/document-templates')
   await page.getByRole('link', { name: A.documentTemplates.open('Darbo sutartis, neterminuota') }).click()
-  // Its Save Draft, not its title: on a tablet the header's actions leave the title little room, in Russian none.
-  await expect(page.getByRole('button', { name: A.documentTemplates.saveDraft })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Darbo sutartis, neterminuota' })).toBeVisible()
   await shot('document-templates')
 })
 
