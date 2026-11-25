@@ -57,6 +57,12 @@ jobs:
           make migrate PSQL="$PSQL_CI"
       - name: Tests (unit and Postgres)
         run: go test -p 1 -count=1 ./...
+      # The worker's text reading with the real tools, as the docworker image has them.
+      - name: Text reading with Poppler and Tesseract
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends poppler-utils tesseract-ocr tesseract-ocr-lit tesseract-ocr-rus
+          go test -tags tools -count=1 ./internal/vault/extract
 
   web:
     name: Web (typecheck, unit tests, build)

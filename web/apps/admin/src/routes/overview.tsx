@@ -27,6 +27,8 @@ const resolveAt: Record<AttentionKey, Route> = {
   new_errors: { name: 'system', tab: 'errors' },
   review_overdue: { name: 'security', tab: 'review', filter: {} },
   database_growth: { name: 'system', tab: 'status' },
+  worker_silent: { name: 'system', tab: 'status' },
+  jobs_failed: { name: 'system', tab: 'status' },
   stable_behind: { name: 'apps' },
 }
 

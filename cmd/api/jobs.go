@@ -37,6 +37,8 @@ type JobRun struct {
 	ScansPurged int `json:"scans_purged"`
 	// SharesErased are the shared links that expired and whose rows were erased.
 	SharesErased int `json:"shares_erased"`
+	// JobsPurged are the worker's finished jobs deleted (done after 7 days, failed after 90).
+	JobsPurged int64 `json:"jobs_purged"`
 	// Failed is true when a part of it failed; the log says why.
 	Failed bool `json:"failed"`
 }
@@ -169,6 +171,13 @@ func upkeep(ctx context.Context, svc services, logger *slog.Logger) JobRun {
 			run.Failed = true
 		} else if res.Documents > 0 {
 			logger.Info("documents shredded", slog.Int("documents", res.Documents))
+		}
+	}
+	// The worker's finished jobs, and workers long gone.
+	if svc.outbox != nil {
+		if run.JobsPurged, err = svc.outbox.Purge(ctx); err != nil && ctx.Err() == nil {
+			run.Failed = true
+			logger.Error("outbox purge failed", slog.Any("error", err))
 		}
 	}
 	// Documents' links are named as their subjects are called now (a renamed

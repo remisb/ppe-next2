@@ -50,13 +50,18 @@ const (
 	// for StableBehindAfter, with Stable follows deploys off: no one has made
 	// the deployed build Stable.
 	StableBehind = "stable_behind"
+	// WorkerSilent: jobs have waited WorkerSilentAfter with no worker alive
+	// (documents' text is not being read).
+	WorkerSilent = "worker_silent"
+	// JobsFailed: jobs failed for good in the last 7 days.
+	JobsFailed = "jobs_failed"
 )
 
 // keys is every item, in the order Attention can list them; @ppe/api-client's
 // ATTENTION_KEYS mirrors it (TestWebClientListsTheKeys).
 var allKeys = []string{
 	SealMismatch, BackupsNotRunning, LastBackupFailed, CopiedSignIn, FailedSignIns,
-	ErrorRate, NewErrors, ReviewOverdue, OwnerRights, NotTimestamped, DatabaseGrowth, StableBehind,
+	ErrorRate, NewErrors, ReviewOverdue, OwnerRights, NotTimestamped, WorkerSilent, JobsFailed, DatabaseGrowth, StableBehind,
 }
 
 // Keys returns every item's key.
@@ -78,6 +83,10 @@ const (
 	// StableBehindAfter is how long Preview may be ahead (testers trying it)
 	// before the Overview says so.
 	StableBehindAfter = 3 * 24 * time.Hour
+	// WorkerSilentAfter is how long a due job may wait with no worker alive.
+	WorkerSilentAfter = 5 * time.Minute
+	// WorkerAliveWithin is how recent a heartbeat must be (outbox.Alive's).
+	WorkerAliveWithin = 2 * time.Minute
 )
 
 // Item is one thing that needs attention. Count, Percent and Days carry the
@@ -136,6 +145,16 @@ type Apps struct {
 	BehindSince []time.Time
 }
 
+// Worker is the outbox's state (outbox.Status).
+type Worker struct {
+	// LastSeen is the newest heartbeat; nil for never.
+	LastSeen *time.Time
+	// OldestWaiting is when the oldest due job became due; nil for none.
+	OldestWaiting *time.Time
+	// FailedRecently are the jobs that failed for good in the last 7 days.
+	FailedRecently int
+}
+
 // Inputs are the figures the reader may see; nil leaves an area out.
 type Inputs struct {
 	Backups  *Backups
@@ -144,6 +163,7 @@ type Inputs struct {
 	Database *Database
 	Audit    *Audit
 	Apps     *Apps
+	Worker   *Worker
 }
 
 // Attention is what needs attention at now, critical first.
@@ -200,6 +220,16 @@ func Attention(in Inputs, now time.Time) []Item {
 				Key: DatabaseGrowth, Severity: Info, Percent: float64(int(grew*1000)) / 10,
 				Days: int(now.Sub(day).Hours() / 24), Since: &day,
 			})
+		}
+	}
+	if w := in.Worker; w != nil {
+		alive := w.LastSeen != nil && now.Sub(*w.LastSeen) < WorkerAliveWithin
+		if !alive && w.OldestWaiting != nil && now.Sub(*w.OldestWaiting) >= WorkerSilentAfter {
+			since := *w.OldestWaiting
+			out = append(out, Item{Key: WorkerSilent, Severity: Warning, Since: &since})
+		}
+		if w.FailedRecently > 0 {
+			out = append(out, Item{Key: JobsFailed, Severity: Warning, Count: w.FailedRecently})
 		}
 	}
 	if a := in.Apps; a != nil {

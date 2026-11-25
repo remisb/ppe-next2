@@ -6,7 +6,8 @@ PDF, converting a DOCX). Decisions in [ADR 0008](../architecture/adr/0008-docume
 and [ADR 0001](../architecture/adr/0001-modular-monolith-with-bounded-contexts.md) (reactions
 through a transactional outbox); its first user is [vault-service.md](vault-service.md).
 
-**Status: decided, not built** (phase 4).
+**Status: built** (phase 4: migration 0064, `internal/outbox`, `cmd/api/worker.go`, the docworker
+image). Its only kind so far is `vault.extract_text`.
 
 - **Package:** `internal/outbox` (platform: imports no domain). Handlers live with their
   context (`internal/vault/extract`, …) and are registered by kind in `cmd/api/worker.go`.
@@ -45,18 +46,25 @@ through a transactional outbox); its first user is [vault-service.md](vault-serv
   2^(attempts−1) (at most 1 hour), or `failed` once `attempts` reaches `max_attempts`. A
   permanent error (`outbox.Permanent(err)`: a file that is not what it says, a missing source)
   fails at once.
-- **Leases.** A `running` job past `lease_until` (its worker died) returns to `pending` on the
-  next claim.
+- **Leases.** A `running` job past `lease_until` (its worker died) is claimed again, as a
+  pending one is. A claim's `attempts` fences it: `Done` and `Fail` change the job only while it
+  is still `running` at the attempt it was claimed at, else `ErrLeaseLost` (another worker took it).
+- **Stopping.** A worker told to stop (SIGTERM) cancels its jobs and gives each back
+  (`Release`: `pending`, its attempt not counted), so a deploy does not wait for a lease.
 - **Handlers are idempotent**: a job may run more than once (a lease that expired while it
   was still working). The vault's jobs write by version id or unique source.
 - **Wake-up.** The worker `LISTEN`s on `outbox` and also polls every 10 s.
-- **Purge.** The API's upkeep deletes `done` jobs older than 7 days; `failed` jobs stay until
-  retried or 90 days.
+- **Purge.** The API's upkeep deletes `done` jobs older than 7 days and `failed` ones older
+  than 90 (`outbox.purge_jobs`, the owner's), and workers not seen for 7 days (a deploy's new
+  container has another name).
 
 ## Worker (`api -worker`)
 
-- Same binary, same configuration and database role (`ppe_app`). It serves no HTTP but its
-  health: `api -healthcheck-worker` checks its heartbeat.
+- Same binary, same configuration and database role (`ppe_app`); compose gives it the API's
+  environment (`x-api-environment`). It serves no HTTP. Each heartbeat it records also touches
+  `/tmp/ppe-worker-alive`; `api -healthcheck-worker` (the image's `HEALTHCHECK`) is healthy while
+  that is under 2 minutes old.
+- **Name.** `<hostname>-<pid>`: the container's id, so a deploy's new worker is a new row.
 - **Tools.** At start it probes what it can run (`tesseract --version` and its languages,
   `pdftotext -v`, `pdftoppm -v`, later `soffice --version`) and claims only the kinds whose
   tools are there. It writes a **heartbeat** (`outbox.workers`: name, version, tools, kinds,
@@ -76,14 +84,26 @@ through a transactional outbox); its first user is [vault-service.md](vault-serv
    folder only).
 2. A PDF: `pdftotext -layout`; when it gives fewer than 50 letters a page, `pdftoppm -r 300`
    and OCR each page (at most `API_WORKER_MAX_PAGES`). An image: OCR.
-3. OCR: `tesseract --psm 0` on the first page picks the script; Latin pages read with
-   `lit+eng`, Cyrillic with `rus+eng`.
-4. For a sealed type, `IndexText` keeps lexemes only, without tokens holding a digit, and
-   no text is stored. Otherwise the text is kept (at most 1 MB).
-5. `version_text` becomes `read` or `none`, and the document's `search` is rebuilt.
+3. OCR: `tesseract --psm 0 -l osd` on the first picture that shows a script picks it; Latin
+   pages read with `lit+eng`, Cyrillic with `rus+eng`, each with `--psm 1` (it turns a page
+   lying sideways). `OMP_THREAD_LIMIT=1`: one job, one CPU.
+4. For a sealed type no text is stored, and its search words keep none holding a digit (the
+   same SQL as a generated version's). Otherwise the text is kept, tidied (control characters
+   out, blanks squeezed), at most 1 MB.
+5. `version_text` becomes `read` (with method, language and pages), `none` (no letters),
+   `skipped` (not a PDF or picture), and the document's `search` is rebuilt. It is `reading`
+   while the job runs.
+6. A failure is retried; on the last attempt the version becomes `failed` with a code
+   (`unreadable`, `timeout`, `tool_missing`), and a file that no longer matches its hash fails
+   at once (`damaged`). Reading again keeps the words found before until it succeeds.
 
-`api -vault-reindex` enqueues reading for every version still `pending` (the rows before the
-worker existed, a restore).
+Code: `internal/vault/extract` (the tools; `extract.Reader`), `document.Service.ReadText` (the
+job), `PostgresRepository.SetText`. A version gone (its document removed or shredded) is nothing
+to do.
+
+`api -vault-reindex` enqueues reading for every live version still `pending` or `reading` (the
+rows before the worker existed, a restore); `-failed` adds the failed ones, made `pending` again.
+A version with a live job keeps it.
 
 ## Monitoring
 
@@ -91,15 +111,18 @@ worker existed, a restore).
   heartbeat, tools and kinds, jobs by kind and state, the oldest waiting, recent failures.
 - The Overview lists: no worker seen for 5 minutes while jobs wait; failed jobs in the last 7
   days. `docs/monitoring.md` says what to do for each.
-- **Read Again** on a document's version (`…/read-again`) enqueues it once more.
+- **Read Again** on a document's version (`…/read-again`, 202 with the document) makes its text
+  `pending` and enqueues it once more, for the document type's manage permission; not on a
+  generated version (its text is its own) or one already waiting. It changes no document, so it
+  is not on the Audit log.
 
 ## Tests
 
 - Postgres: two claimers never take the same job; a lease past due returns it; back-off and
   `failed` after `max_attempts`; a permanent error fails at once; the unique live (kind, key);
   the purge.
-- A tagged tools test (`go test -tags tools ./internal/vault/extract`), run in CI where
-  Tesseract and Poppler are installed: a text PDF, a scanned PDF, a Lithuanian and a Russian
-  page.
-- e2e: when the tools are on PATH the worker runs as an extra web server and archived documents
-  appear; otherwise those steps are skipped.
+- A tagged tools test (`go test -tags tools ./internal/vault/extract`), run by CI's Go job after
+  installing Tesseract and Poppler: a text PDF, a photo, a scanned PDF, a Russian photo, and a
+  cancelled read. Locally, without the tools, run it in a Debian container (docs/testing.md).
+- e2e runs no worker: an upload shows *Waiting to be read*. Phase 6's archiving adds the worker to
+  it.

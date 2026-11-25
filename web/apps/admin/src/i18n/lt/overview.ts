@@ -77,6 +77,21 @@ export const overview: OverviewText = {
         }),
       action: 'Atidaryti audito žurnalą',
     },
+    worker_silent: {
+      title: 'Foninė apdorojimo programa neveikia',
+      detail: () => 'Užduotys laukia ilgiau nei 5 minutes, o foninė apdorojimo programa neatsiliepia, todėl dokumentų tekstas nenuskaitomas. Paleiskite serveryje tarnybą docworker.',
+      action: 'Atidaryti sistemą',
+    },
+    jobs_failed: {
+      title: 'Užduotys nepavyko',
+      detail: ({ count }) =>
+        plural(count, {
+          one: 'Per 7 dienas # užduotis nepavyko po visų bandymų. Sistema ją rodo su priežastimi.',
+          few: 'Per 7 dienas # užduotys nepavyko po visų bandymų. Sistema jas rodo su priežastimis.',
+          other: 'Per 7 dienas # užduočių nepavyko po visų bandymų. Sistema jas rodo su priežastimis.',
+        }),
+      action: 'Atidaryti sistemą',
+    },
     database_growth: {
       title: 'Duomenų bazė sparčiai auga',
       detail: ({ percent, days }) => `Per ${days} d. ji padidėjo ${percent} %. Patikrinkite, ar diske užtenka vietos.`,

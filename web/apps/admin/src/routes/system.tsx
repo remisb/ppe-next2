@@ -33,6 +33,7 @@ import { errorExportColumns } from '@/lib/list-export'
 import { type Route, type SystemTab, linkTo, systemTabPermission, systemTabs } from '@/lib/router'
 
 import { BackupsTab } from './backups'
+import { WorkerPanel } from './system-worker'
 
 /** A row's key in the selection; a module constant, so the hook's memos hold. */
 const errorId = (e: ErrorEvent) => e.id
@@ -81,12 +82,19 @@ const percentOf = (part: number, whole: number) => (whole > 0 ? Math.round((1000
 function StatusTab({ timeZone, navigate }: { timeZone: string | undefined; navigate: Navigate }) {
   const { client } = useApi()
   const loaded = useLoad(() => client.system.status())
+  const worker = useLoad(() => client.system.worker())
   const s = loaded.data
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{s ? t.system.timesIn(s.timezone) : null}</p>
-        <RefreshButton loading={loaded.loading} onClick={loaded.reload} />
+        <RefreshButton
+          loading={loaded.loading || worker.loading}
+          onClick={() => {
+            loaded.reload()
+            worker.reload()
+          }}
+        />
       </div>
       <Loaded load={loaded}>
         {(s) => (
@@ -97,6 +105,7 @@ function StatusTab({ timeZone, navigate }: { timeZone: string | undefined; navig
               <Database s={s} className="lg:col-span-2" />
               <Retention s={s} timeZone={timeZone} />
             </div>
+            {worker.data ? <WorkerPanel w={worker.data} timeZone={timeZone} /> : null}
           </div>
         )}
       </Loaded>

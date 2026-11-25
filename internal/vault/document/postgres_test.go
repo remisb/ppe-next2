@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/db/dbtest"
 	"github.com/remisb/ppe-next2/internal/sealbox"
 	"github.com/remisb/ppe-next2/internal/vault"
+	"github.com/remisb/ppe-next2/internal/vault/extract"
 )
 
 // newTestPool empties the test database and returns a pool connected as the
@@ -35,7 +37,7 @@ func newTestPool(t *testing.T) (app, owner *pgxpool.Pool, actor uuid.UUID) {
 		t.Fatal(err)
 	}
 	t.Cleanup(owner.Close)
-	if _, err := owner.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE users CASCADE`); err != nil {
+	if _, err := owner.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE users, outbox.jobs CASCADE`); err != nil {
 		t.Fatalf("truncate: %v", err)
 	}
 	actor = uuid.New()
@@ -289,5 +291,109 @@ func TestPostgresSealedDocuments(t *testing.T) {
 	}
 	if res, err := svc.ShredDue(ctx, logger); err != nil || res.Documents != 0 {
 		t.Errorf("again: %+v %v", res, err)
+	}
+}
+
+func TestPostgresReadText(t *testing.T) {
+	app, owner, actor := newTestPool(t)
+	ctx := context.Background()
+	ana := addEmployee(t, owner, actor, "Ana", "Žukauskaitė")
+	master, err := sealbox.NewKeyring(1, map[int16][]byte{1: bytes.Repeat([]byte{5}, sealbox.KeySize)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := &memStore{files: map[string][]byte{}}
+	text := &stubText{}
+	svc := NewService(NewPostgresRepository(app), stubSubjects{ana: {Label: "Ana Žukauskaitė"}}, WithFiles(store), WithKeys(master),
+		WithEmployments(stubEmployments{}), WithTextReader(text))
+	boss := Reader{ID: actor, Perms: []string{vault.PermRead, vault.PermManage, vault.PermEmploymentRead, vault.PermEmploymentManage}}
+	find := func(words string) int {
+		t.Helper()
+		p, err := svc.Search(ctx, boss, Query{Words: words})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return p.Total
+	}
+
+	cert, err := svc.Upload(ctx, boss, "employee.certificate", Details{Title: "Pažymėjimas", Links: []LinkRef{{vault.Employee, ana}}},
+		Upload{FileName: "c.pdf", Data: pdf})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The upload's transaction wrote its job.
+	var kind, key, payload string
+	if err := owner.QueryRow(ctx, `SELECT kind, key, payload::text FROM outbox.jobs WHERE state = 'pending'`).Scan(&kind, &key, &payload); err != nil {
+		t.Fatal(err)
+	}
+	if kind != KindReadText || key != cert.Current().ID.String() || payload != `{"version": "`+cert.Current().ID.String()+`"}` {
+		t.Fatalf("job = %s %s %s", kind, key, payload)
+	}
+
+	text.res = extract.Result{Text: "Aukštalpinistų darbų saugos mokymai, Nr. 4711", Method: extract.MethodOCR, Language: "lit+eng", Pages: 1}
+	if err := svc.ReadText(ctx, cert.Current().ID, false); err != nil {
+		t.Fatal(err)
+	}
+	if find("aukstalpinist") != 1 || find("4711") != 1 {
+		t.Fatal("the read text is not searched")
+	}
+	got, err := svc.Get(ctx, boss, cert.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	v := got.Current()
+	if v.TextState != TextRead || *v.TextMethod != extract.MethodOCR || *v.TextLanguage != "lit+eng" || *v.TextPages != 1 {
+		t.Fatalf("version = %+v", v)
+	}
+	// A failed re-reading keeps the earlier words.
+	if _, err := svc.ReadAgain(ctx, boss, cert.ID, 1); err != nil {
+		t.Fatal(err)
+	}
+	text.err = errors.New("tesseract: exit status 1")
+	if err := svc.ReadText(ctx, cert.Current().ID, true); err == nil {
+		t.Fatal("no error")
+	}
+	if got, _ := svc.Get(ctx, boss, cert.ID); got.Current().TextState != TextFailed || *got.Current().TextError != "unreadable" || find("aukstalpinist") != 1 {
+		t.Fatalf("after failing = %+v", got.Current())
+	}
+	text.err = nil
+
+	// A sealed document keeps only words without digits, and no text.
+	contract, err := svc.Upload(ctx, boss, "employment.contract", Details{Title: "Darbo sutartis", Links: []LinkRef{{vault.Employee, ana}}},
+		Upload{FileName: "s.pdf", Data: pdf})
+	if err != nil {
+		t.Fatal(err)
+	}
+	text.res = extract.Result{Text: "Sandėlininkė, alga 2400 EUR, asmens kodas 48001010000", Method: extract.MethodPDFText, Language: "lit", Pages: 3}
+	if err := svc.ReadText(ctx, contract.Current().ID, false); err != nil {
+		t.Fatal(err)
+	}
+	var content *string
+	var tsv string
+	if err := owner.QueryRow(ctx, `SELECT content, tsv::text FROM vault.version_text WHERE version_id = $1`, contract.Current().ID).Scan(&content, &tsv); err != nil {
+		t.Fatal(err)
+	}
+	if content != nil || strings.Contains(tsv, "2400") || strings.Contains(tsv, "4800") || !strings.Contains(tsv, "sandelinink") {
+		t.Fatalf("sealed text kept: %v %s", content, tsv)
+	}
+	if find("sandelinink") != 1 {
+		t.Fatal("the sealed document's words are not searched")
+	}
+
+	// The reindex queues what is waiting, once.
+	if _, err := owner.Exec(ctx, `UPDATE outbox.jobs SET state = 'done', finished_at = now()`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := owner.Exec(ctx, `UPDATE vault.version_text SET state = 'failed' WHERE version_id = $1`, contract.Current().ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := owner.Exec(ctx, `UPDATE vault.version_text SET state = 'pending' WHERE version_id = $1`, cert.Current().ID); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := svc.QueueUnread(ctx, false); err != nil || n != 1 {
+		t.Fatalf("queue pending = %d, %v", n, err)
+	}
+	if n, err := svc.QueueUnread(ctx, true); err != nil || n != 1 {
+		t.Fatalf("queue failed too = %d, %v (the pending one is queued already)", n, err)
 	}
 }

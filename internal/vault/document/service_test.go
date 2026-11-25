@@ -27,6 +27,9 @@ type memRepo struct {
 	events   []audit.Event
 	shredded []uuid.UUID
 	numbers  map[string]int
+	// texts are SetText's updates in order; queued the versions ReadAgain queued.
+	texts  []TextUpdate
+	queued []uuid.UUID
 }
 
 func newMemRepo() *memRepo { return &memRepo{docs: map[uuid.UUID]Document{}} }
@@ -198,6 +201,56 @@ func (m *memRepo) Shred(_ context.Context, id uuid.UUID, _ time.Time, _ string, 
 	m.events = append(m.events, ev)
 	return keys, nil
 }
+
+func (m *memRepo) VersionDocument(_ context.Context, version uuid.UUID) (uuid.UUID, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for id, d := range m.docs {
+		for _, v := range d.Versions {
+			if v.ID == version {
+				return id, nil
+			}
+		}
+	}
+	return uuid.Nil, ErrNotFound
+}
+
+// setState sets version's text state; the caller holds mu.
+func (m *memRepo) setState(version uuid.UUID, state string) bool {
+	for id, d := range m.docs {
+		for i, v := range d.Versions {
+			if v.ID == version {
+				d.Versions = slices.Clone(d.Versions)
+				d.Versions[i].TextState = state
+				m.docs[id] = d
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (m *memRepo) SetText(_ context.Context, version uuid.UUID, t TextUpdate) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !m.setState(version, t.State) {
+		return ErrNotFound
+	}
+	m.texts = append(m.texts, t)
+	return nil
+}
+
+func (m *memRepo) ReadAgain(_ context.Context, version uuid.UUID, _ time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !m.setState(version, TextPending) {
+		return ErrNotFound
+	}
+	m.queued = append(m.queued, version)
+	return nil
+}
+
+func (m *memRepo) QueueUnread(context.Context, bool, time.Time) (int64, error) { return 0, nil }
 
 // eventNames are the recorded events' names in order.
 func (m *memRepo) eventNames() []string {

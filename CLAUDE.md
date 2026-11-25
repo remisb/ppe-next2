@@ -63,6 +63,13 @@ Phase 3 (migration 0063, spec `docs/specs/document-template-service.md`): **docu
 that never change; the staff app's **Generate Document…** on the employee page previews, then generates a numbered (`EC-2026-0001`),
 hashed, locked PDF (`internal/docpdf` on pdf-mini, fonts `internal/pdffonts`), sealed for employment types. `vault.document_number_counters`
 references nothing: Postgres tests and e2e name it in their `TRUNCATE`.
+Phase 4 (migration 0064, spec `docs/specs/outbox-service.md`): the **outbox** (`internal/outbox`: `outbox.jobs` written in the change's
+transaction, claimed `FOR UPDATE SKIP LOCKED` under a lease, retried with back-off; `outbox.workers` heartbeats) and the **worker**,
+`api -worker` in the **docworker** image (the root `Dockerfile`'s `docworker` target: Debian with Poppler and Tesseract eng/lit/rus/osd;
+compose service `docworker`, read-only, `API_WORKER_*`): `vault.extract_text` reads every uploaded version's text (`internal/vault/extract`:
+`pdftotext`, else `pdftoppm` and OCR) for search, a sealed one's as digit-free words only; Read Again on a version, `api -vault-reindex`,
+System's **Worker** card (`GET /api/v1/system/worker`), the Overview's `worker_silent`/`jobs_failed`, and documents in ⌘K. The tools are
+not needed locally: their test is `-tags tools` (CI, or a Debian container); e2e runs no worker. Postgres tests empty `outbox.jobs` too.
 **Mail templates** (`internal/domain/mailtemplate`, migration 0040, spec
 `docs/specs/mail-template-service.md`): one template per use case fixed in code (`sim.activation`,
 `sim.blocking`), To/Cc/Subject/Message with `{{field}}` placeholders, edited on Administration's
@@ -441,7 +448,7 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   ADR 0008 makes the Document Vault: typed documents with versions and links,
   sealed Employment documents with retention and shredding, templates made into locked PDFs,
   Postgres search, and a worker on an outbox (specs `vault-service.md`,
-  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 to 3 are built.
+  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 to 4 are built.
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and

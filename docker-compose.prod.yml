@@ -17,6 +17,84 @@ x-logging: &logging
     max-size: 10m
     max-file: "5"
 
+# The API's settings, which the worker shares (it runs the same binary and
+# reaches the same database, files and keys).
+x-api-environment: &api-environment
+  API_ADDR: :8090
+  # sslmode=disable only because this connection never leaves the host.
+  # The least-privilege role ppe_app once API_DB_USER and API_DB_PASSWORD
+  # are set in .env.prod (docs/monitoring.md); the owner until then.
+  API_DB_DSN: postgres://${API_DB_USER:-${POSTGRES_USER}}:${API_DB_PASSWORD:-${POSTGRES_PASSWORD}}@db:5432/${POSTGRES_DB}?sslmode=disable
+  # An empty value is the API's own default (cmd/api/config.go).
+  API_DB_MAX_CONNS: ${API_DB_MAX_CONNS:-}
+  API_JWT_SECRET: ${API_JWT_SECRET:?set API_JWT_SECRET in .env.prod (at least 32 bytes)}
+  API_SIM_CODES_KEY: ${API_SIM_CODES_KEY:?set API_SIM_CODES_KEY in .env.prod (openssl rand -hex 32)}
+  # Only while the key is changed (docs/backups.md "Changing the SIM codes key").
+  API_SIM_CODES_KEY_ID: ${API_SIM_CODES_KEY_ID:-1}
+  API_SIM_CODES_PREVIOUS_KEYS: ${API_SIM_CODES_PREVIOUS_KEYS:-}
+  # Personnel files (ADR 0007): both keys or neither; without them its routes answer 503.
+  API_PERSONNEL_KEY: ${API_PERSONNEL_KEY:-}
+  API_PERSONNEL_KEY_ID: ${API_PERSONNEL_KEY_ID:-1}
+  API_PERSONNEL_PREVIOUS_KEYS: ${API_PERSONNEL_PREVIOUS_KEYS:-}
+  API_PERSONNEL_INDEX_KEY: ${API_PERSONNEL_INDEX_KEY:-}
+  API_PERSONNEL_RETENTION_MONTHS: ${API_PERSONNEL_RETENTION_MONTHS:-36}
+  API_PERSONNEL_SCAN_DAYS: ${API_PERSONNEL_SCAN_DAYS:-3}
+  API_SECRETS_KEY: ${API_SECRETS_KEY:-}
+  # Document Vault's sealed documents (ADR 0008): optional; without it they answer 503.
+  API_VAULT_KEY: ${API_VAULT_KEY:-}
+  API_VAULT_KEY_ID: ${API_VAULT_KEY_ID:-1}
+  API_VAULT_PREVIOUS_KEYS: ${API_VAULT_PREVIOUS_KEYS:-}
+  API_SECRETS_KEY_ID: ${API_SECRETS_KEY_ID:-1}
+  API_SECRETS_PREVIOUS_KEYS: ${API_SECRETS_PREVIOUS_KEYS:-}
+  API_OPENAI_BASE_URL: ${API_OPENAI_BASE_URL:-https://api.openai.com}
+  API_JWT_TTL: ${API_JWT_TTL:-15m}
+  API_JWT_ISSUER: ${API_JWT_ISSUER:-}
+  API_SESSION_MAX_AGE: ${API_SESSION_MAX_AGE:-12h}
+  API_SESSION_KEEP_MAX_AGE: ${API_SESSION_KEEP_MAX_AGE:-720h}
+  API_SESSION_KEEP_IDLE: ${API_SESSION_KEEP_IDLE:-336h}
+  API_RECENT_SIGN_IN: ${API_RECENT_SIGN_IN:-12h}
+  # Sign-in attempts per client address within the interval.
+  API_LOGIN_RATE_LIMIT: ${API_LOGIN_RATE_LIMIT:-}
+  API_LOGIN_RATE_INTERVAL: ${API_LOGIN_RATE_INTERVAL:-}
+  # Failed sign-ins per email before that email waits out the interval.
+  API_LOGIN_EMAIL_FAILURES: ${API_LOGIN_EMAIL_FAILURES:-10}
+  API_LOGIN_EMAIL_INTERVAL: ${API_LOGIN_EMAIL_INTERVAL:-15m}
+  API_REQUEST_TIMEOUT: ${API_REQUEST_TIMEOUT:-}
+  API_SHUTDOWN_TIMEOUT: ${API_SHUTDOWN_TIMEOUT:-}
+  # Security events (sign-ins with their addresses) are deleted after this.
+  API_AUTH_EVENTS_RETENTION: ${API_AUTH_EVENTS_RETENTION:-4320h}
+  # Prometheus /metrics on the compose network only (no port is published):
+  # docker compose exec caddy wget -qO- http://api:9090/metrics
+  API_METRICS_ADDR: ":9090"
+  # Audit events are purged after this (ADR 0003: 10 years, to confirm).
+  API_AUDIT_RETENTION: ${API_AUDIT_RETENTION:-87672h}
+  # A public timestamp service (RFC 3161) anchors each day's audit seal
+  # outside the database; only the seal's hash is sent. Set it empty in
+  # .env.prod to stop timestamping (docs/specs/audit-service.md).
+  API_AUDIT_TSA_URL: ${API_AUDIT_TSA_URL-http://timestamp.digicert.com}
+  # Signed copies (Company Assets) in a private Spaces bucket; unset, uploads
+  # are refused (docs/backups.md, "Uploaded files").
+  API_FILES_TARGET: ${API_FILES_TARGET:-}
+  API_FILES_S3_ACCESS_KEY: ${API_FILES_S3_ACCESS_KEY:-}
+  API_FILES_S3_SECRET_KEY: ${API_FILES_S3_SECRET_KEY:-}
+  API_ORG_TIMEZONE: ${API_ORG_TIMEZONE:-Europe/Vilnius}
+  API_CONFIRM_TTL: ${API_CONFIRM_TTL:-168h}
+  # Confirmation links must point at the host Caddy serves; derived from it.
+  API_PUBLIC_BASE_URL: https://${SITE_HOST}
+  # Same origin behind Caddy: nothing is cross-origin.
+  API_ALLOWED_ORIGINS: ""
+  # The API publishes no port, so every peer is a container on this network
+  # and the one forwarding requests is Caddy. Publish the port and this must
+  # narrow to Caddy's address.
+  API_TRUSTED_PROXIES: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7
+  # Read only by `make prod-seed-admin` / `prod-seed-demo`.
+  API_SEED_USER_EMAIL: ${API_SEED_USER_EMAIL:-}
+  API_SEED_USER_NAME: ${API_SEED_USER_NAME:-Administrator}
+  API_SEED_USER_PASSWORD: ${API_SEED_USER_PASSWORD:-}
+  # Published apps' builds (ADR 0006, phase 3): `make prod-up` and
+  # `make prod-publish` write them here; Caddy serves their files.
+  API_APPS_DIR: /srv/published
+
 services:
   db:
     # POSTGRES_IMAGE is shared with migrate and backup, so their client tools
@@ -77,83 +155,45 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-    environment:
-      API_ADDR: :8090
-      # sslmode=disable only because this connection never leaves the host.
-      # The least-privilege role ppe_app once API_DB_USER and API_DB_PASSWORD
-      # are set in .env.prod (docs/monitoring.md); the owner until then.
-      API_DB_DSN: postgres://${API_DB_USER:-${POSTGRES_USER}}:${API_DB_PASSWORD:-${POSTGRES_PASSWORD}}@db:5432/${POSTGRES_DB}?sslmode=disable
-      # An empty value is the API's own default (cmd/api/config.go).
-      API_DB_MAX_CONNS: ${API_DB_MAX_CONNS:-}
-      API_JWT_SECRET: ${API_JWT_SECRET:?set API_JWT_SECRET in .env.prod (at least 32 bytes)}
-      API_SIM_CODES_KEY: ${API_SIM_CODES_KEY:?set API_SIM_CODES_KEY in .env.prod (openssl rand -hex 32)}
-      # Only while the key is changed (docs/backups.md "Changing the SIM codes key").
-      API_SIM_CODES_KEY_ID: ${API_SIM_CODES_KEY_ID:-1}
-      API_SIM_CODES_PREVIOUS_KEYS: ${API_SIM_CODES_PREVIOUS_KEYS:-}
-      # Personnel files (ADR 0007): both keys or neither; without them its routes answer 503.
-      API_PERSONNEL_KEY: ${API_PERSONNEL_KEY:-}
-      API_PERSONNEL_KEY_ID: ${API_PERSONNEL_KEY_ID:-1}
-      API_PERSONNEL_PREVIOUS_KEYS: ${API_PERSONNEL_PREVIOUS_KEYS:-}
-      API_PERSONNEL_INDEX_KEY: ${API_PERSONNEL_INDEX_KEY:-}
-      API_PERSONNEL_RETENTION_MONTHS: ${API_PERSONNEL_RETENTION_MONTHS:-36}
-      API_PERSONNEL_SCAN_DAYS: ${API_PERSONNEL_SCAN_DAYS:-3}
-      API_SECRETS_KEY: ${API_SECRETS_KEY:-}
-      # Document Vault's sealed documents (ADR 0008): optional; without it they answer 503.
-      API_VAULT_KEY: ${API_VAULT_KEY:-}
-      API_VAULT_KEY_ID: ${API_VAULT_KEY_ID:-1}
-      API_VAULT_PREVIOUS_KEYS: ${API_VAULT_PREVIOUS_KEYS:-}
-      API_SECRETS_KEY_ID: ${API_SECRETS_KEY_ID:-1}
-      API_SECRETS_PREVIOUS_KEYS: ${API_SECRETS_PREVIOUS_KEYS:-}
-      API_OPENAI_BASE_URL: ${API_OPENAI_BASE_URL:-https://api.openai.com}
-      API_JWT_TTL: ${API_JWT_TTL:-15m}
-      API_JWT_ISSUER: ${API_JWT_ISSUER:-}
-      API_SESSION_MAX_AGE: ${API_SESSION_MAX_AGE:-12h}
-      API_SESSION_KEEP_MAX_AGE: ${API_SESSION_KEEP_MAX_AGE:-720h}
-      API_SESSION_KEEP_IDLE: ${API_SESSION_KEEP_IDLE:-336h}
-      API_RECENT_SIGN_IN: ${API_RECENT_SIGN_IN:-12h}
-      # Sign-in attempts per client address within the interval.
-      API_LOGIN_RATE_LIMIT: ${API_LOGIN_RATE_LIMIT:-}
-      API_LOGIN_RATE_INTERVAL: ${API_LOGIN_RATE_INTERVAL:-}
-      # Failed sign-ins per email before that email waits out the interval.
-      API_LOGIN_EMAIL_FAILURES: ${API_LOGIN_EMAIL_FAILURES:-10}
-      API_LOGIN_EMAIL_INTERVAL: ${API_LOGIN_EMAIL_INTERVAL:-15m}
-      API_REQUEST_TIMEOUT: ${API_REQUEST_TIMEOUT:-}
-      API_SHUTDOWN_TIMEOUT: ${API_SHUTDOWN_TIMEOUT:-}
-      # Security events (sign-ins with their addresses) are deleted after this.
-      API_AUTH_EVENTS_RETENTION: ${API_AUTH_EVENTS_RETENTION:-4320h}
-      # Prometheus /metrics on the compose network only (no port is published):
-      # docker compose exec caddy wget -qO- http://api:9090/metrics
-      API_METRICS_ADDR: ":9090"
-      # Audit events are purged after this (ADR 0003: 10 years, to confirm).
-      API_AUDIT_RETENTION: ${API_AUDIT_RETENTION:-87672h}
-      # A public timestamp service (RFC 3161) anchors each day's audit seal
-      # outside the database; only the seal's hash is sent. Set it empty in
-      # .env.prod to stop timestamping (docs/specs/audit-service.md).
-      API_AUDIT_TSA_URL: ${API_AUDIT_TSA_URL-http://timestamp.digicert.com}
-      # Signed copies (Company Assets) in a private Spaces bucket; unset, uploads
-      # are refused (docs/backups.md, "Uploaded files").
-      API_FILES_TARGET: ${API_FILES_TARGET:-}
-      API_FILES_S3_ACCESS_KEY: ${API_FILES_S3_ACCESS_KEY:-}
-      API_FILES_S3_SECRET_KEY: ${API_FILES_S3_SECRET_KEY:-}
-      API_ORG_TIMEZONE: ${API_ORG_TIMEZONE:-Europe/Vilnius}
-      API_CONFIRM_TTL: ${API_CONFIRM_TTL:-168h}
-      # Confirmation links must point at the host Caddy serves; derived from it.
-      API_PUBLIC_BASE_URL: https://${SITE_HOST}
-      # Same origin behind Caddy: nothing is cross-origin.
-      API_ALLOWED_ORIGINS: ""
-      # The API publishes no port, so every peer is a container on this network
-      # and the one forwarding requests is Caddy. Publish the port and this must
-      # narrow to Caddy's address.
-      API_TRUSTED_PROXIES: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7
-      # Read only by `make prod-seed-admin` / `prod-seed-demo`.
-      API_SEED_USER_EMAIL: ${API_SEED_USER_EMAIL:-}
-      API_SEED_USER_NAME: ${API_SEED_USER_NAME:-Administrator}
-      API_SEED_USER_PASSWORD: ${API_SEED_USER_PASSWORD:-}
-      # Published apps' builds (ADR 0006, phase 3): `make prod-up` and
-      # `make prod-publish` write them here; Caddy serves their files.
-      API_APPS_DIR: /srv/published
+    environment: *api-environment
     volumes:
       - published:/srv/published
+
+  # The worker (ADR 0008 decision 9, docs/specs/outbox-service.md): the API's
+  # binary as `api -worker` in an image with Poppler and Tesseract. It takes
+  # jobs from the database's outbox: reading documents' text for search. It
+  # publishes no port; System's Worker card and `make prod-ps` show it.
+  docworker:
+    build:
+      context: .
+      target: docworker
+      secrets: [github_token]
+      args:
+        API_COMMIT: ${API_COMMIT:-}
+    image: ppe-next2-docworker:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    logging: *logging
+    # Running jobs are given back to the queue when it stops.
+    stop_grace_period: 30s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      <<: *api-environment
+      # The published apps' folder is the API's alone.
+      API_APPS_DIR: ""
+      API_METRICS_ADDR: ""
+      API_WORKER_CONCURRENCY: ${API_WORKER_CONCURRENCY:-1}
+      API_WORKER_JOB_TIMEOUT: ${API_WORKER_JOB_TIMEOUT:-5m}
+      API_WORKER_MAX_PAGES: ${API_WORKER_MAX_PAGES:-50}
+    # A file's bytes only ever reach /tmp (a job's folder, removed after it),
+    # which is memory: nothing of a document is written to disk.
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    mem_limit: 1g
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
 
   # The backup agent (github.com/remisb/dbbackup), built on the database's own
   # image so pg_dump matches the server. It backs up on DBBACKUP_SCHEDULE,

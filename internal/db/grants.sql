@@ -56,5 +56,13 @@ REVOKE UPDATE, DELETE ON vault.versions, vault.files FROM ppe_app;
 REVOKE UPDATE ON vault.document_keys FROM ppe_app;
 REVOKE EXECUTE ON FUNCTION vault.shred_document(UUID, TIMESTAMPTZ, DATE) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION vault.shred_document(UUID, TIMESTAMPTZ, DATE) TO ppe_app;
+-- The outbox (ADR 0008): jobs are inserted, claimed and finished, never
+-- deleted but by the owner's purge; workers' heartbeats are written freely.
+GRANT USAGE ON SCHEMA outbox TO ppe_app;
+GRANT SELECT, INSERT, UPDATE ON outbox.jobs TO ppe_app;
+REVOKE DELETE ON outbox.jobs FROM ppe_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON outbox.workers TO ppe_app;
+REVOKE EXECUTE ON FUNCTION outbox.purge_jobs(TIMESTAMPTZ, TIMESTAMPTZ) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION outbox.purge_jobs(TIMESTAMPTZ, TIMESTAMPTZ) TO ppe_app;
 -- Other sessions' state on System (connections, the oldest transaction).
 GRANT pg_read_all_stats TO ppe_app;

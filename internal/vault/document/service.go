@@ -92,6 +92,7 @@ type Service struct {
 	templates   Templates
 	people      People
 	users       Users
+	text        TextReader
 	loc         *time.Location
 	now         func() time.Time
 	newID       func() uuid.UUID

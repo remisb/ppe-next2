@@ -44,6 +44,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
+	"github.com/remisb/ppe-next2/internal/outbox"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
 	"github.com/remisb/ppe-next2/internal/personnel/scan"
 	"github.com/remisb/ppe-next2/internal/security"
@@ -79,9 +80,9 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	// audit_seals, audit_purges, asset_number_counters and vault.document_number_counters reference nothing, so
+	// audit_seals, audit_purges, asset_number_counters, vault.document_number_counters and the outbox reference nothing, so
 	// the cascade misses them.
-	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges, asset_number_counters, vault.document_number_counters CASCADE`); err != nil {
+	if _, err := pool.Exec(ctx, `SET LOCAL ppe.allow_truncate = on; TRUNCATE users, audit_seals, audit_purges, asset_number_counters, vault.document_number_counters, outbox.jobs, outbox.workers CASCADE`); err != nil {
 		t.Fatal(err)
 	}
 	// The truncation reaches roles and App Launcher's tiles through their actor keys.
@@ -127,6 +128,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	svc.docTemplates = vaulttemplate.NewService(vaulttemplate.NewPostgresRepository(pool))
 	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), testFiles(t), testVaultKeys(t), time.UTC)
 	svc.shares = share.NewService(share.NewPostgresRepository(pool))
+	svc.outbox = outbox.NewQueue(pool)
 	admin, err := svc.users.Bootstrap(ctx, "admin@example.com", "Admin", "password123", []uuid.UUID{role.AdminID})
 	if err != nil {
 		t.Fatal(err)

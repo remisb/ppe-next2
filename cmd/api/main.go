@@ -43,6 +43,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/monitor"
+	"github.com/remisb/ppe-next2/internal/outbox"
 	"github.com/remisb/ppe-next2/internal/personnel/colour"
 	"github.com/remisb/ppe-next2/internal/personnel/document"
 	"github.com/remisb/ppe-next2/internal/personnel/scan"
@@ -75,6 +76,9 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 
 	if cfg.Healthcheck {
 		return probeReady(ctx, cfg.Addr, os.Stdout)
+	}
+	if cfg.HealthcheckWorker {
+		return probeWorker(os.Stdout)
 	}
 
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
@@ -174,6 +178,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	svc.docTemplates = vaulttemplate.NewService(vaulttemplate.NewPostgresRepository(pool))
 	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), store, vaultKeys, loc)
 	svc.shares = share.NewService(share.NewPostgresRepository(pool))
+	svc.outbox = outbox.NewQueue(pool)
 	// App Launcher's default tiles, put back should the registry have been
 	// emptied, and its apps' slugs, which tell requests' apps apart.
 	if err := launcher.EnsureDefaults(ctx, pool); err != nil {
@@ -208,6 +213,12 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	}
 	if cfg.ImportSIMs != "" {
 		return importSIMs(ctx, svc, cfg, os.Stdout)
+	}
+	if cfg.VaultReindex {
+		return vaultReindex(ctx, svc, cfg.VaultReindexFailed, os.Stdout)
+	}
+	if cfg.Worker {
+		return runWorker(ctx, svc, cfg, logger)
 	}
 	if cfg.Upkeep {
 		run := upkeep(ctx, svc, logger)
@@ -291,6 +302,8 @@ type services struct {
 	docTemplates *vaulttemplate.Service
 	// shares are shared links (WARE-51); run sets them.
 	shares *share.Service
+	// outbox is the queue of jobs the worker runs (ADR 0008 decision 9): System's Worker card, the upkeep's purge.
+	outbox *outbox.Queue
 	// ai is Settings → AI, AI Usage and Make Colour Photo (ADR 0007); run sets it.
 	ai        *aiHandler
 	dashboard *dashboard.Service

@@ -64,6 +64,15 @@ type Repository interface {
 	// Shred makes a sealed document unreadable (vault.shred_document) and
 	// records ev in one transaction, returning its files' object keys.
 	Shred(ctx context.Context, id uuid.UUID, at time.Time, day string, ev audit.Event) ([]string, error)
+	// VersionDocument is the document a version is of, or ErrNotFound.
+	VersionDocument(ctx context.Context, version uuid.UUID) (uuid.UUID, error)
+	// SetText keeps what reading made of a version and rebuilds its document's search.
+	SetText(ctx context.Context, version uuid.UUID, t TextUpdate) error
+	// ReadAgain makes a version's text pending and writes its job, in one transaction.
+	ReadAgain(ctx context.Context, version uuid.UUID, at time.Time) error
+	// QueueUnread writes a job for every live version whose text is pending
+	// or being read (and failed, when failed); how many were written.
+	QueueUnread(ctx context.Context, failed bool, at time.Time) (int64, error)
 }
 
 // Candidate is a sealed document as the retention sees it.

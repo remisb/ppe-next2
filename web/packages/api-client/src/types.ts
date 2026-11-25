@@ -1226,6 +1226,52 @@ export interface DatabaseStatus {
 }
 
 /** System's status (GET /api/v1/system/status, system.read). */
+/** A worker's heartbeat (GET /api/v1/system/worker): its tools and the job kinds it serves. */
+export interface WorkerHeartbeat {
+  name: string
+  version: string
+  tools: Record<string, string>
+  kinds: string[]
+  started_at: string
+  seen_at: string
+  /** It beat within the last 2 minutes. */
+  alive: boolean
+}
+
+/** The jobs of one kind in each state. */
+export interface JobKindCount {
+  kind: string
+  pending: number
+  running: number
+  done: number
+  failed: number
+}
+
+/** A job of the worker's; its payload holds ids only. */
+export interface OutboxJob {
+  id: string
+  kind: string
+  key: string
+  state: 'pending' | 'running' | 'done' | 'failed'
+  attempts: number
+  max_attempts: number
+  run_after: string
+  last_error?: string
+  created_at: string
+  finished_at?: string
+}
+
+/** System's Worker card (system.read). */
+export interface WorkerStatus {
+  workers: WorkerHeartbeat[]
+  kinds: JobKindCount[]
+  /** When the oldest due job became due; null for none waiting. */
+  oldest_waiting: string | null
+  /** Jobs failed for good in the last 7 days: how many, and the newest 20. */
+  failed_recently: number
+  failed: OutboxJob[]
+}
+
 export interface SystemStatus {
   service: { commit: string; go_version: string; started_at: string; ready: boolean; problem?: 'database' | 'migrations' }
   requests: RequestWindow
@@ -2127,6 +2173,8 @@ export type VaultVersionOrigin = 'original' | 'added' | 'generated' | 'signed' |
 /** What the worker made of a version's file (phase 4); pending until it runs. */
 export type VaultTextState = 'pending' | 'reading' | 'read' | 'none' | 'failed' | 'skipped'
 
+export type VaultTextMethod = 'pdf_text' | 'ocr' | 'blocks'
+
 /** A document type, fixed in the API (GET /api/v1/vault/types: those the reader may see). */
 export interface VaultType {
   key: string
@@ -2177,6 +2225,13 @@ export interface VaultVersion {
   note: string
   file: VaultFile
   text_state: VaultTextState
+  /** How it was read: from the PDF's own text, by OCR, or a generated version's blocks; null until read. */
+  text_method: VaultTextMethod | null
+  /** The language set OCR used ('lit+eng', 'rus+eng') or the script of a PDF's text ('lit', 'rus', 'eng'). */
+  text_language: string | null
+  text_pages: number | null
+  /** Why reading failed: 'damaged', 'timeout', 'tool_missing', 'unreadable'. */
+  text_error: string | null
   created_at: string
   created_by_user_id: string
   created_by_name: string

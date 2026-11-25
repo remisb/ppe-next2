@@ -1,5 +1,5 @@
-import type { Asset, CatalogueItem, Employee, ListedOrder } from '@ppe/api-client'
-import { type Theme, themes, useApi, useDensity, useTheme } from '@ppe/app-shell'
+import type { Asset, CatalogueItem, Employee, ListedOrder, VaultHit } from '@ppe/api-client'
+import { type Theme, themes, useApi, useDensity, useSession, useTheme } from '@ppe/app-shell'
 import { cn } from '@ppe/ui/lib/utils'
 import { Kbd } from '@ppe/ui/components/kbd'
 import { Boxes, ClipboardList, CornerDownLeft, ExternalLink, Smartphone, FileText, Grip, type LucideIcon, Monitor, Moon, Rows3, Rows4, Search, Sun, UserRound } from 'lucide-react'
@@ -11,6 +11,7 @@ import { holderText, looksLikeAssetNumber } from '@/lib/assets'
 import { looksLikeRecord, statusLabel } from '@/lib/history'
 import { matchItems } from '@/lib/items'
 import type { Route } from '@/lib/router'
+import { displayTitle, linkLabels, seesVault, typeLabel } from '@/lib/vault'
 
 /** A screen the palette can jump to: the user's own navigation sections, and Account. */
 export interface PaletteSection {
@@ -48,8 +49,8 @@ const THEME_WORDS = ['theme', 'dark', 'light', 'system', 'appearance', 'night mo
 const themeIcon: Record<Theme, LucideIcon> = { light: Sun, dark: Moon, system: Monitor }
 
 /**
- * ⌘K (Ctrl+K): one search box over record numbers, screens, employees and
- * catalogue items, with the action most often wanted on each: an order opened
+ * ⌘K (Ctrl+K): one search box over record numbers, screens, employees,
+ * documents (for whoever sees the Document Vault) and catalogue items, with the action most often wanted on each: an order opened
  * in History, a new order for an employee, an item's page, a screen. Arrow keys move, Enter goes, Escape closes. A modal
  * dialog, so the page behind is inert while it is open.
  */
@@ -82,6 +83,10 @@ export function CommandPalette({
   // The assets whose inventory number, or a SIM card's SIM or phone number, has what was typed.
   const [assets, setAssets] = useState<Asset[]>([])
   const [items, setItems] = useState<CatalogueItem[] | null>(null)
+  // The documents whose title, number, links or text have the words (Document Vault, for whoever sees it).
+  const [documents, setDocuments] = useState<VaultHit[]>([])
+  const session = useSession()
+  const vault = seesVault((p) => session.can(p))
   const [density, setDensity] = useDensity(userId)
   const [theme, setTheme] = useTheme()
   const text = t.shell
@@ -120,6 +125,7 @@ export function CommandPalette({
       setEmployees([])
       setOrders([])
       setAssets([])
+      setDocuments([])
       return
     }
     let current = true
@@ -140,12 +146,19 @@ export function CommandPalette({
           () => current && setAssets([]),
         )
       } else setAssets([])
+      // In the request body, so the words stay out of URLs and logs.
+      if (vault && term.length >= 2) {
+        client.vault.search({ query: term }).then(
+          (p) => current && setDocuments(p.near ? [] : p.documents),
+          () => current && setDocuments([]),
+        )
+      } else setDocuments([])
     }, 150)
     return () => {
       current = false
       clearTimeout(timer)
     }
-  }, [q, open, client])
+  }, [q, open, client, vault])
 
   const entries = useMemo<Entry[]>(() => {
     const term = q.trim().toLowerCase()
@@ -233,13 +246,24 @@ export function CommandPalette({
         to: { name: 'employeePage', id: e.id },
       })
     }
+    for (const d of documents.slice(0, PER_GROUP)) {
+      const linked = linkLabels(d.links)
+      out.push({
+        key: `doc-${d.id}`,
+        group: 'documents',
+        label: displayTitle(d),
+        hint: linked ? `${typeLabel(d.type)} · ${linked}` : typeLabel(d.type),
+        icon: <FileText aria-hidden className="size-4" />,
+        to: { name: 'vault', document: d.id },
+      })
+    }
     if (term) {
       for (const i of matchItems(items ?? [], term).slice(0, PER_GROUP)) {
         out.push({ key: `item-${i.id}`, group: 'items', label: i.name, hint: i.details, icon: <ItemIcon icon={i.icon} />, to: { name: 'catalogue', item: i.id } })
       }
     }
     return out
-  }, [q, orders, assets, employees, items, sections, apps, density, setDensity, text])
+  }, [q, orders, assets, employees, documents, items, sections, apps, density, setDensity, text])
 
   useEffect(() => setAt(0), [q])
   const selected = entries[Math.min(at, entries.length - 1)]

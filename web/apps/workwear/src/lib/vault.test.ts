@@ -2,7 +2,7 @@ import type { VaultDocument, VaultHit, VaultType } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
 import { vaultExportColumns } from './vault-export'
-import { detailsOf, displayTitle, draftProblems, holdProblems, seesVault, expiry, fileProblem, linkLabels, linkRoute, typeLabel, uploadRefusal, uploadTypes, withLink } from './vault'
+import { canReadAgain, detailsOf, displayTitle, draftProblems, holdProblems, seesVault, expiry, fileProblem, linkLabels, linkRoute, textLine, typeLabel, uploadRefusal, uploadTypes, withLink } from './vault'
 
 const type = (key: string, must: VaultType['must'], manage = 'vault.manage'): VaultType => ({
   key,
@@ -129,5 +129,23 @@ describe('export', () => {
     }
     const row = Object.fromEntries(vaultExportColumns().map((c) => [c.key, c.value(hit)]))
     expect(row).toMatchObject({ title: 'Working at height', type: 'Certificate', linked: 'Ana Žukauskaitė', valid_until: '2028-03-01', origin: 'Uploaded', versions: 2, updated: '2026-04-01' })
+  })
+})
+
+describe('textLine and canReadAgain', () => {
+  const v = { text_state: 'read', text_method: 'ocr', text_pages: 3, text_error: null, origin: 'original' } as const
+  it('says how a version was read, or why not', () => {
+    expect(textLine(v)).toBe('Read · by OCR · 3 pages')
+    expect(textLine({ ...v, text_method: 'blocks', text_pages: null })).toBe('Read')
+    expect(textLine({ ...v, text_state: 'failed', text_error: 'timeout' })).toBe('Couldn’t read · it took too long')
+    expect(textLine({ ...v, text_state: 'failed', text_error: 'later_code' })).toBe('Couldn’t read · later_code')
+    expect(textLine({ ...v, text_state: 'pending', text_method: null })).toBe('Waiting to be read')
+  })
+  it('offers Read Again for a read file to whoever may change it', () => {
+    expect(canReadAgain(v, true)).toBe(true)
+    expect(canReadAgain(v, false)).toBe(false)
+    expect(canReadAgain({ origin: 'generated', text_state: 'read' }, true)).toBe(false)
+    expect(canReadAgain({ origin: 'original', text_state: 'pending' }, true)).toBe(false)
+    expect(canReadAgain({ origin: 'signed', text_state: 'failed' }, true)).toBe(true)
   })
 })

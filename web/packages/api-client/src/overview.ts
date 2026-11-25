@@ -14,6 +14,8 @@ export const ATTENTION_KEYS = [
   'review_overdue',
   'database_owner_rights',
   'audit_not_timestamped',
+  'worker_silent',
+  'jobs_failed',
   'database_growth',
   'stable_behind',
 ] as const

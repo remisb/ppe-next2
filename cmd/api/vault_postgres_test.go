@@ -277,3 +277,43 @@ func TestPostgresDocumentTemplatesHTTP(t *testing.T) {
 		t.Error("a published version changed")
 	}
 }
+
+// TestPostgresVaultReadTextHTTP: an upload's reading job (phase 4), Read
+// Again, and System's Worker card through the API as ppe_app.
+func TestPostgresVaultReadTextHTTP(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	_, mgr := api.userWith(t, role.KeyManager)
+	rec := api.do(t, "POST", "/api/v1/employees", mgr, map[string]any{"first_name": "Ana", "last_name": "Žukauskaitė"})
+	ana := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	rec = api.uploadDocument(t, "/api/v1/vault/documents", mgr, "c.pdf", []byte("%PDF-1.7\n1 0 obj\n%%EOF\n"),
+		map[string]any{"type": "employee.certificate", "title": "Darbas aukštyje", "links": []map[string]any{{"kind": "employee", "id": ana}}})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("upload = %d %s", rec.Code, rec.Body)
+	}
+	doc := decode[map[string]any](t, rec.Body.Bytes())
+	id := doc["id"].(string)
+	v := doc["versions"].([]any)[0].(map[string]any)
+	if v["text_state"] != "pending" || v["text_method"] != nil {
+		t.Fatalf("version = %v", v)
+	}
+
+	admin := api.tokenWith(t, role.SystemRead)
+	rec = api.do(t, "GET", "/api/v1/system/worker", admin, nil)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"kind":"vault.extract_text","pending":1`) {
+		t.Fatalf("worker = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/system/worker", mgr, nil); rec.Code != http.StatusForbidden {
+		t.Errorf("a manager reads the worker = %d", rec.Code)
+	}
+	// Waiting already: Read Again changes nothing, and is no second job.
+	if rec := api.do(t, "POST", "/api/v1/vault/documents/"+id+"/versions/1/read-again", mgr, nil); rec.Code != http.StatusAccepted {
+		t.Fatalf("read again = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "POST", "/api/v1/vault/documents/"+id+"/versions/2/read-again", mgr, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("no version 2 = %d", rec.Code)
+	}
+	rec = api.do(t, "GET", "/api/v1/system/worker", admin, nil)
+	if !strings.Contains(rec.Body.String(), `"pending":1`) || strings.Contains(rec.Body.String(), `"pending":2`) {
+		t.Fatalf("worker after read again = %s", rec.Body)
+	}
+}
