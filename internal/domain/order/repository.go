@@ -71,4 +71,6 @@ type Repository interface {
 	// ConfirmedFor returns the confirmation holding the evidence of a GIVEN
 	// order, or ErrNotFound when there is none.
 	ConfirmedFor(ctx context.Context, orderID uuid.UUID) (Confirmation, error)
+	// GivenSince are the live orders given at or after since, oldest first.
+	GivenSince(ctx context.Context, since time.Time) ([]uuid.UUID, error)
 }

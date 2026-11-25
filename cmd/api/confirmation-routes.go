@@ -1,6 +1,7 @@
 package main
 
 import (
+	"mime"
 	"net/http"
 	"time"
 
@@ -8,23 +9,26 @@ import (
 	"github.com/remisb/muxstack/middleware"
 
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/recordpdf"
 )
 
 type confirmationHandler struct {
 	orders  *order.Service
 	baseURL string
+	loc     *time.Location
 }
 
 // registerConfirmationRoutes mounts Employee Confirmation and the Items Given
 // Record. Staff routes need a token; the two public routes are authorised by
 // the confirmation link alone. The link token travels in the request body, not
 // the path, so the request logger never records it.
-func registerConfirmationRoutes(rt *router, orders *order.Service, baseURL string) {
-	h := &confirmationHandler{orders: orders, baseURL: baseURL}
+func registerConfirmationRoutes(rt *router, orders *order.Service, baseURL string, loc *time.Location) {
+	h := &confirmationHandler{orders: orders, baseURL: baseURL, loc: loc}
 	rt.authenticated("POST /api/v1/orders/{id}/confirmation-link", h.createLink)
 	rt.authenticated("POST /api/v1/orders/{id}/confirm-paper", h.confirmPaper)
 	rt.authenticated("POST /api/v1/orders/{id}/confirm-in-person", h.confirmInPerson)
 	rt.authenticated("GET /api/v1/orders/{id}/record", h.record)
+	rt.authenticated("GET /api/v1/orders/{id}/record.pdf", h.recordPDF)
 
 	limit := middleware.RateLimiter(middleware.RateLimitConfig{RequestsPerInterval: 20, Interval: time.Minute, KeyFunc: middleware.ClientAddr})
 	rt.public("POST /api/v1/confirmations/view", middleware.Chain(http.HandlerFunc(h.publicView), limit))
@@ -132,6 +136,30 @@ func (h *confirmationHandler) record(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, toRecordJSON(rec, true))
+}
+
+// recordPDF is the Items Given Record as a PDF (internal/recordpdf), as the
+// Document Vault archives it once the order is given.
+func (h *confirmationHandler) recordPDF(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUIDPath(r, "id")
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	rec, err := h.orders.Record(r.Context(), id)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	b, err := recordpdf.Render(rec, h.loc)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": recordpdf.Filename(rec)}))
+	w.Header().Set("Cache-Control", "no-store")
+	_, _ = w.Write(b)
 }
 
 type tokenRequest struct {

@@ -792,3 +792,29 @@ func translate(err error) error {
 	}
 	return err
 }
+
+// StoredForm reads assignment id with its asset, whatever the asset's state,
+// when the assignment stored a form.
+func (r *PostgresRepository) StoredForm(ctx context.Context, id uuid.UUID) (Asset, Assignment, error) {
+	rec, err := scanRecord(r.pool.QueryRow(ctx, `SELECT `+assetColumns+`, `+assignmentColumns+` FROM asset_assignments o
+		JOIN assets a ON a.id = o.asset_id
+		JOIN employees e ON e.id = o.employee_id
+		WHERE o.id = $1 AND o.form IS NOT NULL AND o.document_hash IS NOT NULL`, id))
+	if err != nil {
+		return Asset{}, Assignment{}, err
+	}
+	if rec.Open == nil {
+		return Asset{}, Assignment{}, ErrNotFound
+	}
+	return rec.Asset, *rec.Open, nil
+}
+
+// FormsSince reads the assignments with a stored form created at or after since.
+func (r *PostgresRepository) FormsSince(ctx context.Context, since time.Time) ([]uuid.UUID, error) {
+	rows, err := r.pool.Query(ctx, `SELECT id FROM asset_assignments
+		WHERE form IS NOT NULL AND document_hash IS NOT NULL AND created_at >= $1 ORDER BY created_at, id`, since)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+}

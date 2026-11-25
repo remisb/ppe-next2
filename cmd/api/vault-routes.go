@@ -41,6 +41,7 @@ func registerVaultRoutes(rt *router, documents *vaultdoc.Service, sensitive func
 	rt.restrictedAny("POST /api/v1/vault/documents/{id}/versions", h.addVersion, vaultManagers...)
 	rt.restrictedAny("GET /api/v1/vault/documents/{id}/versions/{n}/file", h.file, vaultReaders...)
 	rt.restrictedAny("POST /api/v1/vault/documents/{id}/versions/{n}/read-again", h.readAgain, vaultManagers...)
+	rt.restrictedAny("GET /api/v1/vault/documents/{id}/verify", h.verify, vaultReaders...)
 	rt.restricted("POST /api/v1/vault/documents/{id}/versions/{n}/file",
 		sensitive(role.VaultEmploymentRead, h.sealedFile), role.VaultEmploymentRead)
 }
@@ -310,6 +311,22 @@ func (h *vaultHandler) readAgain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusAccepted, d)
+}
+
+// verify checks an archived document against its source (phase 6): its file
+// against its hash, and its hash against the source's snapshot hashed again.
+func (h *vaultHandler) verify(w http.ResponseWriter, r *http.Request) {
+	reader, id, ok := vaultDocument(w, r)
+	if !ok {
+		return
+	}
+	v, err := h.documents.Verify(r.Context(), reader, id)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, http.StatusOK, v)
 }
 
 // sealedFile sends a sealed document's file, after the sensitive check (a

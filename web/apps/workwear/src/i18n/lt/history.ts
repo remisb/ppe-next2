@@ -68,6 +68,7 @@ export const history: HistoryText = {
   handOverNow: 'Išduoti dabar',
   viewOrder: 'Peržiūrėti užsakymą',
   printRecord: 'Spausdinti įrašą',
+  downloadRecordPdf: 'Atsisiųsti PDF',
   printOrder: 'Spausdinti užsakymą',
   shareWhatsApp: 'Siųsti per WhatsApp',
   deleteOrder: 'Ištrinti užsakymą…',

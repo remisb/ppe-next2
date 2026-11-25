@@ -74,6 +74,7 @@ export const history = {
   // The order pane's: they open and print the order's Items Given Record.
   viewOrder: 'View Order',
   printRecord: 'Print Record',
+  downloadRecordPdf: 'Download PDF',
   printOrder: 'Print Order',
   shareWhatsApp: 'Share via WhatsApp',
   deleteOrder: 'Delete order…',

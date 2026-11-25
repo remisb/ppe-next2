@@ -5,7 +5,7 @@ import { t } from '@/i18n'
 
 /**
  * Download with its words; for whoever may change it, Edit… and Add Version…
- * as tools, and Legal Hold… (a sealed document's) and Remove document… in ⋯. A document the app keeps (locked) is
+ * as tools, and Remove document… in ⋯; Legal Hold… in ⋯ where canHold says. A document the app keeps (locked) is
  * downloaded only.
  */
 export function documentActions(
@@ -17,7 +17,7 @@ export function documentActions(
     { id: 'download', label: t.vault.download, icon: 'document', place: 'main', pending: can.downloading, run: run.download },
     ...(changes ? [{ id: 'edit', label: t.vault.edit, icon: 'edit', place: 'tool', asks: true, run: run.edit } as const] : []),
     ...(changes ? [{ id: 'addVersion', label: t.vault.addVersion, icon: 'add', place: 'tool', asks: true, run: run.addVersion } as const] : []),
-    ...(can.manage && can.hold ? [{ id: 'hold', label: t.vault.legalHold, place: 'menu', asks: true, run: run.hold } as const] : []),
+    ...(can.hold ? [{ id: 'hold', label: t.vault.legalHold, place: 'menu', asks: true, run: run.hold } as const] : []),
     ...(changes ? [{ id: 'remove', label: t.vault.remove, place: 'menu', destructive: true, asks: true, run: run.remove } as const] : []),
   ]
 }

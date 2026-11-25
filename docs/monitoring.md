@@ -20,7 +20,7 @@ attention and **System** shows the API, the database, the error list and the bac
 | Caddy | Proxies `/health` and `/ready` to the API, so both are reachable at the site's address. |
 | Request references | Every request has an `X-Request-ID`; every log line written for it carries it as `request_id`, and a 500 answers with it as `reference`, which the apps show as its first 8 characters. |
 | Error list | 5xx answers, recovered panics and errors the apps report from the browser, folded by kind, kept 30 days: Administration → System → Errors. |
-| Worker | The `docworker` service (`api -worker`, ADR 0008): reads documents' text for search. Its image's `HEALTHCHECK` runs `/api -healthcheck-worker` (a heartbeat in the last 2 minutes); Administration → System → Status has its **Worker** card (heartbeat, tools, jobs by kind, recent failures), and the Overview warns when jobs wait with no worker or jobs fail. |
+| Worker | The `docworker` service (`api -worker`, ADR 0008): reads documents' text for search and archives stored forms and given orders' records as PDFs. Its image's `HEALTHCHECK` runs `/api -healthcheck-worker` (a heartbeat in the last 2 minutes); Administration → System → Status has its **Worker** card (heartbeat, tools, jobs by kind, recent failures), and the Overview warns when jobs wait with no worker or jobs fail. |
 | Metrics | Prometheus `/metrics` on `API_METRICS_ADDR` (`:9090` in production, compose network only): requests and latency by route, sign-in failures, errors, the database pool, Go runtime. |
 
 On the droplet:
@@ -162,7 +162,8 @@ Without the agent, those alerts never fire.
 | `audit sealing failed` or `audit purge failed` in the log | the upkeep's sealing or purge; it tries again within the hour |
 | The Overview says the worker is not running (jobs waited 5 minutes with no heartbeat) | `make prod-ps`: is `docworker` up and healthy? `docker compose … logs docworker` says why it stopped (a configuration error names the setting). `make prod-up` starts it. Waiting jobs run once it is back; nothing is lost |
 | The Overview says jobs failed | System → Status → Worker lists each with its reason (`pdftotext: …`, `timed out after 5m0s`). A file the tools cannot read stays *Couldn't read* on its document: its other words are still searchable. After fixing a cause (a missing language, a timeout too short: `API_WORKER_JOB_TIMEOUT`), `docker compose … exec api /api -vault-reindex -failed` reads them all again |
-| The worker says it serves no job (its log, or *Runs: Nothing* on System) | its image lacks a tool or a Tesseract language: rebuild with `make prod-build` |
+| The worker says it serves no job (its log, or *Runs: Nothing* on System) | its image lacks a tool or a Tesseract language: rebuild with `make prod-build`; it archives nothing without `API_FILES_TARGET` |
+| `vault.archive` jobs failed | System → Status → Worker says why. *its stored form does not match its document hash* means an assignment's form was changed in the database: find it by the job's key (`asset_assignment:<id>`) and tell whoever keeps the data; the other reasons (storage unreachable) pass once fixed, and the upkeep's sweep queues the last week's again, or `make prod-vault-backfill COMMIT=yes` all of them |
 | The Overview says seals are not being timestamped (`audit timestamping failed` in the log) | the timestamp service (`API_AUDIT_TSA_URL`) does not answer. From the droplet, `curl -sI http://timestamp.digicert.com` should answer. The upkeep retries hourly. Put it right within 7 days: a seal stamped later than that shows as a mismatch on the Audit log |
 
 ## The API's least-privilege database role

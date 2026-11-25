@@ -567,7 +567,7 @@ Rules for using it:
   carries the confirmation statements of the order's **receipt text version**. Once Given,
   it shows the evidence and its document hash. It prints on one A4 page with signature lines.
 - **Code:** `order.Receipt`, `ReceiptOf`, `order.Record`, `components/receipt.tsx`.
-  **UI:** **View Record**, **Print Record** (on the order pane **View Order**, **Print Order**),
+  **UI:** **View Record**, **Print Record**, **Download PDF** (on the order pane **View Order**, **Print Order**),
   **Share via WhatsApp**, "Receipt WE-000123" on an
   employee's page.
 

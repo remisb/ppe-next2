@@ -16,6 +16,10 @@ import (
 // jobEvery is how often the API runs its upkeep.
 const jobEvery = time.Hour
 
+// archiveSweepWindow is how far back the upkeep looks for records whose
+// archiving was missed; -vault-backfill looks at all of them.
+const archiveSweepWindow = 7 * 24 * time.Hour
+
 // jobRuns is when the upkeep last ran and what it deleted, for System.
 type jobRuns struct {
 	mu   sync.Mutex
@@ -178,6 +182,16 @@ func upkeep(ctx context.Context, svc services, logger *slog.Logger) JobRun {
 		if run.JobsPurged, err = svc.outbox.Purge(ctx); err != nil && ctx.Err() == nil {
 			run.Failed = true
 			logger.Error("outbox purge failed", slog.Any("error", err))
+		}
+	}
+	// Stored forms and given orders of the last week whose archiving was
+	// missed (a failed queueing, an API stopped mid-way) are queued again.
+	if svc.vault != nil && svc.assets != nil && svc.orders != nil {
+		if sw, err := sweepArchives(ctx, svc, time.Now().Add(-archiveSweepWindow), true); err != nil && ctx.Err() == nil {
+			run.Failed = true
+			logger.Error("archive sweep failed", slog.Any("error", err))
+		} else if sw.Forms > 0 || sw.Records > 0 {
+			logger.Info("archiving queued by the sweep", slog.Int("forms", sw.Forms), slog.Int("records", sw.Records))
 		}
 	}
 	// Documents' links are named as their subjects are called now (a renamed

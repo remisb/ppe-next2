@@ -57,11 +57,12 @@ type Repository interface {
 	NextNumber(ctx context.Context, typ string, year int) (int, error)
 	// Record writes an event that changes nothing (a sealed document opened).
 	Record(ctx context.Context, ev audit.Event) error
-	// Sealed are the sealed documents not shredded yet, removed ones included.
-	Sealed(ctx context.Context) ([]Candidate, error)
-	// SetRetainUntil sets a sealed document's retain_until.
+	// Retained are the documents not shredded yet, removed ones included,
+	// that are sealed or of one of types (those whose retention shreds).
+	Retained(ctx context.Context, types []string) ([]Candidate, error)
+	// SetRetainUntil sets a document's retain_until.
 	SetRetainUntil(ctx context.Context, id uuid.UUID, day *string) error
-	// Shred makes a sealed document unreadable (vault.shred_document) and
+	// Shred makes a document unreadable for good (vault.shred_document) and
 	// records ev in one transaction, returning its files' object keys.
 	Shred(ctx context.Context, id uuid.UUID, at time.Time, day string, ev audit.Event) ([]string, error)
 	// VersionDocument is the document a version is of, or ErrNotFound.
@@ -84,9 +85,15 @@ type Repository interface {
 	SourcedFiles(ctx context.Context, kind string, ids []uuid.UUID) ([]SourcedFile, error)
 	// Sources are the records of source kind that have a live document.
 	Sources(ctx context.Context, kind string) ([]uuid.UUID, error)
+	// QueueArchives writes an archiving job (KindArchive) for each of ids,
+	// records of source kind, that has no document yet, unless one is waiting,
+	// and answers how many it wrote.
+	QueueArchives(ctx context.Context, kind string, ids []uuid.UUID, now time.Time) (int64, error)
+	// Unarchived are those of ids, records of source kind, with no document.
+	Unarchived(ctx context.Context, kind string, ids []uuid.UUID) ([]uuid.UUID, error)
 }
 
-// Candidate is a sealed document as the retention sees it.
+// Candidate is a document as the retention sees it.
 type Candidate struct {
 	ID           uuid.UUID
 	Type         string
@@ -95,5 +102,9 @@ type Candidate struct {
 	RetainUntil  *string
 	HoldUntil    *string
 	Removed      bool
+	Sealed       bool
 	Employees    []uuid.UUID
+	// SourceKind and SourceID are a sourced document's record.
+	SourceKind *string
+	SourceID   *uuid.UUID
 }

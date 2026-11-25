@@ -92,6 +92,10 @@ Since the Document Vault's phase 5 (migration 0065) signed copies are vault docu
 moved keep their `signed-copies/…` keys, newer ones are under `vault/…`, both in this bucket.
 After restoring a backup older than 0065, `make prod-up` runs the migration again, and
 `make prod-vault-backfill` checks that every copy's file is in the bucket with its hash.
+Since phase 6 the vault also keeps a PDF of each stored assignment form and given order's
+Items Given Record (`vault/…`). They are copies: the snapshots and hashes they are drawn from
+are in the database. After a restore, `make prod-vault-backfill COMMIT=yes` queues any record
+the restored database has no copy of, and the worker draws it again.
 
 ### The SIM codes key (`API_SIM_CODES_KEY`)
 

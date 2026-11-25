@@ -542,3 +542,13 @@ func translate(err error) error {
 	}
 	return err
 }
+
+// GivenSince reads the live orders given at or after since.
+func (r *PostgresRepository) GivenSince(ctx context.Context, since time.Time) ([]uuid.UUID, error) {
+	rows, err := r.pool.Query(ctx, `SELECT id FROM orders
+		WHERE status = 'GIVEN' AND deleted_at IS NULL AND given_at >= $1 ORDER BY given_at, id`, since)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+}

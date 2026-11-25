@@ -215,7 +215,8 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		return importSIMs(ctx, svc, cfg, os.Stdout)
 	}
 	if cfg.VaultBackfill {
-		return vaultBackfill(ctx, pool, store, cfg.ImportCommit, os.Stdout)
+		err := vaultBackfill(ctx, pool, store, cfg.ImportCommit, os.Stdout)
+		return errors.Join(err, archiveBackfill(ctx, svc, cfg.ImportCommit, os.Stdout))
 	}
 	if cfg.VaultReindex {
 		return vaultReindex(ctx, svc, cfg.VaultReindexFailed, os.Stdout)
@@ -387,7 +388,11 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerCompanyRoutes(rt, svc.companies)
 	registerItemSetRoutes(rt, svc.itemSets)
 	registerOrderRoutes(rt, svc.orders)
-	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL)
+	loc, err := cfg.location()
+	if err != nil {
+		loc = time.UTC // validate refused such a zone before any router is built
+	}
+	registerConfirmationRoutes(rt, svc.orders, cfg.PublicBaseURL, loc)
 	registerShareRoutes(rt, svc.shares, svc.employees, cfg.PublicBaseURL)
 	registerAssetRoutes(rt, svc.assets, svc.users)
 	registerPersonnelRoutes(rt, svc.documents, sensitive)

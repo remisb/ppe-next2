@@ -2,6 +2,7 @@ package asset
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -124,4 +125,11 @@ type Repository interface {
 	UpdateOpen(ctx context.Context, assetID uuid.UUID, fn OpenMutation) (Assignment, error)
 	// Record writes ev alone: an action on the asset that changes nothing.
 	Record(ctx context.Context, ev audit.Event) error
+	// StoredForm reads an assignment that stored a form, with its asset as it
+	// is now, written off or deleted too; ErrNotFound for no such assignment
+	// or one without a stored form.
+	StoredForm(ctx context.Context, assignmentID uuid.UUID) (Asset, Assignment, error)
+	// FormsSince are the assignments that stored a form, typed in at or after
+	// since, oldest first.
+	FormsSince(ctx context.Context, since time.Time) ([]uuid.UUID, error)
 }

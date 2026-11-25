@@ -7,9 +7,10 @@ and generation are [document-template-service.md](document-template-service.md);
 worker are [outbox-service.md](outbox-service.md); the data-protection note is
 [document-vault-dpia-note.md](../privacy/document-vault-dpia-note.md).
 
-**Status: phases 1 to 5 built** (migrations 0061 to 0065, `internal/vault`, `internal/vault/document`,
+**Status: phases 1 to 6 built** (migrations 0061 to 0065, `internal/vault`, `internal/vault/document`,
 `internal/vault/extract`, `cmd/api/vault-routes.go`, `cmd/api/wire_vault.go`, the staff app's Document
-Vault and Documents sections, Company Assets' signed copies kept here); the rest decided, not built. Each section names the phase that builds it (ADR 0008's
+Vault and Documents sections, Company Assets' signed copies kept here, assignment forms and Items Given
+Records archived by the worker; phase 6 needed no migration); the rest decided, not built. Each section names the phase that builds it (ADR 0008's
 plan: 1 core, 2 sealed types, 3 templates, 4 worker and text, 5 signed copies, 6 archiving, 7
 identity documents, 8 DOCX).
 
@@ -23,7 +24,7 @@ identity documents, 8 DOCX).
   `internal/files`, `internal/sealbox`, `internal/outbox`, `internal/placeholder`.
 - **Migrations:** `0061_vault` (phase 1), `0062_vault_sealed` (phase 2),
   `0063_document_templates` (phase 3), `0064_outbox` (phase 4), `0065_vault_signed_copies`
-  (phase 5), `0066_document_template_docx` (phase 8).
+  (phase 5), `0066_vault_retention` (retention for every type), `0067_document_template_docx` (phase 8).
 - **Apps:** the staff app's **Document Vault** (`/vault`, list and detail at `/vault/<id>`) and a
   **Documents** section on the employee page and an asset's detail; Administration's **Document
   Templates** (phase 3).
@@ -41,7 +42,7 @@ Templates' use cases are. Administrators edit templates, never types. A type has
 | `key` | stable name, stored on the document (`employment.contract`) |
 | `group` | how screens group types: Employee, Employment, Company Assets, Workwear, Finance, Other |
 | `sealed` | files and data sealed with a data key per document (phase 2) |
-| `retention` | `Keep` (until removed), `Forever`, `AfterDocDate(years)`, `AfterEmploymentEnd(months)` |
+| `retention` | `Keep` (until removed), `Forever`, `AfterDocDate(months)`, `AfterEmploymentEnd(months)`, `AfterSourceEnds(months)` (after the source's record ended: an assignment's return, an order's items' service period) |
 | `links` | the subject kinds it may be linked to, and which it must be (at least one employee, say) |
 | `read`, `manage` | the permissions that let someone see it and change it |
 | `origins` | `uploaded`, `generated`, `archived`: how a document of the type comes to be |
@@ -49,24 +50,28 @@ Templates' use cases are. Administrators edit templates, never types. A type has
 | `fields` | the values generation may fill in (document-template-service.md) |
 | `numbered` | gets a document number on generation, with its prefix (`EC-`) |
 
-| Key | Group | Sealed | Retention (default) | Must link to | Read / manage | Origins | Phase |
+| Key | Group | Sealed | Retention (Lithuania's minimum, VAD item) | Must link to | Read / manage | Origins | Phase |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `employee.certificate` | Employee | no | `Keep` (`AfterDocDate(10)` once the DPO agrees) | employee | `vault.read` / `vault.manage` | uploaded | 1 |
-| `employee.training` | Employee | no | `Keep` (likewise) | employee | `vault.read` / `vault.manage` | uploaded | 1 |
-| `invoice` | Finance | no | `Keep` (likewise) | | `vault.read` / `vault.manage` | uploaded | 1 |
-| `asset.document` | Company Assets | no | `Keep` | asset | `vault.read` / `vault.manage` | uploaded | 1 |
+| `employee.certificate` | Employee | no | `AfterEmploymentEnd(36)` (VAD 2.2) | employee | `vault.read` / `vault.manage` | uploaded | 1 |
+| `employee.training` | Employee | no | `AfterEmploymentEnd(36)` (VAD 2.2, 2.14, 2.23) | employee | `vault.read` / `vault.manage` | uploaded | 1 |
+| `invoice` | Finance | no | `AfterDocDate(120)` (VAD 3.15; VAT Law art. 78) | | `vault.read` / `vault.manage` | uploaded | 1 |
+| `asset.document` | Company Assets | no | `AfterDocDate(120)` (VAD 11.6) | asset | `vault.read` / `vault.manage` | uploaded | 1 |
 | `other` | Other | no | `Keep` | | `vault.read` / `vault.manage` | uploaded | 1 |
-| `employment.contract` | Employment | yes | `AfterEmploymentEnd(120)` | employee | `vault.employment.read` / `vault.employment.manage` | uploaded; generated from phase 3 | 2 |
-| `employment.annex` | Employment | yes | `AfterEmploymentEnd(120)`, as a contract | employee (its contract as parent from phase 3) | the same | the same | 2 |
-| `employment.nda` | Employment | yes | `AfterEmploymentEnd(120)` | employee | the same | the same | 2 |
-| `employment.other` | Employment | yes | `AfterEmploymentEnd(36)` | employee | the same | the same | 2 |
-| `asset.signed_form` | Company Assets | no | `Keep` | asset, employee | `vault.read` and the asset kind's read / none here: added by Company Assets' Upload Signed Form alone, with its permissions (`sim_cards.manage`, `assets.manage`) | uploaded (source `asset_signed_form`) | 5 |
-| `asset.assignment_form` | Company Assets | no | `Keep` | asset, employee | `vault.read` and the asset kind's read / none (archived only) | archived | 6 |
-| `order.record` | Workwear | no | `Keep` | order, employee | `vault.read` (orders are every signed-in user's) / none (archived only) | archived | 6 |
+| `employment.contract` | Employment | yes | `AfterEmploymentEnd(600)` (VAD 2.3) | employee | `vault.employment.read` / `vault.employment.manage` | uploaded; generated from phase 3 | 2 |
+| `employment.annex` | Employment | yes | `AfterEmploymentEnd(600)` (VAD 2.3, as a contract) | employee (its contract as parent from phase 3) | the same | the same | 2 |
+| `employment.nda` | Employment | yes | `AfterEmploymentEnd(600)` (VAD 2.3: an agreement on extra terms) | employee | the same | the same | 2 |
+| `employment.other` | Employment | yes | `AfterEmploymentEnd(36)` (VAD 2.2) | employee | the same | the same | 2 |
+| `asset.signed_form` | Company Assets | no | `AfterSourceEnds(120)`: the asset's return (VAD 11.6) | asset, employee | `vault.read` and the asset kind's read / none here: added by Company Assets' Upload Signed Form alone, with its permissions (`sim_cards.manage`, `assets.manage`) | uploaded (source `asset_signed_form`) | 5 |
+| `asset.assignment_form` | Company Assets | no | `AfterSourceEnds(120)`: the asset's return (VAD 11.6) | asset, employee | `vault.read` and the asset kind's read / none (archived only) | archived | 6 |
+| `order.record` | Workwear | no | `AfterSourceEnds(12)`: the end of the order's longest service period (VAD 2.30) | order, employee | `vault.read` (orders are every signed-in user's) / none (archived only) | archived | 6 |
 
-The retention periods are defaults until the DPO answers (ADR 0008, open question 1). They are in
-code (`vault.Types()`, `Type.Retention`), so a change is a release; the API applies them to sealed
-types only, and the other types are kept until removed. A Company Assets document also needs the asset kind's read permission (`sim_cards.read`
+The periods are Lithuania's minimum retention periods, from the national index for internal records
+(*Vidaus administravimo dokumentų saugojimo terminų rodyklė*, "VAD", in force from 2024-10-01; it
+replaced the general index), counted as the archives' rules count them, from 1 January of the year
+after the rule's day; the DPO confirms them (ADR 0008, open question 1). The decisions and their
+sources are the [document retention policy](../privacy/document-retention-policy.md). They are in code
+(`vault.Types()`, `Type.Retention`), so a change is a release, and every type with a time rule is
+shredded when due (Retention below); `other` is kept until removed. A Company Assets document also needs the asset kind's read permission (`sim_cards.read`
 or `equipment.read`), so Equipment & Furniture's forms stay hidden as their assets are. Signed
 copies are still uploaded and read through Company Assets' own routes with its permissions; the
 vault's routes show them to readers who also have `vault.read`.
@@ -195,8 +200,8 @@ types) and `vault.document_linked` / `vault.document_unlinked`.
 `DELETE /api/v1/vault/documents/{id}` soft-deletes it (`manage`). Archived and migrated
 documents cannot be removed (409 `ErrLocked`): their source owns them. A document under Legal
 Hold cannot be removed. Event `vault.document_removed`. A sealed document removed is shredded at
-once by the next upkeep unless held; one that is not sealed keeps its objects (the bucket's
-versioning and the type's retention decide).
+once by the next upkeep unless held; one that is not sealed is shredded on its type's day, as if it
+had stayed (`other` never: the bucket's versioning decides).
 
 ### Get, Open, By subject (phase 1)
 
@@ -270,21 +275,28 @@ Built (migration 0062, `internal/vault/document/sealed.go`).
   `POST …/versions/{n}/file` (`vault.employment.read`, `sensitive`: the user's roles as they are
   now and a recent sign-in, else Confirm your password) records `vault.document_opened` (type,
   version, file type, size, hash) before it opens the file, checks its hash and sends it.
-- **Retention.** The upkeep (`cmd/api/jobs.go`, hourly) calls `ShredDue`, which computes each
-  sealed document's `retain_until` from its type's rule: `AfterEmploymentEnd` asks the
-  `Employments` port (adapted over the employee's employment periods) when each linked employee's
-  last period ended; while one is open, or the person was never employed or is not found, it is
-  null. `AfterDocDate` counts from `document_date`.
-- **Shredding.** A document past `retain_until`, or removed, and not held, goes through the owner's
+- **Retention** (`retention.go`; since migration 0066 for every type with a time rule, not only
+  sealed ones). The upkeep (`cmd/api/jobs.go`, hourly) calls `ShredDue`, which computes each such
+  document's `retain_until` from its type's rule, 1 January of the year after the rule's day plus
+  the months: `AfterEmploymentEnd` asks the `Employments` port (adapted over the employee's
+  employment periods) when each linked employee's last period ended; while one is open, or the
+  person was never employed or is not found, it is null. `AfterDocDate` counts from
+  `document_date` (none: null). `AfterSourceEnds` asks the `Records` port's `Ended`: an
+  assignment's returned date (its form and its signed copies; held, or marked Not Returned and
+  never back: null), or a given order's date plus its longest line's service period.
+- **Shredding.** A document past `retain_until`, or a sealed one removed, and not held, goes through the owner's
   function `vault.shred_document(id, at, day)` with `vault.document_shredded` (type, number,
   dates, whether removed; by no one) in one transaction: its key, versions, files, read text and
   links are deleted (the versions' and files' trigger allows it only there, under
-  `ppe.vault_shred`), its search emptied and `shredded_at` set, the row kept as a tombstone; then
+  `ppe.vault_shred`), its title and search emptied and `shredded_at` set, the row kept as a
+  tombstone (its source too, so a shredded record is never archived again); then
   its objects are deleted from the store. Reads and search leave shredded documents out. Running it
   again changes nothing; after a restore it shreds again. Removing a sealed document is a soft
   delete; the next upkeep shreds it unless it is held.
 - **Legal Hold.** `PUT /api/v1/vault/documents/{id}/hold` with `hold_until` (today or later) and
-  `hold_reason` (1–500), or `null` to clear it (the type's manage permission); events
+  `hold_reason` (1–500), or `null` to clear it (the type's manage permission, or `vault.manage`
+  for a type no one manages here: archived and sourced ones; only a type whose rule shreds, else
+  400); events
   `vault.hold_set`, `vault.hold_cleared`. Until the day after `hold_until` a document is neither
   shredded (the SQL function refuses too) nor removed (409 `ErrHeld`).
 - **Who sees them:** the built-in add-on role **Employment Documents** (`role.EmploymentID`
@@ -396,15 +408,47 @@ Version, Update, Remove are 403); its links are locked.
 
 ## Archiving (phase 6)
 
-After Give (an assignment with a form) and after a confirmation (an order becoming GIVEN), the
-domain calls its `Archiver` after commit, which only enqueues `vault.archive` (best effort: no
-Give or confirmation fails or changes because of it). The worker asks the vault's `Sources` port
-for the PDF (`formpdf.Render`; `internal/recordpdf` for the Items Given Record, EN/RU, as
-`components/receipt.tsx`), its hash (the domain's own document hash), title and links, and
-stores an `archived` document; the unique source makes a second run a no-op. The upkeep's
-`SweepArchives` finds anything missed (`asset.Service.FormsSince`, `order.Service.GivenSince`).
-**Verify** recomputes the hash from the domain's snapshot and says whether the stored copy
-matches.
+A copy of each stored record is kept here, drawn from its domain's snapshot; the snapshot and
+its hash stay in the domain, which stays the source of truth. Two types, each with a `Source`
+and no `manage` (no one uploads, changes or removes one here; their links are locked):
+`asset.assignment_form` (source `asset_assignment`, an assignment that stored a form) and
+`order.record` (source `order`, a GIVEN order).
+
+- **Queueing.** Give (an assignment with a form) and a confirmation that makes an order GIVEN
+  call their domain's `Archiver` once their transaction has committed (`asset/archive.go`,
+  `order/archive.go`; a repeated confirmation, which writes nothing, calls nothing). The adapter,
+  `vaultArchiver` in `cmd/api/wire_vault.go`, only queues a `vault.archive` job keyed
+  `<source>:<id>` (`document.Service.QueueArchives`: one statement, only for records with no
+  document, a waiting job not doubled), best effort: a failure is logged with the ids alone, and
+  Give or the confirmation answers as before.
+- **The job** (`document.Service.Archive`, the worker's `archiveHandler`; no tool needed, only
+  the files store). A record already archived is done at once. Otherwise the `Records` port
+  (`vaultRecords`) gives the record: a form drawn by `formpdf.Render` from the stored form, an
+  Items Given Record by `internal/recordpdf` (A4, English / Russian, as
+  `components/receipt.tsx` prints it, its dates in the organisation's zone, the same bytes for
+  the same record), the hash the domain stored (the form's; the confirmation's), title
+  (`<inventory no.> · <given date>`; `<record no.> · <given date>`), number (an order's record
+  number), document date and links (the asset and the employee; the order and the employee),
+  and its maker (the giver). The PDF is stored first (`vault/<document>/<file>.pdf`), then one
+  transaction writes the `archived` document under the giver, version 1 (`archived`, its
+  `document_hash` the domain's), its read text pending with its job, and
+  `vault.document_archived` with no actor (the worker did it; its after the type, number,
+  hash, source and links). The unique source makes a second run, or a race, a no-op. A record
+  with nothing to archive (gone, not given, no stored form) is done; one that is not a PDF,
+  has no hash or misses a link fails for good (`outbox.Permanent`). A stored form that no
+  longer matches its hash is refused and retried, then fails, and is on System's Worker card.
+- **The sweep.** The API's hourly upkeep looks at the last 7 days' stored forms and given
+  orders (`asset.Service.FormsSince`, `order.Service.GivenSince`) and queues those with no
+  document (`sweepArchives`). `api -vault-backfill` reports how many of all of them have none
+  and, with `-commit`, queues them: run once after deploying phase 6 for the records before it.
+- **Verify** (`GET /api/v1/vault/documents/{id}/verify`, the type's read; `no-store`):
+  `document_hash` (the archived version's), `source_hash` (computed again now from the
+  domain's stored snapshot: the form encoded again, the receipt built again from the order),
+  `matches`, `file_intact` (the kept file still hashes to its SHA-256), `source_gone`. 400 for a
+  document that is not archived. The staff app's document pane has **Verify** on such a
+  document, with **Matches** or **Does not match**.
+- The Items Given Record also downloads as this PDF: `GET /api/v1/orders/{id}/record.pdf`
+  (anyone signed in, as the record; Download PDF on the record page).
 
 ## Configuration
 
@@ -429,7 +473,11 @@ Worker settings are in [outbox-service.md](outbox-service.md).
   nothing that opens and running it again changes nothing; a hold stops it; the signed-copy
   migration keeps ids, keys and hashes (`TestPostgresSignedCopiesMove`), and uploads through
   Company Assets land in the vault (`TestPostgresAssetsSignedCopyHTTP`);
-  `TestPostgresAPIRoleIsLeastPrivileged` extended.
+  `TestPostgresAPIRoleIsLeastPrivileged` extended; archiving: Give and a paper confirmation
+  each queue one job, the worker's handler keeps each record once as ppe_app, linked and named
+  as its source, Verify matches, the record drawn again is the archived bytes, and the sweep and
+  the backfill find what was never queued, once (`TestPostgresArchiveHTTP`,
+  `TestPostgresArchiveSweep`).
 - `internal/vault/imports_test.go`; `TestRoutePolicy`, `TestSeededRolesKeepPolicy`,
   `TestEveryDomainEventIsKnown`, `TestLoadConfigDefaults`.
 - e2e: upload a certificate and find it by its unaccented name; the existing signed-copy steps

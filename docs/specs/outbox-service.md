@@ -7,7 +7,8 @@ and [ADR 0001](../architecture/adr/0001-modular-monolith-with-bounded-contexts.m
 through a transactional outbox); its first user is [vault-service.md](vault-service.md).
 
 **Status: built** (phase 4: migration 0064, `internal/outbox`, `cmd/api/worker.go`, the docworker
-image). Its only kind so far is `vault.extract_text`.
+image). Its kinds: `vault.extract_text` (phase 4; needs the tools) and `vault.archive` (phase 6;
+needs only the files store), each served only by a worker that can run it.
 
 - **Package:** `internal/outbox` (platform: imports no domain). Handlers live with their
   context (`internal/vault/extract`, …) and are registered by kind in `cmd/api/worker.go`.
@@ -124,5 +125,5 @@ A version with a live job keeps it.
 - A tagged tools test (`go test -tags tools ./internal/vault/extract`), run by CI's Go job after
   installing Tesseract and Poppler: a text PDF, a photo, a scanned PDF, a Russian photo, and a
   cancelled read. Locally, without the tools, run it in a Debian container (docs/testing.md).
-- e2e runs no worker: an upload shows *Waiting to be read*. Phase 6's archiving adds the worker to
-  it.
+- e2e runs no worker: an upload shows *Waiting to be read*. Archiving is tested by
+  `cmd/api`'s `TestPostgresArchiveHTTP`, which runs the worker's handler as the worker does.

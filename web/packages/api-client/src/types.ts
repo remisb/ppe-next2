@@ -2190,7 +2190,7 @@ export interface VaultType {
   dated: boolean
   expiring: boolean
   /** How long its documents are kept: a sealed type's rule is applied by the API (shredded). */
-  retention: { rule: 'keep' | 'forever' | 'after_document_date' | 'after_employment_end'; months?: number }
+  retention: { rule: 'keep' | 'forever' | 'after_document_date' | 'after_employment_end' | 'after_source_ends'; months?: number }
   /** Starts a generated document's number: EC-2026-0001. */
   number_prefix?: string
   /**
@@ -2265,6 +2265,19 @@ export interface VaultDocument {
   created_by_user_id: string
   updated_at: string
   updated_by_user_id: string
+}
+
+/** GET /api/v1/vault/documents/{id}/verify: an archived document against its source. */
+export interface VaultVerification {
+  /** The archived version's document hash. */
+  document_hash: string
+  /** The source's, computed again now from its stored snapshot; '' when the record is gone. */
+  source_hash: string
+  matches: boolean
+  /** The kept file's bytes still hash to what was stored. */
+  file_intact: boolean
+  source_gone: boolean
+  checked_at: string
 }
 
 /** A document as a list or search shows it. */

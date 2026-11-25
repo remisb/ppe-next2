@@ -639,12 +639,17 @@ func (stubOrders) Delete(context.Context, uuid.UUID, order.DeleteFunc) error {
 func (stubOrders) ConfirmedFor(context.Context, uuid.UUID) (order.Confirmation, error) {
 	return order.Confirmation{}, order.ErrNotFound
 }
+func (stubOrders) GivenSince(context.Context, time.Time) ([]uuid.UUID, error) { return nil, nil }
 
 // stubAssets is an empty register: every asset is missing.
 type stubAssets struct{}
 
 func (stubAssets) Create(context.Context, asset.Asset, *asset.Bump, audit.Event) error { return nil }
 func (stubAssets) Record(context.Context, audit.Event) error                           { return nil }
+func (stubAssets) StoredForm(context.Context, uuid.UUID) (asset.Asset, asset.Assignment, error) {
+	return asset.Asset{}, asset.Assignment{}, asset.ErrNotFound
+}
+func (stubAssets) FormsSince(context.Context, time.Time) ([]uuid.UUID, error) { return nil, nil }
 func (stubAssets) Get(context.Context, uuid.UUID) (asset.Record, error) {
 	return asset.Record{}, asset.ErrNotFound
 }
@@ -1048,6 +1053,7 @@ var policy = map[string]rule{
 	"POST /api/v1/orders/{id}/confirm-paper":     {"", "any"},
 	"POST /api/v1/orders/{id}/confirm-in-person": {"", "any"},
 	"GET /api/v1/orders/{id}/record":             {"", "any"},
+	"GET /api/v1/orders/{id}/record.pdf":         {"", "any"},
 	"POST /api/v1/shares":                        {"", "any"},
 	"GET /api/v1/shares":                         {"", "any"},
 	"DELETE /api/v1/shares/{id}":                 {"", "any"},
@@ -1145,6 +1151,7 @@ var policy = map[string]rule{
 	"GET /api/v1/vault/documents/{id}/versions/{n}/file":                        {"", "documents"},
 	"PUT /api/v1/vault/documents/{id}/hold":                                     {"", "documents"},
 	"POST /api/v1/vault/documents/{id}/versions/{n}/read-again":                 {"", "documents"},
+	"GET /api/v1/vault/documents/{id}/verify":                                   {"", "documents"},
 	"GET /api/v1/document-templates":                                            {role.DocumentTemplatesManage, "admins"},
 	"GET /api/v1/document-templates/fields":                                     {role.DocumentTemplatesManage, "admins"},
 	"POST /api/v1/document-templates":                                           {role.DocumentTemplatesManage, "admins"},
@@ -1196,10 +1203,10 @@ func (stubVault) Subjects(context.Context) ([]vaultdoc.Subject, error) { return 
 func (stubVault) Relabel(context.Context, vaultdoc.Subject, string) (int, error) {
 	return 0, nil
 }
-func (stubVault) NextNumber(context.Context, string, int) (int, error)     { return 1, nil }
-func (stubVault) Record(context.Context, audit.Event) error                { return nil }
-func (stubVault) Sealed(context.Context) ([]vaultdoc.Candidate, error)     { return nil, nil }
-func (stubVault) SetRetainUntil(context.Context, uuid.UUID, *string) error { return nil }
+func (stubVault) NextNumber(context.Context, string, int) (int, error)             { return 1, nil }
+func (stubVault) Record(context.Context, audit.Event) error                        { return nil }
+func (stubVault) Retained(context.Context, []string) ([]vaultdoc.Candidate, error) { return nil, nil }
+func (stubVault) SetRetainUntil(context.Context, uuid.UUID, *string) error         { return nil }
 func (stubVault) Shred(context.Context, uuid.UUID, time.Time, string, audit.Event) ([]string, error) {
 	return nil, nil
 }
@@ -1219,6 +1226,12 @@ func (stubVault) SourcedFiles(context.Context, string, []uuid.UUID) ([]vaultdoc.
 	return nil, nil
 }
 func (stubVault) Sources(context.Context, string) ([]uuid.UUID, error) { return nil, nil }
+func (stubVault) QueueArchives(context.Context, string, []uuid.UUID, time.Time) (int64, error) {
+	return 0, nil
+}
+func (stubVault) Unarchived(context.Context, string, []uuid.UUID) ([]uuid.UUID, error) {
+	return nil, nil
+}
 
 // allowedRoles is who each audience was before permissions: the three fixed
 // roles, and Equipment Assignments, which reaches what any signed-in user does
@@ -1254,6 +1267,7 @@ func init() {
 	for _, pattern := range []string{
 		"GET /api/v1/vault/types", "POST /api/v1/vault/search", "GET /api/v1/vault/by-subject/{kind}/{id}",
 		"GET /api/v1/vault/documents/{id}", "GET /api/v1/vault/documents/{id}/versions/{n}/file", "GET /api/v1/audit-events/vault/{id}",
+		"GET /api/v1/vault/documents/{id}/verify",
 	} {
 		anyOf[pattern] = []role.Permission{role.VaultRead, role.VaultEmploymentRead}
 	}

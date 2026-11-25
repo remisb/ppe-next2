@@ -80,8 +80,9 @@ What shapes it:
    files and data are sealed (`internal/sealbox`, AES-256-GCM) with a fresh **data key** of the
    document, itself sealed by a new master keyring, `API_VAULT_KEY` (`…_KEY_ID`,
    `…_PREVIOUS_KEYS`, `api -reseal-vault-keys`). Optional: without it, sealed types answer 503
-   and the rest works. A type's retention rule is one of: after employment ends (months), after
-   the document's date (years), forever, or kept until removed. The API's hourly upkeep shreds
+   and the rest works. A type's retention rule is one of: after employment ends, after
+   the document's date, after its source's record ended (months each, counted from 1 January
+   after), forever, or kept until removed; since 2026-11-25 it applies to every type, sealed or not. The API's hourly upkeep shreds
    what is due (the key, the objects and the rows go, `vault.document_shredded` stays); a
    **Legal Hold** stops it; the Overview lists what goes within 30 days. Employment documents get their own
    add-on role, **Employment Documents** (`vault.employment.read`, `.manage`), which
@@ -184,9 +185,13 @@ What shapes it:
 
 ## Open questions
 
-1. **Retention per type** (contracts, NDAs, invoices, certificates) needs the DPO's or a
-   lawyer's answer; until then each type's period is a default the code names and a setting can
-   change.
+1. **Retention per type**: set to Lithuania's minimum periods (2026-11-25; the national index
+   for internal records, "VAD", in force from 2024-10-01): contracts, annexes and NDAs 50 years
+   after employment ends, other employment papers, certificates and training 3, invoices and
+   asset papers 10, Items Given Records 1 after the items' service period; every type with a
+   period is shredded when due, not only sealed ones (`vault-service.md`, "Document types").
+   The DPO confirms them, and whether anything is kept longer for a stated reason. The decisions
+   and their sources: [document-retention-policy.md](../../privacy/document-retention-policy.md).
 2. **The personal code on a contract** is an asked field in v1: Personnel files' sealed code is
    not reachable from the vault, by decision 5.
 3. **Droplet capacity** for the worker, with and without LibreOffice (Consequences).

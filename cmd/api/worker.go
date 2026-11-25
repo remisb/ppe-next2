@@ -30,9 +30,16 @@ func runWorker(ctx context.Context, svc services, cfg config, logger *slog.Logge
 		vaultdoc.WithTextReader(extract.Reader{MaxPages: cfg.WorkerMaxPages})(svc.vault)
 		handlers[vaultdoc.KindReadText] = readTextHandler(svc.vault)
 	}
-	if len(handlers) == 0 {
-		logger.Warn("the worker serves no job: its tools are missing (pdftotext, pdftoppm, tesseract with eng, lit, rus and osd)",
+	// Archiving needs no tool, only the files store (phase 6).
+	if svc.vault != nil && cfg.FilesTarget != "" {
+		handlers[vaultdoc.KindArchive] = archiveHandler(svc.vault)
+	}
+	if _, ok := handlers[vaultdoc.KindReadText]; !ok {
+		logger.Warn("the worker reads no document's text: its tools are missing (pdftotext, pdftoppm, tesseract with eng, lit, rus and osd)",
 			slog.Any("tools", tools))
+	}
+	if _, ok := handlers[vaultdoc.KindArchive]; !ok {
+		logger.Warn("the worker archives no record: there is no file storage (API_FILES_TARGET)")
 	}
 	host, _ := os.Hostname()
 	if host == "" {
@@ -72,6 +79,23 @@ func readTextHandler(vault *vaultdoc.Service) outbox.Handler {
 			return outbox.Permanent(fmt.Errorf("payload: %w", err))
 		}
 		return vault.ReadText(ctx, p.Version, j.Attempts >= j.MaxAttempts)
+	}
+}
+
+// archiveHandler is vault.archive's handler: the record in the payload,
+// archived once (docs/specs/vault-service.md, "Archiving").
+func archiveHandler(vault *vaultdoc.Service) outbox.Handler {
+	return func(ctx context.Context, j outbox.Job) error {
+		var p vaultdoc.ArchiveJob
+		if err := json.Unmarshal(j.Payload, &p); err != nil {
+			return outbox.Permanent(fmt.Errorf("payload: %w", err))
+		}
+		err := vault.Archive(ctx, p.Source, p.ID)
+		if errors.Is(err, vaultdoc.ErrInvalid) {
+			// The record cannot be kept as it is: trying again will not mend it.
+			return outbox.Permanent(err)
+		}
+		return err
 	}
 }
 

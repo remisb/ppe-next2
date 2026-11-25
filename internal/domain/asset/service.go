@@ -41,13 +41,15 @@ const (
 // which kind is the caller's Sight and Rights, checked through Seen and
 // Changeable.
 type Service struct {
-	repo   Repository
-	forms  SignedForms
-	mailer Mailer
-	sealer Sealer
-	now    func() time.Time
-	newID  func() uuid.UUID
-	loc    *time.Location
+	repo  Repository
+	forms SignedForms
+	// archiver keeps a copy of each stored form in the Document Vault (archive.go).
+	archiver Archiver
+	mailer   Mailer
+	sealer   Sealer
+	now      func() time.Time
+	newID    func() uuid.UUID
+	loc      *time.Location
 }
 
 // Option configures a Service built by NewService.
@@ -667,6 +669,9 @@ func (s *Service) Give(ctx context.Context, id uuid.UUID, p GiveParams, actor uu
 	})
 	if err != nil {
 		return AssignmentView{}, err
+	}
+	if a.Form != nil {
+		s.archive(ctx, a.ID)
 	}
 	return s.assignmentView(a), nil
 }
