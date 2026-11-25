@@ -13,6 +13,7 @@ import (
 
 	"github.com/remisb/ppe-next2/internal/outbox"
 	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
+	"github.com/remisb/ppe-next2/internal/vault/docx"
 	"github.com/remisb/ppe-next2/internal/vault/extract"
 )
 
@@ -25,6 +26,9 @@ func workerAliveFile() string { return filepath.Join(os.TempDir(), "ppe-worker-a
 // probes its tools, serves the kinds they allow, and runs until stopped.
 func runWorker(ctx context.Context, svc services, cfg config, logger *slog.Logger) error {
 	tools := extract.Tools(ctx)
+	if v := docx.Version(ctx); v != "" {
+		tools["soffice"] = v
+	}
 	handlers := map[string]outbox.Handler{}
 	if svc.vault != nil && extract.Ready(tools) {
 		vaultdoc.WithTextReader(extract.Reader{MaxPages: cfg.WorkerMaxPages})(svc.vault)
@@ -33,6 +37,14 @@ func runWorker(ctx context.Context, svc services, cfg config, logger *slog.Logge
 	// Archiving needs no tool, only the files store (phase 6).
 	if svc.vault != nil && cfg.FilesTarget != "" {
 		handlers[vaultdoc.KindArchive] = archiveHandler(svc.vault)
+	}
+	// DOCX templates' renders need LibreOffice and the vault's key (phase 8).
+	if svc.vault != nil && cfg.FilesTarget != "" && cfg.VaultKey != "" && tools["soffice"] != "" {
+		vaultdoc.WithConverter(docx.Converter{})(svc.vault)
+		handlers[vaultdoc.KindRenderDocx] = renderHandler(svc.vault)
+	}
+	if _, ok := handlers[vaultdoc.KindRenderDocx]; !ok {
+		logger.Info("the worker converts no DOCX: it needs soffice (LibreOffice), API_FILES_TARGET and API_VAULT_KEY")
 	}
 	if _, ok := handlers[vaultdoc.KindReadText]; !ok {
 		logger.Warn("the worker reads no document's text: its tools are missing (pdftotext, pdftoppm, tesseract with eng, lit, rus and osd)",
@@ -93,6 +105,22 @@ func archiveHandler(vault *vaultdoc.Service) outbox.Handler {
 		err := vault.Archive(ctx, p.Source, p.ID)
 		if errors.Is(err, vaultdoc.ErrInvalid) {
 			// The record cannot be kept as it is: trying again will not mend it.
+			return outbox.Permanent(err)
+		}
+		return err
+	}
+}
+
+// renderHandler is vault.render_docx's handler: the render in the payload
+// converted to PDF; its last attempt records the failure on the render.
+func renderHandler(vault *vaultdoc.Service) outbox.Handler {
+	return func(ctx context.Context, j outbox.Job) error {
+		var p vaultdoc.RenderJob
+		if err := json.Unmarshal(j.Payload, &p); err != nil {
+			return outbox.Permanent(fmt.Errorf("payload: %w", err))
+		}
+		err := vault.RenderDocx(ctx, p.Render, j.Attempts >= j.MaxAttempts)
+		if errors.Is(err, vaultdoc.ErrDamaged) {
 			return outbox.Permanent(err)
 		}
 		return err

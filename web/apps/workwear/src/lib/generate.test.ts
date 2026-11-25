@@ -1,7 +1,7 @@
-import type { AskedField, Employment } from '@ppe/api-client'
+import type { AskedField, Employment, RenderAnswer } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
-import { defaultEmployment, generateInput, inputProblems, pdfBlob, samePreview } from './generate'
+import { awaitRender, defaultEmployment, generateInput, inputProblems, isRender, pdfBlob, samePreview } from './generate'
 
 const job = (id: string, started: string | null, ended: string | null): Employment => ({
   id,
@@ -42,5 +42,24 @@ describe('Generate Document…', () => {
     const blob = pdfBlob(btoa('%PDF-1.7'))
     expect(blob.type).toBe('application/pdf')
     expect(await blob.text()).toBe('%PDF-1.7')
+  })
+})
+
+describe('awaitRender', () => {
+  it('asks until the render is no longer pending', async () => {
+    const answers = [{ state: 'pending' }, { state: 'pending' }, { state: 'done', pdf: 'JVBERi0' }] as RenderAnswer[]
+    const asked: string[] = []
+    const got = await awaitRender(async (id) => (asked.push(id), answers.shift()!), 'r1', { wait: async () => undefined })
+    expect(got.pdf).toBe('JVBERi0')
+    expect(asked).toEqual(['r1', 'r1', 'r1'])
+  })
+  it('gives up after its time, saying so', async () => {
+    await expect(awaitRender(async () => ({ render_id: 'r1', state: 'pending' }), 'r1', { intervalMs: 10, timeoutMs: 30, wait: async () => undefined })).rejects.toThrow(
+      'The document is still being made',
+    )
+  })
+  it('tells a render from a PDF or a document', () => {
+    expect(isRender({ render_id: 'r1', state: 'pending' })).toBe(true)
+    expect(isRender({ pdf: 'x' })).toBe(false)
   })
 })

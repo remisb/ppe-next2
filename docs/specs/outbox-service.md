@@ -8,7 +8,8 @@ through a transactional outbox); its first user is [vault-service.md](vault-serv
 
 **Status: built** (phase 4: migration 0064, `internal/outbox`, `cmd/api/worker.go`, the docworker
 image). Its kinds: `vault.extract_text` (phase 4; needs the tools) and `vault.archive` (phase 6;
-needs only the files store), each served only by a worker that can run it.
+needs only the files store) and `vault.render_docx` (phase 8; needs `soffice`, the files store
+and `API_VAULT_KEY`), each served only by a worker that can run it.
 
 - **Package:** `internal/outbox` (platform: imports no domain). Handlers live with their
   context (`internal/vault/extract`, …) and are registered by kind in `cmd/api/worker.go`.

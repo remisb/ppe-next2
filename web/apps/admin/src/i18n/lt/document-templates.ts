@@ -47,6 +47,20 @@ export const documentTemplates: DocumentTemplatesText = {
   unsaved: 'Pakeitimai dar neišsaugoti.',
   nothingToPublish: 'Nėra ką skelbti: paskelbta versija tokia pati.',
   needsNumber: 'Prieš skelbdami įrašykite į šabloną {{document.number}}: kiekvienas dokumentas spausdina savo numerį.',
+  // DOCX šablonai (8 etapas).
+  uploadDocx: 'Įkelti DOCX šabloną…',
+  replaceDocx: 'Pakeisti DOCX…',
+  downloadDocx: 'Atsisiųsti DOCX',
+  useBlocks: 'Rašyti redaktoriuje',
+  useBlocksQuestion: 'Rašyti šį šabloną redaktoriuje vietoj Word dokumento? Juodraštis taps antrašte su numeriu; DOCX lieka paskelbtose versijose, kurios jį naudoja.',
+  docxTitle: 'Word dokumentas',
+  docxIntro: 'Šablonas yra šis Word dokumentas: generuojant užpildomi jo {{laukai}} ir jis paverčiamas užrakintu PDF, toks, koks atrodo Word. Laukai gali būti tekste, lentelėse, antraštėse ir poraštėse.',
+  docxFile: (name: string, size: string) => `${name} · ${size}`,
+  docxFields: 'Naudojami laukai',
+  docxUploaded: (name: string) => `${name} dabar yra juodraštis.`,
+  docxUnknown: (key: string) => `DOCX naudoja {{${key}}}, kuris nėra laukas: pridėkite jį kaip klausiamą lauką arba pataisykite DOCX ir įkelkite dar kartą.`,
+  docxNeeds: (keys: string) => `Prieš skelbdami įrašykite į DOCX ${keys}: kiekvienas dokumentas spausdina savo numerį ir maišą.`,
+  docxPreview: 'Word šablono peržiūra paruošiama generuojant dokumentą. Atsisiųskite DOCX, kad jį perskaitytumėte.',
   fixProblems: (n: number) =>
     plural(n, {
       one: '# problema neleidžia išsaugoti juodraščio; ji pažymėta žemiau.',

@@ -13,6 +13,12 @@ import (
 var (
 	// ErrNotFound: no live template with that id, or no such version.
 	ErrNotFound = errors.New("document template not found")
+	// ErrNoStorage: no files store, so a DOCX cannot be kept.
+	ErrNoStorage = errors.New("document template: file storage is not set up")
+	// ErrFileType: an upload that is not a Word document (.docx).
+	ErrFileType = errors.New("document template: the file is not a Word document (.docx)")
+	// ErrTooLarge: a DOCX over 5 MB, or one that unpacks too large.
+	ErrTooLarge = errors.New("document template: the DOCX is too large")
 	// ErrInvalid: the request breaks a rule; fieldError wraps it.
 	ErrInvalid = errors.New("invalid document template")
 	// ErrNameTaken: another live template of the type has the name.
@@ -56,6 +62,9 @@ var fields = []Field{
 	{Key: "employment.from", Label: "Employed from", Sample: "2026-06-01", Date: true},
 	{Key: "employment.until", Label: "Employed until", Sample: "", Date: true},
 	{Key: "document.number", Label: "Document number", Sample: "EC-2026-0001"},
+	// The generated document's hash (its values', not its file's): a DOCX
+	// template prints it, as a block template's footer does.
+	{Key: "document.hash", Label: "Document hash (SHA-256)", Sample: "3f2a…"},
 	{Key: "document.date", Label: "Document date", Sample: "2026-11-24", Date: true},
 	{Key: "user.name", Label: "Your name", Sample: "Jonas Petraitis"},
 	{Key: "today", Label: "Today", Sample: "2026-11-24", Date: true},

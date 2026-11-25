@@ -6,13 +6,15 @@ employment's values and the user's answers, and drawn as a locked PDF that is st
 Document Vault. Decisions in [ADR 0008](../architecture/adr/0008-document-vault.md) (6, 7);
 documents, types and storage in [vault-service.md](vault-service.md).
 
-**Status: phase 3 built** (migration 0063); DOCX templates are phase 8.
+**Status: built**: templates of blocks (phase 3, migration 0063) and DOCX templates (phase 8,
+migration 0067).
 
 - **Packages:** `internal/vault/template` (entity, service, repository, Postgres, `fields.go`,
   `blocks.go`), `internal/placeholder` (`Parse`, `Render`: extracted from
   `internal/domain/mailtemplate/template.go`, which then uses it with its tests unchanged),
   `internal/pdffonts` (the embedded fonts, adding italic and bold italic; `formpdf.Fonts()` wraps
-  it), `internal/docpdf` (draws blocks on pdf-mini's `layout`), later `internal/vault/docx`.
+  it), `internal/docpdf` (draws blocks on pdf-mini's `layout`), `internal/vault/docx` (phase 8:
+  tells, reads, fills and converts a DOCX).
 - **Routes:** `cmd/api/document-template-routes.go` (Administration's and generation's); generation itself is
   `internal/vault/document/generate.go`, through the ports `Templates`, `People` and `Users` (`cmd/api/wire_vault.go`).
 - **Migration:** `0063_document_templates`: `vault.templates`, `vault.template_versions` (a trigger
@@ -45,10 +47,10 @@ breaks, spacers, rules); it was not extended.
 | `template_id`, `number` | 1, 2, …; at most one `draft` per template |
 | `state` | `draft` or `published` (a trigger refuses any change to a published row) |
 | `kind` | `blocks` (phase 3) or `docx` (phase 8) |
-| `body` | the blocks, JSONB, `ppe.blocks.v1` |
+| `body` | the blocks, JSONB, `ppe.blocks.v1`; for a DOCX `ppe.docx.v1`: no blocks, the file's `docx_sha256` and the `fields` its placeholders name (so `body_sha256` covers the file) |
 | `asked` | the asked fields it declares (below) |
 | `body_sha256` | of the canonical body, part of every generated document's hash |
-| `file_id` | phase 8: the uploaded DOCX |
+| `docx_key`, `docx_name`, `docx_size` | phase 8: the uploaded DOCX in the files store, `vault-templates/<template>/<sha256>.docx` (one key per content, so a published version's never changes) |
 | `published_at`, `published_by_user_id` | |
 
 **Save draft** writes the draft (creating one from the current version when none exists).
@@ -133,13 +135,47 @@ To come: an annex generated from its contract's page (its `parent_id`).
 
 ## DOCX templates (phase 8)
 
-Migration `0067`: `template_versions.kind` and `file_id`. **Upload DOCX Template** in
-Administration: the file is sniffed as DOCX, placeholders split across Word's runs are joined,
-every `{{…}}` is checked as a field (`internal/placeholder`), `{{document.number}}` and
-`{{document.hash}}` are required. Generate merges the values into the DOCX and the worker's
-`vault.render_docx` converts it (`soffice --headless --convert-to pdf`, a profile per job, a
-timeout); the version keeps the DOCX as its `source` file and the PDF as `main`. Preview waits for
-the worker.
+A template may be an uploaded Word document instead of blocks: its layout, fonts and styles are
+Word's, its `{{field}}` placeholders filled on generation, and the filled document turned into a
+locked PDF by LibreOffice in the worker (the API's image has none).
+
+- **Upload** (`POST /api/v1/document-templates/{id}/draft/docx`, multipart: `file`, and the asked
+  fields as JSON in `asked`; `template.Service.UploadDocx`). The file must be a DOCX (a zip with
+  `word/document.xml`; else 415) of at most 5 MB, unpacking to at most 60 MB (413). Its
+  placeholders in the body, headers and footers are read paragraph by paragraph, joined where
+  Word split them across runs (`docx.Fields`); each must be a field the app fills or an asked one
+  (400 naming it), and one whose `}}` is in another paragraph is refused. The file is stored
+  first, then it becomes the draft (`kind` `docx`, `draft_saved` with the kind and hashes).
+  Saving the draft again with the same `ppe.docx.v1` body changes only the asked fields (an asked
+  field the DOCX uses cannot be dropped); a blocks body makes the draft blocks again.
+- **Publish** also needs `{{document.hash}}` (an app field since phase 8, the generated
+  document's hash), as a DOCX prints its own footer.
+- **Generate** (`document.Service.Preview`, `Generate`): the values are filled into the DOCX
+  (`docx.Merge`: each value where its placeholder starts, in its run's formatting, escaped; the
+  rest of the file byte for byte), Preview with `PREVIEW` for the number and hash. The filled DOCX
+  waits as a **render** (`vault.renders`): sealed with a key of its own under `API_VAULT_KEY`
+  (`vault/renders/<id>.docx`), so DOCX templates need it (503 without), and a job
+  `vault.render_docx` queued. Both routes answer **202** `{render_id, state: "pending"}` (preview
+  with its `values_hash`); the API's 10-second request limit is no place to wait for a conversion.
+- **The worker** (`RenderDocx`, `renderHandler`; served only with `soffice`, the files store and
+  the vault's key) converts it (`docx.Converter`: `soffice --headless --convert-to pdf`, a folder
+  and a LibreOffice profile of its own per job, HOME there, its process group killed on the job's
+  timeout) and keeps the PDF sealed beside it; a failure on the last attempt marks the render
+  failed (`error`: `conversion_failed`, `timeout`, `damaged`).
+- **Polling** (`GET /api/v1/vault/renders/{id}`, the reader's own renders only, else 404):
+  202 while pending; a preview's PDF and `values_hash` (200); a document's render makes the
+  document once its PDF is there and answers it (201, the same document when asked again):
+  version 1 with the PDF as its `main` file and the filled DOCX as its `source` file
+  (`vault/<document>/<file>.docx`), both sealed for a sealed type, its read text from the DOCX's
+  words, `vault.document_generated` as for blocks. A failed render answers 422. Its number was
+  taken at Generate, so an abandoned render leaves a gap in the numbers.
+- The upkeep removes renders an hour old, with their files (`PurgeRenders`).
+- **Administration**: on a template, ⋯ → **Upload DOCX Template…** (or **Replace DOCX…**): a DOCX
+  draft shows its file, the fields it uses (an unknown one marked, with what to do), **Replace
+  DOCX…**, **Download DOCX** (`GET …/versions/{n}/docx`) and **Write in the Editor Instead**; the
+  asked fields stay editable; there is no editor preview (Generate's preview draws it).
+- **Staff app**: Generate Document… polls a render (`awaitRender`, every 1.5 s for up to two
+  minutes, then "still being made"), so the sheet reads the same for both kinds.
 
 ## Routes
 
@@ -150,13 +186,16 @@ the worker.
 | `GET /api/v1/document-templates/{id}` | `document_templates.manage` | with versions |
 | `PUT /api/v1/document-templates/{id}/draft` | `document_templates.manage` | |
 | `POST /api/v1/document-templates/{id}/publish` | `document_templates.manage` | 400 with problems |
+| `POST /api/v1/document-templates/{id}/draft/docx` | `document_templates.manage` | multipart `file`, `asked`; 400, 413, 415, 503 |
+| `GET /api/v1/document-templates/{id}/versions/{n}/docx` | `document_templates.manage` | the DOCX, an attachment |
 | `POST /api/v1/document-templates/{id}/retire` | `document_templates.manage` | |
 | `GET /api/v1/document-templates/fields` | `document_templates.manage` | the app's fields and the types a template may be for |
 | `PUT /api/v1/document-templates/{id}` | `document_templates.manage` | name and language |
 | `POST /api/v1/document-templates/preview` | `document_templates.manage` | a body as edited, with the fields' samples: `{pdf}` (base64) |
 | `GET /api/v1/vault/templates` | `vault.manage` or `vault.employment.manage` | published, not retired templates of the types the user may change |
-| `POST /api/v1/vault/generate/preview` | the same, the type's checked | `{pdf, values_hash}` |
-| `POST /api/v1/vault/generate` | the same | 409 when the values changed since the preview; 503 for a sealed type without keys |
+| `POST /api/v1/vault/generate/preview` | the same, the type's checked | `{pdf, values_hash}`; for a DOCX 202 `{render_id, state, values_hash}` |
+| `POST /api/v1/vault/generate` | the same | 409 when the values changed since the preview; 503 for a sealed type without keys, or a DOCX without `API_VAULT_KEY`; for a DOCX 202 `{render_id, state}` |
+| `GET /api/v1/vault/renders/{id}` | the same | the reader's render: 202 pending, 200 `{pdf, values_hash}`, 201 `{document}`, 422 failed |
 
 ## Tests
 

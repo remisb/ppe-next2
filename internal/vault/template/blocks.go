@@ -19,6 +19,10 @@ import (
 // Format names the body's format.
 const Format = "ppe.blocks.v1"
 
+// FormatDocx is a DOCX template's body (phase 8): no blocks, the uploaded
+// file's SHA-256 and the fields its placeholders name.
+const FormatDocx = "ppe.docx.v1"
+
 // The kinds of block.
 const (
 	Heading    = "heading"
@@ -92,11 +96,19 @@ type Block struct {
 	Height int `json:"height,omitempty"`
 }
 
-// Body is a template's text: ppe.blocks.v1.
+// Body is a template's text: ppe.blocks.v1, or ppe.docx.v1 for a DOCX.
 type Body struct {
 	Format string  `json:"format"`
 	Blocks []Block `json:"blocks"`
+	// DocxSHA256 and DocxFields are a DOCX template's: its file's hash and
+	// the fields its placeholders name, sorted. Absent from block bodies, so
+	// their hashes are as before.
+	DocxSHA256 string   `json:"docx_sha256,omitempty"`
+	DocxFields []string `json:"fields,omitempty"`
 }
+
+// IsDocx says whether the body is a DOCX template's.
+func (b Body) IsDocx() bool { return b.Format == FormatDocx }
 
 // Asked kinds.
 const (
@@ -129,7 +141,10 @@ func DecodeBody(raw []byte) (Body, error) {
 	return b, nil
 }
 
-var askedKey = regexp.MustCompile(`^[a-z][a-z0-9_]{0,39}$`)
+var (
+	askedKey  = regexp.MustCompile(`^[a-z][a-z0-9_]{0,39}$`)
+	sha256Hex = regexp.MustCompile(`^[0-9a-f]{64}$`)
+)
 
 // CheckAsked checks the asked fields: keys of their own, labels, kinds, a
 // choice's options.
@@ -167,6 +182,17 @@ func CheckAsked(asked []Asked) error {
 // Check checks the body against its limits, its block kinds' parts, and that
 // every field is known.
 func (b Body) Check(known func(key string) bool) error {
+	if b.IsDocx() {
+		if len(b.Blocks) > 0 || !sha256Hex.MatchString(b.DocxSHA256) {
+			return fieldError("body", "is not "+FormatDocx)
+		}
+		for _, k := range b.DocxFields {
+			if !known(k) {
+				return fieldError("body", "uses an unknown field {{"+k+"}}")
+			}
+		}
+		return nil
+	}
 	if b.Format != Format {
 		return fieldError("body", "is not "+Format)
 	}
@@ -286,6 +312,9 @@ func checkRuns(rs []Run, known func(string) bool) error {
 
 // Fields are the field keys the body uses, in order, once each.
 func (b Body) FieldKeys() []string {
+	if b.IsDocx() {
+		return slices.Clone(b.DocxFields)
+	}
 	var out []string
 	add := func(rs []Run) {
 		for _, r := range rs {

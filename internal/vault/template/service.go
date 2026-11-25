@@ -1,7 +1,13 @@
 package template
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"io"
 	"slices"
 	"strings"
 	"time"
@@ -10,7 +16,9 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/remisb/ppe-next2/internal/audit"
+	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/vault"
+	"github.com/remisb/ppe-next2/internal/vault/docx"
 )
 
 // The templates' audit events (docs/specs/document-template-service.md).
@@ -40,13 +48,29 @@ const (
 
 // Version is one version of a template's text.
 type Version struct {
-	Number      int        `json:"number"`
-	State       string     `json:"state"`
+	Number int    `json:"number"`
+	State  string `json:"state"`
+	// Kind is blocks (written in the editor) or docx (an uploaded Word document, phase 8).
+	Kind        string     `json:"kind"`
 	Body        Body       `json:"body"`
 	Asked       []Asked    `json:"asked"`
 	BodySHA256  string     `json:"body_sha256"`
+	Docx        *DocxFile  `json:"docx,omitempty"`
 	UpdatedAt   time.Time  `json:"updated_at"`
 	PublishedAt *time.Time `json:"published_at"`
+}
+
+// Version kinds (vault.template_versions.kind).
+const (
+	KindBlocks = "blocks"
+	KindDocx   = "docx"
+)
+
+// DocxFile is a DOCX version's file in the files store; its SHA-256 is the body's.
+type DocxFile struct {
+	Key  string `json:"-"`
+	Name string `json:"name"`
+	Size int64  `json:"size"`
 }
 
 // Template is a document type's template: its name and language, its draft
@@ -108,9 +132,13 @@ type Repository interface {
 // Service holds the templates' use cases.
 type Service struct {
 	repo  Repository
+	store files.Store
 	now   func() time.Time
 	newID func() uuid.UUID
 }
+
+// WithFiles sets where DOCX templates are kept; without it uploading one is ErrNoStorage.
+func WithFiles(store files.Store) Option { return func(s *Service) { s.store = store } }
 
 // Option configures a Service.
 type Option func(*Service)
@@ -189,7 +217,7 @@ func (s *Service) Create(ctx context.Context, d Details, actor uuid.UUID) (Templ
 	if err != nil {
 		return Template{}, err
 	}
-	v := Version{Number: 1, State: Draft, Body: body, Asked: []Asked{}, BodySHA256: sum, UpdatedAt: now}
+	v := Version{Number: 1, State: Draft, Kind: KindBlocks, Body: body, Asked: []Asked{}, BodySHA256: sum, UpdatedAt: now}
 	ev, err := s.event(actor, EventCreated, t.ID, now, nil, map[string]any{"type": d.Type, "name": d.Name, "language": d.Language})
 	if err != nil {
 		return Template{}, err
@@ -253,6 +281,15 @@ func (s *Service) SaveDraft(ctx context.Context, id uuid.UUID, body Body, asked 
 		if ok && draft.BodySHA256 == sum {
 			return cur, nil, nil, nil
 		}
+		// A DOCX body is the uploaded file's: saving one again changes only the
+		// asked fields, and needs the draft to hold that very file.
+		kind, file := KindBlocks, (*DocxFile)(nil)
+		if body.IsDocx() {
+			if !ok || draft.Docx == nil || draft.Body.DocxSHA256 != body.DocxSHA256 || !slices.Equal(draft.Body.DocxFields, body.DocxFields) {
+				return cur, nil, nil, fieldError("body", "is a DOCX the draft does not hold: upload it again")
+			}
+			kind, file = KindDocx, draft.Docx
+		}
 		if !ok {
 			draft = Version{Number: 1, State: Draft}
 			if len(cur.Versions) > 0 {
@@ -260,12 +297,100 @@ func (s *Service) SaveDraft(ctx context.Context, id uuid.UUID, body Body, asked 
 			}
 		}
 		now := s.now()
+		draft.Kind, draft.Docx = kind, file
 		draft.Body, draft.Asked, draft.BodySHA256, draft.UpdatedAt = body, asked, sum, now
 		next := cur
 		next.UpdatedAt, next.UpdatedByUserID = now, actor
-		ev, err := s.event(actor, EventDraftSaved, id, now, nil, map[string]any{"version": draft.Number, "body_sha256": sum})
+		ev, err := s.event(actor, EventDraftSaved, id, now, nil, map[string]any{"version": draft.Number, "kind": kind, "body_sha256": sum})
 		return next, &draft, []audit.Event{ev}, err
 	})
+}
+
+// UploadDocx saves a Word document as the template's draft (phase 8), with
+// the asked fields: a DOCX of at most 5 MB whose placeholders, joined where
+// Word split them across runs, each name a field the app fills or an asked
+// one. The file is kept first (vault-templates/<template>/<sha>.docx: one
+// key per content, so a published version's never changes), then the draft.
+func (s *Service) UploadDocx(ctx context.Context, id uuid.UUID, name string, data []byte, asked []Asked, actor uuid.UUID) (Template, error) {
+	if s.store == nil {
+		return Template{}, ErrNoStorage
+	}
+	if asked == nil {
+		asked = []Asked{}
+	}
+	if err := CheckAsked(asked); err != nil {
+		return Template{}, err
+	}
+	fields, err := docx.Fields(data, func(k string) bool { return Known(k, asked) })
+	switch {
+	case errors.Is(err, docx.ErrTooLarge):
+		return Template{}, ErrTooLarge
+	case errors.Is(err, docx.ErrNotDocx):
+		return Template{}, ErrFileType
+	case errors.Is(err, docx.ErrSplitPlaceholder):
+		return Template{}, fieldError("docx", "has a {{ whose }} is not in the same paragraph")
+	case err != nil:
+		if key, ok := docx.FieldError(err); ok {
+			return Template{}, fieldError("docx", "uses an unknown field {{"+key+"}}")
+		}
+		return Template{}, fieldError("docx", "cannot be read")
+	}
+	sum := sha256.Sum256(data)
+	body := Body{Format: FormatDocx, Blocks: []Block{}, DocxSHA256: hex.EncodeToString(sum[:]), DocxFields: fields}
+	if _, err := s.repo.Get(ctx, id); err != nil {
+		return Template{}, err
+	}
+	file := &DocxFile{Key: "vault-templates/" + id.String() + "/" + body.DocxSHA256 + ".docx", Name: files.Name(name, files.DOCX, "template"), Size: int64(len(data))}
+	if err := s.store.Put(ctx, file.Key, bytes.NewReader(data), file.Size, files.DOCX); err != nil {
+		return Template{}, fmt.Errorf("template: storing the DOCX: %w", err)
+	}
+	hash, err := Hash(body, asked)
+	if err != nil {
+		return Template{}, err
+	}
+	return s.repo.Update(ctx, id, func(cur Template) (Template, *Version, []audit.Event, error) {
+		draft, ok := cur.Draft()
+		if ok && draft.BodySHA256 == hash && draft.Docx != nil && draft.Docx.Name == file.Name {
+			return cur, nil, nil, nil
+		}
+		if !ok {
+			draft = Version{Number: 1, State: Draft}
+			if len(cur.Versions) > 0 {
+				draft.Number = cur.Versions[0].Number + 1
+			}
+		}
+		now := s.now()
+		draft.Kind, draft.Docx, draft.Body, draft.Asked, draft.BodySHA256, draft.UpdatedAt = KindDocx, file, body, asked, hash, now
+		next := cur
+		next.UpdatedAt, next.UpdatedByUserID = now, actor
+		ev, err := s.event(actor, EventDraftSaved, id, now, nil, map[string]any{
+			"version": draft.Number, "kind": KindDocx, "body_sha256": hash, "docx_sha256": body.DocxSHA256, "file_name": file.Name,
+		})
+		return next, &draft, []audit.Event{ev}, err
+	})
+}
+
+// DocxBytes are a DOCX version's file, checked against its hash.
+func (s *Service) DocxBytes(ctx context.Context, v Version) ([]byte, error) {
+	if v.Docx == nil {
+		return nil, ErrNotFound
+	}
+	if s.store == nil {
+		return nil, ErrNoStorage
+	}
+	r, err := s.store.Get(ctx, v.Docx.Key)
+	if err != nil {
+		return nil, fmt.Errorf("template: the DOCX of version %d: %w", v.Number, err)
+	}
+	defer r.Close()
+	data, err := io.ReadAll(io.LimitReader(r, docx.MaxBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if sum := sha256.Sum256(data); hex.EncodeToString(sum[:]) != v.Body.DocxSHA256 {
+		return nil, fmt.Errorf("template: the DOCX of version %d does not match its hash", v.Number)
+	}
+	return data, nil
 }
 
 // Publish makes the draft the version Generate uses, never to change again:
@@ -281,6 +406,11 @@ func (s *Service) Publish(ctx context.Context, id uuid.UUID, actor uuid.UUID) (T
 		}
 		if !slices.Contains(draft.Body.FieldKeys(), "document.number") {
 			return cur, nil, nil, fieldError("body", "must print {{document.number}}")
+		}
+		// A DOCX prints its own footer: it must print the hash, as a block
+		// template's footer does.
+		if draft.Body.IsDocx() && !slices.Contains(draft.Body.FieldKeys(), "document.hash") {
+			return cur, nil, nil, fieldError("body", "must print {{document.hash}}")
 		}
 		now := s.now()
 		draft.State, draft.PublishedAt = Published, &now

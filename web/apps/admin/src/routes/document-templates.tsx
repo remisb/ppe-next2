@@ -1,4 +1,4 @@
-import type { DocumentTemplate, TemplateBlockType, TemplateField, TemplateFields, TemplateLanguage } from '@ppe/api-client'
+import type { DocumentTemplate, TemplateBlockType, TemplateField, TemplateFields, TemplateLanguage, TemplateVersion } from '@ppe/api-client'
 import { ApiError } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { BackButton } from '@ppe/ui/components/back-button'
@@ -13,7 +13,7 @@ import { saveFile } from '@ppe/ui/lib/save-file'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
-import { ArrowDown, ArrowUp, ChevronRight, Download, ExternalLink, Eye, Plus, Save, Trash2, Upload, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronRight, Download, ExternalLink, Eye, FileUp, Plus, Save, Trash2, Upload, X } from 'lucide-react'
 import {
   type CSSProperties,
   type FocusEvent,
@@ -66,6 +66,9 @@ import {
   toAsked,
   toBody,
   validName,
+  docxBody,
+  docxProblems,
+  fileSize,
 } from '@/lib/document-templates'
 import { type Route, linkTo } from '@/lib/router'
 
@@ -438,6 +441,9 @@ function TemplateForm({
   const action = useAction()
   const start = editedVersion(template)
   const [blocks, setBlocks] = useState<EditBlock[]>(() => editBody(start?.body))
+  // A DOCX draft (phase 8): the Word document in place of the blocks.
+  const [docx, setDocx] = useState<TemplateVersion | null>(() => (start?.kind === 'docx' ? start : null))
+  const fileInput = useRef<HTMLInputElement>(null)
   const [asked, setAsked] = useState<EditAsked[]>(() => (start?.asked ?? []).map(editAsked))
   // Every problem is shown once Save, Preview or Publish has been tried; a mistyped field at once.
   const [tried, setTried] = useState(false)
@@ -451,11 +457,17 @@ function TemplateForm({
     target.current = tg
   }, [])
 
-  const body = useMemo(() => toBody(blocks), [blocks])
+  const docxB = docxBody(docx ?? undefined)
+  const body = useMemo(() => docxB ?? toBody(blocks), [docxB, blocks])
   const askedOut = useMemo(() => asked.map(toAsked), [asked])
   const dirty = draftKey(body, askedOut) !== savedKey(editedVersion(template))
   const hasDraft = template.versions.some((v) => v.state === 'draft')
-  const problems = useMemo(() => draftProblems(blocks, asked, appFields), [blocks, asked, appFields])
+  const blockProblems = useMemo(() => draftProblems(blocks, asked, appFields), [blocks, asked, appFields])
+  const docxIssues = docxB ? docxProblems(docxB, asked, appFields) : null
+  // A DOCX has no blocks: its problems are its asked fields' and its unknown fields.
+  const problems = docxIssues
+    ? { ...blockProblems, blocks: {}, empty: false, count: Object.keys(blockProblems.asked).length + docxIssues.unknown.length }
+    : blockProblems
   const words = t.documentTemplates
 
   const updateBlock = (id: string, fn: (b: EditBlock) => EditBlock) => {
@@ -490,16 +502,24 @@ function TemplateForm({
   }
 
   const preview = async () => {
+    if (docxB) {
+      setStatus(words.docxPreview)
+      return
+    }
     if (!ready()) return
     await action.run(async () => {
-      const answer = await client.documentTemplates.preview({ body, asked: askedOut, language: template.language, name: template.name })
+      const answer = await client.documentTemplates.preview({ body: toBody(blocks), asked: askedOut, language: template.language, name: template.name })
       setPdf(pdfBlob(answer.pdf))
     })
   }
 
   const publish = async () => {
     if (!ready()) return
-    if (!printsNumber(body)) {
+    if (docxIssues && docxIssues.missing.length > 0) {
+      action.fail(new Error(words.docxNeeds(docxIssues.missing.map((k) => `{{${k}}}`).join(' & '))))
+      return
+    }
+    if (!docxB && !printsNumber(toBody(blocks))) {
       action.fail(new Error(words.needsNumber))
       return
     }
@@ -515,6 +535,30 @@ function TemplateForm({
       setStatus(words.published(number))
       onChanged()
     }
+  }
+
+  const uploadDocx = (file: File | undefined) => {
+    if (!file) return
+    void action.run(async () => {
+      const got = await client.documentTemplates.uploadDocx(template.id, file, askedOut)
+      setDocx(editedVersion(got) ?? null)
+      setStatus(words.docxUploaded(file.name))
+      onChanged()
+    })
+  }
+  const downloadDocx = () => {
+    if (!docx) return
+    void action.run(async () => {
+      const f = await client.documentTemplates.docx(template.id, docx.number)
+      saveFile(f.blob, docx.docx?.name ?? f.filename)
+    })
+  }
+  const useBlocks = async () => {
+    const ok = await action.run(async () => undefined, { confirm: words.useBlocksQuestion })
+    if (!ok) return
+    setDocx(null)
+    setBlocks(editBody({ format: 'ppe.blocks.v1', blocks: [{ type: 'heading', level: 1, text: [{ text: template.name + ' ' }, { field: 'document.number' }] }] }))
+    setStatus('')
   }
 
   const retire = async () => {
@@ -560,11 +604,17 @@ function TemplateForm({
           </span>
         }
         secondary={[
-          { label: words.preview, icon: Eye, onClick: () => void preview(), disabled: action.pending, showFrom: 'sm' },
+          ...(docxB ? [] : [{ label: words.preview, icon: Eye, onClick: () => void preview(), disabled: action.pending, showFrom: 'sm' as const }]),
           { label: words.publish, icon: Upload, onClick: () => void publish(), disabled: action.pending || nothingToPublish, showFrom: 'md' },
         ]}
         primary={{ label: saving ? t.common.saving : words.saveDraft, icon: Save, onClick: () => void save(), disabled: action.pending || !dirty }}
-        more={<DropdownMenuItem onClick={() => setEditingDetails(true)}>{words.editDetails}</DropdownMenuItem>}
+        more={
+          <>
+            <DropdownMenuItem onClick={() => setEditingDetails(true)}>{words.editDetails}</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => fileInput.current?.click()}>{docxB ? words.replaceDocx : words.uploadDocx}</DropdownMenuItem>
+            {docxB ? <DropdownMenuItem onClick={() => void useBlocks()}>{words.useBlocks}</DropdownMenuItem> : null}
+          </>
+        }
         moreAsk={
           template.retired ? undefined : (
             <DropdownMenuItem variant="destructive" onClick={() => void retire()}>
@@ -578,8 +628,54 @@ function TemplateForm({
         {status || (dirty ? words.unsaved : '')}
       </p>
 
+      <input
+        ref={fileInput}
+        type="file"
+        accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        className="sr-only"
+        tabIndex={-1}
+        aria-label={words.uploadDocx}
+        onChange={(e) => {
+          uploadDocx(e.target.files?.[0])
+          e.target.value = ''
+        }}
+      />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)] lg:items-start">
         <div className="flex min-w-0 flex-col gap-8">
+          {docxB && docx && docxIssues ? (
+            <section aria-labelledby="docx-title" className="grid gap-3">
+              <div>
+                <h2 id="docx-title" className="text-lg font-semibold">
+                  {words.docxTitle}
+                </h2>
+                <p className="text-sm text-muted-foreground">{words.docxIntro}</p>
+              </div>
+              <p className="text-sm font-medium break-all">{words.docxFile(docx.docx?.name ?? '', fileSize(docx.docx?.size ?? 0))}</p>
+              <div className="grid gap-1.5">
+                <h3 className="text-sm font-semibold">{words.docxFields}</h3>
+                <ul className="flex flex-wrap gap-1.5">
+                  {docxB.fields.map((f) => (
+                    <li key={f}>
+                      <Badge variant={docxIssues.unknown.includes(f) ? 'destructive' : 'secondary'} className="font-mono">{`{{${f}}}`}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {docxIssues.unknown.map((k) => (
+                <p key={k} role="alert" className="text-sm text-destructive">
+                  {words.docxUnknown(k)}
+                </p>
+              ))}
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" disabled={action.pending} onClick={() => fileInput.current?.click()}>
+                  <FileUp aria-hidden /> {words.replaceDocx}
+                </Button>
+                <Button variant="outline" disabled={action.pending} onClick={downloadDocx}>
+                  <Download aria-hidden /> {words.downloadDocx}
+                </Button>
+              </div>
+            </section>
+          ) : (
           <section aria-labelledby="blocks-title" className="grid gap-3">
             <div>
               <h2 id="blocks-title" className="text-lg font-semibold">
@@ -623,6 +719,7 @@ function TemplateForm({
               </Button>
             </div>
           </section>
+          )}
 
           <AskedSection
             asked={asked}

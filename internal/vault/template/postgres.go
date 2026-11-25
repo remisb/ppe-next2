@@ -47,7 +47,7 @@ func scanTemplate(row pgx.Row) (Template, error) {
 
 // versionsOf reads a template's versions, newest first.
 func versionsOf(ctx context.Context, q querier, id uuid.UUID) ([]Version, error) {
-	rows, err := q.Query(ctx, `SELECT number, state, body, asked, body_sha256, updated_at, published_at
+	rows, err := q.Query(ctx, `SELECT number, state, kind, body, asked, body_sha256, updated_at, published_at, docx_key, docx_name, docx_size
 		FROM vault.template_versions WHERE template_id = $1 ORDER BY number DESC`, id)
 	if err != nil {
 		return nil, err
@@ -57,8 +57,13 @@ func versionsOf(ctx context.Context, q querier, id uuid.UUID) ([]Version, error)
 	for rows.Next() {
 		var v Version
 		var body, asked []byte
-		if err := rows.Scan(&v.Number, &v.State, &body, &asked, &v.BodySHA256, &v.UpdatedAt, &v.PublishedAt); err != nil {
+		var key, name *string
+		var size *int64
+		if err := rows.Scan(&v.Number, &v.State, &v.Kind, &body, &asked, &v.BodySHA256, &v.UpdatedAt, &v.PublishedAt, &key, &name, &size); err != nil {
 			return nil, err
+		}
+		if key != nil && name != nil && size != nil {
+			v.Docx = &DocxFile{Key: *key, Name: *name, Size: *size}
 		}
 		if err := json.Unmarshal(body, &v.Body); err != nil {
 			return nil, err
@@ -98,13 +103,23 @@ func writeVersion(ctx context.Context, tx pgx.Tx, id uuid.UUID, v Version, actor
 	if v.PublishedAt != nil {
 		publishedBy = &actor
 	}
+	kind := v.Kind
+	if kind == "" {
+		kind = KindBlocks
+	}
+	var key, name *string
+	var size *int64
+	if v.Docx != nil {
+		key, name, size = &v.Docx.Key, &v.Docx.Name, &v.Docx.Size
+	}
 	_, err = tx.Exec(ctx, `
 		INSERT INTO vault.template_versions (template_id, number, state, body, asked, body_sha256, updated_at, updated_by_user_id,
-			published_at, published_by_user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+			published_at, published_by_user_id, kind, docx_key, docx_name, docx_size)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		ON CONFLICT (template_id, number) DO UPDATE SET state = $3, body = $4, asked = $5, body_sha256 = $6,
-			updated_at = $7, updated_by_user_id = $8, published_at = $9, published_by_user_id = $10`,
-		id, v.Number, v.State, body, asked, v.BodySHA256, v.UpdatedAt, actor, v.PublishedAt, publishedBy)
+			updated_at = $7, updated_by_user_id = $8, published_at = $9, published_by_user_id = $10,
+			kind = $11, docx_key = $12, docx_name = $13, docx_size = $14`,
+		id, v.Number, v.State, body, asked, v.BodySHA256, v.UpdatedAt, actor, v.PublishedAt, publishedBy, kind, key, name, size)
 	return err
 }
 

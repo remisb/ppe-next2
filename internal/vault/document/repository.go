@@ -91,6 +91,18 @@ type Repository interface {
 	QueueArchives(ctx context.Context, kind string, ids []uuid.UUID, now time.Time) (int64, error)
 	// Unarchived are those of ids, records of source kind, with no document.
 	Unarchived(ctx context.Context, kind string, ids []uuid.UUID) ([]uuid.UUID, error)
+	// CreateRender inserts a render and the job converting it (phase 8).
+	CreateRender(ctx context.Context, r Render) error
+	// GetRender reads a render, or ErrNotFound.
+	GetRender(ctx context.Context, id uuid.UUID) (Render, error)
+	// FinishRender sets a pending render done or failed (with code).
+	FinishRender(ctx context.Context, id uuid.UUID, state string, code *string, at time.Time) error
+	// CompleteRender makes a done document render's document, once, and
+	// answers its id (the same again for a render finished already).
+	CompleteRender(ctx context.Context, id uuid.UUID, d Document, links []Link, ev audit.Event, at time.Time) (uuid.UUID, error)
+	// StaleRenders are the renders made before before; DeleteRender removes one.
+	StaleRenders(ctx context.Context, before time.Time) ([]uuid.UUID, error)
+	DeleteRender(ctx context.Context, id uuid.UUID) error
 }
 
 // Candidate is a document as the retention sees it.

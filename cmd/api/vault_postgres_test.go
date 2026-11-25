@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -20,6 +21,8 @@ import (
 	"github.com/remisb/ppe-next2/internal/outbox"
 	"github.com/remisb/ppe-next2/internal/recordpdf"
 	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
+	"github.com/remisb/ppe-next2/internal/vault/docx"
+	"github.com/remisb/ppe-next2/internal/vault/docx/docxtest"
 )
 
 // uploadDocument sends a document as Upload Document… does: the file, and its
@@ -726,5 +729,132 @@ func TestPostgresVaultIdentityHTTP(t *testing.T) {
 	}
 	if got := search(mgr, map[string]any{"query": "aukst"}); len(got) != 0 {
 		t.Errorf("words naming no employee = %+v", got)
+	}
+}
+
+// pdfOfWords stands in for LibreOffice: a "PDF" of the DOCX's words.
+type pdfOfWords struct{}
+
+func (pdfOfWords) Convert(_ context.Context, data []byte) ([]byte, error) {
+	text, err := docx.Text(data, func(k string) string { return "{{" + k + "}}" })
+	return []byte("%PDF-1.7\n" + text), err
+}
+
+// uploadDocx sends Upload DOCX Template: the file and the asked fields.
+func (a *testAPI) uploadDocx(t *testing.T, id, token string, data []byte, asked any) *httptest.ResponseRecorder {
+	t.Helper()
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	js, _ := json.Marshal(asked)
+	mw.WriteField("asked", string(js))
+	fw, _ := mw.CreateFormFile("file", "Darbo sutartis.docx")
+	fw.Write(data)
+	mw.Close()
+	req := httptest.NewRequest("POST", "/api/v1/document-templates/"+id+"/draft/docx", &body)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+	a.handler.ServeHTTP(rec, req)
+	return rec
+}
+
+// TestPostgresDocxTemplateHTTP: a DOCX template uploaded, published and used
+// as ppe_app: the preview and the document are renders the worker's handler
+// converts, polled until their PDF; the document is made once, sealed, with
+// its PDF and the filled DOCX, numbered, and the hash printed in it.
+func TestPostgresDocxTemplateHTTP(t *testing.T) {
+	api, owner := newPostgresAPI(t)
+	ctx := context.Background()
+	admin := api.tokenWith(t, role.DocumentTemplatesManage)
+	_, mgr := api.userWith(t, role.KeyManager)
+	_, clerk := api.userWith(t, role.KeyEmployment)
+	_, other := api.userWith(t, role.KeyEmployment)
+	rec := api.do(t, "POST", "/api/v1/employees", mgr, map[string]any{"first_name": "Ana", "last_name": "Žukauskaitė"})
+	ana := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	rec = api.do(t, "POST", "/api/v1/document-templates", admin, map[string]any{"type": "employment.contract", "name": "Darbo sutartis", "language": "lt"})
+	id := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	asked := []map[string]any{{"key": "salary", "label": "Alga", "kind": "money", "required": true}}
+
+	if rec := api.uploadDocx(t, id, admin, []byte("%PDF-1.7"), asked); rec.Code != http.StatusUnsupportedMediaType {
+		t.Errorf("a PDF = %d %s", rec.Code, rec.Body)
+	}
+	file := docxtest.Build([]string{"Darbo sutartis Nr. {{document.number}}", "{{employee.name}}, alga {{input.salary}}"}, "SHA-256 {{document.hash}}")
+	rec = api.uploadDocx(t, id, admin, file, asked)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"kind":"docx"`) {
+		t.Fatalf("upload = %d %s", rec.Code, rec.Body)
+	}
+	if rec := api.do(t, "GET", "/api/v1/document-templates/"+id+"/versions/1/docx", admin, nil); rec.Code != http.StatusOK || !bytes.Equal(rec.Body.Bytes(), file) {
+		t.Errorf("download = %d", rec.Code)
+	}
+	if rec := api.do(t, "POST", "/api/v1/document-templates/"+id+"/publish", admin, nil); rec.Code != http.StatusOK {
+		t.Fatalf("publish = %d %s", rec.Code, rec.Body)
+	}
+
+	// The worker's handler, as it would run the job.
+	vaultdoc.WithConverter(pdfOfWords{})(api.svc.vault)
+	convert := func(render string) {
+		t.Helper()
+		payload, _ := json.Marshal(map[string]any{"render": render})
+		job := outbox.Job{ID: uuid.New(), Kind: vaultdoc.KindRenderDocx, Payload: payload, Attempts: 1, MaxAttempts: 5}
+		if err := renderHandler(api.svc.vault)(ctx, job); err != nil {
+			t.Fatalf("render %s: %v", render, err)
+		}
+	}
+	req := map[string]any{"template_id": id, "employee_id": ana, "inputs": map[string]any{"salary": "2400"}}
+	rec = api.do(t, "POST", "/api/v1/vault/generate/preview", clerk, req)
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("preview = %d %s", rec.Code, rec.Body)
+	}
+	started := decode[map[string]any](t, rec.Body.Bytes())
+	render, hash := started["render_id"].(string), started["values_hash"].(string)
+	if rec := api.do(t, "GET", "/api/v1/vault/renders/"+render, clerk, nil); rec.Code != http.StatusAccepted {
+		t.Errorf("pending = %d %s", rec.Code, rec.Body)
+	}
+	var jobs int
+	if err := owner.QueryRow(ctx, `SELECT count(*) FROM outbox.jobs WHERE kind = 'vault.render_docx' AND key = $1`, render).Scan(&jobs); err != nil || jobs != 1 {
+		t.Errorf("%d jobs, %v", jobs, err)
+	}
+	convert(render)
+	if rec := api.do(t, "GET", "/api/v1/vault/renders/"+render, other, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("another's render = %d", rec.Code)
+	}
+	rec = api.do(t, "GET", "/api/v1/vault/renders/"+render, clerk, nil)
+	got := decode[map[string]any](t, rec.Body.Bytes())
+	pdf, _ := base64.StdEncoding.DecodeString(got["pdf"].(string))
+	if rec.Code != http.StatusOK || got["values_hash"] != hash || !bytes.Contains(pdf, []byte("Nr. PREVIEW")) {
+		t.Fatalf("preview's PDF = %d %q", rec.Code, pdf)
+	}
+
+	req["values_hash"] = hash
+	rec = api.do(t, "POST", "/api/v1/vault/generate", clerk, req)
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("generate = %d %s", rec.Code, rec.Body)
+	}
+	render = decode[map[string]any](t, rec.Body.Bytes())["render_id"].(string)
+	convert(render)
+	rec = api.do(t, "GET", "/api/v1/vault/renders/"+render, clerk, nil)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("made = %d %s", rec.Code, rec.Body)
+	}
+	doc := decode[map[string]any](t, rec.Body.Bytes())["document"].(map[string]any)
+	year := time.Now().UTC().Format("2006")
+	if doc["number"] != "EC-"+year+"-0001" || doc["sealed"] != true || doc["origin"] != "generated" {
+		t.Fatalf("document = %v", doc)
+	}
+	if rec := api.do(t, "GET", "/api/v1/vault/renders/"+render, clerk, nil); rec.Code != http.StatusCreated ||
+		decode[map[string]any](t, rec.Body.Bytes())["document"].(map[string]any)["id"] != doc["id"] {
+		t.Errorf("asked again = %d %s", rec.Code, rec.Body)
+	}
+	v := doc["versions"].([]any)[0].(map[string]any)
+	rec = api.do(t, "POST", "/api/v1/vault/documents/"+doc["id"].(string)+"/versions/1/file", clerk, nil)
+	if rec.Code != http.StatusOK || !bytes.Contains(rec.Body.Bytes(), []byte("Darbo sutartis Nr. EC-"+year+"-0001")) ||
+		!bytes.Contains(rec.Body.Bytes(), []byte("SHA-256 "+v["document_hash"].(string))) {
+		t.Errorf("open = %d %q", rec.Code, rec.Body)
+	}
+	var files, docs int
+	if err := owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM vault.files f JOIN vault.versions v ON v.id = f.version_id
+		WHERE v.document_id = $1 AND f.sealed AND ((f.role = 'main' AND f.content_type = 'application/pdf') OR (f.role = 'source' AND f.content_type = $2))),
+		(SELECT count(*) FROM vault.documents)`, doc["id"], docx.ContentType).Scan(&files, &docs); err != nil || files != 2 || docs != 1 {
+		t.Errorf("%d sealed files (want PDF and DOCX), %d documents, %v", files, docs, err)
 	}
 }

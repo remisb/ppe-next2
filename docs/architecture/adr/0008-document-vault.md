@@ -194,7 +194,13 @@ What shapes it:
    and their sources: [document-retention-policy.md](../../privacy/document-retention-policy.md).
 2. **The personal code on a contract** is an asked field in v1: Personnel files' sealed code is
    not reachable from the vault, by decision 5.
-3. **Droplet capacity** for the worker, with and without LibreOffice (Consequences).
+3. **Droplet capacity** for the worker, with and without LibreOffice (Consequences). Measured
+   2026-11-25: the droplet has 1,967 MB, 1,234 MB available with the apps running (about 170 MB
+   between their containers), no swap, one CPU, 39 GB of disk free. The worker image grows from
+   232 MB to 515 MB with LibreOffice Writer and its fonts; a conversion peaked at 161 MB under
+   the worker's 1 GB limit and took under a second. The worker runs one job at a time, so OCR
+   and a conversion never run together: it fits. Adding 1–2 GB of swap would guard a build
+   on the droplet that runs while a job does.
 4. **A managed Postgres** must allow `CREATE EXTENSION unaccent, pg_trgm` if the database ever
    moves.
 5. **Search quality without a stemmer**, measured on real documents after phase 4.

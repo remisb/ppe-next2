@@ -2381,6 +2381,14 @@ export interface TemplateBody {
   blocks: TemplateBlock[]
 }
 
+/** A DOCX template's body (phase 8): no blocks, its file's SHA-256 and the fields its placeholders name. */
+export interface DocxTemplateBody {
+  format: 'ppe.docx.v1'
+  blocks: []
+  docx_sha256: string
+  fields: string[]
+}
+
 export type AskedKind = 'text' | 'long_text' | 'date' | 'number' | 'money' | 'choice'
 
 /** A field a template asks for when a document is generated: {{input.<key>}}. */
@@ -2395,7 +2403,11 @@ export interface AskedField {
 export interface TemplateVersion {
   number: number
   state: 'draft' | 'published'
-  body: TemplateBody
+  /** blocks: written in the editor; docx: an uploaded Word document. */
+  kind: 'blocks' | 'docx'
+  body: TemplateBody | DocxTemplateBody
+  /** A DOCX version's file. */
+  docx?: { name: string; size: number }
   asked: AskedField[]
   body_sha256: string
   updated_at: string
@@ -2449,6 +2461,19 @@ export interface GenerateInput {
   employment_id?: string | null
   inputs: Record<string, string>
   values_hash?: string
+}
+
+/**
+ * A DOCX template's preview or document on its way (202 from Generate's
+ * preview and Generate): the worker converts it; GET /vault/renders/{id}
+ * answers pending (202), then the preview's PDF (200) or the document (201).
+ */
+export interface RenderAnswer {
+  render_id: string
+  state: 'pending' | 'done' | 'finished'
+  pdf?: string
+  values_hash?: string
+  document?: VaultDocument
 }
 
 /** A PDF as base64, and, for a document's preview, the hash Generate must be given back. */

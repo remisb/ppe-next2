@@ -175,7 +175,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	if err != nil {
 		return err
 	}
-	svc.docTemplates = vaulttemplate.NewService(vaulttemplate.NewPostgresRepository(pool))
+	svc.docTemplates = vaulttemplate.NewService(vaulttemplate.NewPostgresRepository(pool), vaulttemplate.WithFiles(store))
 	svc.vault = newVault(svc, vaultdoc.NewPostgresRepository(pool), store, vaultKeys, loc)
 	svc.shares = share.NewService(share.NewPostgresRepository(pool))
 	svc.outbox = outbox.NewQueue(pool)

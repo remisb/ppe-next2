@@ -3,7 +3,7 @@
  * which employment a document is for, the asked fields' answers, and that
  * Generate makes exactly what was last previewed.
  */
-import type { AskedField, Employment, GenerateInput } from '@ppe/api-client'
+import type { AskedField, Employment, GenerateInput, RenderAnswer } from '@ppe/api-client'
 
 import { t } from '@/i18n'
 
@@ -60,4 +60,27 @@ export function pdfBlob(base64: string): Blob {
   const bytes = new Uint8Array(bin.length)
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
   return new Blob([bytes], { type: 'application/pdf' })
+}
+
+/** Whether an answer is a render the worker is still converting (a DOCX template's). */
+export function isRender(answer: object): answer is RenderAnswer {
+  return 'render_id' in answer && typeof (answer as RenderAnswer).render_id === 'string'
+}
+
+/**
+ * Asks for render id until the worker has made its PDF or its document:
+ * every interval, at most timeout long, then gives up with renderSlow (the
+ * worker may be busy or stopped; nothing is lost by asking again later).
+ */
+export async function awaitRender(
+  get: (id: string) => Promise<RenderAnswer>,
+  id: string,
+  { intervalMs = 1500, timeoutMs = 120_000, wait = (ms: number) => new Promise<void>((done) => setTimeout(done, ms)) } = {},
+): Promise<RenderAnswer> {
+  for (let waited = 0; ; waited += intervalMs) {
+    const got = await get(id)
+    if (got.state !== 'pending') return got
+    if (waited >= timeoutMs) throw new Error(t.vault.renderSlow)
+    await wait(intervalMs)
+  }
 }

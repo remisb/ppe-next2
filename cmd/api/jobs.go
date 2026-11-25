@@ -177,6 +177,15 @@ func upkeep(ctx context.Context, svc services, logger *slog.Logger) JobRun {
 			logger.Info("documents shredded", slog.Int("documents", res.Documents))
 		}
 	}
+	// DOCX renders an hour old, with their sealed files (phase 8).
+	if svc.vault != nil {
+		if n, err := svc.vault.PurgeRenders(ctx, logger); err != nil && ctx.Err() == nil {
+			run.Failed = true
+			logger.Error("render purge failed", slog.Any("error", err))
+		} else if n > 0 {
+			logger.Info("renders purged", slog.Int("renders", n))
+		}
+	}
 	// The worker's finished jobs, and workers long gone.
 	if svc.outbox != nil {
 		if run.JobsPurged, err = svc.outbox.Purge(ctx); err != nil && ctx.Err() == nil {
