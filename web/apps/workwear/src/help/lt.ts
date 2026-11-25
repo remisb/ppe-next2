@@ -198,7 +198,13 @@ export const lt: Guide = {
       title: 'Išdavimo įrašas',
       blocks: [
         { p: 'Užsakymas, kurio būsena **Išduota**, turi užrakintą įrašą anglų ir rusų kalbomis (Items Given Record / Акт выдачи). Atidarykite jį mygtuku **Peržiūrėti užsakymą**.' },
-        { ul: ['**Spausdinti įrašą** atspausdina jį viename A4 lape; užsakyme tą patį daro spausdintuvas, **Spausdinti užsakymą**.', '**Siųsti per WhatsApp** jį išsiunčia.'] },
+        {
+          ul: [
+            '**Spausdinti įrašą** atspausdina jį viename A4 lape; užsakyme tą patį daro spausdintuvas, **Spausdinti užsakymą**.',
+            '**Atsisiųsti PDF** išsaugo jį kaip PDF failą.',
+            '**Siųsti per WhatsApp** jį išsiunčia.',
+          ],
+        },
         { p: 'Datos įraše ir Įmonės turto atspausdintuose bei PDF išdavimo aktuose rašomos **2026 10 15**, visomis kalbomis vienodai.' },
         { shots: [{ name: 'record', alt: 'Dvikalbis išdavimo įrašas' }] },
       ],
@@ -417,6 +423,7 @@ export const lt: Guide = {
         { p: 'Kai darbuotojas pasirašo, nuskenuokite arba nufotografuokite aktą ir po jo išdavimu pasirinkite **Įkelti pasirašytą aktą**: PDF, JPEG arba PNG failą iki 10 MB. Iš nuotraukos pašalinama fotografavimo vieta ir fotoaparato duomenys. Įkėlus dar kartą, ankstesnės kopijos lieka po naujausia.', roles: ['admin', 'manager'], devices: ['tablet', 'desktop'] },
         { p: 'Kai darbuotojas pasirašo, po išdavimu pasirinkite **Įkelti pasirašytą aktą**, tada nufotografuokite aktą arba pasirinkite failą: PDF, JPEG arba PNG iki 10 MB. Iš nuotraukos pašalinama fotografavimo vieta ir fotoaparato duomenys. Įkėlus dar kartą, ankstesnės kopijos lieka po naujausia.', roles: ['admin', 'manager'], devices: ['phone'] },
         { shots: [{ name: 'signed-copy', alt: 'Išdavimas su įkelta pasirašyta kopija' }] },
+        { p: 'Pasirašytos kopijos ir kiekvieno akto PDF taip pat laikomi **Dokumentų saugykloje**, susieti su SIM ar įranga ir darbuotoju.', roles: ['admin', 'manager'] },
         {
           p: 'Kai daiktas fiziškai grįžta į biurą, pasirinkite **Priimti**: tada **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** ir **Atsisiųsti PDF** pateikia jo aktą. Spausdinimas, kiekvienas atsisiųstas PDF ir blokavimo laiškas įrašomi skiltyje **Pakeitimai**. Iš pradžių ji suskleista; pasirinkite **Pakeitimai**, kad ją atidarytumėte.',
           roles: ['admin', 'manager'],
@@ -458,12 +465,56 @@ export const lt: Guide = {
       ],
     },
     {
+      id: 'vault',
+      title: 'Dokumentų saugykla',
+      roles: ['admin', 'manager'],
+      blocks: [
+        {
+          p: '**Dokumentų saugykloje** laikomi įmonės dokumentai: pažymėjimai, mokymų įrašai, sąskaitos faktūros, turto dokumentai ir kiti, kiekvienas susietas su darbuotojais, įmonėmis, SIM, įranga ar užsakymais, apie kuriuos jis yra. Ji taip pat pati išsaugo **Įmonės turte** įkeltus pasirašytus perdavimo aktus, kiekvieno perdavimo akto PDF ir kiekvieno užsakymo išdavimo įrašo PDF.',
+        },
+        { p: 'Ją atidarysite per **Daugiau**.', devices: ['phone'] },
+        { p: 'Juostoje kairėje atidarykite **Dokumentai**.', devices: ['tablet'] },
+        { p: 'Ją atidarysite šoninėje juostoje, po **Įmonės turtas**.', devices: ['desktop'] },
+        {
+          p: 'Lauke **Ieškoti dokumentų** dokumentą rasite pagal pavadinimą, numerį, susietus vardus, tipą ar žodžius jo faile. Didžiosios raidės ir diakritikai nesvarbūs, užtenka žodžio pradžios: `zuk` randa **Žukauskaitė**. Jei niekas nesutampa, parodomi panašūs rašybos variantai, ir sąraše tai pasakyta. **Tipas** palieka vienos rūšies dokumentus. Pasirinktas dokumentas atsidaro šalia sąrašo, o siauresniame ekrane – vietoj jo.',
+        },
+        {
+          p: '**Įkelti dokumentą…** prideda naują: pasirinkite **Tipas** ir failą – PDF, JPEG ar PNG iki 20 MB, tada įrašykite **Pavadinimas**, datas ir su kuo jis susietas. Iš nuotraukos pašalinama vieta ir fotoaparato duomenys. Kai kurių tipų dokumentai turi būti susieti: pažymėjimas – su darbuotoju, turto dokumentas – su SIM ar įranga.',
+        },
+        {
+          p: 'Dokumente matyti jo tipas, datos, **Kilmė** (**Įkelta**, **Sugeneruota** ar **Išsaugota automatiškai**), **Susieta su** – su kuo jis susietas – ir **Versijos**, naujausia pirma, kiekviena su atsisiunčiamu failu, kas ją pridėjo ir kada. **Pridėti versiją…** prideda naujesnį failą; ankstesni lieka. **Keisti…** keičia pavadinimą, datas ir susiejimus, o **Pašalinti dokumentą…** jį pašalina, prieš tai paklausęs. Visa tai įrašoma skiltyje **Pakeitimai**.',
+        },
+        { p: 'Dokumentas su **Galioja iki**, pvz., pažymėjimas, likus 30 dienų rodo **Greitai baigs galioti**, vėliau – **Nebegalioja**.' },
+        {
+          p: 'Po kiekviena versija eilutė nurodo, kaip paieškai nuskaityti jos žodžiai: **Laukia nuskaitymo**, **Nuskaityta**, **Teksto nerasta** ar **Nepavyko nuskaityti**. Naudojamas paties PDF tekstas; skenuotas dokumentas ar nuotrauka atpažįstami OCR būdu lietuvių, rusų ar anglų kalba, fone. **Nuskaityti dar kartą** nuskaito iš naujo.',
+        },
+        {
+          p: '**Dokumentai** darbuotojo puslapyje ir SIM ar įrangos puslapyje išvardija su jais susietus dokumentus. Ten **Įkelti dokumentą…** naująjį susieja su jais; **Atidaryti Dokumentų saugyklą** atveria visą sąrašą.',
+        },
+        {
+          p: 'Dokumentai, kurių kilmė **Išsaugota automatiškai**, kyla iš pačios programos įrašų, ir čia jų keisti ar pašalinti negalima: kiekviena kopija, įkelta per **Įkelti pasirašytą aktą**, perdavimo akto PDF, išdavus SIM ar įrangą, ir užsakymo išdavimo įrašo PDF, kai užsakymas tampa **Išduota**. Ant išsaugoto akto ar įrašo **Patikrinti** palygina jį su įrašu, iš kurio jis padarytas: **Sutampa** reiškia, kad įrašo maiša tokia pati, kokia buvo darant kopiją, ir kopijos failas nepakeistas.',
+        },
+        {
+          p: 'Ieškant darbuotojo pagal vardą arba paliekant vieną darbuotoją, virš sąrašo rodomi ir jo **Asmens dokumentai** iš asmens bylų: kiekvieno rūšis, išdavusi valstybė ir galiojimas. Jie nelaikomi Dokumentų saugykloje: vardas atveria darbuotojo puslapį ties **Asmens duomenys**.',
+        },
+        {
+          p: 'Kiekvienos rūšies dokumentai saugomi tiek, kiek reikalauja Lietuvos teisė, tada sunaikinami: sąskaitos faktūros ir turto dokumentai – 10 metų nuo jų datos, perdavimo aktai – 10 metų po to, kai SIM ar įranga grąžinta, pažymėjimai ir mokymų įrašai – 3 metus nuo darbo santykių pabaigos, išdavimo įrašas – 1 metus po daiktų naudojimo laiko pabaigos. Tada dokumente rodoma **Saugoma iki**. **Draudimas naikinti…** saugo dokumentą ilgiau, patikrinimui ar ginčui: nurodykite paskutinę dieną ir priežastį. Draudžiamo naikinti dokumento negalima nei sunaikinti, nei pašalinti.',
+        },
+        {
+          p: 'Darbo sutartis, priedus, konfidencialumo sutartis ir kitus darbo dokumentus mato tik tie, kam suteikta rolė **Darbo dokumentai**; administratoriai – tik turėdami ją. Jie pažymėti **Užšifruota**: užšifruoti atskiru raktu, todėl jų pavadinimai rodomi tik jų pačių puslapyje. Atidarant failą prašoma slaptažodžio, jei neseniai neprisijungėte, ir kiekvienas atidarymas įrašomas. Jie saugomi 50 metų nuo darbo santykių pabaigos, kiti darbo dokumentai – 3 metus.',
+        },
+        {
+          p: 'Turint šią rolę, **Generuoti dokumentą…** po **Dokumentai** darbuotojo puslapyje sukuria dokumentą pagal šabloną: pasirinkite šabloną ir darbo santykius, kuriems jis skirtas, užpildykite, ko jis klausia, pvz., atlyginimą, tada **Peržiūra**. **Generuoti** sukuria būtent tai, ką rodė peržiūra: su numeriu, pvz., `EC-2026-0001`, užrakintą PDF, susietą su darbuotoju ir įmone. Jei po peržiūros kas nors pasikeitė, peržiūrėkite dar kartą. Word šablonu parašytas dokumentas ruošiamas keliomis sekundėmis ilgiau, kol padaromas jo PDF.',
+        },
+      ],
+    },
+    {
       id: 'administration',
       title: 'Administravimas',
       roles: ['admin'],
       blocks: [
-        { p: '**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro **Apžvalgoje**. Kiti jo ekranai: **Naudotojai**, **Rolės ir teisės**, **Audito žurnalas**, **Sauga**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai**, **Tiekėjai** ir **Programų tvarkymas**.' },
-        { p: 'Atidarykite jį iš **Daugiau**. Jis turi savo apatinę juostą su **Apžvalga**, **Naudotojai**, **Auditas** ir **Sauga**. Jos **Daugiau** yra **Rolės ir teisės**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai**, **Tiekėjai** ir **Programų tvarkymas**, toliau **Programos**, **Darbo drabužiai ir įranga** (grįžti atgal), jūsų paskyra ir **Atsijungti**.', devices: ['phone'] },
+        { p: '**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro **Apžvalgoje**. Kiti jo ekranai: **Naudotojai**, **Rolės ir teisės**, **Audito žurnalas**, **Sauga**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai**, **Dokumentų šablonai**, **Tiekėjai** ir **Programų tvarkymas**.' },
+        { p: 'Atidarykite jį iš **Daugiau**. Jis turi savo apatinę juostą su **Apžvalga**, **Naudotojai**, **Auditas** ir **Sauga**. Jos **Daugiau** yra **Rolės ir teisės**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai**, **Dokumentų šablonai**, **Tiekėjai** ir **Programų tvarkymas**, toliau **Programos**, **Darbo drabužiai ir įranga** (grįžti atgal), jūsų paskyra ir **Atsijungti**.', devices: ['phone'] },
         { p: 'Atidarykite jį mygtuku **Admin.** juostos apačioje. Jis turi savo juostą; **Drabužiai** jos apačioje grąžina atgal.', devices: ['tablet'] },
         { p: 'Atidarykite jį mygtuku **Administravimas** šoninės juostos apačioje. Jis turi savo šoninę juostą; **Darbo drabužiai ir įranga** jos apačioje grąžina atgal.', devices: ['desktop'] },
         { p: 'Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo abiejų. **Administravimą** mato visi, kurių rolės leidžia tvarkyti naudotojus, roles, nustatymus ar tiekėjus arba skaityti audito žurnalą, saugą, sistemą, naudojimą ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.' },
@@ -576,6 +627,7 @@ export const lt: Guide = {
         { ul: [
           '**Būsena**: ar programėlė **Veikia**, jos versija ir kada ji paleista; paskutinių 24 valandų užklausos, kiek jų nepavyko ir kiek jos truko; duomenų bazės dydis ir paskutinė migracija; kiek laikomi prisijungimai, klaidos ir pakeitimai.',
           '**Klaidos**: kas nepavyko serveryje ar kieno nors naršyklėje, kiek kartų ir kada paskutinį kartą. Atidarykite klaidą, kad matytumėte, kas su ja susidūrė, kur ir kokiu įrenginiu. Klaidos laikomos 30 dienų.',
+          '**Foninė apdorojimo programa**, skiltyje **Būsena**: programa, kuri fone nuskaito dokumentų tekstą, išsaugo aktus ir įrašus Dokumentų saugykloje ir paverčia Word šablonus PDF. Rodoma, ar ji veikia, kiek darbų laukia ir kurie nepavyko. **Apžvalga** įspėja, kai darbai laukia, o programa neveikia, arba kai darbai nepavyksta.',
           '**Atsarginės kopijos**: žr. toliau.',
         ] },
         { p: 'Kai kas nors nepavyksta, programėlė parodo **Nuoroda į užklausą**, pvz., `9f2c1a7e`. Klaida ekrane **Klaidos** rodo tą pačią nuorodą. Perduokite ją serverį prižiūrinčiam asmeniui: pagal ją jis randa klaidą serverio žurnale.' },
@@ -666,6 +718,25 @@ export const lt: Guide = {
       ],
     },
     {
+      id: 'document-templates',
+      title: 'Dokumentų šablonai',
+      roles: ['admin'],
+      blocks: [
+        {
+          p: '**Dokumentų šablonai** – šablonai, pagal kuriuos generuojamos darbo sutartys ir kiti dokumentai. Kiekvienas skirtas vienam dokumentų tipui ir vienai kalbai, kuri nustato, kaip rašomos datos ir sumos. **Pridėti šabloną** sukuria naują juodraštį.',
+        },
+        {
+          p: 'Rašykite jį redaktoriuje kaip **Blokai**: antraštės, pastraipos, sąrašai, lentelės, duomenys ir parašų eilutės. Laukai, pvz., `{{employee.name}}`, užpildomi generuojant dokumentą; **Laukai** įterpia lauką ten, kur žymeklis. **Klausiami laukai** – reikšmės, kurias įveda generuojantis, pvz., atlyginimas: **Pridėti klausiamą lauką**. **Peržiūra** parodo šabloną su pavyzdinėmis reikšmėmis.',
+        },
+        {
+          p: 'Arba rašykite jį Word: **⋯ → Įkelti DOCX šabloną…** padaro Word dokumentą juodraščiu, su jo paties išdėstymu, šriftais, lentelėmis, antraštėmis ir poraštėmis. Kiekvieną lauką jame rašykite kaip `{{employee.name}}`; puslapyje išvardyti naudojami laukai ir pasakyta, kurie iš jų nėra laukai. **Pakeisti DOCX…** įkelia pataisytą, **Atsisiųsti DOCX** jį išsaugo, o **Rašyti redaktoriuje** grįžta prie blokų.',
+        },
+        {
+          p: '**Išsaugoti juodraštį** išsaugo pakeitimus. **Paskelbti…** padaro juodraštį niekada nesikeičiančia versija, kurią nuo tada naudoja **Generuoti dokumentą…**. Kiekvienas šablonas turi spausdinti `{{document.number}}`, o Word šablonas – ir `{{document.hash}}`, nes spausdina savo poraštę. **Nebenaudoti…** nustoja jį siūlyti; pagal jį sukurti dokumentai jį ir toliau nurodo.',
+        },
+      ],
+    },
+    {
       id: 'manage-apps',
       title: 'Programų tvarkymas',
       roles: ['admin'],
@@ -742,11 +813,11 @@ export const lt: Guide = {
       title: 'Paieška ir spartieji klavišai',
       titleOn: { phone: 'Paieška', tablet: 'Paieška' },
       blocks: [
-        { p: 'Atidarykite **Daugiau**, tada **Paieška** – rasite įrašų numerius, darbuotojus, prekes, įmonės turtą ir ekranus. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.', devices: ['phone'] },
-        { p: '**Paieška** juostos viršuje randa įrašų numerius, darbuotojus, prekes, įmonės turtą ir ekranus. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.', devices: ['tablet'] },
+        { p: 'Atidarykite **Daugiau**, tada **Paieška** – rasite įrašų numerius, darbuotojus, prekes, įmonės turtą, dokumentus ir ekranus. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.', devices: ['phone'] },
+        { p: '**Paieška** juostos viršuje randa įrašų numerius, darbuotojus, prekes, įmonės turtą, dokumentus ir ekranus. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.', devices: ['tablet'] },
         {
           keys: [
-            ['`⌘K` / `Ctrl K`', 'Ieško įrašų numerių, darbuotojų, prekių, įmonės turto ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.'],
+            ['`⌘K` / `Ctrl K`', 'Ieško įrašų numerių, darbuotojų, prekių, įmonės turto, dokumentų ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**.'],
             ['`/`', 'Pereina į paieškos arba „Pridėti prekę“ lauką.'],
             ['`G`, tada `D` `O` `H` `E` `A` `C` `S` `U`', 'Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Įmonės turtą, Katalogą, Prekių rinkinius arba Naudotojus (Administravime).'],
             ['`J` / `K`, `Esc`', 'Pereina per Užsakymus, SIM korteles, Įrangą ar Prekių katalogą arba uždaro atidarytą įrašą. `Esc` taip pat išeina iš Eksportuoti ir Keisti būseną… nieko nepadarius.'],
