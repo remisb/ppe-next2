@@ -95,6 +95,7 @@ const en = {
     'vault.hold_cleared': 'Legal Hold cleared',
     'vault.document_shredded': 'Document shredded',
     'vault.document_generated': 'Document generated',
+    'vault.document_archived': 'Kept automatically',
     'document_template.created': 'Template added',
     'document_template.updated': 'Template renamed',
     'document_template.draft_saved': 'Template draft saved',
@@ -141,7 +142,7 @@ const en = {
     system: 'System',
   } satisfies Record<KnownAuditSource, string>,
   /** Document Vault's types (vault.Types()); one this app does not know shows its key. */
-  vaultTypes: { 'employee.certificate': 'Certificate', 'employee.training': 'Training', invoice: 'Invoice', 'asset.document': 'Asset document', 'asset.signed_form': 'Signed form', other: 'Other', 'employment.contract': 'Employment contract', 'employment.annex': 'Annex', 'employment.nda': 'NDA', 'employment.other': 'Other employment document' } as Record<string, string>,
+  vaultTypes: { 'employee.certificate': 'Certificate', 'employee.training': 'Training', invoice: 'Invoice', 'asset.document': 'Asset document', 'asset.signed_form': 'Signed form', 'asset.assignment_form': 'Assignment form', 'order.record': 'Items Given Record', other: 'Other', 'employment.contract': 'Employment contract', 'employment.annex': 'Annex', 'employment.nda': 'NDA', 'employment.other': 'Other employment document' } as Record<string, string>,
   fields: {
     first_name: 'First name',
     last_name: 'Last name',
@@ -450,6 +451,7 @@ const lt: AuditText = {
     'vault.hold_cleared': 'Draudimas naikinti panaikintas',
     'vault.document_shredded': 'Dokumentas sunaikintas',
     'vault.document_generated': 'Dokumentas sugeneruotas',
+    'vault.document_archived': 'Išsaugota automatiškai',
     'document_template.created': 'Šablonas pridėtas',
     'document_template.updated': 'Šablonas pervadintas',
     'document_template.draft_saved': 'Šablono juodraštis išsaugotas',
@@ -496,7 +498,7 @@ const lt: AuditText = {
     system: 'Sistema',
   },
   /** Document Vault's types (vault.Types()); one this app does not know shows its key. */
-  vaultTypes: { 'employee.certificate': 'Pažymėjimas', 'employee.training': 'Mokymai', invoice: 'Sąskaita faktūra', 'asset.document': 'Turto dokumentas', 'asset.signed_form': 'Pasirašytas aktas', other: 'Kita', 'employment.contract': 'Darbo sutartis', 'employment.annex': 'Priedas', 'employment.nda': 'Konfidencialumo sutartis', 'employment.other': 'Kitas darbo dokumentas' } as Record<string, string>,
+  vaultTypes: { 'employee.certificate': 'Pažymėjimas', 'employee.training': 'Mokymai', invoice: 'Sąskaita faktūra', 'asset.document': 'Turto dokumentas', 'asset.signed_form': 'Pasirašytas aktas', 'asset.assignment_form': 'Perdavimo aktas', 'order.record': 'Išdavimo įrašas', other: 'Kita', 'employment.contract': 'Darbo sutartis', 'employment.annex': 'Priedas', 'employment.nda': 'Konfidencialumo sutartis', 'employment.other': 'Kitas darbo dokumentas' } as Record<string, string>,
   fields: {
     first_name: 'Vardas',
     last_name: 'Pavardė',
@@ -795,6 +797,7 @@ const ru: AuditText = {
     'vault.hold_cleared': 'Запрет удаления снят',
     'vault.document_shredded': 'Документ уничтожен',
     'vault.document_generated': 'Документ сформирован',
+    'vault.document_archived': 'Сохранено автоматически',
     'document_template.created': 'Шаблон добавлен',
     'document_template.updated': 'Шаблон переименован',
     'document_template.draft_saved': 'Черновик шаблона сохранён',
@@ -841,7 +844,7 @@ const ru: AuditText = {
     system: 'Система',
   },
   /** Document Vault's types (vault.Types()); one this app does not know shows its key. */
-  vaultTypes: { 'employee.certificate': 'Сертификат', 'employee.training': 'Обучение', invoice: 'Счёт-фактура', 'asset.document': 'Документ на имущество', 'asset.signed_form': 'Подписанный акт', other: 'Другое', 'employment.contract': 'Трудовой договор', 'employment.annex': 'Приложение', 'employment.nda': 'Соглашение о неразглашении', 'employment.other': 'Другой трудовой документ' } as Record<string, string>,
+  vaultTypes: { 'employee.certificate': 'Сертификат', 'employee.training': 'Обучение', invoice: 'Счёт-фактура', 'asset.document': 'Документ на имущество', 'asset.signed_form': 'Подписанный акт', 'asset.assignment_form': 'Акт передачи', 'order.record': 'Запись о выдаче', other: 'Другое', 'employment.contract': 'Трудовой договор', 'employment.annex': 'Приложение', 'employment.nda': 'Соглашение о неразглашении', 'employment.other': 'Другой трудовой документ' } as Record<string, string>,
   fields: {
     first_name: 'Имя',
     last_name: 'Фамилия',

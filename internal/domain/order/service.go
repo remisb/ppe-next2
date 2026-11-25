@@ -31,6 +31,8 @@ type Service struct {
 	loc *time.Location
 	// confirmTTL is how long a confirmation link is usable.
 	confirmTTL time.Duration
+	// archiver keeps a copy of each given order's record in the Document Vault (archive.go).
+	archiver Archiver
 }
 
 // Option configures a Service.

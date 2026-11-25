@@ -4,7 +4,7 @@
  * to expire, and the checks Upload Document…, Edit… and Add Version… make
  * before sending, which the API makes again.
  */
-import type { Permission, VaultDetails, VaultDocument, VaultLink, VaultLinkRef, VaultSubjectKind, VaultType, VaultVersion } from '@ppe/api-client'
+import type { Permission, VaultDetails, VaultDocument, VaultLink, VaultLinkRef, VaultSubjectKind, VaultType, VaultVerification, VaultVersion } from '@ppe/api-client'
 
 import { t } from '@/i18n'
 import type { Route } from '@/lib/router'
@@ -53,8 +53,28 @@ export function linkRoute(link: Pick<VaultLink, 'kind' | 'id'>, from?: string): 
       return { name: 'employeePage', id: link.id, ...(from ? { from } : {}) }
     case 'asset':
       return { name: 'asset', id: link.id }
+    case 'order':
+      return { name: 'history', order: link.id }
   }
   return null
+}
+
+/**
+ * Whether a Legal Hold may be set on a document of type: one its retention
+ * shreds, by its manage permission, or vault.manage for a type no one
+ * manages here (archived, sourced). The API decides again.
+ */
+export function canHold(type: Pick<VaultType, 'manage' | 'retention'> | undefined, can: (permission: Permission) => boolean): boolean {
+  if (!type || type.retention.rule === 'keep' || type.retention.rule === 'forever') return false
+  return can((type.manage || 'vault.manage') as Permission)
+}
+
+/** What Verify found, as one line and whether all is well. */
+export function verifyLine(v: Pick<VaultVerification, 'matches' | 'file_intact' | 'source_gone'>): { ok: boolean; label: string; text: string } {
+  const ok = v.matches && v.file_intact
+  const parts = [v.source_gone ? t.vault.verifySourceGone : v.matches ? t.vault.verifyMatchesText : t.vault.verifyNoMatchText]
+  if (!v.file_intact) parts.push(t.vault.verifyFileChanged)
+  return { ok, label: ok ? t.vault.verifyMatches : t.vault.verifyNoMatch, text: parts.join(' ') }
 }
 
 /** Whether a document's Valid until has passed or comes within EXPIRES_SOON_DAYS of today (YYYY-MM-DD both). */

@@ -259,7 +259,7 @@ prod-import-sims: ## Import SIM cards from a CSV list as the API_SEED_USER_EMAIL
 
 # Signed copies moved into the Document Vault (migration 0065): check the move
 # and the files; COMMIT=yes moves a copy the previous release wrote meanwhile.
-prod-vault-backfill: ## Check the signed copies moved into the Document Vault and their files: COMMIT=yes moves any left
+prod-vault-backfill: ## Check the signed copies moved into the Document Vault, count forms and records not archived: COMMIT=yes moves and queues them
 	$(PROD) run --rm --no-deps -T api -vault-backfill $(if $(filter yes,$(COMMIT)),-commit)
 
 prod-reseal-sim-codes: ## Seal every SIM card's PIN and PUK under API_SIM_CODES_KEY again, after a key change (docs/backups.md)

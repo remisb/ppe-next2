@@ -149,17 +149,17 @@ func TestRetentionShredsWhatIsDue(t *testing.T) {
 	if res, err := f.svc.ShredDue(ctx, logger); err != nil || res.Documents != 0 || f.repo.docs[d.ID].RetainUntil != nil {
 		t.Fatalf("employed: %+v %v %v", res, err, f.repo.docs[d.ID].RetainUntil)
 	}
-	// Employment ended: kept 120 months after.
+	// Employment ended: kept 50 years, counted from 1 January after.
 	f.ended[ana] = "2026-01-31"
 	if res, err := f.svc.ShredDue(ctx, logger); err != nil || res.Documents != 0 {
 		t.Fatalf("ended: %+v %v", res, err)
 	}
-	if got := f.repo.docs[d.ID].RetainUntil; got == nil || *got != "2036-01-31" {
+	if got := f.repo.docs[d.ID].RetainUntil; got == nil || *got != "2077-01-01" {
 		t.Fatalf("retain until = %v", got)
 	}
 	// Held past the day: kept; the hold lapses, then it goes.
-	f.day = time.Date(2036, 2, 1, 10, 0, 0, 0, time.UTC)
-	if _, err := f.svc.SetHold(ctx, clerk, d.ID, ptr("2036-03-01"), "Court case 2-123/2035"); err != nil {
+	f.day = time.Date(2077, 1, 2, 10, 0, 0, 0, time.UTC)
+	if _, err := f.svc.SetHold(ctx, clerk, d.ID, ptr("2077-03-01"), "Court case 2-123/2076"); err != nil {
 		t.Fatal(err)
 	}
 	if err := f.svc.Remove(ctx, clerk, d.ID); !errors.Is(err, ErrHeld) {
@@ -168,7 +168,7 @@ func TestRetentionShredsWhatIsDue(t *testing.T) {
 	if res, _ := f.svc.ShredDue(ctx, logger); res.Documents != 0 {
 		t.Fatalf("shredded while held")
 	}
-	f.day = time.Date(2036, 3, 2, 10, 0, 0, 0, time.UTC)
+	f.day = time.Date(2077, 3, 2, 10, 0, 0, 0, time.UTC)
 	key := f.repo.docs[d.ID].Versions[0].File.ObjectKey
 	if res, err := f.svc.ShredDue(ctx, logger); err != nil || res.Documents != 1 {
 		t.Fatalf("due: %+v %v", res, err)

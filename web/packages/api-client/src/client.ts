@@ -128,6 +128,7 @@ import type {
   VaultQuery,
   VaultSubjectKind,
   VaultType,
+  VaultVerification,
   SignedInDevice,
   SimProvidersInput,
   Sizes,
@@ -665,6 +666,8 @@ export function createClient(options: ClientOptions) {
       confirmInPerson: (id: string) => request<OrderRecord>('POST', `/api/v1/orders/${seg(id)}/confirm-in-person`, { confirmed: true }),
       /** View Record / Print Record: the locked receipt. */
       record: (id: string) => request<OrderRecord>('GET', `/api/v1/orders/${seg(id)}/record`),
+      /** Download PDF: the Items Given Record drawn by the API, as the Document Vault keeps it once given. */
+      recordPDF: (id: string) => download(`/api/v1/orders/${seg(id)}/record.pdf`),
       /** Managers only: soft-deletes a demo or test order; it leaves History, the dashboards and its links. */
       remove: (id: string) => request<void>('DELETE', `/api/v1/orders/${seg(id)}`),
     },
@@ -804,6 +807,8 @@ export function createClient(options: ClientOptions) {
       /** Read Again: the worker reads the version's file for search once more (the document's manage permission). */
       readAgain: (id: string, version: number) =>
         request<VaultDocument>('POST', `/api/v1/vault/documents/${seg(id)}/versions/${version}/read-again`),
+      /** Verify: an archived document checked against its source's snapshot, hashed again, and its file against its hash. */
+      verify: (id: string) => request<VaultVerification>('GET', `/api/v1/vault/documents/${seg(id)}/verify`),
       /** A version's file, as the file it is. */
       file: (id: string, version: number) => download(`/api/v1/vault/documents/${seg(id)}/versions/${version}/file`),
       /** A sealed document's file: a POST that asks Confirm your password when the sign-in is not recent, and is recorded. */

@@ -114,6 +114,7 @@ the zone the filters use; `supplier_chat` is in the [settings service](settings-
 | `POST /api/v1/orders/{id}/confirm-paper` | Record a signed paper Items Given Record: GIVEN with method `PAPER`, the actor as giver. Idempotent. |
 | `POST /api/v1/orders/{id}/confirm-in-person` `{confirmed: true}` | Hand-over mode: the employee read the record and ticked the confirmation text on the signed-in staff member's device. `confirmed` must be true (400). GIVEN with method `IN_PERSON`, the actor as giver, open links revoked, evidence (employee name, document hash) as for the other methods. Idempotent. An addition to the manual, which defines only electronic and paper confirmation (migration `0009`). |
 | `GET /api/v1/orders/{id}/record` | View Record / Print Record. |
+| `GET /api/v1/orders/{id}/record.pdf` | Download PDF on the record page: the record drawn by `internal/recordpdf` (A4, English / Russian, its dates in the organisation's zone), an attachment `items-given-record-<number>.pdf`. The same PDF the Document Vault keeps once the order is GIVEN. |
 
 ### Public routes (token only, rate-limited 20/min per IP)
 
@@ -144,6 +145,13 @@ texts with their `text_version`. `document_hash` is SHA-256 of its canonical JSO
 stored as evidence; the record of a GIVEN order returns the stored hash. The record's
 unit price is the line's accounting price, under the key `unit_price_cents`; it never
 shows the purchase price. Its keys are part of the hash, so they never change.
+
+**Archived in the Document Vault** (ADR 0008 decision 10, phase 6; `vault-service.md`,
+"Archiving"). A confirmation that makes the order GIVEN tells the `order.Archiver` port after
+its commit (`archive.go`), which queues the record's archiving; nothing about the
+confirmation, the snapshot or the hash changes, and the upkeep's sweep finds what was missed
+(`GivenSince`). The vault's Verify builds the receipt again from the snapshot and compares
+its hash.
 
 **Wording versions.** Each order stores the wording it was placed under
 (`orders.receipt_text_version`, migration `0013`), and its receipt always shows and hashes

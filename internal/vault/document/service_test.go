@@ -30,6 +30,8 @@ type memRepo struct {
 	// texts are SetText's updates in order; queued the versions ReadAgain queued.
 	texts  []TextUpdate
 	queued []uuid.UUID
+	// archives are the records QueueArchives queued.
+	archives []uuid.UUID
 }
 
 func newMemRepo() *memRepo { return &memRepo{docs: map[uuid.UUID]Document{}} }
@@ -159,16 +161,16 @@ func (m *memRepo) Record(_ context.Context, ev audit.Event) error {
 	return nil
 }
 
-func (m *memRepo) Sealed(context.Context) ([]Candidate, error) {
+func (m *memRepo) Retained(_ context.Context, types []string) ([]Candidate, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	var out []Candidate
 	for _, d := range m.docs {
-		if !d.Sealed {
+		if !d.Sealed && !slices.Contains(types, d.Type) || slices.Contains(m.shredded, d.ID) {
 			continue
 		}
 		c := Candidate{ID: d.ID, Type: d.Type, Number: d.Number, DocumentDate: d.DocumentDate, RetainUntil: d.RetainUntil,
-			HoldUntil: d.HoldUntil, Removed: d.DeletedAt != nil}
+			HoldUntil: d.HoldUntil, Removed: d.DeletedAt != nil, Sealed: d.Sealed, SourceKind: d.SourceKind, SourceID: d.SourceID}
 		for _, l := range d.Links {
 			if l.Kind == vault.Employee {
 				c.Employees = append(c.Employees, l.ID)
@@ -633,7 +635,7 @@ func TestTypesAreTheReadersOnly(t *testing.T) {
 	if got := svc.Types(Reader{Perms: []string{"equipment.read"}}); len(got) != 0 {
 		t.Errorf("without vault.read: %v", got)
 	}
-	if got := svc.Types(reader); len(got) != 6 || slices.ContainsFunc(got, func(ty vault.Type) bool { return ty.Sealed }) {
+	if got := svc.Types(reader); len(got) != 8 || slices.ContainsFunc(got, func(ty vault.Type) bool { return ty.Sealed }) {
 		t.Errorf("with vault.read: %d types", len(got))
 	}
 	if got := svc.Types(Reader{Perms: []string{vault.PermRead, vault.PermEmploymentRead}}); len(got) != len(vault.Types()) {

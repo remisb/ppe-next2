@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -72,6 +73,27 @@ func vaultBackfill(ctx context.Context, pool *pgxpool.Pool, store files.Store, c
 	}
 	fmt.Fprintf(out, "%d signed form files checked in %s, %d missing or changed\n", len(all), store, len(bad))
 	return errors.Join(bad...)
+}
+
+// archiveBackfill is -vault-backfill's second part (phase 6): it counts the
+// stored assignment forms and given orders that have no archived document yet
+// (all of them before this release) and, with commit, queues their archiving
+// for the worker. Nothing changes without commit.
+func archiveBackfill(ctx context.Context, svc services, commit bool, out io.Writer) error {
+	sw, err := sweepArchives(ctx, svc, time.Time{}, commit)
+	if err != nil {
+		return err
+	}
+	switch {
+	case sw.Forms == 0 && sw.Records == 0:
+		fmt.Fprintln(out, "every stored assignment form and given order is archived")
+	case commit:
+		fmt.Fprintf(out, "%d assignment forms and %d Items Given Records queued for archiving by the worker\n", sw.Forms, sw.Records)
+	default:
+		fmt.Fprintf(out, "%d assignment forms and %d Items Given Records are not archived yet: run again with -commit to queue them\n",
+			sw.Forms, sw.Records)
+	}
+	return nil
 }
 
 // checkStored reads key from store and compares its SHA-256 with want.

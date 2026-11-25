@@ -91,6 +91,7 @@ export const AUDIT_EVENTS = [
   'vault.hold_cleared',
   'vault.document_shredded',
   'vault.document_generated',
+  'vault.document_archived',
   'document_template.created',
   'document_template.updated',
   'document_template.draft_saved',

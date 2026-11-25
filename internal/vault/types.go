@@ -38,13 +38,26 @@ const (
 	// AfterEmploymentEnd: Months after the linked employee's last employment
 	// ended; while they are employed (or never were), kept.
 	AfterEmploymentEnd Rule = "after_employment_end"
+	// AfterSourceEnds: Months after the day the document's source says its
+	// record ended (an assignment's return, an order's items' service
+	// period); while it has not, kept.
+	AfterSourceEnds Rule = "after_source_ends"
 )
 
-// Retention is a type's rule and its period. Applied to sealed types (phase
-// 2); the periods are defaults until the DPO answers (ADR 0008, open question 1).
+// Retention is a type's rule and its period: Lithuania's minimum retention
+// periods (the Vidaus administravimo dokumentų saugojimo terminų rodyklė, "VAD",
+// in force from 2024-10-01; docs/specs/vault-service.md, "Retention"), each
+// counted from 1 January of the year after its rule's day. Every type with a
+// time rule is shredded when due (sealed ones also when removed); the DPO
+// confirms the periods (ADR 0008, open question 1).
 type Retention struct {
 	Rule   Rule `json:"rule"`
 	Months int  `json:"months,omitempty"`
+}
+
+// Timed says whether the rule ever shreds a document (not Keep or Forever).
+func (r Retention) Timed() bool {
+	return r.Rule == AfterDocDate || r.Rule == AfterEmploymentEnd || r.Rule == AfterSourceEnds
 }
 
 // Origin is how a document came to be.
@@ -130,6 +143,16 @@ const (
 	SourceSignedForm = "asset_signed_form"
 )
 
+// The archived records' types and sources (phase 6): an assignment's form,
+// as Company Assets stored it on giving, and a given order's Items Given
+// Record. Archived by the worker (document.KindArchive), never changed here.
+const (
+	AssignmentFormType = "asset.assignment_form"
+	SourceAssignment   = "asset_assignment"
+	OrderRecordType    = "order.record"
+	SourceOrder        = "order"
+)
+
 // Allows reports whether a document of t may come to be by o.
 func (t Type) Allows(o Origin) bool { return slices.Contains(t.Origins, o) }
 
@@ -145,25 +168,29 @@ var types = []Type{
 		Key: "employee.certificate", Group: GroupEmployee, Words: "certificate pažymėjimas sertifikatas сертификат удостоверение",
 		Read: PermRead, Manage: PermManage, Links: []SubjectKind{Employee, Company}, Must: []SubjectKind{Employee},
 		Origins: []Origin{Uploaded}, FileTypes: uploads, MaxBytes: MaxUploadBytes, Dated: true, Expiring: true,
-		Retention: Retention{Rule: Keep},
+		// VAD 2.2 personal file papers: 3 years after employment ends.
+		Retention: Retention{Rule: AfterEmploymentEnd, Months: 36},
 	},
 	{
 		Key: "employee.training", Group: GroupEmployee, Words: "training mokymai instruktažas обучение инструктаж",
 		Read: PermRead, Manage: PermManage, Links: []SubjectKind{Employee, Company}, Must: []SubjectKind{Employee},
 		Origins: []Origin{Uploaded}, FileTypes: uploads, MaxBytes: MaxUploadBytes, Dated: true, Expiring: true,
-		Retention: Retention{Rule: Keep},
+		// VAD 2.2, 2.14, 2.23: 3 years after employment ends.
+		Retention: Retention{Rule: AfterEmploymentEnd, Months: 36},
 	},
 	{
 		Key: "invoice", Group: GroupFinance, Words: "invoice sąskaita faktūra счёт счет фактура",
 		Read: PermRead, Manage: PermManage, Links: []SubjectKind{Supplier, Company, Asset, Employee},
 		Origins: []Origin{Uploaded}, FileTypes: uploads, MaxBytes: MaxUploadBytes, Dated: true,
-		Retention: Retention{Rule: Keep},
+		// VAD 3.15 and the VAT Law, art. 78: 10 years after the invoice's date.
+		Retention: Retention{Rule: AfterDocDate, Months: 120},
 	},
 	{
 		Key: "asset.document", Group: GroupAssets, Words: "asset document turtas dokumentas имущество документ",
 		Read: PermRead, Manage: PermManage, Links: []SubjectKind{Asset, Supplier, Employee}, Must: []SubjectKind{Asset},
 		Origins: []Origin{Uploaded}, FileTypes: uploads, MaxBytes: MaxUploadBytes, Dated: true, Expiring: true,
-		Retention: Retention{Rule: Keep},
+		// VAD 11.6 asset management papers: 10 years after the document's date.
+		Retention: Retention{Rule: AfterDocDate, Months: 120},
 	},
 	{
 		Key: "other", Group: GroupOther, Words: "other document kita dokumentas другое документ",
@@ -178,13 +205,36 @@ var types = []Type{
 		Key: SignedFormType, Group: GroupAssets, Words: "signed form assignment pasirašyta forma perdavimo aktas подписанная форма акт передачи",
 		Read: PermRead, Links: []SubjectKind{Asset, Employee}, Must: []SubjectKind{Asset, Employee},
 		Origins: []Origin{Uploaded}, FileTypes: uploads, MaxBytes: 10 << 20, Dated: true,
-		Retention: Retention{Rule: Keep}, Source: SourceSignedForm,
+		// VAD 11.6 asset issue and transfer acts: 10 years after the asset's return.
+		Retention: Retention{Rule: AfterSourceEnds, Months: 120}, Source: SourceSignedForm,
+	},
+	// Archived records (phase 6): the PDF of what a domain stored, one
+	// document per record, made by the worker after the record was; their
+	// snapshots and hashes stay in their domains, which Verify asks.
+	{
+		Key: AssignmentFormType, Group: GroupAssets,
+		Words: "assignment form issue act perdavimo aktas forma išdavimas акт выдачи форма",
+		Read:  PermRead, Links: []SubjectKind{Asset, Employee}, Must: []SubjectKind{Asset, Employee},
+		Origins: []Origin{Archived}, FileTypes: []string{files.PDF}, MaxBytes: MaxUploadBytes, Dated: true,
+		// VAD 11.6, as the signed copies: 10 years after the asset's return.
+		Retention: Retention{Rule: AfterSourceEnds, Months: 120}, Source: SourceAssignment,
+	},
+	{
+		Key: OrderRecordType, Group: GroupWorkwear,
+		Words: "items given record workwear išdavimo aktas darbo drabužiai акт выдачи спецодежда",
+		Read:  PermRead, Links: []SubjectKind{Order, Employee}, Must: []SubjectKind{Order, Employee},
+		Origins: []Origin{Archived}, FileTypes: []string{files.PDF}, MaxBytes: MaxUploadBytes, Dated: true,
+		// VAD 2.30 records of PPE issued: 1 year after the items' service period ends.
+		Retention: Retention{Rule: AfterSourceEnds, Months: 12}, Source: SourceOrder,
 	},
 	// Employment documents (phase 2): sealed, for the Employment Documents role
 	// alone, kept for a period after employment ends, then shredded.
-	employment("employment.contract", "employment contract darbo sutartis трудовой договор", "EC", 120),
-	employment("employment.annex", "annex amendment priedas pakeitimas приложение изменение", "EA", 120),
-	employment("employment.nda", "nda confidentiality non-disclosure konfidencialumo sutartis неразглашение конфиденциальность", "NDA", 120),
+	// VAD 2.3: employment contracts and their annexes, agreements on extra
+	// terms (confidentiality, non-compete) among them, 50 years after the
+	// contract ends; other employment papers (VAD 2.2) 3 years.
+	employment("employment.contract", "employment contract darbo sutartis трудовой договор", "EC", 600),
+	employment("employment.annex", "annex amendment priedas pakeitimas приложение изменение", "EA", 600),
+	employment("employment.nda", "nda confidentiality non-disclosure konfidencialumo sutartis неразглашение конфиденциальность", "NDA", 600),
 	employment("employment.other", "employment document darbo dokumentas трудовой документ", "ED", 36),
 }
 

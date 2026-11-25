@@ -244,14 +244,14 @@ func TestPostgresSealedDocuments(t *testing.T) {
 	if _, data, err := svc.OpenSealed(ctx, clerk, d.ID, 1); err != nil || !bytes.Equal(data, pdf) {
 		t.Fatalf("open = %v", err)
 	}
-	// Retention: the employment ended 2026-01-31, 120 months.
+	// Retention: the employment ended 2026-01-31, 50 years from 1 January after.
 	ended[ana] = "2026-01-31"
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	if res, err := svc.ShredDue(ctx, logger); err != nil || res.Documents != 0 {
 		t.Fatalf("not due: %+v %v", res, err)
 	}
 	got, err := svc.Get(ctx, clerk, d.ID)
-	if err != nil || got.RetainUntil == nil || *got.RetainUntil != "2036-01-31" {
+	if err != nil || got.RetainUntil == nil || *got.RetainUntil != "2077-01-01" {
 		t.Fatalf("retain until = %v %v", got.RetainUntil, err)
 	}
 	// Held, the shredding function itself refuses.
@@ -395,5 +395,45 @@ func TestPostgresReadText(t *testing.T) {
 	}
 	if n, err := svc.QueueUnread(ctx, true); err != nil || n != 1 {
 		t.Fatalf("queue failed too = %d, %v (the pending one is queued already)", n, err)
+	}
+}
+
+// TestPostgresRetentionNotSealed: an invoice past its 10 years is shredded by
+// vault.shred_document as ppe_app, leaving a tombstone with no title,
+// versions, files or links; one within them stays, with its day.
+func TestPostgresRetentionNotSealed(t *testing.T) {
+	app, owner, actor := newTestPool(t)
+	ctx := context.Background()
+	store := &memStore{files: map[string][]byte{}}
+	day := time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)
+	svc := NewService(NewPostgresRepository(app), stubSubjects{}, WithFiles(store), WithClock(func() time.Time { return day }))
+	mgr := Reader{ID: actor, Perms: []string{vault.PermRead, vault.PermManage}}
+	upload := func(title, date string) Document {
+		t.Helper()
+		d, err := svc.Upload(ctx, mgr, "invoice", Details{Title: title, DocumentDate: &date}, Upload{FileName: "s.pdf", Data: pdf})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return d
+	}
+	old, recent := upload("UAB Rūbai 2015", "2015-06-01"), upload("UAB Rūbai 2020", "2020-06-01")
+	res, err := svc.ShredDue(ctx, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err != nil || res.Documents != 1 || res.Failed != 0 {
+		t.Fatalf("shred = %+v %v", res, err)
+	}
+	var title string
+	var shredded bool
+	var versions, links int
+	if err := owner.QueryRow(ctx, `SELECT d.title, d.shredded_at IS NOT NULL,
+		(SELECT count(*) FROM vault.versions v WHERE v.document_id = d.id), (SELECT count(*) FROM vault.links l WHERE l.document_id = d.id)
+		FROM vault.documents d WHERE d.id = $1`, old.ID).Scan(&title, &shredded, &versions, &links); err != nil {
+		t.Fatal(err)
+	}
+	if title != "" || !shredded || versions != 0 || links != 0 || len(store.files) != 1 {
+		t.Errorf("tombstone = %q %v %d %d, %d files left", title, shredded, versions, links, len(store.files))
+	}
+	got, err := svc.Get(ctx, mgr, recent.ID)
+	if err != nil || got.RetainUntil == nil || *got.RetainUntil != "2031-01-01" {
+		t.Errorf("2020 invoice = %v %v", got.RetainUntil, err)
 	}
 }

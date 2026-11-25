@@ -2,7 +2,7 @@ import type { VaultDocument, VaultHit, VaultType } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
 import { vaultExportColumns } from './vault-export'
-import { canReadAgain, detailsOf, displayTitle, draftProblems, holdProblems, seesVault, expiry, fileProblem, linkLabels, linkRoute, textLine, typeLabel, uploadRefusal, uploadTypes, withLink } from './vault'
+import { canReadAgain, detailsOf, displayTitle, draftProblems, holdProblems, seesVault, expiry, fileProblem, linkLabels, linkRoute, textLine, typeLabel, uploadRefusal, uploadTypes, verifyLine, withLink, canHold } from './vault'
 
 const type = (key: string, must: VaultType['must'], manage = 'vault.manage'): VaultType => ({
   key,
@@ -40,15 +40,42 @@ describe('names', () => {
   it('names a type, or shows a key it does not know', () => {
     expect(typeLabel('employee.certificate')).toBe('Certificate')
     expect(typeLabel('employment.contract')).toBe('Employment contract')
-    expect(typeLabel('order.record')).toBe('order.record')
+    expect(typeLabel('order.record')).toBe('Items Given Record')
+    expect(typeLabel('payslip')).toBe('payslip')
   })
   it('joins the links’ names', () => {
     expect(linkLabels([{ label: 'Ana Žukauskaitė' }, { label: 'EQ-0001 Laptop' }])).toBe('Ana Žukauskaitė, EQ-0001 Laptop')
   })
-  it('opens an employee’s page or an asset, and nothing for a company', () => {
+  it('opens an employee’s page, an asset or an order, and nothing for a company', () => {
     expect(linkRoute({ kind: 'employee', id: 'e1' }, 'Garantija')).toEqual({ name: 'employeePage', id: 'e1', from: 'Garantija' })
     expect(linkRoute({ kind: 'asset', id: 'a1' })).toEqual({ name: 'asset', id: 'a1' })
+    expect(linkRoute({ kind: 'order', id: 'o1' })).toEqual({ name: 'history', order: 'o1' })
     expect(linkRoute({ kind: 'company', id: 'c1' })).toBeNull()
+  })
+})
+
+describe('canHold', () => {
+  it('holds a type its retention shreds, by its manage permission or vault.manage when no one manages it', () => {
+    const manager = (p: string) => p === 'vault.manage'
+    const invoice = { ...type('invoice', []), retention: { rule: 'after_document_date', months: 120 } } as VaultType
+    const form = { ...type('order.record', ['order'], ''), retention: { rule: 'after_source_ends', months: 12 } } as VaultType
+    expect(canHold(invoice, manager)).toBe(true)
+    expect(canHold(form, manager)).toBe(true)
+    expect(canHold(type('other', []), manager)).toBe(false)
+    expect(canHold(invoice, () => false)).toBe(false)
+    expect(canHold(undefined, manager)).toBe(false)
+  })
+})
+
+describe('verifyLine', () => {
+  it('matches only when the hashes agree and the file is intact', () => {
+    expect(verifyLine({ matches: true, file_intact: true, source_gone: false })).toEqual({ ok: true, label: 'Matches', text: 'The record still hashes to the hash kept with this document.' })
+    expect(verifyLine({ matches: false, file_intact: true, source_gone: false })).toMatchObject({ ok: false, label: 'Does not match' })
+    expect(verifyLine({ matches: true, file_intact: false, source_gone: false })).toMatchObject({
+      ok: false,
+      text: 'The record still hashes to the hash kept with this document. The kept file does not match its hash.',
+    })
+    expect(verifyLine({ matches: false, file_intact: true, source_gone: true }).text).toBe('The record it was kept from no longer exists.')
   })
 })
 

@@ -40,7 +40,7 @@ type querier interface {
 const docColumns = `d.id, d.type, d.title, d.number, d.document_date::text, d.valid_from::text, d.valid_until::text,
 	d.origin, d.sealed, d.source_kind IS NOT NULL, d.requires, d.created_at, d.created_by_user_id, d.updated_at,
 	d.updated_by_user_id, d.deleted_at, d.deleted_by_user_id, d.retain_until::text, d.hold_until::text, d.hold_reason,
-	d.title_sealed, k.sealed_key, coalesce(k.key_id, 0), d.template_id, d.template_version`
+	d.title_sealed, k.sealed_key, coalesce(k.key_id, 0), d.template_id, d.template_version, d.source_kind, d.source_id`
 
 // read reads the document with id, locked FOR UPDATE when lock, live or not
 // as live says, with its versions and links.
@@ -57,7 +57,7 @@ func read(ctx context.Context, q querier, id uuid.UUID, live, lock bool) (Docume
 	err := q.QueryRow(ctx, sql, id).Scan(&d.ID, &d.Type, &d.Title, &d.Number, &d.DocumentDate, &d.ValidFrom, &d.ValidUntil,
 		&d.Origin, &d.Sealed, &d.Locked, &d.Requires, &d.CreatedAt, &d.CreatedByUserID, &d.UpdatedAt,
 		&d.UpdatedByUserID, &d.DeletedAt, &d.DeletedByUserID, &d.RetainUntil, &d.HoldUntil, &d.HoldReason,
-		&d.TitleSealed, &d.Key, &d.KeyID, &d.TemplateID, &d.TemplateVersion)
+		&d.TitleSealed, &d.Key, &d.KeyID, &d.TemplateID, &d.TemplateVersion, &d.SourceKind, &d.SourceID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Document{}, ErrNotFound
 	}
@@ -475,14 +475,14 @@ func (r *PostgresRepository) Record(ctx context.Context, ev audit.Event) error {
 	return audit.Insert(ctx, r.pool, ev)
 }
 
-// Sealed reads the sealed documents not shredded, removed ones too, with
-// their linked employees.
-func (r *PostgresRepository) Sealed(ctx context.Context) ([]Candidate, error) {
+// Retained reads the documents not shredded, removed ones too, that are
+// sealed or of types, with their linked employees and source.
+func (r *PostgresRepository) Retained(ctx context.Context, types []string) ([]Candidate, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT d.id, d.type, d.number, d.document_date::text, d.retain_until::text, d.hold_until::text, d.deleted_at IS NOT NULL,
-			coalesce((SELECT array_agg(l.employee_id ORDER BY l.employee_id) FROM vault.links l
-				WHERE l.document_id = d.id AND l.employee_id IS NOT NULL), '{}')
-		FROM vault.documents d WHERE d.sealed AND d.shredded_at IS NULL ORDER BY d.created_at, d.id`)
+			d.sealed, coalesce((SELECT array_agg(l.employee_id ORDER BY l.employee_id) FROM vault.links l
+				WHERE l.document_id = d.id AND l.employee_id IS NOT NULL), '{}'), d.source_kind, d.source_id
+		FROM vault.documents d WHERE (d.sealed OR d.type = ANY($1)) AND d.shredded_at IS NULL ORDER BY d.created_at, d.id`, types)
 	if err != nil {
 		return nil, err
 	}
@@ -490,7 +490,8 @@ func (r *PostgresRepository) Sealed(ctx context.Context) ([]Candidate, error) {
 	out := make([]Candidate, 0)
 	for rows.Next() {
 		var c Candidate
-		if err := rows.Scan(&c.ID, &c.Type, &c.Number, &c.DocumentDate, &c.RetainUntil, &c.HoldUntil, &c.Removed, &c.Employees); err != nil {
+		if err := rows.Scan(&c.ID, &c.Type, &c.Number, &c.DocumentDate, &c.RetainUntil, &c.HoldUntil, &c.Removed, &c.Sealed,
+			&c.Employees, &c.SourceKind, &c.SourceID); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
@@ -673,10 +674,11 @@ func (r *PostgresRepository) AddSourced(ctx context.Context, d Document, m Versi
 	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		tag, err := tx.Exec(ctx, `
 			INSERT INTO vault.documents (id, type, type_words, title, document_date, origin, source_kind, source_id, sealed,
-				requires, created_at, created_by_user_id, updated_at, updated_by_user_id)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10, $11, $10, $11)
+				requires, created_at, created_by_user_id, updated_at, updated_by_user_id, number)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9, $10, $11, $10, $11, $12)
 			ON CONFLICT (source_kind, source_id) DO NOTHING`,
-			d.ID, d.Type, t.Words, d.Title, d.DocumentDate, d.Origin, d.SourceKind, d.SourceID, d.Requires, d.CreatedAt, d.CreatedByUserID)
+			d.ID, d.Type, t.Words, d.Title, d.DocumentDate, d.Origin, d.SourceKind, d.SourceID, d.Requires, d.CreatedAt, d.CreatedByUserID,
+			d.Number)
 		if err != nil {
 			return err
 		}
@@ -750,6 +752,38 @@ func (r *PostgresRepository) SourcedFiles(ctx context.Context, kind string, ids 
 func (r *PostgresRepository) Sources(ctx context.Context, kind string) ([]uuid.UUID, error) {
 	rows, err := r.pool.Query(ctx, `SELECT source_id FROM vault.documents
 		WHERE source_kind = $1 AND deleted_at IS NULL AND shredded_at IS NULL`, kind)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+}
+
+// QueueArchives inserts the jobs, in one statement, and wakes the worker.
+func (r *PostgresRepository) QueueArchives(ctx context.Context, kind string, ids []uuid.UUID, now time.Time) (int64, error) {
+	var n int64
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		tag, err := tx.Exec(ctx, `
+			INSERT INTO outbox.jobs (id, kind, key, payload, state, run_after, created_at)
+			SELECT gen_random_uuid(), $1, $2 || ':' || s.id::text, jsonb_build_object('source', $2::text, 'id', s.id), 'pending', $4, $4
+			FROM unnest($3::uuid[]) AS s(id)
+			WHERE NOT EXISTS (SELECT 1 FROM vault.documents d WHERE d.source_kind = $2 AND d.source_id = s.id)
+			ON CONFLICT (kind, key) WHERE state IN ('pending', 'running') DO NOTHING`, KindArchive, kind, ids, now)
+		if err != nil {
+			return err
+		}
+		if n = tag.RowsAffected(); n > 0 {
+			_, err = tx.Exec(ctx, `SELECT pg_notify($1, $2)`, outbox.Channel, KindArchive)
+		}
+		return err
+	})
+	return n, err
+}
+
+// Unarchived reads which of ids have no document of source kind.
+func (r *PostgresRepository) Unarchived(ctx context.Context, kind string, ids []uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := r.pool.Query(ctx, `SELECT s.id FROM unnest($2::uuid[]) WITH ORDINALITY AS s(id, n)
+		WHERE NOT EXISTS (SELECT 1 FROM vault.documents d WHERE d.source_kind = $1 AND d.source_id = s.id)
+		ORDER BY s.n`, kind, ids)
 	if err != nil {
 		return nil, err
 	}

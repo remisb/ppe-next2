@@ -77,7 +77,7 @@ var events = []string{
 	"asset.sim_codes_changed", "asset.sim_codes_shown",
 	"vault.document_uploaded", "vault.version_added", "vault.document_updated", "vault.document_linked",
 	"vault.document_unlinked", "vault.document_removed", "vault.document_opened", "vault.hold_set", "vault.hold_cleared",
-	"vault.document_shredded", "vault.document_generated",
+	"vault.document_shredded", "vault.document_generated", "vault.document_archived",
 	"document_template.created", "document_template.updated", "document_template.draft_saved", "document_template.published",
 	"document_template.retired",
 	"settings.company_changed", "settings.supplier_chat_changed", "settings.default_sim_provider_changed", "settings.sim_providers_changed",

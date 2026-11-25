@@ -133,7 +133,7 @@ To come: an annex generated from its contract's page (its `parent_id`).
 
 ## DOCX templates (phase 8)
 
-Migration `0066`: `template_versions.kind` and `file_id`. **Upload DOCX Template** in
+Migration `0067`: `template_versions.kind` and `file_id`. **Upload DOCX Template** in
 Administration: the file is sniffed as DOCX, placeholders split across Word's runs are joined,
 every `{{…}}` is checked as a field (`internal/placeholder`), `{{document.number}}` and
 `{{document.hash}}` are required. Generate merges the values into the DOCX and the worker's

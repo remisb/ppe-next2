@@ -160,8 +160,9 @@ type config struct {
 	VaultReindex       bool
 	VaultReindexFailed bool
 	// VaultBackfill checks the signed copies moved into the vault (migration
-	// 0065) and their files, and with ImportCommit moves any not moved yet,
-	// then exits.
+	// 0065) and their files and counts the forms and records not archived yet
+	// (phase 6); with ImportCommit it moves the copies not moved yet and queues
+	// that archiving, then exits.
 	VaultBackfill bool
 
 	// Upkeep runs the hourly upkeep once (purges, samples, audit seals and
@@ -295,10 +296,10 @@ func loadConfig(args []string) (config, error) {
 	fs.BoolVar(&c.HealthcheckWorker, "healthcheck-worker", false, "check that this container's worker beat within the last 2 minutes and exit")
 	fs.BoolVar(&c.VaultReindex, "vault-reindex", false, "give every document version still waiting for its text a job for the worker, print how many and exit")
 	fs.BoolVar(&c.VaultReindexFailed, "failed", false, "with -vault-reindex: the versions whose reading failed too")
-	fs.BoolVar(&c.VaultBackfill, "vault-backfill", false, "check the signed copies moved into the Document Vault and their files, print what it found and exit")
+	fs.BoolVar(&c.VaultBackfill, "vault-backfill", false, "check the signed copies moved into the Document Vault and their files, count the forms and records not archived yet, print what it found and exit")
 	fs.BoolVar(&c.Upkeep, "upkeep", false, "run the hourly upkeep once (purges, samples, audit seals) and exit")
 	fs.StringVar(&c.ImportSIMs, "import-sims", "", "check the SIM card list at this CSV path (- for standard input), print what it would import and exit")
-	fs.BoolVar(&c.ImportCommit, "commit", false, "with -import-sims: import the SIM cards; with -vault-backfill: move the signed copies not in the vault yet")
+	fs.BoolVar(&c.ImportCommit, "commit", false, "with -import-sims: import the SIM cards; with -vault-backfill: move the signed copies not in the vault yet and queue the archiving of forms and records")
 	fs.StringVar(&c.PublishApp, "publish-app", "", "publish this app's build (a tar of its dist/ on standard input) into API_APPS_DIR and exit")
 	fs.StringVar(&c.PublishVersion, "version", "", "with -publish-app: the version, YYYY.MM.DD-<commit>")
 	fs.StringVar(&c.PublishChannel, "channel", "", "with -publish-app: the channel to point at it (stable, beta or preview)")

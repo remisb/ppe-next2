@@ -137,6 +137,7 @@ func (s *Service) ConfirmByToken(ctx context.Context, token string, confirmed bo
 	if err != nil {
 		return Record{}, err
 	}
+	given := false
 	o, err := s.repo.Confirm(ctx, link.OrderID, &link.ID, link.CreatedByUserID, func(snap ConfirmSnapshot) (ConfirmResult, error) {
 		// Already GIVEN (through this link, another, or paper): return the
 		// existing record and create nothing.
@@ -147,10 +148,14 @@ func (s *Service) ConfirmByToken(ctx context.Context, token string, confirmed bo
 		if !snap.Link.Usable(now) {
 			return ConfirmResult{}, ErrLinkExpired
 		}
+		given = true
 		return s.give(snap, *snap.Link, false, MethodElectronic, snap.Link.CreatedByUserID, nil, now)
 	})
 	if err != nil {
 		return Record{}, err
+	}
+	if given {
+		s.archive(ctx, o.ID)
 	}
 	return s.Record(ctx, o.ID)
 }
@@ -178,16 +183,21 @@ func (s *Service) confirmWithoutLink(ctx context.Context, orderID, actor uuid.UU
 	if actor == uuid.Nil {
 		return Record{}, fieldError("actor", "is required")
 	}
+	given := false
 	o, err := s.repo.Confirm(ctx, orderID, nil, actor, func(snap ConfirmSnapshot) (ConfirmResult, error) {
 		if snap.Order.Status == StatusGiven {
 			return ConfirmResult{Noop: true}, nil
 		}
 		now := s.now()
 		c := Confirmation{ID: s.newID(), OrderID: orderID, Method: method, CreatedAt: now, CreatedByUserID: actor}
+		given = true
 		return s.give(snap, c, true, method, actor, &actor, now)
 	})
 	if err != nil {
 		return Record{}, err
+	}
+	if given {
+		s.archive(ctx, o.ID)
 	}
 	return s.Record(ctx, o.ID)
 }

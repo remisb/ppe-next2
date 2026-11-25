@@ -78,6 +78,20 @@ and screens unchanged. The migration's `vault.move_signed_copies()` moved every 
 `asset_signed_copies` is frozen (`ppe_app` only reads it) until a later release drops it; `api -vault-backfill [-commit]`
 (`make prod-vault-backfill`) checks the move and the files. The asset repository no longer knows whether a copy exists: the
 service fills `signed_copy_uploaded` from `Holding` and passes it to the register's `signed_copy=missing` filter.
+Phase 6 (no migration): **assignment forms and Items Given Records are archived** as PDFs (types `asset.assignment_form`,
+`order.record`, each with a `Source`, no `manage`). Give and a confirmation that gives an order call their domain's `Archiver`
+after commit (`asset/archive.go`, `order/archive.go`), which only queues `vault.archive` (adapter `vaultArchiver`); the worker's
+handler draws the record through the `Records` port (`vaultRecords`: `formpdf`, and `internal/recordpdf` for the Items Given
+Record, also `GET /api/v1/orders/{id}/record.pdf`, Download PDF on the record page) and keeps it once (unique source), with
+`vault.document_archived` (no actor). The upkeep sweeps the last 7 days (`sweepArchives`: `FormsSince`, `GivenSince`);
+`api -vault-backfill -commit` queues all records before it. **Verify** (`GET /api/v1/vault/documents/{id}/verify`, the document
+pane's Verify) hashes the domain's snapshot again and checks the file. The domains' snapshots and hashes stay the truth.
+**Retention** (migration 0066, `internal/vault/document/retention.go`): every type's period is Lithuania's minimum (the index for
+internal records, "VAD", from 2024-10-01): contracts, annexes, NDAs 50 years after employment; other employment papers, certificates,
+training 3; invoices, asset papers 10 after their date; forms and signed copies 10 after the asset's return; Items Given Records 1
+after the longest service period (rule `AfterSourceEnds`, `Records.Ended`); each from 1 January after. Every type with a period is
+shredded when due by `vault.shred_document`, sealed or not; Legal Hold for any such type (`vault.manage` for archived ones).
+The decisions and sources: `docs/privacy/document-retention-policy.md`.
 **Mail templates** (`internal/domain/mailtemplate`, migration 0040, spec
 `docs/specs/mail-template-service.md`): one template per use case fixed in code (`sim.activation`,
 `sim.blocking`), To/Cc/Subject/Message with `{{field}}` placeholders, edited on Administration's
@@ -456,7 +470,7 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   ADR 0008 makes the Document Vault: typed documents with versions and links,
   sealed Employment documents with retention and shredding, templates made into locked PDFs,
   Postgres search, and a worker on an outbox (specs `vault-service.md`,
-  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 to 5 are built.
+  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 to 6 are built.
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and

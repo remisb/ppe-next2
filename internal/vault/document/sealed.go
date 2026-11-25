@@ -5,10 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"slices"
 	"strings"
 	"time"
@@ -19,7 +17,6 @@ import (
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/sealbox"
-	"github.com/remisb/ppe-next2/internal/vault"
 )
 
 // Sealed types (phase 2, docs/specs/vault-service.md "Sealed types"): each
@@ -206,9 +203,9 @@ func (s *Service) OpenSealed(ctx context.Context, reader Reader, id uuid.UUID, n
 }
 
 // SetHold is Legal Hold: no shredding or removal until the day after until;
-// nil until clears it. Each change is recorded with its day and reason.
+// nil until clears it. Only a type whose retention shreds takes one. Each change is recorded with its day and reason.
 func (s *Service) SetHold(ctx context.Context, reader Reader, id uuid.UUID, until *string, reason string) (Document, error) {
-	if _, _, err := s.manageable(ctx, reader, id); err != nil {
+	if err := s.holdable(ctx, reader, id); err != nil {
 		return Document{}, err
 	}
 	reason = strings.TrimSpace(reason)
@@ -256,108 +253,4 @@ func (s *Service) SetHold(ctx context.Context, reader Reader, id uuid.UUID, unti
 		return Document{}, err
 	}
 	return d, s.unseal(&d)
-}
-
-// dueDay is when the retention rule of a sealed document's type removes it,
-// or nil when it cannot be known (still employed, no date) or never.
-func (s *Service) dueDay(ctx context.Context, c Candidate) (*string, error) {
-	t, ok := vault.TypeOf(c.Type)
-	if !ok {
-		return nil, nil
-	}
-	add := func(day string) (*string, error) {
-		at, err := time.Parse(time.DateOnly, day)
-		if err != nil {
-			return nil, err
-		}
-		due := at.AddDate(0, t.Retention.Months, 0).Format(time.DateOnly)
-		return &due, nil
-	}
-	switch t.Retention.Rule {
-	case vault.AfterDocDate:
-		if c.DocumentDate == nil {
-			return nil, nil
-		}
-		return add(*c.DocumentDate)
-	case vault.AfterEmploymentEnd:
-		if s.employments == nil || len(c.Employees) == 0 {
-			return nil, nil
-		}
-		last := ""
-		for _, e := range c.Employees {
-			ended, on, err := s.employments.EmploymentEnded(ctx, e)
-			if err != nil {
-				return nil, err
-			}
-			if !ended {
-				return nil, nil
-			}
-			last = max(last, on)
-		}
-		return add(last)
-	}
-	return nil, nil
-}
-
-// Shredded is what ShredDue did.
-type Shredded struct {
-	Documents int
-	// Failed are the documents or objects that could not be shredded or deleted; the log names them.
-	Failed int
-}
-
-// ShredDue applies the sealed types' retention, for the upkeep: each sealed
-// document's retain_until is computed again, and one past it, or removed,
-// is shredded unless held (vault.document_shredded, by no one), then its
-// files deleted from the store. A rule, not an action: after a restore it
-// shreds again.
-func (s *Service) ShredDue(ctx context.Context, logger *slog.Logger) (Shredded, error) {
-	var out Shredded
-	cands, err := s.repo.Sealed(ctx)
-	if err != nil {
-		return out, err
-	}
-	today := s.today()
-	for _, c := range cands {
-		due, err := s.dueDay(ctx, c)
-		if err != nil {
-			out.Failed++
-			logger.Error("vault retention failed", slog.String("document", c.ID.String()), slog.Any("error", err))
-			continue
-		}
-		if !sameDate(due, c.RetainUntil) {
-			if err := s.repo.SetRetainUntil(ctx, c.ID, due); err != nil {
-				return out, err
-			}
-		}
-		if !c.Removed && (due == nil || *due > today) {
-			continue
-		}
-		if c.HoldUntil != nil && *c.HoldUntil >= today {
-			continue
-		}
-		ev, err := audit.New(s.newID(), nil, EventShredded, Entity, c.ID, s.now(), nil, map[string]any{
-			"type": c.Type, "number": c.Number, "document_date": c.DocumentDate, "retain_until": due, "removed": c.Removed,
-		})
-		if err != nil {
-			return out, err
-		}
-		keys, err := s.repo.Shred(ctx, c.ID, s.now(), today, ev)
-		if err != nil {
-			out.Failed++
-			logger.Error("vault shredding failed", slog.String("document", c.ID.String()), slog.Any("error", err))
-			continue
-		}
-		out.Documents++
-		if s.store == nil {
-			continue
-		}
-		for _, k := range keys {
-			if err := s.store.Delete(ctx, k); err != nil && !errors.Is(err, files.ErrNotFound) {
-				out.Failed++
-				logger.Error("vault shredded file not deleted", slog.String("document", c.ID.String()), slog.Any("error", err))
-			}
-		}
-	}
-	return out, nil
 }

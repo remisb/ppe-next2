@@ -32,17 +32,26 @@ processed again here (the vault only lists their kind, issuing state and expiry)
 
 ## Retention
 
-Each type has a rule, applied hourly by the API: sealed documents are **shredded** (their key,
-files and text deleted; only type, number and dates remain in a tombstone row and the audit
-trail). Defaults until the DPO answers (ADR 0008, open question 1), each a setting:
+Each type has a rule, applied hourly by the API: when it is due a document is **shredded**,
+sealed or not (a sealed one's key, and every document's files, text and links deleted; only
+type, number and dates remain in a tombstone row and the audit trail). Lithuania's minimum
+periods since 2026-11-25, in code (ADR 0008, open question 1):
 
-| Type | Default | **DPO** |
+| Type | Period | **DPO** |
 | --- | --- | --- |
-| Employment contract, annex, NDA | 10 years after employment ends | confirm against the index of retention periods |
-| Other employment papers | 3 years after employment ends | as Personnel files' personal file |
-| Certificates, training | 10 years after the document's date | |
-| Invoices | 10 years after the document's date | accounting law |
-| Records, forms, signed copies, asset documents, other | until removed | set a period |
+| Employment contract, annex, NDA | 50 years after employment ends (VAD 2.3) | confirm |
+| Other employment papers | 3 years after employment ends (VAD 2.2) | decisions on hiring, transfer, dismissal or pay are 50 years (VAD 2.1.1): should they be a type of their own? |
+| Certificates, training | 3 years after employment ends (VAD 2.2, 2.14, 2.23) | |
+| Invoices | 10 years after the document's date (VAD 3.15; VAT Law art. 78) | |
+| Asset documents | 10 years after the document's date (VAD 11.6) | |
+| Assignment forms, signed copies | 10 years after the asset's return (VAD 11.6) | |
+| Items Given Records | 1 year after the items' service period ends (VAD 2.30) | Workwear's orders hold the same data, kept until removed: set their period |
+| Other | until removed | |
+
+Each period counts from 1 January of the year after its day, as the archives' rules count them,
+and is Lithuania's minimum (VAD: the index of retention periods for internal records, in force
+from 2024-10-01). Keeping a document longer needs a reason stated in the records of processing.
+The decisions and their sources: [document-retention-policy.md](document-retention-policy.md).
 
 A **Legal Hold** (a date and reason, recorded) stops the shredding for a dispute or inspection.
 

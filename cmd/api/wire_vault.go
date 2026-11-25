@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"log/slog"
 	"slices"
 	"strings"
 	"time"
@@ -15,10 +17,13 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/company"
 	"github.com/remisb/ppe-next2/internal/domain/employee"
+	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
+	"github.com/remisb/ppe-next2/internal/formpdf"
+	"github.com/remisb/ppe-next2/internal/recordpdf"
 	"github.com/remisb/ppe-next2/internal/sealbox"
 	"github.com/remisb/ppe-next2/internal/vault"
 	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
@@ -30,18 +35,220 @@ import (
 // newVault is the document service over repo, its links described by svc's
 // services and its files kept in store.
 func newVault(svc services, repo vaultdoc.Repository, store files.Store, keys *sealbox.Keyring, loc *time.Location) *vaultdoc.Service {
-	subjects := vaultSubjects{employees: svc.employees, companies: svc.companies, assets: svc.assets, suppliers: svc.suppliers}
+	subjects := vaultSubjects{employees: svc.employees, companies: svc.companies, assets: svc.assets, suppliers: svc.suppliers, orders: svc.orders}
 	opts := []vaultdoc.Option{vaultdoc.WithFiles(store), vaultdoc.WithEmployments(vaultEmployments{svc.employees}), vaultdoc.WithLocation(loc),
-		vaultdoc.WithGeneration(svc.docTemplates, vaultPeople{employees: svc.employees, companies: svc.companies}, vaultUsers{svc.users})}
+		vaultdoc.WithGeneration(svc.docTemplates, vaultPeople{employees: svc.employees, companies: svc.companies}, vaultUsers{svc.users}),
+		vaultdoc.WithRecords(vaultRecords{assets: svc.assets, orders: svc.orders, loc: loc})}
 	if keys != nil {
 		opts = append(opts, vaultdoc.WithKeys(keys))
 	}
 	v := vaultdoc.NewService(repo, subjects, opts...)
+	archiver := vaultArchiver{v}
 	if svc.assets != nil {
-		// Company Assets keeps its signed copies here (phase 5).
+		// Company Assets keeps its signed copies here (phase 5), and its
+		// stored forms are archived here (phase 6).
 		asset.WithSignedForms(assetSignedForms{v})(svc.assets)
+		asset.WithArchiver(archiver)(svc.assets)
+	}
+	if svc.orders != nil {
+		// Given orders' Items Given Records are archived here (phase 6).
+		order.WithArchiver(archiver)(svc.orders)
 	}
 	return v
+}
+
+// vaultArchiver answers asset.Archiver and order.Archiver: after a domain's
+// commit it queues the record's archiving (vault.archive), best effort. What
+// it fails to queue the upkeep's sweep (sweepArchives) finds.
+type vaultArchiver struct{ vault *vaultdoc.Service }
+
+var (
+	_ asset.Archiver = vaultArchiver{}
+	_ order.Archiver = vaultArchiver{}
+)
+
+func (a vaultArchiver) FormStored(ctx context.Context, id uuid.UUID) {
+	a.queue(ctx, vault.AssignmentFormType, id)
+}
+func (a vaultArchiver) RecordGiven(ctx context.Context, id uuid.UUID) {
+	a.queue(ctx, vault.OrderRecordType, id)
+}
+
+func (a vaultArchiver) queue(ctx context.Context, key string, id uuid.UUID) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if _, err := a.vault.QueueArchives(ctx, key, []uuid.UUID{id}); err != nil {
+		slog.Default().WarnContext(ctx, "archiving not queued: the upkeep's sweep will queue it",
+			slog.String("type", key), slog.String("record", id.String()), slog.Any("error", err))
+	}
+}
+
+// vaultRecords answers vaultdoc.Records: Company Assets' stored forms drawn
+// by formpdf and given orders' Items Given Records drawn by recordpdf, each
+// with the hash its domain stored, named and linked as their lists name them.
+type vaultRecords struct {
+	assets *asset.Service
+	orders *order.Service
+	loc    *time.Location
+}
+
+var _ vaultdoc.Records = vaultRecords{}
+
+func (v vaultRecords) Record(ctx context.Context, source string, id uuid.UUID) (vaultdoc.Record, error) {
+	switch source {
+	case vault.SourceAssignment:
+		f, err := v.assets.StoredForm(ctx, id)
+		if errors.Is(err, asset.ErrNotFound) {
+			return vaultdoc.Record{}, vaultdoc.ErrNotFound
+		}
+		if err != nil {
+			return vaultdoc.Record{}, err
+		}
+		if !f.Matches() {
+			return vaultdoc.Record{}, fmt.Errorf("assignment %s: its stored form does not match its document hash", id)
+		}
+		pdf, err := formpdf.Render(f.Form, f.StoredHash)
+		if err != nil {
+			return vaultdoc.Record{}, err
+		}
+		given := f.Assignment.GivenDate
+		return vaultdoc.Record{
+			// Named as its signed copies' document is (assetSignedForms).
+			Title: f.Asset.InventoryNo + " · " + given, DocumentDate: &given,
+			Links: []vaultdoc.Link{
+				{Kind: vault.Asset, ID: f.Asset.ID, Label: assetLabel(f.Asset), Requires: []string{string(assetSight(f.Asset.Kind))}},
+				{Kind: vault.Employee, ID: f.Assignment.EmployeeID, Label: f.Assignment.EmployeeName},
+			},
+			FileName: formpdf.Filename(f.Form), PDF: pdf, DocumentHash: f.StoredHash, Actor: f.Assignment.GivenByUserID,
+		}, nil
+	case vault.SourceOrder:
+		rec, err := v.givenRecord(ctx, id)
+		if err != nil {
+			return vaultdoc.Record{}, err
+		}
+		pdf, err := recordpdf.Render(rec, v.loc)
+		if err != nil {
+			return vaultdoc.Record{}, err
+		}
+		number := rec.Receipt.RecordNumber
+		given := rec.Order.GivenAt.In(v.loc).Format(time.DateOnly)
+		return vaultdoc.Record{
+			Title: number + " · " + given, Number: &number, DocumentDate: &given,
+			Links: []vaultdoc.Link{
+				{Kind: vault.Order, ID: rec.Order.ID, Label: number},
+				{Kind: vault.Employee, ID: rec.Order.EmployeeID, Label: rec.Receipt.EmployeeFirstName + " " + rec.Receipt.EmployeeLastName},
+			},
+			FileName: recordpdf.Filename(rec), PDF: pdf, DocumentHash: rec.DocumentHash, Actor: *rec.Order.GivenByUserID,
+		}, nil
+	}
+	return vaultdoc.Record{}, fmt.Errorf("vault: no records of %q", source)
+}
+
+func (v vaultRecords) Hash(ctx context.Context, source string, id uuid.UUID) (string, error) {
+	switch source {
+	case vault.SourceAssignment:
+		f, err := v.assets.StoredForm(ctx, id)
+		if errors.Is(err, asset.ErrNotFound) {
+			return "", vaultdoc.ErrNotFound
+		}
+		return f.DocumentHash, err
+	case vault.SourceOrder:
+		rec, err := v.givenRecord(ctx, id)
+		if err != nil {
+			return "", err
+		}
+		// The receipt built again from the order's snapshot, hashed again.
+		return order.DocumentHash(rec.Receipt), nil
+	}
+	return "", fmt.Errorf("vault: no records of %q", source)
+}
+
+// Ended is when a record's retention starts: an assignment's return (its form
+// and its signed copies), or the end of a given order's longest service
+// period (VAD 2.30); not ended while the asset is held, the order not given,
+// or the record gone.
+func (v vaultRecords) Ended(ctx context.Context, source string, id uuid.UUID) (string, bool, error) {
+	switch source {
+	case vault.SourceAssignment, vault.SourceSignedForm:
+		f, err := v.assets.StoredForm(ctx, id)
+		if errors.Is(err, asset.ErrNotFound) {
+			return "", false, nil
+		}
+		if err != nil || f.Assignment.ReturnedDate == nil {
+			return "", false, err
+		}
+		return *f.Assignment.ReturnedDate, true, nil
+	case vault.SourceOrder:
+		rec, err := v.givenRecord(ctx, id)
+		if errors.Is(err, vaultdoc.ErrNotFound) {
+			return "", false, nil
+		}
+		if err != nil {
+			return "", false, err
+		}
+		longest := 0
+		for _, l := range rec.Order.Lines {
+			longest = max(longest, l.ServicePeriodMonths)
+		}
+		return rec.Order.GivenAt.In(v.loc).AddDate(0, longest, 0).Format(time.DateOnly), true, nil
+	}
+	return "", false, fmt.Errorf("vault: no records of %q", source)
+}
+
+// givenRecord is order id's record once given; vaultdoc.ErrNotFound for an
+// order deleted, missing or not given.
+func (v vaultRecords) givenRecord(ctx context.Context, id uuid.UUID) (order.Record, error) {
+	rec, err := v.orders.Record(ctx, id)
+	if errors.Is(err, order.ErrNotFound) {
+		return order.Record{}, vaultdoc.ErrNotFound
+	}
+	if err != nil {
+		return order.Record{}, err
+	}
+	if rec.Order.Status != order.StatusGiven || rec.Order.GivenAt == nil || rec.Order.GivenByUserID == nil {
+		return order.Record{}, vaultdoc.ErrNotFound
+	}
+	return rec, nil
+}
+
+// archiveSweep is what sweepArchives found: the records without their
+// archived document, by type.
+type archiveSweep struct {
+	Forms   int
+	Records int
+}
+
+// sweepArchives finds the stored forms and given orders since since (the
+// zero time: all) that have no archived document yet and, with queue,
+// queues their archiving (docs/specs/vault-service.md, "Archiving"): the
+// upkeep sweeps the last week, -vault-backfill everything.
+func sweepArchives(ctx context.Context, svc services, since time.Time, queue bool) (archiveSweep, error) {
+	var out archiveSweep
+	forms, err := svc.assets.FormsSince(ctx, since)
+	if err != nil {
+		return out, err
+	}
+	records, err := svc.orders.GivenSince(ctx, since)
+	if err != nil {
+		return out, err
+	}
+	for _, s := range []struct {
+		key string
+		ids []uuid.UUID
+		n   *int
+	}{{vault.AssignmentFormType, forms, &out.Forms}, {vault.OrderRecordType, records, &out.Records}} {
+		missing, err := svc.vault.Unarchived(ctx, s.key, s.ids)
+		if err != nil {
+			return out, err
+		}
+		*s.n = len(missing)
+		if queue && len(missing) > 0 {
+			if _, err := svc.vault.QueueArchives(ctx, s.key, missing); err != nil {
+				return out, err
+			}
+		}
+	}
+	return out, nil
 }
 
 // assetSignedForms answers asset.SignedForms from the vault: an assignment's
@@ -243,6 +450,7 @@ type vaultSubjects struct {
 	companies *company.Service
 	assets    *asset.Service
 	suppliers *supplier.Service
+	orders    *order.Service
 }
 
 var _ vaultdoc.Subjects = vaultSubjects{}
@@ -279,8 +487,17 @@ func (s vaultSubjects) Describe(ctx context.Context, kind vault.SubjectKind, id 
 			return missing(err, asset.ErrNotFound)
 		}
 		return vaultdoc.SubjectInfo{Label: assetLabel(a.Asset), Requires: []string{string(assetSight(a.Kind))}}, nil
+	case vault.Order:
+		if s.orders == nil {
+			return vaultdoc.SubjectInfo{}, vaultdoc.ErrSubjectNotFound
+		}
+		o, err := s.orders.Get(ctx, id)
+		if err != nil {
+			return missing(err, order.ErrNotFound)
+		}
+		return vaultdoc.SubjectInfo{Label: o.RecordNumber()}, nil
 	}
-	// Employments and orders are linked by later phases.
+	// Employments are linked by a later phase.
 	return vaultdoc.SubjectInfo{}, vaultdoc.ErrSubjectNotFound
 }
 

@@ -540,6 +540,13 @@ The web form clears Paper Form Signed and asks for a reprint when the employee, 
 form data change after Print Form. The server's `form_hash` check makes the same rule hold
 for any client.
 
+**Archived in the Document Vault** (ADR 0008 decision 10, phase 6; `vault-service.md`,
+"Archiving"). Give tells the `asset.Archiver` port (`archive.go`) after its commit when the
+assignment stored a form; it queues the form's archiving as a PDF and never fails Give. The
+vault reads it through `StoredForm` (the assignment and its asset as they are, written off or
+deleted too, and the stored form encoded again with its hash) and the upkeep's sweep through
+`FormsSince`. A SIM card held since the import stored no form and is not archived.
+
 ## The SIM card register (slice 3)
 
 The staff app's Company Assets, after Employees in the sidebar and rail and under More on a

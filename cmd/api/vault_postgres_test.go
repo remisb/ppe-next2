@@ -15,7 +15,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/remisb/ppe-next2/internal/domain/role"
+	"github.com/remisb/ppe-next2/internal/outbox"
+	"github.com/remisb/ppe-next2/internal/recordpdf"
+	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
 )
 
 // uploadDocument sends a document as Upload Document… does: the file, and its
@@ -426,4 +430,241 @@ func TestPostgresSignedCopiesMove(t *testing.T) {
 func sha256Hex(b []byte) string {
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])
+}
+
+// TestPostgresArchiveHTTP: Give with a form and a paper confirmation each
+// queue their record's archiving after commit; the worker's handler keeps the
+// assignment form and the Items Given Record as archived documents, as
+// ppe_app, once (a second run and the sweep add nothing), linked and named as
+// their sources are; Verify finds them matching their domains' snapshots, and
+// the record downloads as the same PDF.
+func TestPostgresArchiveHTTP(t *testing.T) {
+	api, owner := newPostgresAPI(t)
+	ctx := context.Background()
+	_, mgr := api.userWith(t, role.KeyManager)
+	_, staff := api.userWith(t, role.KeyEmployee)
+	rec := api.do(t, "POST", "/api/v1/employees", mgr, map[string]any{"first_name": "Ona", "last_name": "Kazlauskienė"})
+	emp := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+
+	// Give a SIM card against its printed form.
+	today := time.Now().UTC().Format(time.DateOnly)
+	rec = api.do(t, "POST", "/api/v1/assets", mgr, map[string]any{"kind": "SIM", "inventory_no": "SIM-000001", "sim_no": "0089370011",
+		"phone_no": "+370 612 40118", "provider": "Telia", "plan": "Biz 10 GB", "non_return_value_cents": 2500, "connection_status": "ACTIVE"})
+	sim := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	rec = api.do(t, "POST", "/api/v1/assets/"+sim+"/assignments/preview", mgr, map[string]any{"employee_id": emp, "given_date": today})
+	formHash := decode[map[string]any](t, rec.Body.Bytes())["document_hash"].(string)
+	rec = api.do(t, "POST", "/api/v1/assets/"+sim+"/assignments", mgr, map[string]any{"employee_id": emp, "given_date": today,
+		"paper_form_signed": true, "form_hash": formHash})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("give = %d %s", rec.Code, rec.Body)
+	}
+	assignment := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+
+	// Give an order on paper.
+	rec = api.do(t, "POST", "/api/v1/catalogue", mgr, map[string]any{"name": "Gloves", "icon": "other", "accounting_price_cents": 250, "service_period_months": 1, "active": true})
+	gloves := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	rec = api.do(t, "POST", "/api/v1/orders", staff, map[string]any{"employee_id": emp, "lines": []map[string]any{{"catalogue_item_id": gloves, "quantity": 2}}})
+	orderID := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	// Its record downloads as a PDF while ORDERED too; only a given one is archived.
+	if rec := api.do(t, "GET", "/api/v1/orders/"+orderID+"/record.pdf", staff, nil); rec.Code != http.StatusOK || !bytes.HasPrefix(rec.Body.Bytes(), []byte("%PDF-")) {
+		t.Fatalf("ordered record.pdf = %d", rec.Code)
+	}
+	rec = api.do(t, "POST", "/api/v1/orders/"+orderID+"/confirm-paper", staff, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("confirm = %d %s", rec.Code, rec.Body)
+	}
+	given := decode[map[string]any](t, rec.Body.Bytes())
+	recordHash := given["document_hash"].(string)
+	number := given["receipt"].(map[string]any)["record_number"].(string)
+
+	// Each queued one job, keyed by its source.
+	jobs := func() map[string]string {
+		rows, err := owner.Query(ctx, `SELECT key, state FROM outbox.jobs WHERE kind = 'vault.archive'`)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out := map[string]string{}
+		for rows.Next() {
+			var k, s string
+			if err := rows.Scan(&k, &s); err != nil {
+				t.Fatal(err)
+			}
+			out[k] = s
+		}
+		return out
+	}
+	formKey, recordKey := "asset_assignment:"+assignment, "order:"+orderID
+	if got := jobs(); len(got) != 2 || got[formKey] != "pending" || got[recordKey] != "pending" {
+		t.Fatalf("jobs = %v", got)
+	}
+
+	// The worker's handler, as the worker runs it (as ppe_app).
+	handler := archiveHandler(api.svc.vault)
+	for _, key := range []string{formKey, recordKey} {
+		source, id, _ := strings.Cut(key, ":")
+		payload, _ := json.Marshal(map[string]any{"source": source, "id": id})
+		for range 2 {
+			if err := handler(ctx, outboxJob(payload)); err != nil {
+				t.Fatalf("archive %s: %v", key, err)
+			}
+		}
+	}
+	var docs, versions, events int
+	if err := owner.QueryRow(ctx, `SELECT
+		(SELECT count(*) FROM vault.documents WHERE origin = 'archived'),
+		(SELECT count(*) FROM vault.versions WHERE origin = 'archived'),
+		(SELECT count(*) FROM audit_events WHERE event = 'vault.document_archived' AND actor_user_id IS NULL)`).Scan(&docs, &versions, &events); err != nil {
+		t.Fatal(err)
+	}
+	if docs != 2 || versions != 2 || events != 2 {
+		t.Fatalf("%d archived documents, %d versions, %d events; want 2 of each", docs, versions, events)
+	}
+
+	// A manager sees both, linked and named as their sources; the form needs sim_cards.read too.
+	find := func(token, kind, id string) []map[string]any {
+		rec := api.do(t, "GET", "/api/v1/vault/by-subject/"+kind+"/"+id, token, nil)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("by subject = %d %s", rec.Code, rec.Body)
+		}
+		return decode[[]map[string]any](t, rec.Body.Bytes())
+	}
+	byEmployee := find(mgr, "employee", emp)
+	if len(byEmployee) != 2 {
+		t.Fatalf("the employee's documents = %v", byEmployee)
+	}
+	var formDoc, recordDoc string
+	for _, d := range byEmployee {
+		switch d["type"] {
+		case "asset.assignment_form":
+			formDoc = d["id"].(string)
+			if d["title"] != "SIM-000001 · "+today {
+				t.Errorf("form = %v", d)
+			}
+		case "order.record":
+			recordDoc = d["id"].(string)
+			if d["number"] != number || !strings.HasPrefix(d["title"].(string), number+" · ") {
+				t.Errorf("record = %v", d)
+			}
+		}
+	}
+	if formDoc == "" || recordDoc == "" {
+		t.Fatalf("documents = %v", byEmployee)
+	}
+	if got := find(mgr, "order", orderID); len(got) != 1 || got[0]["id"] != recordDoc {
+		t.Errorf("the order's documents = %v", got)
+	}
+	if got := find(mgr, "asset", sim); len(got) != 1 || got[0]["id"] != formDoc {
+		t.Errorf("the SIM card's documents = %v", got)
+	}
+	rec = api.do(t, "GET", "/api/v1/vault/documents/"+formDoc, mgr, nil)
+	d := decode[map[string]any](t, rec.Body.Bytes())
+	v := d["versions"].([]any)[0].(map[string]any)
+	if d["origin"] != "archived" || d["locked"] != true || v["origin"] != "archived" || v["document_hash"] != formHash || v["text_state"] != "pending" {
+		t.Errorf("form document = %v", d)
+	}
+	for _, l := range d["links"].([]any) {
+		if l.(map[string]any)["locked"] != true {
+			t.Errorf("link not locked: %v", l)
+		}
+	}
+	// No one changes them here.
+	if rec := api.do(t, "DELETE", "/api/v1/vault/documents/"+formDoc, mgr, nil); rec.Code == http.StatusNoContent || rec.Code == http.StatusOK {
+		t.Errorf("remove an archived form = %d", rec.Code)
+	}
+
+	// Verify: both match their domains' snapshots; their files are intact.
+	for doc, want := range map[string]string{formDoc: formHash, recordDoc: recordHash} {
+		rec := api.do(t, "GET", "/api/v1/vault/documents/"+doc+"/verify", mgr, nil)
+		got := decode[map[string]any](t, rec.Body.Bytes())
+		if rec.Code != http.StatusOK || got["matches"] != true || got["file_intact"] != true || got["source_hash"] != want || got["document_hash"] != want {
+			t.Errorf("verify %s = %d %v", doc, rec.Code, got)
+		}
+	}
+	// The archived record is the PDF the record draws as now (in the vault's
+	// zone here, UTC; the route draws in the organisation's, as the worker
+	// does in production).
+	rec = api.do(t, "GET", "/api/v1/vault/documents/"+recordDoc+"/versions/1/file", mgr, nil)
+	archived := rec.Body.Bytes()
+	r, err := api.svc.orders.Record(ctx, uuid.MustParse(orderID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again, err := recordpdf.Render(r, time.UTC); err != nil || !bytes.Equal(again, archived) {
+		t.Errorf("the record drawn again differs from the archived one (%v)", err)
+	}
+	rec = api.do(t, "GET", "/api/v1/orders/"+orderID+"/record.pdf", staff, nil)
+	if rec.Code != http.StatusOK || rec.Header().Get("Content-Disposition") != "attachment; filename=items-given-record-"+number+".pdf" ||
+		!bytes.HasPrefix(rec.Body.Bytes(), []byte("%PDF-")) {
+		t.Errorf("record.pdf = %d %v", rec.Code, rec.Header())
+	}
+	// An uploaded document has nothing to verify against.
+	rec = api.uploadDocument(t, "/api/v1/vault/documents", mgr, "c.pdf", []byte("%PDF-1.7\n1 0 obj\n%%EOF\n"),
+		map[string]any{"type": "employee.certificate", "title": "Darbas aukštyje", "links": []map[string]any{{"kind": "employee", "id": emp}}})
+	up := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	if rec := api.do(t, "GET", "/api/v1/vault/documents/"+up+"/verify", mgr, nil); rec.Code != http.StatusBadRequest {
+		t.Errorf("verify an upload = %d", rec.Code)
+	}
+
+	// The sweep and the backfill find nothing left; with nothing archived
+	// they would find both.
+	sw, err := sweepArchives(ctx, api.svc, time.Time{}, true)
+	if err != nil || sw.Forms != 0 || sw.Records != 0 {
+		t.Errorf("sweep = %+v, %v", sw, err)
+	}
+	var out bytes.Buffer
+	if err := archiveBackfill(ctx, api.svc, false, &out); err != nil || !strings.Contains(out.String(), "every stored assignment form and given order is archived") {
+		t.Errorf("backfill = %q, %v", out.String(), err)
+	}
+}
+
+// TestPostgresArchiveSweep: records whose archiving was never queued (given
+// before phase 6) are found by the backfill, queued with -commit once, and
+// only once.
+func TestPostgresArchiveSweep(t *testing.T) {
+	api, owner := newPostgresAPI(t)
+	ctx := context.Background()
+	_, mgr := api.userWith(t, role.KeyManager)
+	rec := api.do(t, "POST", "/api/v1/employees", mgr, map[string]any{"first_name": "Ona", "last_name": "K"})
+	emp := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	rec = api.do(t, "POST", "/api/v1/catalogue", mgr, map[string]any{"name": "Gloves", "icon": "other", "accounting_price_cents": 250, "service_period_months": 1, "active": true})
+	gloves := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	for range 2 {
+		rec = api.do(t, "POST", "/api/v1/orders", mgr, map[string]any{"employee_id": emp, "lines": []map[string]any{{"catalogue_item_id": gloves, "quantity": 1}}})
+		id := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+		if rec := api.do(t, "POST", "/api/v1/orders/"+id+"/confirm-paper", mgr, nil); rec.Code != http.StatusOK {
+			t.Fatalf("confirm = %d", rec.Code)
+		}
+	}
+	// As if given before this release: no job was queued.
+	if _, err := owner.Exec(ctx, `DELETE FROM outbox.jobs`); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := archiveBackfill(ctx, api.svc, false, &out); err != nil || !strings.Contains(out.String(), "0 assignment forms and 2 Items Given Records are not archived yet") {
+		t.Fatalf("backfill = %q, %v", out.String(), err)
+	}
+	count := func() (n int) {
+		if err := owner.QueryRow(ctx, `SELECT count(*) FROM outbox.jobs WHERE kind = 'vault.archive' AND state = 'pending'`).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	if n := count(); n != 0 {
+		t.Fatalf("%d jobs queued without -commit", n)
+	}
+	out.Reset()
+	if err := archiveBackfill(ctx, api.svc, true, &out); err != nil || !strings.Contains(out.String(), "2 Items Given Records queued") {
+		t.Fatalf("backfill -commit = %q, %v", out.String(), err)
+	}
+	if _, err := sweepArchives(ctx, api.svc, time.Time{}, true); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(); n != 2 {
+		t.Errorf("%d jobs after a second sweep, want 2", n)
+	}
+}
+
+// outboxJob is an archiving job as the worker claims it, on its first attempt.
+func outboxJob(payload []byte) outbox.Job {
+	return outbox.Job{ID: uuid.New(), Kind: vaultdoc.KindArchive, Payload: payload, State: "running", Attempts: 1, MaxAttempts: 5}
 }

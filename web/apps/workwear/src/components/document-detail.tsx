@@ -1,4 +1,4 @@
-import type { VaultDocument, VaultType, VaultVersion } from '@ppe/api-client'
+import type { VaultDocument, VaultType, VaultVerification, VaultVersion } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { RecordChanges } from '@ppe/audit'
 import { formatBytes } from '@ppe/backups'
@@ -13,7 +13,7 @@ import { formatDate, formatDay } from '@ppe/ui/lib/dates'
 import { saveFile } from '@ppe/ui/lib/save-file'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { useLoad } from '@ppe/ui/lib/use-load'
-import { FileDown, Lock, RotateCw, ShieldAlert } from 'lucide-react'
+import { FileDown, Lock, RotateCw, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { InfoTip } from '@ppe/ui/components/info-tip'
 import { useMemo, useState } from 'react'
 
@@ -23,7 +23,7 @@ import { todayIn } from '@/lib/assets'
 import { documentActions } from '@/lib/document-actions'
 import { useOpenKey } from '@/lib/open-sections'
 import { type Route, linkTo } from '@/lib/router'
-import { canReadAgain, displayTitle, expiry, linkRoute, textLine, typeLabel } from '@/lib/vault'
+import { canHold, canReadAgain, displayTitle, expiry, linkRoute, textLine, typeLabel, verifyLine } from '@/lib/vault'
 
 const link = linkVariants({ weight: 'medium', className: 'inline-flex min-h-11 items-center gap-1 md:min-h-0' })
 
@@ -130,7 +130,7 @@ function DocumentBody({
       onChanged()
     })
   const actions = documentActions(
-    { manage, locked: d.locked, downloading, hold: d.sealed },
+    { manage, locked: d.locked, downloading, hold: canHold(type, (p) => session.can(p as never)) },
     { download: () => void download(current), edit: () => setSheet('edit'), addVersion: () => setSheet('version'), remove, hold: () => setSheet('hold') },
   )
   // One object per opening, so the sheet starts afresh only when opened.
@@ -208,6 +208,8 @@ function DocumentBody({
         </Fact>
       </FactGrid>
 
+      {d.origin === 'archived' ? <VerifyLine id={d.id} /> : null}
+
       <DisclosureSection id={`versions-${d.id}`} title={t.vault.versions} count={d.versions.length} defaultOpen>
         <ul className="flex flex-col gap-3">
           {d.versions.map((v) => (
@@ -251,5 +253,39 @@ function DocumentBody({
       <AddVersionSheet document={sheet === 'version' ? d : null} types={types} onClose={() => setSheet(null)} onSaved={saved} />
       <HoldSheet document={sheet === 'hold' ? d : null} onClose={() => setSheet(null)} onSaved={saved} />
     </>
+  )
+}
+
+/**
+ * Verify on a document kept automatically: its record's hash computed again
+ * from what its context stored, and its file's, against what was kept.
+ */
+function VerifyLine({ id }: { id: string }) {
+  const { client } = useApi()
+  const action = useAction()
+  const [result, setResult] = useState<VaultVerification | null>(null)
+  const verify = () =>
+    void action.run(async () => {
+      setResult(await client.vault.verify(id))
+    })
+  const line = result ? verifyLine(result) : null
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="flex flex-wrap items-center gap-2">
+        <button type="button" className={`${link} cursor-pointer`} disabled={action.pending} onClick={verify}>
+          <ShieldCheck aria-hidden className="size-4" /> {action.pending ? t.vault.verifying : t.vault.verify}
+        </button>
+        <InfoTip section={t.vault.verify}>{t.vault.verifyInfo}</InfoTip>
+      </span>
+      <p role="status" className="flex flex-wrap items-center gap-2 text-sm empty:hidden">
+        {line ? (
+          <>
+            <Badge variant={line.ok ? 'secondary' : 'destructive'}>{line.label}</Badge>
+            <span>{line.text}</span>
+          </>
+        ) : null}
+      </p>
+      <ActionError error={action.error} />
+    </div>
   )
 }

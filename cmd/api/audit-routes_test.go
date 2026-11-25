@@ -55,7 +55,7 @@ func TestEveryDomainEventIsKnown(t *testing.T) {
 		asset.EventSIMCodesChanged, asset.EventSIMCodesShown,
 		vaultdoc.EventUploaded, vaultdoc.EventVersionAdded, vaultdoc.EventUpdated, vaultdoc.EventLinked,
 		vaultdoc.EventUnlinked, vaultdoc.EventRemoved, vaultdoc.EventOpened, vaultdoc.EventHoldSet, vaultdoc.EventHoldCleared,
-		vaultdoc.EventShredded, vaultdoc.EventGenerated,
+		vaultdoc.EventShredded, vaultdoc.EventGenerated, vaultdoc.EventArchived,
 		vaulttemplate.EventCreated, vaulttemplate.EventUpdated, vaulttemplate.EventDraftSaved, vaulttemplate.EventPublished, vaulttemplate.EventRetired,
 		settings.EventCompanyChanged, settings.EventSupplierChatChanged, settings.EventDefaultSIMProviderChanged, settings.EventSIMProvidersChanged,
 		aiusage.EventSettingsChanged, aiusage.EventKeySet, aiusage.EventKeyRemoved,
