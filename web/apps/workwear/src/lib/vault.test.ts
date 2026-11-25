@@ -2,7 +2,7 @@ import type { VaultDocument, VaultHit, VaultType } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
 import { vaultExportColumns } from './vault-export'
-import { canReadAgain, detailsOf, displayTitle, draftProblems, holdProblems, seesVault, expiry, fileProblem, linkLabels, linkRoute, textLine, typeLabel, uploadRefusal, uploadTypes, verifyLine, withLink, canHold, identityLines } from './vault'
+import { canReadAgain, detailsOf, displayTitle, numberBesideTitle, draftProblems, holdProblems, seesVault, expiry, fileProblem, linkLabels, linkRoute, textLine, typeLabel, uploadRefusal, uploadTypes, verifyLine, withLink, canHold, identityLines } from './vault'
 
 const type = (key: string, must: VaultType['must'], manage = 'vault.manage'): VaultType => ({
   key,
@@ -24,6 +24,11 @@ describe('sealed', () => {
   it('names a sealed document by its type in lists, whose title only its page shows', () => {
     expect(displayTitle({ title: '', type: 'employment.contract' })).toBe('Employment contract')
     expect(displayTitle({ title: 'Darbas aukštyje', type: 'employee.certificate' })).toBe('Darbas aukštyje')
+  })
+  it('shows a number beside the title only when the title does not already say it', () => {
+    expect(numberBesideTitle({ title: 'WE-000002 · 2026-09-29', type: 'order.record', number: 'WE-000002' })).toBeNull()
+    expect(numberBesideTitle({ title: '', type: 'employment.contract', number: 'EC-2026-0001' })).toBe('EC-2026-0001')
+    expect(numberBesideTitle({ title: 'Darbas aukštyje', type: 'employee.certificate', number: null })).toBeNull()
   })
   it('opens the vault to either reader', () => {
     expect(seesVault((p) => p === 'vault.employment.read')).toBe(true)

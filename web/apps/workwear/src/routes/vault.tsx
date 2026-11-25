@@ -24,7 +24,7 @@ import { DocumentDetailsSheet, type DocumentSheet } from '@/components/document-
 import { t } from '@/i18n'
 import { todayIn } from '@/lib/assets'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
-import { displayTitle, expiry, identityLines, linkLabels, typeLabel, uploadTypes } from '@/lib/vault'
+import { displayTitle, expiry, numberBesideTitle, identityLines, linkLabels, typeLabel, uploadTypes } from '@/lib/vault'
 import { vaultExportColumns } from '@/lib/vault-export'
 
 /** A document's key in the selection; a module constant, so the hook's memos hold. */
@@ -229,7 +229,7 @@ export function Vault({ selected, navigate }: { selected: string | undefined; na
                         {displayTitle(d)}
                       </a>
                       {d.sealed ? <Badge variant="outline" className="ml-2 align-middle">{t.vault.sealed}</Badge> : null}
-                      {d.number ? <span className="font-normal text-muted-foreground"> · {d.number}</span> : null}
+                      {numberBesideTitle(d) ? <span className="font-normal text-muted-foreground"> · {numberBesideTitle(d)}</span> : null}
                     </TableCell>
                     <TableCell className="stacked:order-3 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">{typeLabel(d.type)}</TableCell>
                     {beside ? null : (

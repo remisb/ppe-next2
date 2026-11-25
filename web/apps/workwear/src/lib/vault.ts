@@ -28,6 +28,15 @@ export function displayTitle(d: { title: string; type: string }): string {
   return d.title || typeLabel(d.type)
 }
 
+/**
+ * The number a list shows after the title, unless the title already says it:
+ * a kept Items Given Record is titled by its record number ("WE-000002 · 2026-09-29").
+ */
+export function numberBesideTitle(d: { title: string; type: string; number?: string | null | undefined }): string | null {
+  if (!d.number) return null
+  return displayTitle(d).includes(d.number) ? null : d.number
+}
+
 /** Whether the user may open the Document Vault: its own documents' readers, or the employment documents'. */
 export function seesVault(can: (p: Permission) => boolean): boolean {
   return can('vault.read') || can('vault.employment.read')
