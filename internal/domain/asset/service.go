@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/remisb/ppe-next2/internal/audit"
-	"github.com/remisb/ppe-next2/internal/files"
 )
 
 // Audit event names and entity type written by this service.
@@ -43,7 +42,7 @@ const (
 // Changeable.
 type Service struct {
 	repo   Repository
-	files  files.Store
+	forms  SignedForms
 	mailer Mailer
 	sealer Sealer
 	now    func() time.Time
@@ -63,7 +62,7 @@ func WithLocation(loc *time.Location) Option { return func(s *Service) { s.loc =
 
 // NewService is a Service over repo: the clock is UTC to the microsecond (as
 // Postgres keeps it), IDs are random UUIDs and the organisation timezone UTC.
-// Without WithFiles, WithMailer or WithSealer, signed copies, the provider
+// Without WithSignedForms, WithMailer or WithSealer, signed copies, the provider
 // emails or PIN and PUK are unavailable.
 func NewService(repo Repository, opts ...Option) *Service {
 	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New, loc: time.UTC}
@@ -275,9 +274,15 @@ func (s *Service) Get(ctx context.Context, id uuid.UUID) (Detail, error) {
 	if err != nil {
 		return Detail{}, err
 	}
+	if err := s.copiesOf(ctx, as); err != nil {
+		return Detail{}, err
+	}
 	d := Detail{View: s.view(r), Assignments: make([]AssignmentView, len(as))}
 	for i, a := range as {
 		d.Assignments[i] = s.assignmentView(a)
+		if d.Open != nil && d.Open.ID == a.ID {
+			d.Open.SignedCopyUploaded = a.SignedCopyUploaded
+		}
 	}
 	return d, nil
 }
@@ -291,13 +296,17 @@ func (s *Service) List(ctx context.Context, p ListParams, see Sight) (ListResult
 	if err := see.Check(f.Kind); err != nil {
 		return ListResult{}, err
 	}
+	held, err := s.withHolding(ctx, &f)
+	if err != nil {
+		return ListResult{}, err
+	}
 	rs, total, err := s.repo.List(ctx, f)
 	if err != nil {
 		return ListResult{}, err
 	}
 	out := ListResult{Assets: make([]View, len(rs)), Page: page, PageSize: size, Total: total}
 	for i, r := range rs {
-		out.Assets[i] = s.view(r)
+		out.Assets[i] = s.signedView(r, held)
 	}
 	return out, nil
 }
@@ -315,6 +324,10 @@ func (s *Service) Report(ctx context.Context, p ListParams, see Sight) (Report, 
 		return Report{}, err
 	}
 	f.Limit, f.Offset = maxReportRows, 0
+	held, err := s.withHolding(ctx, &f)
+	if err != nil {
+		return Report{}, err
+	}
 	rs, total, err := s.repo.List(ctx, f)
 	if err != nil {
 		return Report{}, err
@@ -324,7 +337,7 @@ func (s *Service) Report(ctx context.Context, p ListParams, see Sight) (Report, 
 	}
 	out := Report{Filter: f, Assets: make([]View, len(rs)), PrintedAt: s.now().In(s.loc)}
 	for i, r := range rs {
-		out.Assets[i] = s.view(r)
+		out.Assets[i] = s.signedView(r, held)
 	}
 	return out, nil
 }
@@ -351,9 +364,13 @@ func (s *Service) ByNumber(ctx context.Context, q string, see Sight) ([]View, er
 	if err != nil {
 		return nil, err
 	}
+	held, err := s.holding(ctx)
+	if err != nil {
+		return nil, err
+	}
 	out := make([]View, len(rs))
 	for i, r := range rs {
-		out[i] = s.view(r)
+		out[i] = s.signedView(r, held)
 	}
 	return out, nil
 }
@@ -365,9 +382,14 @@ func (s *Service) ByEmployee(ctx context.Context, employeeID uuid.UUID, see Sigh
 	if err != nil {
 		return nil, err
 	}
+	held, err := s.holding(ctx)
+	if err != nil {
+		return nil, err
+	}
 	out := make([]HeldView, 0, len(hs))
 	for _, h := range hs {
 		if see.Sees(h.Asset.Kind) {
+			h.Assignment.SignedCopyUploaded = held[h.Assignment.ID]
 			out = append(out, HeldView{AssignmentView: s.assignmentView(h.Assignment), Asset: h.Asset})
 		}
 	}
@@ -454,6 +476,9 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, p Params, actor uuid
 	if err != nil {
 		return View{}, s.duplicate(ctx, err, proposed)
 	}
+	if err := s.markSigned(ctx, r.Open); err != nil {
+		return View{}, err
+	}
 	return s.view(r), nil
 }
 
@@ -485,6 +510,9 @@ func (s *Service) ChangeStatus(ctx context.Context, id uuid.UUID, status string,
 		return cur, []audit.Event{ev}, nil
 	})
 	if err != nil {
+		return View{}, err
+	}
+	if err := s.markSigned(ctx, r.Open); err != nil {
 		return View{}, err
 	}
 	return s.view(r), nil
@@ -689,6 +717,9 @@ func (s *Service) Return(ctx context.Context, id uuid.UUID, p ReturnParams, acto
 	if err != nil {
 		return AssignmentView{}, err
 	}
+	if err := s.markSigned(ctx, &a); err != nil {
+		return AssignmentView{}, err
+	}
 	return s.assignmentView(a), nil
 }
 
@@ -732,6 +763,9 @@ func (s *Service) MarkNotReturned(ctx context.Context, id uuid.UUID, p NotReturn
 		return next, []audit.Event{ev}, nil
 	})
 	if err != nil {
+		return AssignmentView{}, err
+	}
+	if err := s.markSigned(ctx, &a); err != nil {
 		return AssignmentView{}, err
 	}
 	return s.assignmentView(a), nil

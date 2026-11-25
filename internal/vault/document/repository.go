@@ -73,6 +73,17 @@ type Repository interface {
 	// QueueUnread writes a job for every live version whose text is pending
 	// or being read (and failed, when failed); how many were written.
 	QueueUnread(ctx context.Context, failed bool, at time.Time) (int64, error)
+	// SourceDocument is the live document of source kind's record id, or ErrNotFound.
+	SourceDocument(ctx context.Context, kind string, id uuid.UUID) (uuid.UUID, error)
+	// AddSourced makes d (with its links) unless its source has a document,
+	// locks the source's document, applies m and writes the version and the
+	// events, in one transaction.
+	AddSourced(ctx context.Context, d Document, m VersionMutation) (Document, error)
+	// SourcedFiles are the versions of the live documents of source kind's
+	// records ids, by source and newest first.
+	SourcedFiles(ctx context.Context, kind string, ids []uuid.UUID) ([]SourcedFile, error)
+	// Sources are the records of source kind that have a live document.
+	Sources(ctx context.Context, kind string) ([]uuid.UUID, error)
 }
 
 // Candidate is a sealed document as the retention sees it.

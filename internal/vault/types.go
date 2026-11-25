@@ -117,7 +117,18 @@ type Type struct {
 	Retention Retention `json:"retention"`
 	// NumberPrefix starts a generated document's number: EC-2026-0001.
 	NumberPrefix string `json:"number_prefix,omitempty"`
+	// Source is the source kind that alone adds documents of the type (its
+	// context, through a port); none for the ones users add here. Manage is
+	// then empty: no one changes them in the vault.
+	Source string `json:"source,omitempty"`
 }
+
+// The signed copies' type and source (phase 5): the source's records are
+// Company Assets' assignments. Migration 0065 writes the same words.
+const (
+	SignedFormType   = "asset.signed_form"
+	SourceSignedForm = "asset_signed_form"
+)
 
 // Allows reports whether a document of t may come to be by o.
 func (t Type) Allows(o Origin) bool { return slices.Contains(t.Origins, o) }
@@ -159,6 +170,15 @@ var types = []Type{
 		Read: PermRead, Manage: PermManage, Links: []SubjectKind{Employee, Company, Asset, Supplier},
 		Origins: []Origin{Uploaded}, FileTypes: uploads, MaxBytes: MaxUploadBytes, Dated: true, Expiring: true,
 		Retention: Retention{Rule: Keep},
+	},
+	// Signed copies of assignment forms (phase 5): one document per assignment,
+	// each upload a version, added by Company Assets alone (Upload Signed Form,
+	// with its permissions), so no one manages them here.
+	{
+		Key: SignedFormType, Group: GroupAssets, Words: "signed form assignment pasirašyta forma perdavimo aktas подписанная форма акт передачи",
+		Read: PermRead, Links: []SubjectKind{Asset, Employee}, Must: []SubjectKind{Asset, Employee},
+		Origins: []Origin{Uploaded}, FileTypes: uploads, MaxBytes: 10 << 20, Dated: true,
+		Retention: Retention{Rule: Keep}, Source: SourceSignedForm,
 	},
 	// Employment documents (phase 2): sealed, for the Employment Documents role
 	// alone, kept for a period after employment ends, then shredded.
@@ -210,7 +230,7 @@ func Permissions() []string {
 	var out []string
 	for _, t := range types {
 		for _, p := range []string{t.Read, t.Manage} {
-			if !slices.Contains(out, p) {
+			if p != "" && !slices.Contains(out, p) {
 				out = append(out, p)
 			}
 		}

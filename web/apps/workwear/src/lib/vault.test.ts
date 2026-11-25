@@ -103,9 +103,11 @@ describe('the draft', () => {
     expect(detailsOf(doc)).toEqual({ title: 'x', document_date: null, valid_from: null, valid_until: '2027-01-01', links: [{ kind: 'employee', id: 'e1' }] })
   })
   it('offers the types the reader may add and whose links can be made here', () => {
-    const types = [type('employee.certificate', ['employee']), type('asset.document', ['asset']), type('other', []), type('secret', [], 'x.manage')]
-    const can = (p: string) => p === 'vault.manage'
+    const signed = { ...type('asset.signed_form', ['asset', 'employee'], ''), source: 'asset_signed_form' }
+    const types = [type('employee.certificate', ['employee']), type('asset.document', ['asset']), type('other', []), type('secret', [], 'x.manage'), signed]
+    const can = (p: string) => p === 'vault.manage' || p === ''
     expect(uploadTypes(types, can, []).map((t) => t.key)).toEqual(['employee.certificate', 'other'])
+    // A signed form is added by Company Assets alone, never here.
     expect(uploadTypes(types, can, ['asset']).map((t) => t.key)).toEqual(['employee.certificate', 'asset.document', 'other'])
   })
 })

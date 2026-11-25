@@ -129,9 +129,12 @@ export function draftProblems(
  * The types Upload Document… offers where it was opened: those the reader may
  * add, whose required links it can make there. The sheet links employees
  * itself; any other required kind must be given by the place (an asset's page).
+ * A type with a source (signed forms) is added by its own context alone.
  */
 export function uploadTypes(types: readonly VaultType[], can: (p: string) => boolean, given: readonly VaultSubjectKind[]): VaultType[] {
-  return types.filter((ty) => ty.origins.includes('uploaded') && can(ty.manage) && ty.must.every((k) => k === 'employee' || given.includes(k)))
+  return types.filter(
+    (ty) => !ty.source && ty.manage !== '' && ty.origins.includes('uploaded') && can(ty.manage) && ty.must.every((k) => k === 'employee' || given.includes(k)),
+  )
 }
 
 /** What reading a version's file for search made of it: its state, how it was read, or why it was not. */

@@ -1099,6 +1099,9 @@ v1.0, 2026-10-08); § references in this section point to it, not to the manual.
   copy: the newest is shown, the earlier ones stay. Only an assignment with a form has one.
 - **UI:** **Upload Signed Form**, **Signed Copy Uploaded**, **Signed Copy Missing**; the
   register's **Documents** filter finds the missing ones.
+- **Code:** kept in the Document Vault (phase 5): an assignment's copies are one document of the
+  type **Signed form** (`asset.signed_form`), each copy a version; `SignedForms` in
+  `internal/domain/asset`. In the vault it is listed as **Signed form**, never "attachment".
 
 ### Blocking email and Activation email
 - **Brief:** an email to copy into the user's own e-mail, asking the provider to block a SIM
@@ -1716,6 +1719,7 @@ Document Vault (decided, not built; ADR 0008):
 | Employment documents / Employment Documents (role) | Darbo dokumentai / Darbo dokumentai | Трудовые документы / Трудовые документы |
 | Employment contract / Annex / NDA | Darbo sutartis / Priedas / Konfidencialumo sutartis | Трудовой договор / Приложение / Соглашение о неразглашении |
 | Certificate / Training / Invoice / Other | Pažymėjimas / Mokymai / Sąskaita faktūra / Kita | Сертификат / Обучение / Счёт-фактура / Другое |
+| Signed form (document type: an assignment's signed copies) | Pasirašytas aktas | Подписанный акт |
 | Sealed / Kept until / Valid until | Užšifruota / Saugoma iki / Galioja iki | Зашифровано / Хранится до / Действует до |
 | Document Templates / Document template | Dokumentų šablonai / Dokumento šablonas | Шаблоны документов / Шаблон документа |
 | Draft / Published / Retired; Save Draft / Publish / Retire | Juodraštis / Paskelbta / Nebenaudojama; Išsaugoti juodraštį / Paskelbti / Nebenaudoti | Черновик / Опубликовано / Выведено из работы; Сохранить черновик / Опубликовать / Вывести из работы |

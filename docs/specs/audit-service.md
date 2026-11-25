@@ -239,7 +239,8 @@ an earlier time.
   - it may: SELECT, INSERT, UPDATE and DELETE the business tables; INSERT and SELECT only
     on the append-only tables (`grants.sql`'s REVOKE line: `audit_events`, `auth_events`,
     `audit_seals`, `audit_seal_stamps`, `audit_purges`, `order_lines`, `asset_numbers`,
-    `asset_signed_copies`, `ai_usage`);
+    `ai_usage`, the vault's versions and files); SELECT only on `asset_signed_copies`, frozen
+    since signed copies moved into the vault (migration 0065);
   - it may not: truncate, alter, or create anything.
 - The owner runs the migrations, the backups and the purge functions.
 - `grants.sql` is applied after the migrations on **every** run. That keeps it right for

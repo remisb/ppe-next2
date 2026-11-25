@@ -88,6 +88,10 @@ this bucket.
 
 A database restore does not touch the bucket. Signed copies uploaded after the backup being
 restored stay in the bucket, named by no row; nothing reads them, and they can be left there.
+Since the Document Vault's phase 5 (migration 0065) signed copies are vault documents: those
+moved keep their `signed-copies/…` keys, newer ones are under `vault/…`, both in this bucket.
+After restoring a backup older than 0065, `make prod-up` runs the migration again, and
+`make prod-vault-backfill` checks that every copy's file is in the bucket with its hash.
 
 ### The SIM codes key (`API_SIM_CODES_KEY`)
 

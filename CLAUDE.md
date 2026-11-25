@@ -70,6 +70,14 @@ compose service `docworker`, read-only, `API_WORKER_*`): `vault.extract_text` re
 `pdftotext`, else `pdftoppm` and OCR) for search, a sealed one's as digit-free words only; Read Again on a version, `api -vault-reindex`,
 System's **Worker** card (`GET /api/v1/system/worker`), the Overview's `worker_silent`/`jobs_failed`, and documents in ⌘K. The tools are
 not needed locally: their test is `-tags tools` (CI, or a Debian container); e2e runs no worker. Postgres tests empty `outbox.jobs` too.
+Phase 5 (migration 0065): Company Assets' **signed copies are kept in the vault**, through the `SignedForms` port
+(`asset/signed_copy.go`: `Add`, `Of`, `Open`, `Holding`; adapter `assetSignedForms` in `cmd/api/wire_vault.go`): one `asset.signed_form`
+document per assignment (source kind `asset_signed_form`, a type with a `Source` and no `manage`: added by its source alone), each copy
+a version whose id is the copy's, the asset's own `asset.signed_copy_uploaded` event recorded in the vault's transaction; routes, JSON
+and screens unchanged. The migration's `vault.move_signed_copies()` moved every old row (same ids, keys, hashes; no object copied);
+`asset_signed_copies` is frozen (`ppe_app` only reads it) until a later release drops it; `api -vault-backfill [-commit]`
+(`make prod-vault-backfill`) checks the move and the files. The asset repository no longer knows whether a copy exists: the
+service fills `signed_copy_uploaded` from `Holding` and passes it to the register's `signed_copy=missing` filter.
 **Mail templates** (`internal/domain/mailtemplate`, migration 0040, spec
 `docs/specs/mail-template-service.md`): one template per use case fixed in code (`sim.activation`,
 `sim.blocking`), To/Cc/Subject/Message with `{{field}}` placeholders, edited on Administration's
@@ -448,7 +456,7 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   ADR 0008 makes the Document Vault: typed documents with versions and links,
   sealed Employment documents with retention and shredding, templates made into locked PDFs,
   Postgres search, and a worker on an outbox (specs `vault-service.md`,
-  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 to 4 are built.
+  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 to 5 are built.
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and

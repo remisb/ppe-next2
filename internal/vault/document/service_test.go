@@ -252,6 +252,55 @@ func (m *memRepo) ReadAgain(_ context.Context, version uuid.UUID, _ time.Time) e
 
 func (m *memRepo) QueueUnread(context.Context, bool, time.Time) (int64, error) { return 0, nil }
 
+func (m *memRepo) SourceDocument(_ context.Context, kind string, id uuid.UUID) (uuid.UUID, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, d := range m.docs {
+		if d.DeletedAt == nil && d.SourceKind != nil && *d.SourceKind == kind && *d.SourceID == id {
+			return d.ID, nil
+		}
+	}
+	return uuid.Nil, ErrNotFound
+}
+
+func (m *memRepo) AddSourced(ctx context.Context, d Document, mut VersionMutation) (Document, error) {
+	id, err := m.SourceDocument(ctx, *d.SourceKind, *d.SourceID)
+	if errors.Is(err, ErrNotFound) {
+		d.Locked, d.Versions, d.Links = true, nil, slices.Clone(d.Links)
+		m.mu.Lock()
+		m.docs[d.ID] = d
+		m.mu.Unlock()
+		id = d.ID
+	}
+	return m.AddVersion(ctx, id, mut)
+}
+
+func (m *memRepo) SourcedFiles(_ context.Context, kind string, ids []uuid.UUID) ([]SourcedFile, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]SourcedFile, 0)
+	for _, d := range m.docs {
+		if d.DeletedAt == nil && d.SourceKind != nil && *d.SourceKind == kind && slices.Contains(ids, *d.SourceID) {
+			for _, v := range d.Versions {
+				out = append(out, SourcedFile{SourceID: *d.SourceID, File: v.File, CreatedAt: v.CreatedAt, CreatedByUserID: v.CreatedByUserID})
+			}
+		}
+	}
+	return out, nil
+}
+
+func (m *memRepo) Sources(_ context.Context, kind string) ([]uuid.UUID, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []uuid.UUID
+	for _, d := range m.docs {
+		if d.DeletedAt == nil && d.SourceKind != nil && *d.SourceKind == kind {
+			out = append(out, *d.SourceID)
+		}
+	}
+	return out, nil
+}
+
 // eventNames are the recorded events' names in order.
 func (m *memRepo) eventNames() []string {
 	var out []string
@@ -584,7 +633,7 @@ func TestTypesAreTheReadersOnly(t *testing.T) {
 	if got := svc.Types(Reader{Perms: []string{"equipment.read"}}); len(got) != 0 {
 		t.Errorf("without vault.read: %v", got)
 	}
-	if got := svc.Types(reader); len(got) != 5 || slices.ContainsFunc(got, func(ty vault.Type) bool { return ty.Sealed }) {
+	if got := svc.Types(reader); len(got) != 6 || slices.ContainsFunc(got, func(ty vault.Type) bool { return ty.Sealed }) {
 		t.Errorf("with vault.read: %d types", len(got))
 	}
 	if got := svc.Types(Reader{Perms: []string{vault.PermRead, vault.PermEmploymentRead}}); len(got) != len(vault.Types()) {

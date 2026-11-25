@@ -3,7 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
@@ -316,4 +320,110 @@ func TestPostgresVaultReadTextHTTP(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), `"pending":1`) || strings.Contains(rec.Body.String(), `"pending":2`) {
 		t.Fatalf("worker after read again = %s", rec.Body)
 	}
+}
+
+// TestPostgresSignedCopiesMove: migration 0065's vault.move_signed_copies, as
+// -vault-backfill -commit runs it for copies the previous release wrote: each
+// assignment's copies become one asset.signed_form document, each copy a
+// version and file with its own id, key, hash and uploader, linked, read text
+// pending and queued; a second run moves nothing, and Company Assets reads and
+// opens them through the vault.
+func TestPostgresSignedCopiesMove(t *testing.T) {
+	api, owner := newPostgresAPI(t)
+	ctx := context.Background()
+	_, mgr := api.userWith(t, role.KeyManager)
+	rec := api.do(t, "POST", "/api/v1/employees", mgr, map[string]any{"first_name": "Jonas", "last_name": "Petraitis"})
+	empID := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	rec = api.do(t, "POST", "/api/v1/assets", mgr, map[string]any{"kind": "SIM", "inventory_no": "SIM-000001", "sim_no": "0089370011",
+		"phone_no": "+370 612 40118", "provider": "Telia", "plan": "Biz 10 GB", "non_return_value_cents": 2500, "connection_status": "ACTIVE"})
+	assetID := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+	rec = api.do(t, "POST", "/api/v1/assets/"+assetID+"/assignments/preview", mgr, map[string]any{"employee_id": empID, "given_date": "2026-10-09"})
+	rec = api.do(t, "POST", "/api/v1/assets/"+assetID+"/assignments", mgr, map[string]any{"employee_id": empID, "given_date": "2026-10-09",
+		"paper_form_signed": true, "form_hash": decode[map[string]any](t, rec.Body.Bytes())["document_hash"]})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("give = %d %s", rec.Code, rec.Body)
+	}
+	assignment := decode[map[string]any](t, rec.Body.Bytes())["id"].(string)
+
+	// Two copies as the previous release kept them, written by the owner
+	// (ppe_app may no longer insert them), their files in the store.
+	type legacy struct{ id, key, sha string }
+	var copies []legacy
+	for i, body := range []string{"%PDF-1.7 first\n%%EOF\n", "%PDF-1.7 second\n%%EOF\n"} {
+		c := legacy{id: uuid.NewString(), sha: sha256Hex([]byte(body))}
+		c.key = "signed-copies/" + assignment + "/" + c.id + ".pdf"
+		if err := api.files.Put(ctx, c.key, strings.NewReader(body), int64(len(body)), "application/pdf"); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := owner.Exec(ctx, `INSERT INTO asset_signed_copies (id, assignment_id, object_key, file_name, content_type,
+			size_bytes, sha256, uploaded_at, uploaded_by_user_id) VALUES ($1, $2, $3, $4, 'application/pdf', $5, $6, $7, $8)`,
+			c.id, assignment, c.key, fmt.Sprintf("scan %d.pdf", i+1), len(body), c.sha,
+			time.Date(2026, 10, 10+i, 9, 0, 0, 0, time.UTC), api.admin.ID); err != nil {
+			t.Fatal(err)
+		}
+		copies = append(copies, c)
+	}
+	var out bytes.Buffer
+	if err := vaultBackfill(ctx, owner, api.files, false, &out); err != nil || !strings.Contains(out.String(), "2 signed copies are not in the vault yet") {
+		t.Fatalf("check = %v\n%s", err, out.String())
+	}
+	if err := vaultBackfill(ctx, owner, api.files, true, &out); err != nil || !strings.Contains(out.String(), "2 signed copies moved") ||
+		!strings.Contains(out.String(), "2 signed form files checked") {
+		t.Fatalf("commit = %v\n%s", err, out.String())
+	}
+
+	var title, requires, versions, files, labels, texts string
+	var jobs int
+	if err := owner.QueryRow(ctx, `SELECT d.title, array_to_string(d.requires, ','),
+		(SELECT string_agg(v.number || ':' || v.origin || ':' || v.id || ':' || v.document_hash, ',' ORDER BY v.number) FROM vault.versions v WHERE v.document_id = d.id),
+		(SELECT string_agg(f.id || ':' || f.object_key || ':' || f.file_name, ',' ORDER BY f.created_at) FROM vault.files f
+		 JOIN vault.versions v ON v.id = f.version_id WHERE v.document_id = d.id),
+		(SELECT string_agg(l.subject_kind || ':' || l.label || ':' || l.locked, ',' ORDER BY l.subject_kind) FROM vault.links l WHERE l.document_id = d.id),
+		(SELECT string_agg(t.state, ',') FROM vault.version_text t JOIN vault.versions v ON v.id = t.version_id WHERE v.document_id = d.id),
+		(SELECT count(*) FROM outbox.jobs j WHERE j.kind = 'vault.extract_text' AND j.state = 'pending')
+		FROM vault.documents d WHERE d.source_kind = 'asset_signed_form' AND d.source_id = $1`, assignment).Scan(
+		&title, &requires, &versions, &files, &labels, &texts, &jobs); err != nil {
+		t.Fatal(err)
+	}
+	wantVersions := "1:original:" + copies[0].id + ":" + copies[0].sha + ",2:added:" + copies[1].id + ":" + copies[1].sha
+	wantFiles := copies[0].id + ":" + copies[0].key + ":scan 1.pdf," + copies[1].id + ":" + copies[1].key + ":scan 2.pdf"
+	if title != "SIM-000001 · 2026-10-09" || requires != "sim_cards.read,vault.read" || versions != wantVersions || files != wantFiles ||
+		labels != "asset:SIM-000001 +370 612 40118:true,employee:Jonas Petraitis:true" || texts != "pending,pending" || jobs != 2 {
+		t.Errorf("moved: title %q, requires %s\nversions %s\nfiles %s\nlinks %s, texts %s, %d jobs", title, requires, versions, files, labels, texts, jobs)
+	}
+	if err := vaultBackfill(ctx, owner, api.files, true, &out); err != nil || !strings.Contains(out.String(), "every signed copy is in the vault") {
+		t.Errorf("again = %v\n%s", err, out.String())
+	}
+
+	// Company Assets reads them through the vault, and the next upload is version 3.
+	rec = api.do(t, "GET", "/api/v1/assets/"+assetID, mgr, nil)
+	got := decode[map[string]any](t, rec.Body.Bytes())["assignments"].([]any)[0].(map[string]any)["signed_copies"].([]any)
+	if len(got) != 2 || got[0].(map[string]any)["id"] != copies[1].id || got[1].(map[string]any)["uploaded_by_name"] != "Admin" {
+		t.Errorf("copies = %v", got)
+	}
+	rec = api.do(t, "GET", "/api/v1/assets/"+assetID+"/assignments/"+assignment+"/signed-copies/"+copies[0].id, mgr, nil)
+	if rec.Code != http.StatusOK || rec.Body.String() != "%PDF-1.7 first\n%%EOF\n" {
+		t.Errorf("download = %d %q", rec.Code, rec.Body)
+	}
+	if rec := api.upload(t, "/api/v1/assets/"+assetID+"/assignments/"+assignment+"/signed-copies", mgr, "third.pdf", []byte("%PDF-1.7 third")); rec.Code != http.StatusCreated {
+		t.Fatalf("upload = %d %s", rec.Code, rec.Body)
+	}
+	var n int
+	if err := owner.QueryRow(ctx, `SELECT max(v.number) FROM vault.versions v JOIN vault.documents d ON d.id = v.document_id
+		WHERE d.source_id = $1`, assignment).Scan(&n); err != nil || n != 3 {
+		t.Errorf("newest version = %d, %v", n, err)
+	}
+
+	// A copy whose stored file changed is reported.
+	if err := api.files.Put(ctx, copies[0].key, strings.NewReader("%PDF-1.7 other"), 14, "application/pdf"); err != nil {
+		t.Fatal(err)
+	}
+	if err := vaultBackfill(ctx, owner, api.files, false, &out); err == nil || !strings.Contains(err.Error(), copies[0].id) {
+		t.Errorf("a changed file = %v", err)
+	}
+}
+
+func sha256Hex(b []byte) string {
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
 }

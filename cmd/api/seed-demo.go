@@ -21,6 +21,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
+	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
 )
 
 // seedClock is the clock every seeding service reads. Moving it back lets the
@@ -86,8 +87,12 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 			Catalogue: orderCatalogue{items},
 			ItemSets:  orderItemSets{sets},
 		}, order.WithLocation(loc), order.WithConfirmTTL(cfg.ConfirmTTL), order.WithClock(clock.now))
-		assets = asset.NewService(asset.NewPostgresRepository(pool), append([]asset.Option{asset.WithLocation(loc), asset.WithClock(clock.now), asset.WithFiles(store)}, assetOpts...)...)
+		assets = asset.NewService(asset.NewPostgresRepository(pool), append([]asset.Option{asset.WithLocation(loc), asset.WithClock(clock.now)}, assetOpts...)...)
 	)
+
+	// Signed copies are kept in the vault, which names their links itself.
+	asset.WithSignedForms(assetSignedForms{vaultdoc.NewService(vaultdoc.NewPostgresRepository(pool), vaultSubjects{},
+		vaultdoc.WithFiles(store), vaultdoc.WithClock(clock.now))})(assets)
 
 	existingItems, err := items.List(ctx)
 	if err != nil {

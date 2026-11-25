@@ -117,6 +117,9 @@ func TestConfigValidate(t *testing.T) {
 	if (config{DBDSN: "postgres://x", DBMaxConns: 1, ImportCommit: true, SeedUserEmail: "a@example.com"}).validate() == nil {
 		t.Error("-commit without -import-sims should fail")
 	}
+	if err := (config{DBDSN: "postgres://x", DBMaxConns: 1, VaultBackfill: true, ImportCommit: true}).validate(); err != nil {
+		t.Errorf("-vault-backfill -commit needs only the database: %v", err)
+	}
 	if (config{DBMaxConns: 1, VerifyAudit: true}).validate() == nil {
 		t.Error("-verify-audit without API_DB_DSN should fail")
 	}

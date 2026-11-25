@@ -141,7 +141,7 @@ const en = {
     system: 'System',
   } satisfies Record<KnownAuditSource, string>,
   /** Document Vault's types (vault.Types()); one this app does not know shows its key. */
-  vaultTypes: { 'employee.certificate': 'Certificate', 'employee.training': 'Training', invoice: 'Invoice', 'asset.document': 'Asset document', other: 'Other', 'employment.contract': 'Employment contract', 'employment.annex': 'Annex', 'employment.nda': 'NDA', 'employment.other': 'Other employment document' } as Record<string, string>,
+  vaultTypes: { 'employee.certificate': 'Certificate', 'employee.training': 'Training', invoice: 'Invoice', 'asset.document': 'Asset document', 'asset.signed_form': 'Signed form', other: 'Other', 'employment.contract': 'Employment contract', 'employment.annex': 'Annex', 'employment.nda': 'NDA', 'employment.other': 'Other employment document' } as Record<string, string>,
   fields: {
     first_name: 'First name',
     last_name: 'Last name',
@@ -496,7 +496,7 @@ const lt: AuditText = {
     system: 'Sistema',
   },
   /** Document Vault's types (vault.Types()); one this app does not know shows its key. */
-  vaultTypes: { 'employee.certificate': 'Pažymėjimas', 'employee.training': 'Mokymai', invoice: 'Sąskaita faktūra', 'asset.document': 'Turto dokumentas', other: 'Kita', 'employment.contract': 'Darbo sutartis', 'employment.annex': 'Priedas', 'employment.nda': 'Konfidencialumo sutartis', 'employment.other': 'Kitas darbo dokumentas' } as Record<string, string>,
+  vaultTypes: { 'employee.certificate': 'Pažymėjimas', 'employee.training': 'Mokymai', invoice: 'Sąskaita faktūra', 'asset.document': 'Turto dokumentas', 'asset.signed_form': 'Pasirašytas aktas', other: 'Kita', 'employment.contract': 'Darbo sutartis', 'employment.annex': 'Priedas', 'employment.nda': 'Konfidencialumo sutartis', 'employment.other': 'Kitas darbo dokumentas' } as Record<string, string>,
   fields: {
     first_name: 'Vardas',
     last_name: 'Pavardė',
@@ -841,7 +841,7 @@ const ru: AuditText = {
     system: 'Система',
   },
   /** Document Vault's types (vault.Types()); one this app does not know shows its key. */
-  vaultTypes: { 'employee.certificate': 'Сертификат', 'employee.training': 'Обучение', invoice: 'Счёт-фактура', 'asset.document': 'Документ на имущество', other: 'Другое', 'employment.contract': 'Трудовой договор', 'employment.annex': 'Приложение', 'employment.nda': 'Соглашение о неразглашении', 'employment.other': 'Другой трудовой документ' } as Record<string, string>,
+  vaultTypes: { 'employee.certificate': 'Сертификат', 'employee.training': 'Обучение', invoice: 'Счёт-фактура', 'asset.document': 'Документ на имущество', 'asset.signed_form': 'Подписанный акт', other: 'Другое', 'employment.contract': 'Трудовой договор', 'employment.annex': 'Приложение', 'employment.nda': 'Соглашение о неразглашении', 'employment.other': 'Другой трудовой документ' } as Record<string, string>,
   fields: {
     first_name: 'Имя',
     last_name: 'Фамилия',

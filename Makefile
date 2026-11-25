@@ -15,7 +15,7 @@ TEST_DB ?= $(POSTGRES_DB)_test
 PSQL := docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' db psql -v ON_ERROR_STOP=1 -q -U $(POSTGRES_USER) -d $(DB)
 
 .PHONY: help build run vet test test-db e2e e2e-caddy new-app db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo import-sims \
-	prod-build prod-prune-cache prod-up prod-ready prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo prod-import-sims prod-reseal-sim-codes \
+	prod-build prod-prune-cache prod-up prod-ready prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo prod-import-sims prod-vault-backfill prod-reseal-sim-codes \
 	prod-backup prod-backups prod-restore prod-drill backup-once publish-app prod-publish
 
 help: ## List targets
@@ -256,6 +256,11 @@ prod-seed-demo: ## Fill an empty deployment database with demo data as that admi
 prod-import-sims: ## Import SIM cards from a CSV list as the API_SEED_USER_EMAIL user: FILE=<csv> COMMIT=yes
 	@test -n "$(FILE)" || { echo "FILE=<the SIM card list, CSV> is required" >&2; exit 2; }
 	$(PROD) run --rm --no-deps -T api -import-sims - $(if $(filter yes,$(COMMIT)),-commit) < "$(FILE)"
+
+# Signed copies moved into the Document Vault (migration 0065): check the move
+# and the files; COMMIT=yes moves a copy the previous release wrote meanwhile.
+prod-vault-backfill: ## Check the signed copies moved into the Document Vault and their files: COMMIT=yes moves any left
+	$(PROD) run --rm --no-deps -T api -vault-backfill $(if $(filter yes,$(COMMIT)),-commit)
 
 prod-reseal-sim-codes: ## Seal every SIM card's PIN and PUK under API_SIM_CODES_KEY again, after a key change (docs/backups.md)
 	$(PROD) run --rm --no-deps -T api -reseal-sim-codes
