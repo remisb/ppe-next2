@@ -156,6 +156,9 @@ type Page struct {
 	PageSize  int   `json:"page_size"`
 	// Near is true when nothing matched the words and these are near spellings.
 	Near bool `json:"near"`
+	// Identity are the identity documents of the employees the search is
+	// about (phase 7), on its first page; Total does not count them.
+	Identity []IdentityRow `json:"identity"`
 }
 
 // Details are a document's editable fields: Upload sets them, Update replaces them.

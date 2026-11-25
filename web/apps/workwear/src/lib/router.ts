@@ -30,7 +30,7 @@ export type Route =
    * record number), which its way back says; kept with the history entry, not
    * in the address (cameFrom).
    */
-  | { name: 'employeePage'; id: string; from?: string }
+  | { name: 'employeePage'; id: string; from?: string; section?: 'identity' }
   /**
    * Company Assets' two screens: the SIM card register and the Equipment
    * one; tile opens it on a tile (a dashboard's Company Assets card). asset
@@ -222,7 +222,7 @@ export function pathOf(route: Route): string {
     case 'employee':
       return `/employees/${encodeURIComponent(route.id)}`
     case 'employeePage':
-      return `/employees/${encodeURIComponent(route.id)}/page`
+      return `/employees/${encodeURIComponent(route.id)}/page${route.section ? `#${route.section}` : ''}`
     case 'catalogue':
       if (route.item) return `${fixed.catalogue}/${encodeURIComponent(route.item)}`
       return route.status ? `${fixed.catalogue}?status=${route.status}` : fixed.catalogue

@@ -70,6 +70,11 @@ export const vault: VaultText = {
   readAgain: 'Nuskaityti dar kartą',
   readAgainFile: (name: string) => `Nuskaityti ${name} dar kartą`,
   readQueued: 'Netrukus bus nuskaityta dar kartą.',
+  // Asmens dokumentai iš asmens bylų (7 etapas).
+  identityTitle: 'Asmens dokumentai',
+  identityInfo: 'Iš asmens bylų: tik dokumento rūšis, išdavusi valstybė ir galiojimas. Jie atidaromi darbuotojo puslapyje; dokumentų saugykla jų kopijos nelaiko.',
+  identityOpen: (name: string) => `Atidaryti asmens dokumentus: ${name}`,
+  superseded: 'Pakeistas',
   verify: 'Patikrinti',
   verifying: 'Tikrinama…',
   verifyInfo: 'Išsaugota automatiškai iš įrašo. Tikrinant įrašo maiša apskaičiuojama iš naujo pagal tai, ką išsaugojo jo sritis, ir palyginama su išsaugota, kaip ir šis failas.',

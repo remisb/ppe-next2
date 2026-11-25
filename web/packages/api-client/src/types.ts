@@ -2312,6 +2312,26 @@ export interface VaultPage {
   page_size: number
   /** Nothing matched the words: these are near spellings. */
   near: boolean
+  /**
+   * The ID documents (Personnel files) of the employees the search is about:
+   * the one it is filtered by, or those its words name; first page only, not
+   * counted in total. Metadata only: they open on the employee's page.
+   */
+  identity: VaultIdentityRow[]
+}
+
+/** An employee's ID document as the Document Vault lists it (phase 7). */
+export interface VaultIdentityRow {
+  id: string
+  employee_id: string
+  holder: string
+  kind: 'passport' | 'id_card' | 'residence_permit'
+  issuing_state: string
+  /** Only with personnel.documents.read. */
+  issued_on?: string
+  expires_on: string
+  /** A later document of the same kind replaced it; only with personnel.documents.read. */
+  superseded: boolean
 }
 
 /** A document's editable fields, as Upload Document… and Edit send them. */

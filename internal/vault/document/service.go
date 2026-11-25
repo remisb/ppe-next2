@@ -94,6 +94,7 @@ type Service struct {
 	users       Users
 	text        TextReader
 	records     Records
+	identity    IdentityDocuments
 	loc         *time.Location
 	now         func() time.Time
 	newID       func() uuid.UUID
@@ -587,7 +588,14 @@ func (s *Service) Search(ctx context.Context, reader Reader, q Query) (Page, err
 	if q.Subject != nil && q.Subject.ID == uuid.Nil {
 		return Page{}, fieldError("subject", "needs an id")
 	}
-	return s.repo.Search(ctx, q, reader.Perms)
+	p, err := s.repo.Search(ctx, q, reader.Perms)
+	if err != nil {
+		return Page{}, err
+	}
+	if p.Identity, err = s.identityRows(ctx, reader, q, p.Documents); err != nil {
+		return Page{}, err
+	}
+	return p, nil
 }
 
 // BySubject is every document reader may see that is linked to subject,

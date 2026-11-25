@@ -23,6 +23,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/formpdf"
+	"github.com/remisb/ppe-next2/internal/personnel/document"
 	"github.com/remisb/ppe-next2/internal/recordpdf"
 	"github.com/remisb/ppe-next2/internal/sealbox"
 	"github.com/remisb/ppe-next2/internal/vault"
@@ -41,6 +42,10 @@ func newVault(svc services, repo vaultdoc.Repository, store files.Store, keys *s
 		vaultdoc.WithRecords(vaultRecords{assets: svc.assets, orders: svc.orders, loc: loc})}
 	if keys != nil {
 		opts = append(opts, vaultdoc.WithKeys(keys))
+	}
+	if svc.documents != nil {
+		// Personnel files' identity documents, listed beside an employee's (phase 7).
+		opts = append(opts, vaultdoc.WithIdentityDocuments(vaultIdentity{svc.documents}))
 	}
 	v := vaultdoc.NewService(repo, subjects, opts...)
 	archiver := vaultArchiver{v}
@@ -327,6 +332,35 @@ func signedFormError(err error) error {
 		return asset.ErrNotFound
 	}
 	return err
+}
+
+// vaultIdentity answers vaultdoc.IdentityDocuments from Personnel files
+// (ADR 0008 decision 5): an employee's identity documents, metadata only.
+// In full (personnel.documents.read) the superseded ones and issue dates
+// too; else the current ones' kind, issuing state and expiry, which every
+// signed-in user sees on the employee page (Validity).
+type vaultIdentity struct{ documents *document.Service }
+
+var _ vaultdoc.IdentityDocuments = vaultIdentity{}
+
+func (v vaultIdentity) Of(ctx context.Context, employeeID uuid.UUID, full bool) ([]vaultdoc.IdentityDocument, error) {
+	docs, err := v.documents.Documents(ctx, employeeID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]vaultdoc.IdentityDocument, 0, len(docs))
+	for _, d := range docs {
+		superseded := d.SupersededAt != nil
+		if superseded && !full {
+			continue
+		}
+		row := vaultdoc.IdentityDocument{ID: d.ID, Kind: string(d.Kind), IssuingState: d.IssuingState, ExpiresOn: d.ExpiresOn, Superseded: superseded}
+		if full {
+			row.IssuedOn = d.IssuedOn
+		}
+		out = append(out, row)
+	}
+	return out, nil
 }
 
 // vaultPeople answers vaultdoc.People: an employee's facts for a template's

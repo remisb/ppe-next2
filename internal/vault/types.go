@@ -23,6 +23,10 @@ const (
 	// documents' (role.VaultEmploymentRead, role.VaultEmploymentManage).
 	PermEmploymentRead   = "vault.employment.read"
 	PermEmploymentManage = "vault.employment.manage"
+	// PermPersonnelRead is Personnel files' read permission
+	// (role.PersonnelDocumentsRead): with it, identity documents are listed
+	// in full (phase 7).
+	PermPersonnelRead = "personnel.documents.read"
 )
 
 // Rule is how long a type's documents are kept.

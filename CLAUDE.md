@@ -92,6 +92,10 @@ training 3; invoices, asset papers 10 after their date; forms and signed copies 
 after the longest service period (rule `AfterSourceEnds`, `Records.Ended`); each from 1 January after. Every type with a period is
 shredded when due by `vault.shred_document`, sealed or not; Legal Hold for any such type (`vault.manage` for archived ones).
 The decisions and sources: `docs/privacy/document-retention-policy.md`.
+Phase 7 (no migration): **ID documents are listed, metadata only**: the `IdentityDocuments` port (`vault/document/identity.go`,
+adapter `vaultIdentity` over Personnel files' `Documents`) adds `identity` to a search about an employee (filtered by them, or words
+naming a linked employee; at most 10; first page): kind, issuing state, expiry, and with `personnel.documents.read` superseded ones and
+issue dates. The Document Vault shows them above its list; the holder opens `/employees/<id>/page#identity`. By-subject lists none.
 **Mail templates** (`internal/domain/mailtemplate`, migration 0040, spec
 `docs/specs/mail-template-service.md`): one template per use case fixed in code (`sim.activation`,
 `sim.blocking`), To/Cc/Subject/Message with `{{field}}` placeholders, edited on Administration's
@@ -470,7 +474,7 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   ADR 0008 makes the Document Vault: typed documents with versions and links,
   sealed Employment documents with retention and shredding, templates made into locked PDFs,
   Postgres search, and a worker on an outbox (specs `vault-service.md`,
-  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 to 6 are built.
+  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 to 7 are built.
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and

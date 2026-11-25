@@ -46,6 +46,8 @@ describe('router', () => {
     expect(pathOf({ name: 'employeePage', id: 'e1', from: 'WE-000010' })).toBe('/employees/e1/page')
     expect(parsePath('/employees/e1/page')).toEqual({ name: 'employeePage', id: 'e1' })
     expect(parsePath(pathOf({ name: 'employeePage', id: 'a/b' }))).toEqual({ name: 'employeePage', id: 'a/b' })
+    // An ID document from the Document Vault opens the page at its Identity section.
+    expect(pathOf({ name: 'employeePage', id: 'e1', section: 'identity' })).toBe('/employees/e1/page#identity')
     // An item open beside the Item Catalogue, at the address its own page had.
     expect(pathOf({ name: 'catalogue', item: 'x/y' })).toBe('/catalogue/x%2Fy')
     expect(parsePath(pathOf({ name: 'catalogue', item: 'x/y' }))).toEqual({ name: 'catalogue', item: 'x/y' })
