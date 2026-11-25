@@ -14,6 +14,9 @@ import (
 // TestVaultPermissionsAreTheCatalogues keeps the permission keys the vault's
 // types name (it may not import role) in the catalogue.
 func TestVaultPermissionsAreTheCatalogues(t *testing.T) {
+	if vault.PermPersonnelRead != string(role.PersonnelDocumentsRead) {
+		t.Fatalf("vault's %s, role's %s", vault.PermPersonnelRead, role.PersonnelDocumentsRead)
+	}
 	if vault.PermRead != string(role.VaultRead) || vault.PermManage != string(role.VaultManage) {
 		t.Fatalf("vault's %s/%s, role's %s/%s", vault.PermRead, vault.PermManage, role.VaultRead, role.VaultManage)
 	}

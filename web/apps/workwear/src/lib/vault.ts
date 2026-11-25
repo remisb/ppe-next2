@@ -4,7 +4,7 @@
  * to expire, and the checks Upload Document…, Edit… and Add Version… make
  * before sending, which the API makes again.
  */
-import type { Permission, VaultDetails, VaultDocument, VaultLink, VaultLinkRef, VaultSubjectKind, VaultType, VaultVerification, VaultVersion } from '@ppe/api-client'
+import type { Permission, VaultDetails, VaultDocument, VaultLink, VaultLinkRef, VaultSubjectKind, VaultIdentityRow, VaultType, VaultVerification, VaultVersion } from '@ppe/api-client'
 
 import { t } from '@/i18n'
 import type { Route } from '@/lib/router'
@@ -67,6 +67,16 @@ export function linkRoute(link: Pick<VaultLink, 'kind' | 'id'>, from?: string): 
 export function canHold(type: Pick<VaultType, 'manage' | 'retention'> | undefined, can: (permission: Permission) => boolean): boolean {
   if (!type || type.retention.rule === 'keep' || type.retention.rule === 'forever') return false
   return can((type.manage || 'vault.manage') as Permission)
+}
+
+/**
+ * The ID documents a search lists, as lines: by holder, current ones first,
+ * each with its kind, issuing state and expiry, and whether it has expired.
+ */
+export function identityLines(rows: readonly VaultIdentityRow[], today: string): (VaultIdentityRow & { expired: boolean })[] {
+  return [...rows]
+    .sort((a, b) => a.holder.localeCompare(b.holder) || Number(a.superseded) - Number(b.superseded) || b.expires_on.localeCompare(a.expires_on))
+    .map((r) => ({ ...r, expired: r.expires_on < today }))
 }
 
 /** What Verify found, as one line and whether all is well. */

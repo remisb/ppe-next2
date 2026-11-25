@@ -1,8 +1,9 @@
-import type { VaultHit, VaultQuery } from '@ppe/api-client'
+import type { VaultHit, VaultIdentityRow, VaultQuery } from '@ppe/api-client'
 import { useApi, useSession } from '@ppe/app-shell'
 import { Badge } from '@ppe/ui/components/badge'
 import { Button } from '@ppe/ui/components/button'
 import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
+import { InfoTip } from '@ppe/ui/components/info-tip'
 import { Field, Input, Select, controlProps } from '@ppe/ui/components/field'
 import { DetailPane, ListDetail } from '@ppe/ui/components/list-detail'
 import { linkVariants } from '@ppe/ui/components/link'
@@ -23,7 +24,7 @@ import { DocumentDetailsSheet, type DocumentSheet } from '@/components/document-
 import { t } from '@/i18n'
 import { todayIn } from '@/lib/assets'
 import { type NavigateOptions, type Route, linkTo } from '@/lib/router'
-import { displayTitle, expiry, linkLabels, typeLabel, uploadTypes } from '@/lib/vault'
+import { displayTitle, expiry, identityLines, linkLabels, typeLabel, uploadTypes } from '@/lib/vault'
 import { vaultExportColumns } from '@/lib/vault-export'
 
 /** A document's key in the selection; a module constant, so the hook's memos hold. */
@@ -169,6 +170,7 @@ export function Vault({ selected, navigate }: { selected: string | undefined; na
 
       <ExportMode selection={selection} list={t.vault.title} columns={vaultExportColumns()} shown={docs.data?.documents ?? []} />
       {docs.data?.near && docs.data.total > 0 ? <p className="mb-2 text-sm text-muted-foreground">{t.vault.near}</p> : null}
+      {docs.data && docs.data.identity.length > 0 ? <IdentityRows rows={docs.data.identity} today={today} navigate={navigate} /> : null}
       {docs.error ? (
         <ErrorState error={docs.error} onRetry={docs.reload} />
       ) : !docs.data ? (
@@ -284,5 +286,42 @@ export function Vault({ selected, navigate }: { selected: string | undefined; na
         }}
       />
     </ListDetail>
+  )
+}
+
+/**
+ * The ID documents of the employees the search is about (Personnel files,
+ * metadata only): each opens the holder's page at its Identity section; the
+ * Document Vault keeps, opens and downloads none of them.
+ */
+function IdentityRows({ rows, today, navigate }: { rows: readonly VaultIdentityRow[]; today: string; navigate: (to: Route) => void }) {
+  return (
+    <section aria-labelledby="vault-identity" className="mb-4 rounded-md border border-border p-3">
+      <h2 id="vault-identity" className="mb-2 flex items-center gap-1 text-sm font-semibold">
+        {t.vault.identityTitle}
+        <InfoTip section={t.vault.identityTitle}>{t.vault.identityInfo}</InfoTip>
+      </h2>
+      <ul className="flex flex-col gap-1.5 text-sm">
+        {identityLines(rows, today).map((r) => {
+          const kind = t.identity.kinds[r.kind] ?? r.kind
+          const until = formatDay(r.expires_on)
+          return (
+            <li key={r.id} className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <a
+                {...linkTo({ name: 'employeePage', id: r.employee_id, from: t.vault.title, section: 'identity' }, navigate)}
+                aria-label={t.vault.identityOpen(r.holder)}
+                className={cn(linkVariants({ weight: 'medium' }), 'inline-flex min-h-11 items-center md:min-h-0')}
+              >
+                {r.holder}
+              </a>
+              <span className={r.expired && !r.superseded ? 'text-warning' : 'text-muted-foreground'}>
+                {r.expired ? t.identity.expiredOn(kind, r.issuing_state, until) : t.identity.validUntil(kind, r.issuing_state, until)}
+              </span>
+              {r.superseded ? <Badge variant="secondary">{t.vault.superseded}</Badge> : null}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
   )
 }

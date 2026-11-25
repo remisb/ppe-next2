@@ -7,10 +7,11 @@ and generation are [document-template-service.md](document-template-service.md);
 worker are [outbox-service.md](outbox-service.md); the data-protection note is
 [document-vault-dpia-note.md](../privacy/document-vault-dpia-note.md).
 
-**Status: phases 1 to 6 built** (migrations 0061 to 0065, `internal/vault`, `internal/vault/document`,
+**Status: phases 1 to 7 built** (migrations 0061 to 0066, `internal/vault`, `internal/vault/document`,
 `internal/vault/extract`, `cmd/api/vault-routes.go`, `cmd/api/wire_vault.go`, the staff app's Document
 Vault and Documents sections, Company Assets' signed copies kept here, assignment forms and Items Given
-Records archived by the worker; phase 6 needed no migration); the rest decided, not built. Each section names the phase that builds it (ADR 0008's
+Records archived by the worker; ID documents listed from Personnel files; phases 6 and 7 needed no
+migration); the rest decided, not built. Each section names the phase that builds it (ADR 0008's
 plan: 1 core, 2 sealed types, 3 templates, 4 worker and text, 5 signed copies, 6 archiving, 7
 identity documents, 8 DOCX).
 
@@ -213,7 +214,9 @@ had stayed (`other` never: the bucket's versioning decides).
   (a changed object is a 500, `ErrDamaged`). For a **sealed** type the route is `POST` and sensitive: a recent
   sign-in, the event `vault.document_opened` recorded before the answer.
 - `GET /api/v1/vault/by-subject/{kind}/{id}`: the documents linked to a subject that the reader
-  may see, newest first; from phase 7, an employee's identity documents too.
+  may see, newest first. It lists no identity documents: the pages that use it (the employee's
+  and an asset's Documents) sit beside the employee page's own Identity section; a search filtered
+  by an employee lists them (Identity documents, phase 7).
 
 ### Employee merge (phase 1)
 
@@ -307,19 +310,35 @@ Built (migration 0062, `internal/vault/document/sealed.go`).
 
 ## Identity documents (phase 7)
 
-The port `IdentityDocuments.Of(ctx, employeeID, full bool)`, adapted over Personnel files'
-`document.Service.Documents` when the reader has `personnel.documents.read`, else `Validity`.
-By-subject answers for an employee, and search hits whose link labels name an employee (at most
-10 employees), add their identity documents as rows of kind `identity` (kind, issuing state,
-expiry, holder). They open `/employees/<id>/page#identity`; the vault offers nothing else.
-Nothing of them is stored in the vault.
+Personnel files keeps passports, ID cards and residence permits sealed per person (ADR 0007); the
+vault lists them beside an employee's documents, **metadata only** (ADR 0008 decision 5).
+Nothing of them is stored, opened or downloaded in the vault.
+
+- **Port.** `IdentityDocuments.Of(ctx, employeeID, full bool)` (`internal/vault/document/identity.go`),
+  adapted by `vaultIdentity` in `cmd/api/wire_vault.go` over Personnel files' `Documents`: in full
+  (the reader holds `personnel.documents.read`, `vault.PermPersonnelRead`) every live document with
+  its issue date and whether it is superseded; else the current ones' kind, issuing state and expiry
+  only, what every signed-in user sees on the employee page (`Validity`). Never a number, name,
+  personal code or copy.
+- **Search.** `POST /api/v1/vault/search` answers `identity`: the ID documents of the employees the
+  search is about, each with its holder (`IdentityRow`: id, employee id, holder, kind, issuing
+  state, expiry, issue date and superseded in full). The employees are the subject it is filtered
+  by, else, when it has words, those linked to its hits whose names the words match (every word
+  begins a word of the name, case and accents aside, `NameMatches`), at most 10. Only on the first
+  page and with no type filter; `total` does not count them; `[]` otherwise.
+- **Staff app.** The Document Vault shows them above the list, **ID documents** (ⓘ: from
+  Personnel files, metadata only): the holder, then "Passport · LTU · valid until …" (expired in
+  the warning colour; **Superseded** in full). The holder opens `/employees/<id>/page#identity`,
+  which scrolls to the Identity section (the documents for Personnel readers, else the validity
+  line).
+- By-subject lists none (above): the employee page has its own Identity section.
 
 ## Routes
 
 | Route | Permission | Phase | Notes |
 | --- | --- | --- | --- |
 | `GET /api/v1/vault/types` | `vault.read` or `vault.employment.read` | 1 | the types the reader may see and add |
-| `POST /api/v1/vault/search` | `vault.read` or `vault.employment.read` | 1 | `no-store` |
+| `POST /api/v1/vault/search` | `vault.read` or `vault.employment.read` | 1 | `no-store`; `identity` from phase 7 |
 | `GET /api/v1/vault/by-subject/{kind}/{id}` | `vault.read` or `vault.employment.read` | 1 | |
 | `POST /api/v1/vault/documents` | the type's `manage` | 1 | multipart; 400, 413, 415 |
 | `GET /api/v1/vault/documents/{id}` | the type's `read` | 1 | |

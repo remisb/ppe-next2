@@ -2,7 +2,7 @@ import type { VaultDocument, VaultHit, VaultType } from '@ppe/api-client'
 import { describe, expect, it } from 'vitest'
 
 import { vaultExportColumns } from './vault-export'
-import { canReadAgain, detailsOf, displayTitle, draftProblems, holdProblems, seesVault, expiry, fileProblem, linkLabels, linkRoute, textLine, typeLabel, uploadRefusal, uploadTypes, verifyLine, withLink, canHold } from './vault'
+import { canReadAgain, detailsOf, displayTitle, draftProblems, holdProblems, seesVault, expiry, fileProblem, linkLabels, linkRoute, textLine, typeLabel, uploadRefusal, uploadTypes, verifyLine, withLink, canHold, identityLines } from './vault'
 
 const type = (key: string, must: VaultType['must'], manage = 'vault.manage'): VaultType => ({
   key,
@@ -51,6 +51,19 @@ describe('names', () => {
     expect(linkRoute({ kind: 'asset', id: 'a1' })).toEqual({ name: 'asset', id: 'a1' })
     expect(linkRoute({ kind: 'order', id: 'o1' })).toEqual({ name: 'history', order: 'o1' })
     expect(linkRoute({ kind: 'company', id: 'c1' })).toBeNull()
+  })
+})
+
+describe('identityLines', () => {
+  it('lists ID documents by holder, current ones first, each expired or not', () => {
+    const row = (holder: string, expires_on: string, superseded = false) =>
+      ({ id: holder + expires_on, employee_id: 'e', holder, kind: 'passport', issuing_state: 'LTU', expires_on, superseded }) as const
+    const lines = identityLines([row('Ona', '2020-01-01', true), row('Jonas', '2026-01-01'), row('Ona', '2031-01-01')], '2026-11-25')
+    expect(lines.map((l) => [l.holder, l.expires_on, l.expired])).toEqual([
+      ['Jonas', '2026-01-01', true],
+      ['Ona', '2031-01-01', false],
+      ['Ona', '2020-01-01', true],
+    ])
   })
 })
 

@@ -668,3 +668,63 @@ func TestPostgresArchiveSweep(t *testing.T) {
 func outboxJob(payload []byte) outbox.Job {
 	return outbox.Job{ID: uuid.New(), Kind: vaultdoc.KindArchive, Payload: payload, State: "running", Attempts: 1, MaxAttempts: 5}
 }
+
+// TestPostgresVaultIdentityHTTP: a search for an employee's name lists their
+// identity documents from Personnel files beside the vault's own, metadata
+// only: the current one's kind, state and expiry for a manager, the issue
+// date too for Personnel Documents; never a number, name or personal code.
+func TestPostgresVaultIdentityHTTP(t *testing.T) {
+	api, _ := newPostgresAPI(t)
+	_, clerk := api.userWith(t, role.KeyPersonnel)
+	_, mgr := api.userWith(t, role.KeyManager)
+	_, both := api.userWith(t, role.KeyManager, role.KeyPersonnel)
+	rec := api.saveDocument(t, clerk, map[string]any{
+		"employee": map[string]any{"new": map[string]any{"first_name": "Jonas", "last_name": "Pavyzdys"}},
+		"mrz":      specimenPassport, "kind": "passport", "surname": "Pavyzdys", "given_names": "Jonas", "issued_on": "2021-05-16",
+	}, map[string][]byte{"copy_page": specimenJPEG(t)})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("save = %d %s", rec.Code, rec.Body)
+	}
+	emp := decode[map[string]any](t, rec.Body.Bytes())["employee_id"].(string)
+	rec = api.uploadDocument(t, "/api/v1/vault/documents", mgr, "c.pdf", []byte("%PDF-1.7\n1 0 obj\n%%EOF\n"),
+		map[string]any{"type": "employee.certificate", "title": "Darbas aukštyje", "links": []map[string]any{{"kind": "employee", "id": emp}}})
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("upload = %d %s", rec.Code, rec.Body)
+	}
+
+	type identity struct {
+		EmployeeID   string  `json:"employee_id"`
+		Holder       string  `json:"holder"`
+		Kind         string  `json:"kind"`
+		IssuingState string  `json:"issuing_state"`
+		IssuedOn     *string `json:"issued_on"`
+		ExpiresOn    string  `json:"expires_on"`
+	}
+	search := func(token string, body map[string]any) []identity {
+		t.Helper()
+		rec := api.do(t, "POST", "/api/v1/vault/search", token, body)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("search = %d %s", rec.Code, rec.Body)
+		}
+		for _, v := range []string{"91234567", "33309240064"} {
+			if strings.Contains(rec.Body.String(), v) {
+				t.Errorf("the search answers %s", v)
+			}
+		}
+		return decode[struct {
+			Identity []identity `json:"identity"`
+		}](t, rec.Body.Bytes()).Identity
+	}
+	got := search(mgr, map[string]any{"query": "pavyz"})
+	if len(got) != 1 || got[0].EmployeeID != emp || got[0].Holder != "Jonas Pavyzdys" || got[0].Kind != "passport" ||
+		got[0].IssuingState != "LTU" || got[0].ExpiresOn != "2031-05-15" || got[0].IssuedOn != nil {
+		t.Fatalf("a manager's = %+v", got)
+	}
+	got = search(both, map[string]any{"subject": map[string]any{"kind": "employee", "id": emp}})
+	if len(got) != 1 || got[0].IssuedOn == nil || *got[0].IssuedOn != "2021-05-16" {
+		t.Errorf("in full = %+v", got)
+	}
+	if got := search(mgr, map[string]any{"query": "aukst"}); len(got) != 0 {
+		t.Errorf("words naming no employee = %+v", got)
+	}
+}

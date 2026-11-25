@@ -72,6 +72,11 @@ export const vault = {
   readAgain: 'Read Again',
   readAgainFile: (name: string) => `Read ${name} again`,
   readQueued: 'It will be read again shortly.',
+  // ID documents from Personnel files (phase 7).
+  identityTitle: 'ID documents',
+  identityInfo: 'From Personnel files: each document’s kind, issuing state and validity, nothing more. They open on the employee’s page; the Document Vault keeps no copy.',
+  identityOpen: (name: string) => `Open ${name}’s ID documents`,
+  superseded: 'Superseded',
   verify: 'Verify',
   verifying: 'Checking…',
   verifyInfo: 'Kept automatically from its record. Verify computes the record’s hash again from what its context stored and compares it, and this file, with what was kept.',

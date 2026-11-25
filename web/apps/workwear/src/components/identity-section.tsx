@@ -37,14 +37,25 @@ export function IdentitySection({ employeeId, timeZone }: { employeeId: string; 
   return canRead ? <PersonnelFile employeeId={employeeId} timeZone={timeZone} /> : <ValidityLine employeeId={employeeId} timeZone={timeZone} />
 }
 
+/**
+ * Brings the section into view once it has loaded, when the address asks for
+ * it (#identity: an ID document opened from the Document Vault).
+ */
+function useScrollHere(ready: boolean) {
+  useEffect(() => {
+    if (ready && window.location.hash === '#identity') document.getElementById('identity')?.scrollIntoView({ block: 'start' })
+  }, [ready])
+}
+
 /** The line anyone may read: each current document's kind, state and expiry; nothing when there is none. */
 function ValidityLine({ employeeId, timeZone }: { employeeId: string; timeZone: string | undefined }) {
   const { client } = useApi()
   const validity = useLoad(() => client.personnel.validity(employeeId), [employeeId])
   const lines = validityLines(validity.data ?? [], todayIn(timeZone))
+  useScrollHere(lines.length > 0)
   if (lines.length === 0) return null
   return (
-    <section aria-labelledby="identity-validity" className="mb-6 text-sm">
+    <section id="identity" aria-labelledby="identity-validity" className="mb-6 scroll-mt-20 text-sm">
       <h2 id="identity-validity" className="sr-only">
         {t.identity.section}
       </h2>
@@ -73,6 +84,7 @@ function PersonnelFile({ employeeId, timeZone }: { employeeId: string; timeZone:
     [employeeId],
   )
   const shown = visibleDocuments(docs.data ?? [], canManage)
+  useScrollHere(docs.data !== undefined)
   const today = todayIn(timeZone)
   const reload = () => {
     docs.reload()
