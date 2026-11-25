@@ -231,12 +231,13 @@ export function Vault({ selected, navigate }: { selected: string | undefined; na
                       {d.sealed ? <Badge variant="outline" className="ml-2 align-middle">{t.vault.sealed}</Badge> : null}
                       {numberBesideTitle(d) ? <span className="font-normal text-muted-foreground"> · {numberBesideTitle(d)}</span> : null}
                     </TableCell>
-                    <TableCell className="stacked:order-3 stacked:w-auto stacked:text-xs stacked:text-muted-foreground">{typeLabel(d.type)}</TableCell>
-                    {beside ? null : (
-                      <TableCell className="whitespace-normal stacked:order-3 stacked:w-auto stacked:text-xs stacked:text-muted-foreground stacked:before:mr-1.5 stacked:before:content-['·']">
-                        {linkLabels(d.links)}
-                      </TableCell>
-                    )}
+                    {/* On a phone the linked names follow the type in one run of text, so a long line wraps inside
+                        the names and the · stays after the type; as a cell of its own it moved down, dot first. */}
+                    <TableCell className="stacked:order-3 stacked:w-auto stacked:min-w-0 stacked:flex-1 stacked:whitespace-normal stacked:text-xs stacked:text-muted-foreground">
+                      {typeLabel(d.type)}
+                      {!beside && d.links.length > 0 ? <span className="hidden stacked:inline">{' · '}{linkLabels(d.links)}</span> : null}
+                    </TableCell>
+                    {beside ? null : <TableCell className="whitespace-normal stacked:hidden">{linkLabels(d.links)}</TableCell>}
                     <TableCell className="tabular-nums stacked:order-1 stacked:w-auto">
                       {d.valid_until ? (
                         <span className="inline-flex flex-wrap items-center gap-1.5">
