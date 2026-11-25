@@ -89,21 +89,23 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <li><a href="#share"><b>12</b>Kelių darbuotojų bendrinimas</a></li>
     <li><a href="#assets"><b>13</b>Įmonės turtas</a></li>
     <li><a href="#sim-scan"><b>14</b>Skenuoti SIM</a></li>
-    <li><a href="#administration"><b>15</b>Administravimas</a></li>
-    <li><a href="#overview"><b>16</b>Apžvalga</a></li>
-    <li><a href="#users"><b>17</b>Naudotojai</a></li>
-    <li><a href="#roles"><b>18</b>Rolės ir teisės</a></li>
-    <li><a href="#audit"><b>19</b>Audito žurnalas</a></li>
-    <li><a href="#security"><b>20</b>Sauga</a></li>
-    <li><a href="#system"><b>21</b>Sistema</a></li>
-    <li><a href="#backups"><b>22</b>Atsarginės kopijos</a></li>
-    <li><a href="#usage"><b>23</b>Naudojimas</a></li>
-    <li><a href="#settings"><b>24</b>Nustatymai</a></li>
-    <li><a href="#suppliers"><b>25</b>Tiekėjai</a></li>
-    <li><a href="#manage-apps"><b>26</b>Programų tvarkymas</a></li>
-    <li><a href="#account"><b>27</b>Jūsų paskyra</a></li>
-    <li><a href="#install"><b>28</b>Programos įdiegimas</a></li>
-    <li><a href="#shortcuts"><b>29</b>Paieška ir spartieji klavišai</a></li>
+    <li><a href="#vault"><b>15</b>Dokumentų saugykla</a></li>
+    <li><a href="#administration"><b>16</b>Administravimas</a></li>
+    <li><a href="#overview"><b>17</b>Apžvalga</a></li>
+    <li><a href="#users"><b>18</b>Naudotojai</a></li>
+    <li><a href="#roles"><b>19</b>Rolės ir teisės</a></li>
+    <li><a href="#audit"><b>20</b>Audito žurnalas</a></li>
+    <li><a href="#security"><b>21</b>Sauga</a></li>
+    <li><a href="#system"><b>22</b>Sistema</a></li>
+    <li><a href="#backups"><b>23</b>Atsarginės kopijos</a></li>
+    <li><a href="#usage"><b>24</b>Naudojimas</a></li>
+    <li><a href="#settings"><b>25</b>Nustatymai</a></li>
+    <li><a href="#suppliers"><b>26</b>Tiekėjai</a></li>
+    <li><a href="#document-templates"><b>27</b>Dokumentų šablonai</a></li>
+    <li><a href="#manage-apps"><b>28</b>Programų tvarkymas</a></li>
+    <li><a href="#account"><b>29</b>Jūsų paskyra</a></li>
+    <li><a href="#install"><b>30</b>Programos įdiegimas</a></li>
+    <li><a href="#shortcuts"><b>31</b>Paieška ir spartieji klavišai</a></li>
   </ol></nav>
 </header>
 
@@ -251,6 +253,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <p>Užsakymas, kurio būsena <b>Išduota</b>, turi užrakintą įrašą anglų ir rusų kalbomis (Items Given Record / Акт выдачи). Atidarykite jį mygtuku <b>Peržiūrėti užsakymą</b>.</p>
     <ul>
       <li><b>Spausdinti įrašą</b> atspausdina jį viename A4 lape; užsakyme tą patį daro spausdintuvas, <b>Spausdinti užsakymą</b>.</li>
+      <li><b>Atsisiųsti PDF</b> išsaugo jį kaip PDF failą.</li>
       <li><b>Siųsti per WhatsApp</b> jį išsiunčia.</li>
     </ul>
     <p>Datos įraše ir Įmonės turto atspausdintuose bei PDF išdavimo aktuose rašomos <b>2026 10 15</b>, visomis kalbomis vienodai.</p>
@@ -405,6 +408,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <figure><img src="../../web/apps/workwear/public/help-img/lt/desktop/signed-copy.png" alt="Išdavimas su įkelta pasirašyta kopija" loading="lazy"></figure>
     </div>
     <p class="who">Tik administratoriams ir vadovams</p>
+    <p>Pasirašytos kopijos ir kiekvieno akto PDF taip pat laikomi <b>Dokumentų saugykloje</b>, susieti su SIM ar įranga ir darbuotoju.</p>
     <p>Kai daiktas fiziškai grįžta į biurą, pasirinkite <b>Priimti</b>: tada <b>Registruoti SIM grąžinimą</b> arba <b>Registruoti turto grąžinimą</b> jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje <b>Išdavimai</b>, o <b>Spausdinti aktą dar kartą</b> ir <b>Atsisiųsti PDF</b> pateikia jo aktą. Spausdinimas, kiekvienas atsisiųstas PDF ir blokavimo laiškas įrašomi skiltyje <b>Pakeitimai</b>. Iš pradžių ji suskleista; pasirinkite <b>Pakeitimai</b>, kad ją atidarytumėte.</p>
     <p>Išėjus iš darbo, niekas negrąžinama savaime. Kai darbuotojas negrąžina kortelės, <b>Pažymėti kaip negrąžintą</b> įrašo, kur ji yra: vis dar pas jį ar nežinoma. Kortelė lieka jo, kol grįš. Tada <b>Paruošti blokavimo laišką</b> pateikia tekstą, kurį nukopijuosite į savo laišką tiekėjui; kai jis patvirtins, ekrane <b>Keisti būseną</b> pasirinkite <b>Užblokuota</b>.</p>
     <p>Paieška randa SIM pagal SIM, telefono ar inventoriaus numerį, o daiktą – pagal inventoriaus numerį.</p>
@@ -424,16 +428,34 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <p><b>PIN ir PUK</b> viršuje randa SIM pagal SIM Nr. arba telefono numerį, bent 4 skaitmenis. <b>Rodyti PIN ir PUK</b> juos parodo, kaip ir raktas prie SIM ekrane <b>SIM kortelės</b>; kiekvienas kartas įrašomas į SIM <b>Pakeitimai</b>, bet ne kodai. SIM be jų turi <b>Pridėti PIN ir PUK</b>. Jie saugomi užšifruoti ir niekada nerodomi sąraše. Parodyti kodai vėl paslepiami po minutės arba išėjus iš skirtuko. Skenuojamos SIM lieka savo sąraše, kol čia ieškote kurios nors.</p>
 </section>
 
+<section id="vault">
+  <h2><span class="n">15</span>Dokumentų saugykla</h2>
+  <p class="who">Tik administratoriams ir vadovams</p>
+    <p><b>Dokumentų saugykloje</b> laikomi įmonės dokumentai: pažymėjimai, mokymų įrašai, sąskaitos faktūros, turto dokumentai ir kiti, kiekvienas susietas su darbuotojais, įmonėmis, SIM, įranga ar užsakymais, apie kuriuos jis yra. Ji taip pat pati išsaugo <b>Įmonės turte</b> įkeltus pasirašytus perdavimo aktus, kiekvieno perdavimo akto PDF ir kiekvieno užsakymo išdavimo įrašo PDF.</p>
+    <p>Ją atidarysite šoninėje juostoje, po <b>Įmonės turtas</b>.</p>
+    <p>Lauke <b>Ieškoti dokumentų</b> dokumentą rasite pagal pavadinimą, numerį, susietus vardus, tipą ar žodžius jo faile. Didžiosios raidės ir diakritikai nesvarbūs, užtenka žodžio pradžios: <kbd>zuk</kbd> randa <b>Žukauskaitė</b>. Jei niekas nesutampa, parodomi panašūs rašybos variantai, ir sąraše tai pasakyta. <b>Tipas</b> palieka vienos rūšies dokumentus. Pasirinktas dokumentas atsidaro šalia sąrašo, o siauresniame ekrane – vietoj jo.</p>
+    <p><b>Įkelti dokumentą…</b> prideda naują: pasirinkite <b>Tipas</b> ir failą – PDF, JPEG ar PNG iki 20 MB, tada įrašykite <b>Pavadinimas</b>, datas ir su kuo jis susietas. Iš nuotraukos pašalinama vieta ir fotoaparato duomenys. Kai kurių tipų dokumentai turi būti susieti: pažymėjimas – su darbuotoju, turto dokumentas – su SIM ar įranga.</p>
+    <p>Dokumente matyti jo tipas, datos, <b>Kilmė</b> (<b>Įkelta</b>, <b>Sugeneruota</b> ar <b>Išsaugota automatiškai</b>), <b>Susieta su</b> – su kuo jis susietas – ir <b>Versijos</b>, naujausia pirma, kiekviena su atsisiunčiamu failu, kas ją pridėjo ir kada. <b>Pridėti versiją…</b> prideda naujesnį failą; ankstesni lieka. <b>Keisti…</b> keičia pavadinimą, datas ir susiejimus, o <b>Pašalinti dokumentą…</b> jį pašalina, prieš tai paklausęs. Visa tai įrašoma skiltyje <b>Pakeitimai</b>.</p>
+    <p>Dokumentas su <b>Galioja iki</b>, pvz., pažymėjimas, likus 30 dienų rodo <b>Greitai baigs galioti</b>, vėliau – <b>Nebegalioja</b>.</p>
+    <p>Po kiekviena versija eilutė nurodo, kaip paieškai nuskaityti jos žodžiai: <b>Laukia nuskaitymo</b>, <b>Nuskaityta</b>, <b>Teksto nerasta</b> ar <b>Nepavyko nuskaityti</b>. Naudojamas paties PDF tekstas; skenuotas dokumentas ar nuotrauka atpažįstami OCR būdu lietuvių, rusų ar anglų kalba, fone. <b>Nuskaityti dar kartą</b> nuskaito iš naujo.</p>
+    <p><b>Dokumentai</b> darbuotojo puslapyje ir SIM ar įrangos puslapyje išvardija su jais susietus dokumentus. Ten <b>Įkelti dokumentą…</b> naująjį susieja su jais; <b>Atidaryti Dokumentų saugyklą</b> atveria visą sąrašą.</p>
+    <p>Dokumentai, kurių kilmė <b>Išsaugota automatiškai</b>, kyla iš pačios programos įrašų, ir čia jų keisti ar pašalinti negalima: kiekviena kopija, įkelta per <b>Įkelti pasirašytą aktą</b>, perdavimo akto PDF, išdavus SIM ar įrangą, ir užsakymo išdavimo įrašo PDF, kai užsakymas tampa <b>Išduota</b>. Ant išsaugoto akto ar įrašo <b>Patikrinti</b> palygina jį su įrašu, iš kurio jis padarytas: <b>Sutampa</b> reiškia, kad įrašo maiša tokia pati, kokia buvo darant kopiją, ir kopijos failas nepakeistas.</p>
+    <p>Ieškant darbuotojo pagal vardą arba paliekant vieną darbuotoją, virš sąrašo rodomi ir jo <b>Asmens dokumentai</b> iš asmens bylų: kiekvieno rūšis, išdavusi valstybė ir galiojimas. Jie nelaikomi Dokumentų saugykloje: vardas atveria darbuotojo puslapį ties <b>Asmens duomenys</b>.</p>
+    <p>Kiekvienos rūšies dokumentai saugomi tiek, kiek reikalauja Lietuvos teisė, tada sunaikinami: sąskaitos faktūros ir turto dokumentai – 10 metų nuo jų datos, perdavimo aktai – 10 metų po to, kai SIM ar įranga grąžinta, pažymėjimai ir mokymų įrašai – 3 metus nuo darbo santykių pabaigos, išdavimo įrašas – 1 metus po daiktų naudojimo laiko pabaigos. Tada dokumente rodoma <b>Saugoma iki</b>. <b>Draudimas naikinti…</b> saugo dokumentą ilgiau, patikrinimui ar ginčui: nurodykite paskutinę dieną ir priežastį. Draudžiamo naikinti dokumento negalima nei sunaikinti, nei pašalinti.</p>
+    <p>Darbo sutartis, priedus, konfidencialumo sutartis ir kitus darbo dokumentus mato tik tie, kam suteikta rolė <b>Darbo dokumentai</b>; administratoriai – tik turėdami ją. Jie pažymėti <b>Užšifruota</b>: užšifruoti atskiru raktu, todėl jų pavadinimai rodomi tik jų pačių puslapyje. Atidarant failą prašoma slaptažodžio, jei neseniai neprisijungėte, ir kiekvienas atidarymas įrašomas. Jie saugomi 50 metų nuo darbo santykių pabaigos, kiti darbo dokumentai – 3 metus.</p>
+    <p>Turint šią rolę, <b>Generuoti dokumentą…</b> po <b>Dokumentai</b> darbuotojo puslapyje sukuria dokumentą pagal šabloną: pasirinkite šabloną ir darbo santykius, kuriems jis skirtas, užpildykite, ko jis klausia, pvz., atlyginimą, tada <b>Peržiūra</b>. <b>Generuoti</b> sukuria būtent tai, ką rodė peržiūra: su numeriu, pvz., <kbd>EC-2026-0001</kbd>, užrakintą PDF, susietą su darbuotoju ir įmone. Jei po peržiūros kas nors pasikeitė, peržiūrėkite dar kartą. Word šablonu parašytas dokumentas ruošiamas keliomis sekundėmis ilgiau, kol padaromas jo PDF.</p>
+</section>
+
 <section id="administration">
-  <h2><span class="n">15</span>Administravimas</h2>
+  <h2><span class="n">16</span>Administravimas</h2>
   <p class="who">Tik administratoriams</p>
-    <p><b>Administravime</b> tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro <b>Apžvalgoje</b>. Kiti jo ekranai: <b>Naudotojai</b>, <b>Rolės ir teisės</b>, <b>Audito žurnalas</b>, <b>Sauga</b>, <b>Sistema</b>, <b>Naudojimas</b>, <b>Nustatymai</b>, <b>Laiškų šablonai</b>, <b>Tiekėjai</b> ir <b>Programų tvarkymas</b>.</p>
+    <p><b>Administravime</b> tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro <b>Apžvalgoje</b>. Kiti jo ekranai: <b>Naudotojai</b>, <b>Rolės ir teisės</b>, <b>Audito žurnalas</b>, <b>Sauga</b>, <b>Sistema</b>, <b>Naudojimas</b>, <b>Nustatymai</b>, <b>Laiškų šablonai</b>, <b>Dokumentų šablonai</b>, <b>Tiekėjai</b> ir <b>Programų tvarkymas</b>.</p>
     <p>Atidarykite jį mygtuku <b>Administravimas</b> šoninės juostos apačioje. Jis turi savo šoninę juostą; <b>Darbo drabužiai ir įranga</b> jos apačioje grąžina atgal.</p>
     <p>Prisijungiate prie abiejų iš karto, o <b>Atsijungti</b> bet kuriame atjungia nuo abiejų. <b>Administravimą</b> mato visi, kurių rolės leidžia tvarkyti naudotojus, roles, nustatymus ar tiekėjus arba skaityti audito žurnalą, saugą, sistemą, naudojimą ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.</p>
 </section>
 
 <section id="overview">
-  <h2><span class="n">16</span>Apžvalga</h2>
+  <h2><span class="n">17</span>Apžvalga</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Apžvalga</b> atsako į klausimą: ar kas nors negerai? <b>Reikia dėmesio</b> išvardija, į ką pažiūrėti, svarbiausia pirmiau, su nuoroda, kur tai sutvarkyti. Kai viskas gerai, rodoma <b>Niekam nereikia jūsų dėmesio.</b></p>
     <ul>
@@ -451,7 +473,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="users">
-  <h2><span class="n">17</span>Naudotojai</h2>
+  <h2><span class="n">18</span>Naudotojai</h2>
   <p class="who">Tik administratoriams</p>
     <ul>
       <li>Kurkite, redaguokite ar deaktyvuokite paskyras. Kiekvienai paskyrai priskirkite vieną ar kelias roles: naudotojas gali tai, ką leidžia bet kuri jo rolė. Ką leidžia kiekviena rolė, rodo <b>Rolės ir teisės</b>.</li>
@@ -466,7 +488,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="roles">
-  <h2><span class="n">18</span>Rolės ir teisės</h2>
+  <h2><span class="n">19</span>Rolės ir teisės</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Rolės ir teisės</b> rodo kiekvieną rolę, ką ji leidžia ir kiek naudotojų ją turi. Rolė – tai teisių rinkinys, pavyzdžiui, <b>Tvarkyti prekių katalogą</b> ar <b>Trinti darbuotojus</b>. Roles naudotojams skiriate skiltyje <b>Naudotojai</b>.</p>
     <ul>
@@ -484,7 +506,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="audit">
-  <h2><span class="n">19</span>Audito žurnalas</h2>
+  <h2><span class="n">20</span>Audito žurnalas</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Audito žurnalas</b> rodo kiekvieną užfiksuotą pakeitimą: kas pakeista, kas pakeitė, kada ir kur. Pakeitimas daromas programoje <b>Darbo drabužiai ir įranga</b>, <b>Administravime</b>, per darbuotojo <b>Patvirtinimo nuorodą</b> arba pačios <b>Sistemos</b>.</p>
     <p>Filtruokite pagal <b>Sritis</b>, <b>Pakeitimas</b>, <b>Naudotojas</b> ir datas. Spustelėkite pakeitimą, kad jis atsivertų šalia sąrašo. Jame matyti kiekvienas laukas prieš ir po, o <b>Atidaryti programoje „Darbo drabužiai ir įranga“</b> atidaro įrašą. <b>Visi šio įrašo pakeitimai</b> susiaurina sąrašą iki jo.</p>
@@ -501,7 +523,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="security">
-  <h2><span class="n">20</span>Sauga</h2>
+  <h2><span class="n">21</span>Sauga</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Sauga</b> turi tris skirtukus:</p>
     <ul>
@@ -517,12 +539,13 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="system">
-  <h2><span class="n">21</span>Sistema</h2>
+  <h2><span class="n">22</span>Sistema</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Sistema</b> rodo, kaip veikia programėlė. Ji turi tris skirtukus: <b>Būsena</b>, <b>Klaidos</b> ir <b>Atsarginės kopijos</b>.</p>
     <ul>
       <li><b>Būsena</b>: ar programėlė <b>Veikia</b>, jos versija ir kada ji paleista; paskutinių 24 valandų užklausos, kiek jų nepavyko ir kiek jos truko; duomenų bazės dydis ir paskutinė migracija; kiek laikomi prisijungimai, klaidos ir pakeitimai.</li>
       <li><b>Klaidos</b>: kas nepavyko serveryje ar kieno nors naršyklėje, kiek kartų ir kada paskutinį kartą. Atidarykite klaidą, kad matytumėte, kas su ja susidūrė, kur ir kokiu įrenginiu. Klaidos laikomos 30 dienų.</li>
+      <li><b>Foninė apdorojimo programa</b>, skiltyje <b>Būsena</b>: programa, kuri fone nuskaito dokumentų tekstą, išsaugo aktus ir įrašus Dokumentų saugykloje ir paverčia Word šablonus PDF. Rodoma, ar ji veikia, kiek darbų laukia ir kurie nepavyko. <b>Apžvalga</b> įspėja, kai darbai laukia, o programa neveikia, arba kai darbai nepavyksta.</li>
       <li><b>Atsarginės kopijos</b>: žr. toliau.</li>
     </ul>
     <p>Kai kas nors nepavyksta, programėlė parodo <b>Nuoroda į užklausą</b>, pvz., <kbd>9f2c1a7e</kbd>. Klaida ekrane <b>Klaidos</b> rodo tą pačią nuorodą. Perduokite ją serverį prižiūrinčiam asmeniui: pagal ją jis randa klaidą serverio žurnale.</p>
@@ -533,7 +556,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="backups">
-  <h2><span class="n">22</span>Atsarginės kopijos</h2>
+  <h2><span class="n">23</span>Atsarginės kopijos</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Sistema → Atsarginės kopijos</b> rodo, ar duomenų bazė kopijuojama. Atsarginių kopijų tarnyba serveryje pagal tvarkaraštį kopijuoja visą duomenų bazę, jei nenustatyta kitaip, kiekvieną naktį, ir ištrina senas kopijas pasibaigus laikymo laikui.</p>
     <p>Viršutinė eilutė sako, ar viskas gerai. Ji tampa raudona, kai paskutinė kopija nepavyko, kai suplanuota kopija vėluoja arba kai tarnyba nustojo pranešti. Praneškite serverį prižiūrinčiam žmogui.</p>
@@ -551,7 +574,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="usage">
-  <h2><span class="n">23</span>Naudojimas</h2>
+  <h2><span class="n">24</span>Naudojimas</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Naudojimas</b> rodo, kaip naudojamasi programėlėmis. Jokie puslapiai nesekami: viskas gaunama iš to, ką programėlė ir taip užfiksuoja.</p>
     <ul>
@@ -568,7 +591,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="settings">
-  <h2><span class="n">24</span>Nustatymai</h2>
+  <h2><span class="n">25</span>Nustatymai</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Tiekėjo WhatsApp grupė</b>: įrašykite grupės pavadinimą ir pakvietimo nuorodą. WhatsApp programėlėje atidarykite grupę, palieskite jos pavadinimą, tada <b>Pakviesti per nuorodą</b> ir <b>Kopijuoti nuorodą</b>.</p>
     <p><b>Kopijuoti į WhatsApp</b> tada pasiūlo atidaryti šią grupę, kur įklijuojate užsakymo žinutę. WhatsApp negali atidaryti grupės su jau įrašyta žinute. <b>Pašalinti grupę</b> grąžina WhatsApp atidarymą nepasirinkus pokalbio.</p>
@@ -583,7 +606,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="suppliers">
-  <h2><span class="n">25</span>Tiekėjai</h2>
+  <h2><span class="n">26</span>Tiekėjai</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Tiekėjai</b> Administravime – tai įmonės, iš kurių perkamos katalogo prekės: kiekvienos <b>Vidinis kodas</b>, pavadinimas, vieta, kiek prekių jai priskirta ir su kuo susisiekti. Ieškokite pagal kodą, pavadinimą, miestą ar kontaktą. Telefone šis ekranas yra <b>Daugiau</b>.</p>
     <p><b>Pridėti tiekėją</b> prideda naują. Privalomi jo <b>Vidinis kodas</b> (jūsų pačių trumpas kodas) ir <b>Pavadinimas</b>; kodas turi skirtis nuo kitų tiekėjų kodų, nepaisant didžiųjų ir mažųjų raidžių. Kitus duomenis įveskite, kiek žinote: <b>Įmonės kodą</b> ir <b>PVM mokėtojo kodą</b>, <b>Banko sąskaitą</b> (IBAN), adresą su dviejų raidžių <b>Šalimi</b>, pvz., LT, kontaktinį asmenį, el. paštą, telefoną, svetainę ir pastabas. <b>Redaguoti</b> jį pakeičia; pakeitimas matomas visose šio tiekėjo prekėse.</p>
@@ -594,8 +617,17 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="document-templates">
+  <h2><span class="n">27</span>Dokumentų šablonai</h2>
+  <p class="who">Tik administratoriams</p>
+    <p><b>Dokumentų šablonai</b> – šablonai, pagal kuriuos generuojamos darbo sutartys ir kiti dokumentai. Kiekvienas skirtas vienam dokumentų tipui ir vienai kalbai, kuri nustato, kaip rašomos datos ir sumos. <b>Pridėti šabloną</b> sukuria naują juodraštį.</p>
+    <p>Rašykite jį redaktoriuje kaip <b>Blokai</b>: antraštės, pastraipos, sąrašai, lentelės, duomenys ir parašų eilutės. Laukai, pvz., <kbd>{{employee.name}}</kbd>, užpildomi generuojant dokumentą; <b>Laukai</b> įterpia lauką ten, kur žymeklis. <b>Klausiami laukai</b> – reikšmės, kurias įveda generuojantis, pvz., atlyginimas: <b>Pridėti klausiamą lauką</b>. <b>Peržiūra</b> parodo šabloną su pavyzdinėmis reikšmėmis.</p>
+    <p>Arba rašykite jį Word: <b>⋯ → Įkelti DOCX šabloną…</b> padaro Word dokumentą juodraščiu, su jo paties išdėstymu, šriftais, lentelėmis, antraštėmis ir poraštėmis. Kiekvieną lauką jame rašykite kaip <kbd>{{employee.name}}</kbd>; puslapyje išvardyti naudojami laukai ir pasakyta, kurie iš jų nėra laukai. <b>Pakeisti DOCX…</b> įkelia pataisytą, <b>Atsisiųsti DOCX</b> jį išsaugo, o <b>Rašyti redaktoriuje</b> grįžta prie blokų.</p>
+    <p><b>Išsaugoti juodraštį</b> išsaugo pakeitimus. <b>Paskelbti…</b> padaro juodraštį niekada nesikeičiančia versija, kurią nuo tada naudoja <b>Generuoti dokumentą…</b>. Kiekvienas šablonas turi spausdinti <kbd>{{document.number}}</kbd>, o Word šablonas – ir <kbd>{{document.hash}}</kbd>, nes spausdina savo poraštę. <b>Nebenaudoti…</b> nustoja jį siūlyti; pagal jį sukurti dokumentai jį ir toliau nurodo.</p>
+</section>
+
 <section id="manage-apps">
-  <h2><span class="n">26</span>Programų tvarkymas</h2>
+  <h2><span class="n">28</span>Programų tvarkymas</h2>
   <p class="who">Tik administratoriams</p>
     <p><b>Programų tvarkymas</b> Administravime – tai programų sąrašo plytelės: kiekviena programa ir nuoroda, sąrašo tvarka. Pasirinkite vieną, kad pamatytumėte, kur ji veikia, kas ją mato, atsiliepimus ir <b>Pakeitimai</b>.</p>
     <p><b>Registruoti programą</b> prideda plytelę: jos pavadinimą kiekviena kalba, trumpąjį vardą (jos vardas adresuose ir įrašuose, nustatomas vieną kartą), ar tai programa, ar nuoroda į vieną programos ekraną, grupę, etapą, paveikslėlį ir spalvą, ir kur ji veikia: <b>Šioje svetainėje</b>, su keliu, pvz., /orders/new, ar <b>Kitoje svetainėje</b>, su jos https adresu. <b>Redaguoti</b> pakeičia vėliau.</p>
@@ -609,7 +641,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="account">
-  <h2><span class="n">27</span>Jūsų paskyra</h2>
+  <h2><span class="n">29</span>Jūsų paskyra</h2>
     <ul>
       <li><b>Kalba</b>: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis. Datos rašomos pagal kalbą: 2026-10-15 anglų, 2026.10.15 lietuvių, 15.10.2026 rusų kalba.</li>
       <li><b>Tema</b>: <b>Šviesi</b>, <b>Tamsi</b> arba <b>Kaip įrenginyje</b>. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.</li>
@@ -625,7 +657,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="install">
-  <h2><span class="n">28</span>Programos įdiegimas</h2>
+  <h2><span class="n">30</span>Programos įdiegimas</h2>
     <p>Įtraukite programą į telefono pradžios ekraną ir atidarykite ją kaip bet kurią kitą: savo lange, be naršyklės adreso juostos, pavadinimu <b>Workwear</b>.</p>
     <p><b>Android</b>, naršyklėje Chrome:</p>
     <ol>
@@ -648,11 +680,11 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="shortcuts">
-  <h2><span class="n">29</span>Paieška ir spartieji klavišai</h2>
+  <h2><span class="n">31</span>Paieška ir spartieji klavišai</h2>
     <div class="table"><table>
       <thead><tr><th>Klavišas</th><th>Ką daro</th></tr></thead>
       <tbody>
-      <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></td><td>Ieško įrašų numerių, darbuotojų, prekių, įmonės turto ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite <b>Naujas užsakymas: …</b>.</td></tr>
+      <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></td><td>Ieško įrašų numerių, darbuotojų, prekių, įmonės turto, dokumentų ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite <b>Naujas užsakymas: …</b>.</td></tr>
       <tr><td><kbd>/</kbd></td><td>Pereina į paieškos arba „Pridėti prekę“ lauką.</td></tr>
       <tr><td><kbd>G</kbd>, tada <kbd>D</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>A</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>U</kbd></td><td>Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Įmonės turtą, Katalogą, Prekių rinkinius arba Naudotojus (Administravime).</td></tr>
       <tr><td><kbd>J</kbd> / <kbd>K</kbd>, <kbd>Esc</kbd></td><td>Pereina per Užsakymus, SIM korteles, Įrangą ar Prekių katalogą arba uždaro atidarytą įrašą. <kbd>Esc</kbd> taip pat išeina iš Eksportuoti ir Keisti būseną… nieko nepadarius.</td></tr>

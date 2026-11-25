@@ -146,6 +146,7 @@ An order's **Changes** list what happened to it and who did it: ordered, a link 
 A **Given** order has a locked record in English and Russian. Open it with **View Order**.
 
 - **Print Record** prints it on one A4 page; the printer, **Print Order**, on the order does the same.
+- **Download PDF** saves it as a PDF file.
 - **Share via WhatsApp** sends it.
 
 Dates on the record, and on the printed and PDF assignment forms of Company Assets, are written **2026 10 15**, the same in every language.
@@ -330,6 +331,8 @@ Once the employee has signed, scan or photograph the form and choose **Upload Si
 
 *Administrators and managers only:*
 
+The signed copies, and a PDF of each form, are also kept in the **Document Vault**, linked to the SIM or item and the employee.
+
 When it is physically back in the office, choose **Return**: **Register SIM Return** or **Register Asset Return** then puts it there. Each giving and return stays on its page under **Assignments**, with **Print form again** and **Download PDF** for its form. Printing, each PDF downloaded and the blocking email are recorded in its **Changes**, closed at first; choose **Changes** to open them.
 
 Leaving never returns anything. When an employee does not give a card back, **Mark as Not Returned** records where it is: still with them, or unknown. It stays theirs until it comes back. **Prepare Blocking Email** then gives the text to copy into your own email to the provider; once they confirm, choose **Blocked** in **Change Status**.
@@ -354,17 +357,47 @@ The list below checks every SIM at once and says what needs fixing: a number tha
 
 **PIN and PUK**, at the top, finds a SIM by its SIM No. or phone number, at least 4 digits. **Show PIN and PUK** shows them, as the key on a SIM in **SIM Cards** does; each time is recorded in its **Changes**, never the codes. A SIM without them has **Add PIN and PUK**. They are kept encrypted, and never shown in a list. Shown codes hide again after a minute, or when you leave the tab. The SIMs you were scanning stay in their list while you look one up here.
 
-## 15. Administration
+## 15. Document Vault
+
+*Administrators and managers only.*
+
+**Document Vault** keeps the company's documents: certificates, training records, invoices, asset documents and others, each linked to the employees, companies, SIMs, items or orders it is about. It also keeps, by itself, the signed assignment forms uploaded in Company Assets, a PDF of each assignment form and a PDF of each order's Items Given Record.
+
+Open it from the sidebar, below **Company Assets**.
+
+Type in **Search documents** to find a document by its title, number, the names it is linked to, its type, or the words in its file. Case and accents do not matter, and the start of a word is enough: `zuk` finds **Žukauskaitė**. When nothing matches, near spellings are listed, and the list says so. **Type** keeps one kind of document. A document you choose opens beside the list, or in its place on a narrower screen.
+
+**Upload Document…** adds one: choose its **Type** and its file, a PDF, JPEG or PNG of up to 20 MB, then give it a **Title**, its dates and what it is linked to. A photo's location and camera details are removed. Some types must be linked: a certificate to an employee, an asset document to a SIM or an item.
+
+A document shows its type, its dates, its **Origin** (**Uploaded**, **Generated** or **Kept automatically**), what it is **Linked to**, and its **Versions**, newest first, each with its file to download, who added it and when. **Add Version…** adds a newer file; the earlier ones stay. **Edit…** changes its title, dates and links, and **Remove document…** removes it, after asking. Its **Changes** record each.
+
+A document with **Valid until**, such as a certificate, shows **Expires soon** 30 days before that day, then **Expired**.
+
+Under each version, a line says how its words were read for search: **Waiting to be read**, **Read**, **No text found** or **Couldn't read**. A PDF's own text is used; a scan or a photo is read by OCR, in Lithuanian, Russian or English, in the background. **Read Again** reads it once more.
+
+**Documents**, on an employee's page and on a SIM's or an item's, lists the documents linked to them. **Upload Document…** there links the new one to them; **Open Document Vault** opens the whole list.
+
+Documents **Kept automatically** come from the app's own records, and cannot be changed or removed here: each copy uploaded with **Upload Signed Form**, a PDF of the assignment form when a SIM or an item is given, and a PDF of an order's Items Given Record once it is **Given**. On a kept form or record, **Verify** checks it against the record it was made from: **Matches** says the record still has the hash the copy was made with and the copy's file is unchanged.
+
+Searching for an employee by name, or keeping one employee, also lists their **ID documents** from Personnel files above the list: each one's kind, issuing state and validity. They are not kept in the Document Vault: the name opens the employee's page at **Identity**.
+
+Each kind of document is kept as long as Lithuanian law requires, then shredded: invoices and asset documents 10 years after their date, assignment forms 10 years after the SIM or item comes back, certificates and training records 3 years after employment ends, an Items Given Record 1 year after its items' service period. Its page then shows **Kept until**. **Legal Hold…** keeps a document past that day, for an inspection or a dispute: give the last day it is held and why. A held document is neither shredded nor removed.
+
+Employment contracts, annexes, NDAs and other employment documents are seen only by those given the **Employment Documents** role; administrators see them only with it. They are **Sealed**: encrypted with a key of their own, so their titles show only on their own page. Opening a file asks for your password unless you signed in recently, and each opening is recorded. They are kept 50 years after employment ends, other employment documents 3 years.
+
+With that role, **Generate Document…** under **Documents** on an employee's page makes a document from a template: choose the template and the employment it is for, fill in what it asks, such as a salary, then **Preview**. **Generate** makes exactly what the preview showed, numbered, such as `EC-2026-0001`, kept as a locked PDF and linked to the employee and the company. If anything changes after the preview, preview it again. A template written in Word takes a few seconds longer while its PDF is made.
+
+## 16. Administration
 
 *Administrators only.*
 
-**Administration** is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on **Overview**. Its other screens are **Users**, **Roles & permissions**, **Audit log**, **Security**, **System**, **Usage**, **Settings**, **Mail Templates**, **Suppliers** and **Manage apps**.
+**Administration** is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on **Overview**. Its other screens are **Users**, **Roles & permissions**, **Audit log**, **Security**, **System**, **Usage**, **Settings**, **Mail Templates**, **Document Templates**, **Suppliers** and **Manage apps**.
 
 Open it with **Administration** at the foot of the sidebar. It has a sidebar of its own; **Workwear & Equipment**, at its foot, takes you back.
 
 You are signed in to both at once, and **Sign out** in either signs you out of both. Anyone whose roles let them manage users, roles, settings or suppliers, or read the Audit log, Security, System, Usage or the backups, sees **Administration**, with only the screens their roles open.
 
-## 16. Overview
+## 17. Overview
 
 *Administrators only.*
 
@@ -381,7 +414,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 
 ![Overview: what needs attention, then the figures](../../web/apps/workwear/public/help-img/en/desktop/overview.png)
 
-## 17. Users
+## 18. Users
 
 *Administrators only.*
 
@@ -393,7 +426,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 
 ![The Users screen](../../web/apps/workwear/public/help-img/en/desktop/users.png)
 
-## 18. Roles & permissions
+## 19. Roles & permissions
 
 *Administrators only.*
 
@@ -409,7 +442,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 ![Roles & permissions: the built-in roles and the users holding them](../../web/apps/workwear/public/help-img/en/desktop/roles.png)
 ![A role's permissions, grouped, each with what it allows](../../web/apps/workwear/public/help-img/en/desktop/role.png)
 
-## 19. Audit log
+## 20. Audit log
 
 *Administrators only.*
 
@@ -425,7 +458,7 @@ Filter by **Area**, **Change**, **Person** and dates. Click a change to open it 
 
 ![Audit log: a price change open, with the fields before and after](../../web/apps/workwear/public/help-img/en/desktop/audit-log.png)
 
-## 20. Security
+## 21. Security
 
 *Administrators only.*
 
@@ -440,7 +473,7 @@ Filter by **Area**, **Change**, **Person** and dates. Click a change to open it 
 ![Security: sign-ins with their address and device](../../web/apps/workwear/public/help-img/en/desktop/security.png)
 ![The access review: users, their roles and last sign-in](../../web/apps/workwear/public/help-img/en/desktop/access-review.png)
 
-## 21. System
+## 22. System
 
 *Administrators only.*
 
@@ -448,6 +481,7 @@ Filter by **Area**, **Change**, **Person** and dates. Click a change to open it 
 
 - **Status**: whether the app is **Ready**, its version and when it started; the last 24 hours of requests, how many failed and how long they took; the database's size and latest migration; and how long sign-ins, errors and changes are kept.
 - **Errors**: what went wrong, on the server or in someone's browser, with how many times and when last. Open one to see who met it, where and on what device. Errors are kept 30 days.
+- **Worker**, on **Status**: the background program that reads documents' text, keeps forms and records in the Document Vault and turns Word templates into PDFs. It says whether it is running, the jobs waiting and those that failed. The **Overview** warns when jobs wait with no worker running, or fail.
 - **Backups**: below.
 
 When something goes wrong, the app shows a **Reference**, such as `9f2c1a7e`. The error on **Errors** shows the same reference. Pass it on to whoever runs the server: it finds the error in the server's log.
@@ -455,7 +489,7 @@ When something goes wrong, the app shows a **Reference**, such as `9f2c1a7e`. Th
 ![System: the app, its requests and the database](../../web/apps/workwear/public/help-img/en/desktop/system.png)
 ![Errors: an error open, with its reference](../../web/apps/workwear/public/help-img/en/desktop/errors.png)
 
-## 22. Backups
+## 23. Backups
 
 *Administrators only.*
 
@@ -474,7 +508,7 @@ The settings are made on the server, and a backup is restored there too: the app
 
 ![Backups: the last backup, the recent ones and the settings](../../web/apps/workwear/public/help-img/en/desktop/backups.png)
 
-## 23. Usage
+## 24. Usage
 
 *Administrators only.*
 
@@ -489,7 +523,7 @@ The settings are made on the server, and a backup is restored there too: the app
 
 ![Usage: active people, sign-ins and more](../../web/apps/workwear/public/help-img/en/desktop/usage.png)
 
-## 24. Settings
+## 25. Settings
 
 *Administrators only.*
 
@@ -505,7 +539,7 @@ A card already registered keeps its provider, even one you remove from the list,
 
 ![Settings: the SIM providers, one of them the default, and the default non-return value](../../web/apps/workwear/public/help-img/en/desktop/sim-providers.png)
 
-## 25. Suppliers
+## 26. Suppliers
 
 *Administrators only.*
 
@@ -519,7 +553,19 @@ An item's supplier is chosen on **Edit Item**, in the Item Catalogue. Someone gi
 
 ![Suppliers: each with its internal code, place, items and contact](../../web/apps/workwear/public/help-img/en/desktop/suppliers.png)
 
-## 26. Manage apps
+## 27. Document Templates
+
+*Administrators only.*
+
+**Document Templates** holds the templates employment contracts and other documents are generated from. Each is for one type of document and in one language, which sets how dates and amounts are written. **Add Template** starts one as a draft.
+
+Write it in the editor as **Blocks**: headings, paragraphs, lists, tables, details and signature lines. Fields such as `{{employee.name}}` are filled in when a document is generated; **Fields** puts one where the cursor is. **Asked fields** are the values the person generating types in, such as a salary: **Add Asked Field**. **Preview** draws the template with sample values.
+
+Or write it in Word: **⋯ → Upload DOCX Template…** makes a Word document the draft, with its own layout, fonts, tables, headers and footers. Write each field in it as `{{employee.name}}`; the page lists the fields it uses and says which are not fields. **Replace DOCX…** uploads a corrected one, **Download DOCX** saves it, and **Write in the Editor Instead** goes back to blocks.
+
+**Save Draft** keeps your changes. **Publish…** makes the draft a version that never changes, which **Generate Document…** uses from then on. Every template must print `{{document.number}}`, and a Word template `{{document.hash}}` too, as it prints its own footer. **Retire…** stops offering a template; documents made from it keep naming it.
+
+## 28. Manage apps
 
 *Administrators only.*
 
@@ -537,7 +583,7 @@ Turn on **Stable follows deploys** for an app no one tries first: each deploy's 
 
 ![Manage apps: Scan SIMs beside the list, with its versions and channels](../../web/apps/workwear/public/help-img/en/desktop/manage-apps.png)
 
-## 27. Your account
+## 29. Your account
 
 - **Language**: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian. Dates follow your language: 2026-10-15 in English, 2026.10.15 in Lithuanian, 15.10.2026 in Russian.
 - **Theme**: **Light**, **Dark** or **System**, which follows the device. It is kept on this device, and the sign-in page uses it too.
@@ -549,7 +595,7 @@ Turn on **Stable follows deploys** for an app no one tries first: each deploy's 
 ![Account: language, theme and password](../../web/apps/workwear/public/help-img/en/desktop/account.png)
 ![Signed-in devices: this device and a phone](../../web/apps/workwear/public/help-img/en/desktop/devices.png)
 
-## 28. Install the app
+## 30. Install the app
 
 Add the app to your phone's home screen to open it like any other app: in a window of its own, without the browser's address bar, under the name **Workwear**.
 
@@ -571,11 +617,11 @@ On a computer, Chrome and Edge can install it too: choose **Install app** on you
 - Without a connection, the app shows **The server cannot be reached**. It opens the page again by itself once you are back online, or choose **Retry**.
 - The icon's shortcuts are in the language you used when you added the app. After changing your language, remove the app from the home screen and add it again.
 
-## 29. Search and shortcuts
+## 31. Search and shortcuts
 
 | Key | Does |
 | --- | --- |
-| `⌘K` / `Ctrl K` | Search record numbers, employees, items, company assets and screens. For example, type a name, then choose **New order for …**. |
+| `⌘K` / `Ctrl K` | Search record numbers, employees, items, company assets, documents and screens. For example, type a name, then choose **New order for …**. |
 | `/` | Go to the search or Add Item field. |
 | `G` then `D` `O` `H` `E` `A` `C` `S` `U` | Go to Dashboard, Create Order, Orders, Employees, Company Assets, Catalogue, Item Sets or Users (in Administration). |
 | `J` / `K`, `Esc` | Move through Orders, SIM Cards, Equipment or the Item Catalogue, or close the one open. `Esc` also leaves Export and Change Status… without doing anything. |

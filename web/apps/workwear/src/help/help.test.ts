@@ -59,7 +59,7 @@ describe('forReader', () => {
   const forRoles = (g: Guide, roles: readonly Role[]) => forReader(g, { roles, device: 'desktop' })
 
   it('keeps Administration, its screens and the Dashboard tour for administrators only', () => {
-    const administration = ['administration', 'overview', 'users', 'roles', 'audit', 'security', 'system', 'backups', 'usage', 'settings', 'suppliers', 'manage-apps']
+    const administration = ['administration', 'overview', 'users', 'roles', 'audit', 'security', 'system', 'backups', 'usage', 'settings', 'suppliers', 'document-templates', 'manage-apps']
     expect(ids(forRoles(guides.en, ['admin']))).toEqual(expect.arrayContaining(administration))
     for (const id of administration) {
       expect(ids(forRoles(guides.en, ['manager']))).not.toContain(id)
@@ -93,6 +93,17 @@ describe('forReader', () => {
     expect(words(forRoles(guides.en, ['manager']))).toContain('Upload Signed Form')
     expect(words(forRoles(guides.en, ['employee']))).not.toContain('Upload Signed Form')
     expect(words(forRoles(guides.en, ['employee']))).toContain('Signed Copy Missing')
+  })
+
+  it('shows the Document Vault to administrators and managers, who read it, and Generate Document… with the Employment Documents role', () => {
+    for (const roles of [['admin'], ['manager']] as const) {
+      expect(ids(forRoles(guides.en, roles))).toContain('vault')
+      expect(words(forRoles(guides.en, roles))).toContain('**Employment Documents**')
+      expect(words(forRoles(guides.en, roles))).toContain('**Generate Document…**')
+    }
+    expect(ids(forRoles(guides.en, ['employee']))).not.toContain('vault')
+    expect(words(forRoles(guides.en, ['employee']))).not.toContain('Document Vault')
+    expect(words(forRoles(guides.en, ['admin']))).toContain('Upload DOCX Template…')
   })
 
   it('keeps Delete order for managers only', () => {

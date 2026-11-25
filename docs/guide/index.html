@@ -89,21 +89,23 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <li><a href="#share"><b>12</b>Share a few employees</a></li>
     <li><a href="#assets"><b>13</b>Company Assets</a></li>
     <li><a href="#sim-scan"><b>14</b>Scan SIMs</a></li>
-    <li><a href="#administration"><b>15</b>Administration</a></li>
-    <li><a href="#overview"><b>16</b>Overview</a></li>
-    <li><a href="#users"><b>17</b>Users</a></li>
-    <li><a href="#roles"><b>18</b>Roles &amp; permissions</a></li>
-    <li><a href="#audit"><b>19</b>Audit log</a></li>
-    <li><a href="#security"><b>20</b>Security</a></li>
-    <li><a href="#system"><b>21</b>System</a></li>
-    <li><a href="#backups"><b>22</b>Backups</a></li>
-    <li><a href="#usage"><b>23</b>Usage</a></li>
-    <li><a href="#settings"><b>24</b>Settings</a></li>
-    <li><a href="#suppliers"><b>25</b>Suppliers</a></li>
-    <li><a href="#manage-apps"><b>26</b>Manage apps</a></li>
-    <li><a href="#account"><b>27</b>Your account</a></li>
-    <li><a href="#install"><b>28</b>Install the app</a></li>
-    <li><a href="#shortcuts"><b>29</b>Search and shortcuts</a></li>
+    <li><a href="#vault"><b>15</b>Document Vault</a></li>
+    <li><a href="#administration"><b>16</b>Administration</a></li>
+    <li><a href="#overview"><b>17</b>Overview</a></li>
+    <li><a href="#users"><b>18</b>Users</a></li>
+    <li><a href="#roles"><b>19</b>Roles &amp; permissions</a></li>
+    <li><a href="#audit"><b>20</b>Audit log</a></li>
+    <li><a href="#security"><b>21</b>Security</a></li>
+    <li><a href="#system"><b>22</b>System</a></li>
+    <li><a href="#backups"><b>23</b>Backups</a></li>
+    <li><a href="#usage"><b>24</b>Usage</a></li>
+    <li><a href="#settings"><b>25</b>Settings</a></li>
+    <li><a href="#suppliers"><b>26</b>Suppliers</a></li>
+    <li><a href="#document-templates"><b>27</b>Document Templates</a></li>
+    <li><a href="#manage-apps"><b>28</b>Manage apps</a></li>
+    <li><a href="#account"><b>29</b>Your account</a></li>
+    <li><a href="#install"><b>30</b>Install the app</a></li>
+    <li><a href="#shortcuts"><b>31</b>Search and shortcuts</a></li>
   </ol></nav>
 </header>
 
@@ -251,6 +253,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <p>A <b>Given</b> order has a locked record in English and Russian. Open it with <b>View Order</b>.</p>
     <ul>
       <li><b>Print Record</b> prints it on one A4 page; the printer, <b>Print Order</b>, on the order does the same.</li>
+      <li><b>Download PDF</b> saves it as a PDF file.</li>
       <li><b>Share via WhatsApp</b> sends it.</li>
     </ul>
     <p>Dates on the record, and on the printed and PDF assignment forms of Company Assets, are written <b>2026 10 15</b>, the same in every language.</p>
@@ -405,6 +408,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
       <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/signed-copy.png" alt="An assignment with its signed copy uploaded" loading="lazy"></figure>
     </div>
     <p class="who">Administrators and managers only</p>
+    <p>The signed copies, and a PDF of each form, are also kept in the <b>Document Vault</b>, linked to the SIM or item and the employee.</p>
     <p>When it is physically back in the office, choose <b>Return</b>: <b>Register SIM Return</b> or <b>Register Asset Return</b> then puts it there. Each giving and return stays on its page under <b>Assignments</b>, with <b>Print form again</b> and <b>Download PDF</b> for its form. Printing, each PDF downloaded and the blocking email are recorded in its <b>Changes</b>, closed at first; choose <b>Changes</b> to open them.</p>
     <p>Leaving never returns anything. When an employee does not give a card back, <b>Mark as Not Returned</b> records where it is: still with them, or unknown. It stays theirs until it comes back. <b>Prepare Blocking Email</b> then gives the text to copy into your own email to the provider; once they confirm, choose <b>Blocked</b> in <b>Change Status</b>.</p>
     <p>Search finds a SIM by its SIM, phone or inventory number, and an item by its inventory number.</p>
@@ -424,16 +428,34 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <p><b>PIN and PUK</b>, at the top, finds a SIM by its SIM No. or phone number, at least 4 digits. <b>Show PIN and PUK</b> shows them, as the key on a SIM in <b>SIM Cards</b> does; each time is recorded in its <b>Changes</b>, never the codes. A SIM without them has <b>Add PIN and PUK</b>. They are kept encrypted, and never shown in a list. Shown codes hide again after a minute, or when you leave the tab. The SIMs you were scanning stay in their list while you look one up here.</p>
 </section>
 
+<section id="vault">
+  <h2><span class="n">15</span>Document Vault</h2>
+  <p class="who">Administrators and managers only</p>
+    <p><b>Document Vault</b> keeps the company's documents: certificates, training records, invoices, asset documents and others, each linked to the employees, companies, SIMs, items or orders it is about. It also keeps, by itself, the signed assignment forms uploaded in Company Assets, a PDF of each assignment form and a PDF of each order's Items Given Record.</p>
+    <p>Open it from the sidebar, below <b>Company Assets</b>.</p>
+    <p>Type in <b>Search documents</b> to find a document by its title, number, the names it is linked to, its type, or the words in its file. Case and accents do not matter, and the start of a word is enough: <kbd>zuk</kbd> finds <b>Žukauskaitė</b>. When nothing matches, near spellings are listed, and the list says so. <b>Type</b> keeps one kind of document. A document you choose opens beside the list, or in its place on a narrower screen.</p>
+    <p><b>Upload Document…</b> adds one: choose its <b>Type</b> and its file, a PDF, JPEG or PNG of up to 20 MB, then give it a <b>Title</b>, its dates and what it is linked to. A photo's location and camera details are removed. Some types must be linked: a certificate to an employee, an asset document to a SIM or an item.</p>
+    <p>A document shows its type, its dates, its <b>Origin</b> (<b>Uploaded</b>, <b>Generated</b> or <b>Kept automatically</b>), what it is <b>Linked to</b>, and its <b>Versions</b>, newest first, each with its file to download, who added it and when. <b>Add Version…</b> adds a newer file; the earlier ones stay. <b>Edit…</b> changes its title, dates and links, and <b>Remove document…</b> removes it, after asking. Its <b>Changes</b> record each.</p>
+    <p>A document with <b>Valid until</b>, such as a certificate, shows <b>Expires soon</b> 30 days before that day, then <b>Expired</b>.</p>
+    <p>Under each version, a line says how its words were read for search: <b>Waiting to be read</b>, <b>Read</b>, <b>No text found</b> or <b>Couldn't read</b>. A PDF's own text is used; a scan or a photo is read by OCR, in Lithuanian, Russian or English, in the background. <b>Read Again</b> reads it once more.</p>
+    <p><b>Documents</b>, on an employee's page and on a SIM's or an item's, lists the documents linked to them. <b>Upload Document…</b> there links the new one to them; <b>Open Document Vault</b> opens the whole list.</p>
+    <p>Documents <b>Kept automatically</b> come from the app's own records, and cannot be changed or removed here: each copy uploaded with <b>Upload Signed Form</b>, a PDF of the assignment form when a SIM or an item is given, and a PDF of an order's Items Given Record once it is <b>Given</b>. On a kept form or record, <b>Verify</b> checks it against the record it was made from: <b>Matches</b> says the record still has the hash the copy was made with and the copy's file is unchanged.</p>
+    <p>Searching for an employee by name, or keeping one employee, also lists their <b>ID documents</b> from Personnel files above the list: each one's kind, issuing state and validity. They are not kept in the Document Vault: the name opens the employee's page at <b>Identity</b>.</p>
+    <p>Each kind of document is kept as long as Lithuanian law requires, then shredded: invoices and asset documents 10 years after their date, assignment forms 10 years after the SIM or item comes back, certificates and training records 3 years after employment ends, an Items Given Record 1 year after its items' service period. Its page then shows <b>Kept until</b>. <b>Legal Hold…</b> keeps a document past that day, for an inspection or a dispute: give the last day it is held and why. A held document is neither shredded nor removed.</p>
+    <p>Employment contracts, annexes, NDAs and other employment documents are seen only by those given the <b>Employment Documents</b> role; administrators see them only with it. They are <b>Sealed</b>: encrypted with a key of their own, so their titles show only on their own page. Opening a file asks for your password unless you signed in recently, and each opening is recorded. They are kept 50 years after employment ends, other employment documents 3 years.</p>
+    <p>With that role, <b>Generate Document…</b> under <b>Documents</b> on an employee's page makes a document from a template: choose the template and the employment it is for, fill in what it asks, such as a salary, then <b>Preview</b>. <b>Generate</b> makes exactly what the preview showed, numbered, such as <kbd>EC-2026-0001</kbd>, kept as a locked PDF and linked to the employee and the company. If anything changes after the preview, preview it again. A template written in Word takes a few seconds longer while its PDF is made.</p>
+</section>
+
 <section id="administration">
-  <h2><span class="n">15</span>Administration</h2>
+  <h2><span class="n">16</span>Administration</h2>
   <p class="who">Administrators only</p>
-    <p><b>Administration</b> is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on <b>Overview</b>. Its other screens are <b>Users</b>, <b>Roles &amp; permissions</b>, <b>Audit log</b>, <b>Security</b>, <b>System</b>, <b>Usage</b>, <b>Settings</b>, <b>Mail Templates</b>, <b>Suppliers</b> and <b>Manage apps</b>.</p>
+    <p><b>Administration</b> is where you manage who may use the app and what they may do, watch over how it runs, and keep the organisation's settings. It opens on <b>Overview</b>. Its other screens are <b>Users</b>, <b>Roles &amp; permissions</b>, <b>Audit log</b>, <b>Security</b>, <b>System</b>, <b>Usage</b>, <b>Settings</b>, <b>Mail Templates</b>, <b>Document Templates</b>, <b>Suppliers</b> and <b>Manage apps</b>.</p>
     <p>Open it with <b>Administration</b> at the foot of the sidebar. It has a sidebar of its own; <b>Workwear &amp; Equipment</b>, at its foot, takes you back.</p>
     <p>You are signed in to both at once, and <b>Sign out</b> in either signs you out of both. Anyone whose roles let them manage users, roles, settings or suppliers, or read the Audit log, Security, System, Usage or the backups, sees <b>Administration</b>, with only the screens their roles open.</p>
 </section>
 
 <section id="overview">
-  <h2><span class="n">16</span>Overview</h2>
+  <h2><span class="n">17</span>Overview</h2>
   <p class="who">Administrators only</p>
     <p><b>Overview</b> answers the question: is anything wrong? <b>Needs attention</b> lists what to look at, the most urgent first, each with a link to where it is put right. When all is well, it says <b>Nothing needs your attention.</b></p>
     <ul>
@@ -451,7 +473,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="users">
-  <h2><span class="n">17</span>Users</h2>
+  <h2><span class="n">18</span>Users</h2>
   <p class="who">Administrators only</p>
     <ul>
       <li>Add, edit or deactivate accounts. Give each account one or more roles: a user may do what any of their roles allows. <b>Roles &amp; permissions</b> says what each role allows.</li>
@@ -466,7 +488,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="roles">
-  <h2><span class="n">18</span>Roles &amp; permissions</h2>
+  <h2><span class="n">19</span>Roles &amp; permissions</h2>
   <p class="who">Administrators only</p>
     <p><b>Roles &amp; permissions</b> lists each role, what it allows and how many users hold it. A role is a set of permissions, such as <b>Manage Item Catalogue</b> or <b>Delete employees</b>. You give roles to users on <b>Users</b>.</p>
     <ul>
@@ -484,7 +506,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="audit">
-  <h2><span class="n">19</span>Audit log</h2>
+  <h2><span class="n">20</span>Audit log</h2>
   <p class="who">Administrators only</p>
     <p><b>Audit log</b> lists every recorded change: what changed, who made it, when, and where. A change is made in <b>Workwear &amp; Equipment</b>, in <b>Administration</b>, through an employee's <b>Confirmation link</b>, or by the <b>System</b> itself.</p>
     <p>Filter by <b>Area</b>, <b>Change</b>, <b>Person</b> and dates. Click a change to open it beside the list. It shows each field before and after, and <b>Open in Workwear &amp; Equipment</b> opens the record. <b>All changes to this record</b> narrows the list to it.</p>
@@ -501,7 +523,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="security">
-  <h2><span class="n">20</span>Security</h2>
+  <h2><span class="n">21</span>Security</h2>
   <p class="who">Administrators only</p>
     <p><b>Security</b> has three tabs:</p>
     <ul>
@@ -517,12 +539,13 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="system">
-  <h2><span class="n">21</span>System</h2>
+  <h2><span class="n">22</span>System</h2>
   <p class="who">Administrators only</p>
     <p><b>System</b> shows how the app is running. It has three tabs: <b>Status</b>, <b>Errors</b> and <b>Backups</b>.</p>
     <ul>
       <li><b>Status</b>: whether the app is <b>Ready</b>, its version and when it started; the last 24 hours of requests, how many failed and how long they took; the database's size and latest migration; and how long sign-ins, errors and changes are kept.</li>
       <li><b>Errors</b>: what went wrong, on the server or in someone's browser, with how many times and when last. Open one to see who met it, where and on what device. Errors are kept 30 days.</li>
+      <li><b>Worker</b>, on <b>Status</b>: the background program that reads documents' text, keeps forms and records in the Document Vault and turns Word templates into PDFs. It says whether it is running, the jobs waiting and those that failed. The <b>Overview</b> warns when jobs wait with no worker running, or fail.</li>
       <li><b>Backups</b>: below.</li>
     </ul>
     <p>When something goes wrong, the app shows a <b>Reference</b>, such as <kbd>9f2c1a7e</kbd>. The error on <b>Errors</b> shows the same reference. Pass it on to whoever runs the server: it finds the error in the server's log.</p>
@@ -533,7 +556,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="backups">
-  <h2><span class="n">22</span>Backups</h2>
+  <h2><span class="n">23</span>Backups</h2>
   <p class="who">Administrators only</p>
     <p><b>System → Backups</b> shows whether the database is backed up. The backup service on the server copies the whole database on a schedule, every night unless set otherwise, and deletes old copies after the retention period.</p>
     <p>The line at the top says whether all is well. It turns red when the last backup failed, when a scheduled one is overdue, or when the service has stopped reporting. Tell whoever runs the server.</p>
@@ -551,7 +574,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="usage">
-  <h2><span class="n">23</span>Usage</h2>
+  <h2><span class="n">24</span>Usage</h2>
   <p class="who">Administrators only</p>
     <p><b>Usage</b> shows how the apps are used. No page is tracked: everything comes from what the app records anyway.</p>
     <ul>
@@ -568,7 +591,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="settings">
-  <h2><span class="n">24</span>Settings</h2>
+  <h2><span class="n">25</span>Settings</h2>
   <p class="who">Administrators only</p>
     <p><b>Supplier's WhatsApp group</b>: enter the group's name and its invite link. In WhatsApp, open the group, tap its name, then <b>Invite via link</b> and <b>Copy link</b>.</p>
     <p><b>Copy for WhatsApp</b> then offers to open that group, where you paste the order message. WhatsApp cannot open a group with the message already typed in. <b>Remove the group</b> goes back to opening WhatsApp without a chat chosen.</p>
@@ -583,7 +606,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="suppliers">
-  <h2><span class="n">25</span>Suppliers</h2>
+  <h2><span class="n">26</span>Suppliers</h2>
   <p class="who">Administrators only</p>
     <p><b>Suppliers</b>, in Administration, lists the companies catalogue items are bought from: each one's <b>Internal code</b>, name, where it is, how many items name it, and whom to contact. Search by code, name, city or contact. On a phone it is under <b>More</b>.</p>
     <p><b>Add Supplier</b> adds one. Its <b>Internal code</b>, your own short code for it, and its <b>Name</b> are required; the code must differ from every other supplier's, whatever the case. Add the rest as you know it: the <b>Company code</b> and <b>VAT code</b>, the <b>Bank account</b> (IBAN), the address with a two-letter <b>Country</b>, such as LT, the contact person, email, phone, website and notes. <b>Edit</b> changes it; every item from that supplier shows the change.</p>
@@ -594,8 +617,17 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     </div>
 </section>
 
+<section id="document-templates">
+  <h2><span class="n">27</span>Document Templates</h2>
+  <p class="who">Administrators only</p>
+    <p><b>Document Templates</b> holds the templates employment contracts and other documents are generated from. Each is for one type of document and in one language, which sets how dates and amounts are written. <b>Add Template</b> starts one as a draft.</p>
+    <p>Write it in the editor as <b>Blocks</b>: headings, paragraphs, lists, tables, details and signature lines. Fields such as <kbd>{{employee.name}}</kbd> are filled in when a document is generated; <b>Fields</b> puts one where the cursor is. <b>Asked fields</b> are the values the person generating types in, such as a salary: <b>Add Asked Field</b>. <b>Preview</b> draws the template with sample values.</p>
+    <p>Or write it in Word: <b>⋯ → Upload DOCX Template…</b> makes a Word document the draft, with its own layout, fonts, tables, headers and footers. Write each field in it as <kbd>{{employee.name}}</kbd>; the page lists the fields it uses and says which are not fields. <b>Replace DOCX…</b> uploads a corrected one, <b>Download DOCX</b> saves it, and <b>Write in the Editor Instead</b> goes back to blocks.</p>
+    <p><b>Save Draft</b> keeps your changes. <b>Publish…</b> makes the draft a version that never changes, which <b>Generate Document…</b> uses from then on. Every template must print <kbd>{{document.number}}</kbd>, and a Word template <kbd>{{document.hash}}</kbd> too, as it prints its own footer. <b>Retire…</b> stops offering a template; documents made from it keep naming it.</p>
+</section>
+
 <section id="manage-apps">
-  <h2><span class="n">26</span>Manage apps</h2>
+  <h2><span class="n">28</span>Manage apps</h2>
   <p class="who">Administrators only</p>
     <p><b>Manage apps</b>, in Administration, is App Launcher's list: every app and shortcut, in the launcher's order. Choose one to see where it runs, who sees it, its feedback and its <b>Changes</b>.</p>
     <p><b>Register app</b> adds a tile: its name in each language, its slug (its short name in addresses and records, set once), whether it is an app or a shortcut to one screen of an app, its group, stage, picture and colour, and where it runs: <b>On this site</b>, with a path such as /orders/new, or <b>Another site</b>, with its https address. <b>Edit</b> changes it later.</p>
@@ -609,7 +641,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="account">
-  <h2><span class="n">27</span>Your account</h2>
+  <h2><span class="n">29</span>Your account</h2>
     <ul>
       <li><b>Language</b>: English, Lietuvių or Русский. The choice is saved on your account, so every device you sign in on uses it. The employee's confirmation page and the record stay in English and Russian. Dates follow your language: 2026-10-15 in English, 2026.10.15 in Lithuanian, 15.10.2026 in Russian.</li>
       <li><b>Theme</b>: <b>Light</b>, <b>Dark</b> or <b>System</b>, which follows the device. It is kept on this device, and the sign-in page uses it too.</li>
@@ -625,7 +657,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="install">
-  <h2><span class="n">28</span>Install the app</h2>
+  <h2><span class="n">30</span>Install the app</h2>
     <p>Add the app to your phone's home screen to open it like any other app: in a window of its own, without the browser's address bar, under the name <b>Workwear</b>.</p>
     <p><b>Android</b>, in Chrome:</p>
     <ol>
@@ -648,11 +680,11 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 </section>
 
 <section id="shortcuts">
-  <h2><span class="n">29</span>Search and shortcuts</h2>
+  <h2><span class="n">31</span>Search and shortcuts</h2>
     <div class="table"><table>
       <thead><tr><th>Key</th><th>Does</th></tr></thead>
       <tbody>
-      <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></td><td>Search record numbers, employees, items, company assets and screens. For example, type a name, then choose <b>New order for …</b>.</td></tr>
+      <tr><td><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></td><td>Search record numbers, employees, items, company assets, documents and screens. For example, type a name, then choose <b>New order for …</b>.</td></tr>
       <tr><td><kbd>/</kbd></td><td>Go to the search or Add Item field.</td></tr>
       <tr><td><kbd>G</kbd> then <kbd>D</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>E</kbd> <kbd>A</kbd> <kbd>C</kbd> <kbd>S</kbd> <kbd>U</kbd></td><td>Go to Dashboard, Create Order, Orders, Employees, Company Assets, Catalogue, Item Sets or Users (in Administration).</td></tr>
       <tr><td><kbd>J</kbd> / <kbd>K</kbd>, <kbd>Esc</kbd></td><td>Move through Orders, SIM Cards, Equipment or the Item Catalogue, or close the one open. <kbd>Esc</kbd> also leaves Export and Change Status… without doing anything.</td></tr>

@@ -146,6 +146,7 @@ Užsakymo **Pakeitimai** rodo, kas jam nutiko ir kas tai padarė: užsakyta, suk
 Užsakymas, kurio būsena **Išduota**, turi užrakintą įrašą anglų ir rusų kalbomis (Items Given Record / Акт выдачи). Atidarykite jį mygtuku **Peržiūrėti užsakymą**.
 
 - **Spausdinti įrašą** atspausdina jį viename A4 lape; užsakyme tą patį daro spausdintuvas, **Spausdinti užsakymą**.
+- **Atsisiųsti PDF** išsaugo jį kaip PDF failą.
 - **Siųsti per WhatsApp** jį išsiunčia.
 
 Datos įraše ir Įmonės turto atspausdintuose bei PDF išdavimo aktuose rašomos **2026 10 15**, visomis kalbomis vienodai.
@@ -330,6 +331,8 @@ Kai darbuotojas pasirašo, nuskenuokite arba nufotografuokite aktą ir po jo iš
 
 *Tik administratoriams ir vadovams:*
 
+Pasirašytos kopijos ir kiekvieno akto PDF taip pat laikomi **Dokumentų saugykloje**, susieti su SIM ar įranga ir darbuotoju.
+
 Kai daiktas fiziškai grįžta į biurą, pasirinkite **Priimti**: tada **Registruoti SIM grąžinimą** arba **Registruoti turto grąžinimą** jį ten įrašo. Kiekvienas išdavimas ir grąžinimas lieka jo puslapyje skiltyje **Išdavimai**, o **Spausdinti aktą dar kartą** ir **Atsisiųsti PDF** pateikia jo aktą. Spausdinimas, kiekvienas atsisiųstas PDF ir blokavimo laiškas įrašomi skiltyje **Pakeitimai**. Iš pradžių ji suskleista; pasirinkite **Pakeitimai**, kad ją atidarytumėte.
 
 Išėjus iš darbo, niekas negrąžinama savaime. Kai darbuotojas negrąžina kortelės, **Pažymėti kaip negrąžintą** įrašo, kur ji yra: vis dar pas jį ar nežinoma. Kortelė lieka jo, kol grįš. Tada **Paruošti blokavimo laišką** pateikia tekstą, kurį nukopijuosite į savo laišką tiekėjui; kai jis patvirtins, ekrane **Keisti būseną** pasirinkite **Užblokuota**.
@@ -354,17 +357,47 @@ Sąrašas apačioje patikrina visas SIM iš karto ir nurodo, ką taisyti: numeri
 
 **PIN ir PUK** viršuje randa SIM pagal SIM Nr. arba telefono numerį, bent 4 skaitmenis. **Rodyti PIN ir PUK** juos parodo, kaip ir raktas prie SIM ekrane **SIM kortelės**; kiekvienas kartas įrašomas į SIM **Pakeitimai**, bet ne kodai. SIM be jų turi **Pridėti PIN ir PUK**. Jie saugomi užšifruoti ir niekada nerodomi sąraše. Parodyti kodai vėl paslepiami po minutės arba išėjus iš skirtuko. Skenuojamos SIM lieka savo sąraše, kol čia ieškote kurios nors.
 
-## 15. Administravimas
+## 15. Dokumentų saugykla
+
+*Tik administratoriams ir vadovams.*
+
+**Dokumentų saugykloje** laikomi įmonės dokumentai: pažymėjimai, mokymų įrašai, sąskaitos faktūros, turto dokumentai ir kiti, kiekvienas susietas su darbuotojais, įmonėmis, SIM, įranga ar užsakymais, apie kuriuos jis yra. Ji taip pat pati išsaugo **Įmonės turte** įkeltus pasirašytus perdavimo aktus, kiekvieno perdavimo akto PDF ir kiekvieno užsakymo išdavimo įrašo PDF.
+
+Ją atidarysite šoninėje juostoje, po **Įmonės turtas**.
+
+Lauke **Ieškoti dokumentų** dokumentą rasite pagal pavadinimą, numerį, susietus vardus, tipą ar žodžius jo faile. Didžiosios raidės ir diakritikai nesvarbūs, užtenka žodžio pradžios: `zuk` randa **Žukauskaitė**. Jei niekas nesutampa, parodomi panašūs rašybos variantai, ir sąraše tai pasakyta. **Tipas** palieka vienos rūšies dokumentus. Pasirinktas dokumentas atsidaro šalia sąrašo, o siauresniame ekrane – vietoj jo.
+
+**Įkelti dokumentą…** prideda naują: pasirinkite **Tipas** ir failą – PDF, JPEG ar PNG iki 20 MB, tada įrašykite **Pavadinimas**, datas ir su kuo jis susietas. Iš nuotraukos pašalinama vieta ir fotoaparato duomenys. Kai kurių tipų dokumentai turi būti susieti: pažymėjimas – su darbuotoju, turto dokumentas – su SIM ar įranga.
+
+Dokumente matyti jo tipas, datos, **Kilmė** (**Įkelta**, **Sugeneruota** ar **Išsaugota automatiškai**), **Susieta su** – su kuo jis susietas – ir **Versijos**, naujausia pirma, kiekviena su atsisiunčiamu failu, kas ją pridėjo ir kada. **Pridėti versiją…** prideda naujesnį failą; ankstesni lieka. **Keisti…** keičia pavadinimą, datas ir susiejimus, o **Pašalinti dokumentą…** jį pašalina, prieš tai paklausęs. Visa tai įrašoma skiltyje **Pakeitimai**.
+
+Dokumentas su **Galioja iki**, pvz., pažymėjimas, likus 30 dienų rodo **Greitai baigs galioti**, vėliau – **Nebegalioja**.
+
+Po kiekviena versija eilutė nurodo, kaip paieškai nuskaityti jos žodžiai: **Laukia nuskaitymo**, **Nuskaityta**, **Teksto nerasta** ar **Nepavyko nuskaityti**. Naudojamas paties PDF tekstas; skenuotas dokumentas ar nuotrauka atpažįstami OCR būdu lietuvių, rusų ar anglų kalba, fone. **Nuskaityti dar kartą** nuskaito iš naujo.
+
+**Dokumentai** darbuotojo puslapyje ir SIM ar įrangos puslapyje išvardija su jais susietus dokumentus. Ten **Įkelti dokumentą…** naująjį susieja su jais; **Atidaryti Dokumentų saugyklą** atveria visą sąrašą.
+
+Dokumentai, kurių kilmė **Išsaugota automatiškai**, kyla iš pačios programos įrašų, ir čia jų keisti ar pašalinti negalima: kiekviena kopija, įkelta per **Įkelti pasirašytą aktą**, perdavimo akto PDF, išdavus SIM ar įrangą, ir užsakymo išdavimo įrašo PDF, kai užsakymas tampa **Išduota**. Ant išsaugoto akto ar įrašo **Patikrinti** palygina jį su įrašu, iš kurio jis padarytas: **Sutampa** reiškia, kad įrašo maiša tokia pati, kokia buvo darant kopiją, ir kopijos failas nepakeistas.
+
+Ieškant darbuotojo pagal vardą arba paliekant vieną darbuotoją, virš sąrašo rodomi ir jo **Asmens dokumentai** iš asmens bylų: kiekvieno rūšis, išdavusi valstybė ir galiojimas. Jie nelaikomi Dokumentų saugykloje: vardas atveria darbuotojo puslapį ties **Asmens duomenys**.
+
+Kiekvienos rūšies dokumentai saugomi tiek, kiek reikalauja Lietuvos teisė, tada sunaikinami: sąskaitos faktūros ir turto dokumentai – 10 metų nuo jų datos, perdavimo aktai – 10 metų po to, kai SIM ar įranga grąžinta, pažymėjimai ir mokymų įrašai – 3 metus nuo darbo santykių pabaigos, išdavimo įrašas – 1 metus po daiktų naudojimo laiko pabaigos. Tada dokumente rodoma **Saugoma iki**. **Draudimas naikinti…** saugo dokumentą ilgiau, patikrinimui ar ginčui: nurodykite paskutinę dieną ir priežastį. Draudžiamo naikinti dokumento negalima nei sunaikinti, nei pašalinti.
+
+Darbo sutartis, priedus, konfidencialumo sutartis ir kitus darbo dokumentus mato tik tie, kam suteikta rolė **Darbo dokumentai**; administratoriai – tik turėdami ją. Jie pažymėti **Užšifruota**: užšifruoti atskiru raktu, todėl jų pavadinimai rodomi tik jų pačių puslapyje. Atidarant failą prašoma slaptažodžio, jei neseniai neprisijungėte, ir kiekvienas atidarymas įrašomas. Jie saugomi 50 metų nuo darbo santykių pabaigos, kiti darbo dokumentai – 3 metus.
+
+Turint šią rolę, **Generuoti dokumentą…** po **Dokumentai** darbuotojo puslapyje sukuria dokumentą pagal šabloną: pasirinkite šabloną ir darbo santykius, kuriems jis skirtas, užpildykite, ko jis klausia, pvz., atlyginimą, tada **Peržiūra**. **Generuoti** sukuria būtent tai, ką rodė peržiūra: su numeriu, pvz., `EC-2026-0001`, užrakintą PDF, susietą su darbuotoju ir įmone. Jei po peržiūros kas nors pasikeitė, peržiūrėkite dar kartą. Word šablonu parašytas dokumentas ruošiamas keliomis sekundėmis ilgiau, kol padaromas jo PDF.
+
+## 16. Administravimas
 
 *Tik administratoriams.*
 
-**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro **Apžvalgoje**. Kiti jo ekranai: **Naudotojai**, **Rolės ir teisės**, **Audito žurnalas**, **Sauga**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai**, **Tiekėjai** ir **Programų tvarkymas**.
+**Administravime** tvarkote, kas gali naudotis programėle ir ką gali daryti, prižiūrite, kaip ji veikia, ir tvarkote organizacijos nustatymus. Jis atsidaro **Apžvalgoje**. Kiti jo ekranai: **Naudotojai**, **Rolės ir teisės**, **Audito žurnalas**, **Sauga**, **Sistema**, **Naudojimas**, **Nustatymai**, **Laiškų šablonai**, **Dokumentų šablonai**, **Tiekėjai** ir **Programų tvarkymas**.
 
 Atidarykite jį mygtuku **Administravimas** šoninės juostos apačioje. Jis turi savo šoninę juostą; **Darbo drabužiai ir įranga** jos apačioje grąžina atgal.
 
 Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo abiejų. **Administravimą** mato visi, kurių rolės leidžia tvarkyti naudotojus, roles, nustatymus ar tiekėjus arba skaityti audito žurnalą, saugą, sistemą, naudojimą ar atsargines kopijas, su tik tais ekranais, kuriuos atveria jų rolės.
 
-## 16. Apžvalga
+## 17. Apžvalga
 
 *Tik administratoriams.*
 
@@ -381,7 +414,7 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 
 ![Apžvalga: kam reikia dėmesio, toliau rodikliai](../../web/apps/workwear/public/help-img/lt/desktop/overview.png)
 
-## 17. Naudotojai
+## 18. Naudotojai
 
 *Tik administratoriams.*
 
@@ -393,7 +426,7 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 
 ![Naudotojų ekranas](../../web/apps/workwear/public/help-img/lt/desktop/users.png)
 
-## 18. Rolės ir teisės
+## 19. Rolės ir teisės
 
 *Tik administratoriams.*
 
@@ -409,7 +442,7 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 ![Rolės ir teisės: įtaisytos rolės ir jas turintys naudotojai](../../web/apps/workwear/public/help-img/lt/desktop/roles.png)
 ![Rolės teisės, sugrupuotos, prie kiekvienos – ką ji leidžia](../../web/apps/workwear/public/help-img/lt/desktop/role.png)
 
-## 19. Audito žurnalas
+## 20. Audito žurnalas
 
 *Tik administratoriams.*
 
@@ -425,7 +458,7 @@ Filtruokite pagal **Sritis**, **Pakeitimas**, **Naudotojas** ir datas. Spustelė
 
 ![Audito žurnalas: atidarytas kainos pakeitimas su laukais prieš ir po](../../web/apps/workwear/public/help-img/lt/desktop/audit-log.png)
 
-## 20. Sauga
+## 21. Sauga
 
 *Tik administratoriams.*
 
@@ -440,7 +473,7 @@ Filtruokite pagal **Sritis**, **Pakeitimas**, **Naudotojas** ir datas. Spustelė
 ![Sauga: prisijungimai su adresu ir įrenginiu](../../web/apps/workwear/public/help-img/lt/desktop/security.png)
 ![Prieigos peržiūra: naudotojai, jų rolės ir paskutinis prisijungimas](../../web/apps/workwear/public/help-img/lt/desktop/access-review.png)
 
-## 21. Sistema
+## 22. Sistema
 
 *Tik administratoriams.*
 
@@ -448,6 +481,7 @@ Filtruokite pagal **Sritis**, **Pakeitimas**, **Naudotojas** ir datas. Spustelė
 
 - **Būsena**: ar programėlė **Veikia**, jos versija ir kada ji paleista; paskutinių 24 valandų užklausos, kiek jų nepavyko ir kiek jos truko; duomenų bazės dydis ir paskutinė migracija; kiek laikomi prisijungimai, klaidos ir pakeitimai.
 - **Klaidos**: kas nepavyko serveryje ar kieno nors naršyklėje, kiek kartų ir kada paskutinį kartą. Atidarykite klaidą, kad matytumėte, kas su ja susidūrė, kur ir kokiu įrenginiu. Klaidos laikomos 30 dienų.
+- **Foninė apdorojimo programa**, skiltyje **Būsena**: programa, kuri fone nuskaito dokumentų tekstą, išsaugo aktus ir įrašus Dokumentų saugykloje ir paverčia Word šablonus PDF. Rodoma, ar ji veikia, kiek darbų laukia ir kurie nepavyko. **Apžvalga** įspėja, kai darbai laukia, o programa neveikia, arba kai darbai nepavyksta.
 - **Atsarginės kopijos**: žr. toliau.
 
 Kai kas nors nepavyksta, programėlė parodo **Nuoroda į užklausą**, pvz., `9f2c1a7e`. Klaida ekrane **Klaidos** rodo tą pačią nuorodą. Perduokite ją serverį prižiūrinčiam asmeniui: pagal ją jis randa klaidą serverio žurnale.
@@ -455,7 +489,7 @@ Kai kas nors nepavyksta, programėlė parodo **Nuoroda į užklausą**, pvz., `9
 ![Sistema: programėlė, jos užklausos ir duomenų bazė](../../web/apps/workwear/public/help-img/lt/desktop/system.png)
 ![Klaidos: atidaryta klaida su nuoroda į užklausą](../../web/apps/workwear/public/help-img/lt/desktop/errors.png)
 
-## 22. Atsarginės kopijos
+## 23. Atsarginės kopijos
 
 *Tik administratoriams.*
 
@@ -474,7 +508,7 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 
 ![Atsarginės kopijos: paskutinė kopija, naujausios kopijos ir nustatymai](../../web/apps/workwear/public/help-img/lt/desktop/backups.png)
 
-## 23. Naudojimas
+## 24. Naudojimas
 
 *Tik administratoriams.*
 
@@ -489,7 +523,7 @@ Nustatymai keičiami serveryje, ten ir atkuriama kopija: programėlė juos tik r
 
 ![Naudojimas: aktyvūs asmenys, prisijungimai ir kita](../../web/apps/workwear/public/help-img/lt/desktop/usage.png)
 
-## 24. Nustatymai
+## 25. Nustatymai
 
 *Tik administratoriams.*
 
@@ -505,7 +539,7 @@ Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš
 
 ![Nustatymai: SIM tiekėjai, vienas iš jų numatytasis, ir numatytoji negrąžinimo vertė](../../web/apps/workwear/public/help-img/lt/desktop/sim-providers.png)
 
-## 25. Tiekėjai
+## 26. Tiekėjai
 
 *Tik administratoriams.*
 
@@ -519,7 +553,19 @@ Prekės tiekėjas pasirenkamas prekių kataloge, lange **Redaguoti prekę**. Š�
 
 ![Tiekėjai: kiekvieno vidinis kodas, vieta, prekės ir kontaktai](../../web/apps/workwear/public/help-img/lt/desktop/suppliers.png)
 
-## 26. Programų tvarkymas
+## 27. Dokumentų šablonai
+
+*Tik administratoriams.*
+
+**Dokumentų šablonai** – šablonai, pagal kuriuos generuojamos darbo sutartys ir kiti dokumentai. Kiekvienas skirtas vienam dokumentų tipui ir vienai kalbai, kuri nustato, kaip rašomos datos ir sumos. **Pridėti šabloną** sukuria naują juodraštį.
+
+Rašykite jį redaktoriuje kaip **Blokai**: antraštės, pastraipos, sąrašai, lentelės, duomenys ir parašų eilutės. Laukai, pvz., `{{employee.name}}`, užpildomi generuojant dokumentą; **Laukai** įterpia lauką ten, kur žymeklis. **Klausiami laukai** – reikšmės, kurias įveda generuojantis, pvz., atlyginimas: **Pridėti klausiamą lauką**. **Peržiūra** parodo šabloną su pavyzdinėmis reikšmėmis.
+
+Arba rašykite jį Word: **⋯ → Įkelti DOCX šabloną…** padaro Word dokumentą juodraščiu, su jo paties išdėstymu, šriftais, lentelėmis, antraštėmis ir poraštėmis. Kiekvieną lauką jame rašykite kaip `{{employee.name}}`; puslapyje išvardyti naudojami laukai ir pasakyta, kurie iš jų nėra laukai. **Pakeisti DOCX…** įkelia pataisytą, **Atsisiųsti DOCX** jį išsaugo, o **Rašyti redaktoriuje** grįžta prie blokų.
+
+**Išsaugoti juodraštį** išsaugo pakeitimus. **Paskelbti…** padaro juodraštį niekada nesikeičiančia versija, kurią nuo tada naudoja **Generuoti dokumentą…**. Kiekvienas šablonas turi spausdinti `{{document.number}}`, o Word šablonas – ir `{{document.hash}}`, nes spausdina savo poraštę. **Nebenaudoti…** nustoja jį siūlyti; pagal jį sukurti dokumentai jį ir toliau nurodo.
+
+## 28. Programų tvarkymas
 
 *Tik administratoriams.*
 
@@ -537,7 +583,7 @@ Programai, kurios niekas nebando pirma, įjunkite **Stabili seka diegimus**: tad
 
 ![Programų tvarkymas: „Skenuoti SIM“ šalia sąrašo, su versijomis ir kanalais](../../web/apps/workwear/public/help-img/lt/desktop/manage-apps.png)
 
-## 27. Jūsų paskyra
+## 29. Jūsų paskyra
 
 - **Kalba**: English, Lietuvių arba Русский. Pasirinkimas išsaugomas jūsų paskyroje, todėl galioja kiekviename įrenginyje, kuriame prisijungiate. Darbuotojo patvirtinimo puslapis ir įrašas lieka anglų ir rusų kalbomis. Datos rašomos pagal kalbą: 2026-10-15 anglų, 2026.10.15 lietuvių, 15.10.2026 rusų kalba.
 - **Tema**: **Šviesi**, **Tamsi** arba **Kaip įrenginyje**. Ji išsaugoma šiame įrenginyje ir galioja ir prisijungimo puslapyje.
@@ -549,7 +595,7 @@ Programai, kurios niekas nebando pirma, įjunkite **Stabili seka diegimus**: tad
 ![Paskyra: kalba, tema ir slaptažodis](../../web/apps/workwear/public/help-img/lt/desktop/account.png)
 ![Prisijungę įrenginiai: šis įrenginys ir telefonas](../../web/apps/workwear/public/help-img/lt/desktop/devices.png)
 
-## 28. Programos įdiegimas
+## 30. Programos įdiegimas
 
 Įtraukite programą į telefono pradžios ekraną ir atidarykite ją kaip bet kurią kitą: savo lange, be naršyklės adreso juostos, pavadinimu **Workwear**.
 
@@ -571,11 +617,11 @@ Kompiuteryje ją taip pat galima įdiegti naršyklėmis Chrome ir Edge: paskyroj
 - Be ryšio programa rodo **Nepavyksta pasiekti serverio**. Ryšiui atsiradus, ji pati vėl atidaro puslapį, arba pasirinkite **Bandyti dar kartą**.
 - Piktogramos nuorodos yra ta kalba, kurią naudojote pridėdami programą. Pakeitę kalbą, pašalinkite programą iš pradžios ekrano ir pridėkite iš naujo.
 
-## 29. Paieška ir spartieji klavišai
+## 31. Paieška ir spartieji klavišai
 
 | Klavišas | Ką daro |
 | --- | --- |
-| `⌘K` / `Ctrl K` | Ieško įrašų numerių, darbuotojų, prekių, įmonės turto ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**. |
+| `⌘K` / `Ctrl K` | Ieško įrašų numerių, darbuotojų, prekių, įmonės turto, dokumentų ir ekranų. Pavyzdžiui, įveskite vardą ir pasirinkite **Naujas užsakymas: …**. |
 | `/` | Pereina į paieškos arba „Pridėti prekę“ lauką. |
 | `G`, tada `D` `O` `H` `E` `A` `C` `S` `U` | Pereina į Suvestinę, Kurti užsakymą, Užsakymus, Darbuotojus, Įmonės turtą, Katalogą, Prekių rinkinius arba Naudotojus (Administravime). |
 | `J` / `K`, `Esc` | Pereina per Užsakymus, SIM korteles, Įrangą ar Prekių katalogą arba uždaro atidarytą įrašą. `Esc` taip pat išeina iš Eksportuoti ir Keisti būseną… nieko nepadarius. |
