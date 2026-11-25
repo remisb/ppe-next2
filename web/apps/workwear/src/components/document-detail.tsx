@@ -13,7 +13,7 @@ import { formatDate, formatDay } from '@ppe/ui/lib/dates'
 import { saveFile } from '@ppe/ui/lib/save-file'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { useLoad } from '@ppe/ui/lib/use-load'
-import { FileDown, Lock, ShieldAlert } from 'lucide-react'
+import { FileDown, Lock, RotateCw, ShieldAlert } from 'lucide-react'
 import { InfoTip } from '@ppe/ui/components/info-tip'
 import { useMemo, useState } from 'react'
 
@@ -23,7 +23,7 @@ import { todayIn } from '@/lib/assets'
 import { documentActions } from '@/lib/document-actions'
 import { useOpenKey } from '@/lib/open-sections'
 import { type Route, linkTo } from '@/lib/router'
-import { displayTitle, expiry, linkRoute, typeLabel } from '@/lib/vault'
+import { canReadAgain, displayTitle, expiry, linkRoute, textLine, typeLabel } from '@/lib/vault'
 
 const link = linkVariants({ weight: 'medium', className: 'inline-flex min-h-11 items-center gap-1 md:min-h-0' })
 
@@ -122,8 +122,15 @@ function DocumentBody({
       },
       { confirm: t.vault.removeQuestion(displayTitle(d)) },
     )
+  const manage = session.can((type?.manage ?? 'vault.manage') as never)
+  const readAgain = (v: VaultVersion) =>
+    void action.run(async () => {
+      await client.vault.readAgain(d.id, v.number)
+      setMessage(t.vault.readQueued)
+      onChanged()
+    })
   const actions = documentActions(
-    { manage: session.can((type?.manage ?? 'vault.manage') as never), locked: d.locked, downloading, hold: d.sealed },
+    { manage, locked: d.locked, downloading, hold: d.sealed },
     { download: () => void download(current), edit: () => setSheet('edit'), addVersion: () => setSheet('version'), remove, hold: () => setSheet('hold') },
   )
   // One object per opening, so the sheet starts afresh only when opened.
@@ -213,6 +220,23 @@ function DocumentBody({
                 {t.vault.fileDetails(formatBytes(v.file.size_bytes), formatDate(v.created_at, timeZone), v.created_by_name)}
               </span>
               {v.note ? <span className="text-sm whitespace-pre-line">{v.note}</span> : null}
+              <span className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1">
+                  {textLine(v)}
+                  <InfoTip section={t.vault.textStates[v.text_state]}>{t.vault.textInfo}</InfoTip>
+                </span>
+                {canReadAgain(v, manage) ? (
+                  <button
+                    type="button"
+                    className={`${link} cursor-pointer text-xs`}
+                    aria-label={t.vault.readAgainFile(v.file.file_name)}
+                    disabled={action.pending}
+                    onClick={() => readAgain(v)}
+                  >
+                    <RotateCw aria-hidden className="size-3.5" /> {t.vault.readAgain}
+                  </button>
+                ) : null}
+              </span>
               <span className="font-mono text-xs break-all text-muted-foreground" title={t.vault.sha256}>
                 {v.file.sha256}
               </span>

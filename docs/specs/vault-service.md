@@ -7,9 +7,9 @@ and generation are [document-template-service.md](document-template-service.md);
 worker are [outbox-service.md](outbox-service.md); the data-protection note is
 [document-vault-dpia-note.md](../privacy/document-vault-dpia-note.md).
 
-**Status: phases 1 and 2 built** (migrations 0061 and 0062, `internal/vault`, `internal/vault/document`,
-`cmd/api/vault-routes.go`, `cmd/api/wire_vault.go`, the staff app's Document Vault and Documents
-sections); the rest decided, not built. Each section names the phase that builds it (ADR 0008's
+**Status: phases 1 to 4 built** (migrations 0061 to 0064, `internal/vault`, `internal/vault/document`,
+`internal/vault/extract`, `cmd/api/vault-routes.go`, `cmd/api/wire_vault.go`, the staff app's Document
+Vault and Documents sections); the rest decided, not built. Each section names the phase that builds it (ADR 0008's
 plan: 1 core, 2 sealed types, 3 templates, 4 worker and text, 5 signed copies, 6 archiving, 7
 identity documents, 8 DOCX).
 
@@ -142,6 +142,12 @@ One row per version: `state` (`pending`, `reading`, `read`, `none` (no text foun
 (the script OCR chose), `pages`, `content` (the text, only for types that are not sealed, at most
 1 MB), `tsv`, `read_at`, `error` (a code, never text from the file).
 
+A generated version's row is `read` (`blocks`) at once; every other version's starts `pending`,
+and the transaction that writes it enqueues `vault.extract_text` keyed by the version's id. The
+worker's reading is [outbox-service.md](outbox-service.md), "Text reading". The document's pane
+shows each version's state (*Waiting to be read*, *Reading*, *Read* with how and its pages, *No
+text found*, *Couldn't read* with why, *Not read*) and **Read Again**.
+
 ### Document key (`vault.document_keys`, phase 2)
 
 For a sealed document: its data key sealed by `API_VAULT_KEY` (`sealed_key`, `key_id`), bound to
@@ -165,8 +171,8 @@ links and an optional note.
   (`Subjects.Describe`), and the reader may see each (a hidden equipment item is 404 as
   elsewhere).
 - The object is written first, then the document, version 1 (`original`), file, links, its
-  read-text row (`pending`, or `skipped`) and the event in one transaction; from phase 4 the
-  same transaction enqueues `vault.extract_text`. A failed write may leave an unnamed object,
+  read-text row (`pending`) and the event in one transaction; the same transaction enqueues
+  `vault.extract_text`. A failed write may leave an unnamed object,
   which nothing reads.
 - Event `vault.document_uploaded` (type, title for an unsealed type, file type, size, SHA-256,
   links).
@@ -216,7 +222,7 @@ become a duplicate is dropped.
 When an employee, company, asset or supplier is renamed, the API's hourly upkeep
 (`Service.RefreshLabels`, `cmd/api/jobs.go`) names every linked subject as it is called now and
 rebuilds the search of the documents whose link changed; a subject that is gone keeps its last
-name. Through the outbox once it exists (phase 4).
+name. It stays in the upkeep, not the outbox: a rename is never urgent, and the hourly pass catches every one.
 
 ## Search (phase 1, read text from phase 4)
 
@@ -240,7 +246,8 @@ name searched for is never in a URL or the request log. `vault.read` or
   (`ts_headline`).
 - **Sealed types:** their read text is never kept; `IndexText` keeps only lexemes and drops every
   token with a digit (personal codes, account numbers, pay), so the vector cannot give them back.
-- ⌘K (phase 4) searches documents through the same route, at most 5 hits.
+- ⌘K searches documents through the same route (the words in the body) for whoever sees the
+  vault, from 2 characters, at most 5 hits; near spellings are left to the vault's own search.
 
 ## Sealed types (phase 2)
 
@@ -310,7 +317,7 @@ Nothing of them is stored in the vault.
 | `GET /api/v1/vault/documents/{id}/versions/{n}/file` | the type's `read` | 1 | attachment; types that are not sealed |
 | `POST /api/v1/vault/documents/{id}/versions/{n}/file` | the type's `read`, recent sign-in | 2 | attachment; sealed types; recorded first |
 | `PUT /api/v1/vault/documents/{id}/hold` | the type's `manage` | 2 | |
-| `POST /api/v1/vault/documents/{id}/versions/{n}/read-again` | the type's `manage` | 4 | enqueues `vault.extract_text` |
+| `POST /api/v1/vault/documents/{id}/versions/{n}/read-again` | the type's `manage` | 4 | 202; enqueues `vault.extract_text`; 400 for a generated version |
 | `GET /api/v1/vault/documents/{id}/verify` | the type's `read` | 6 | recomputes an archived copy's hash from its source |
 
 The routes are `rt.restrictedAny` over `vault.read`/`vault.employment.read` (reads) or

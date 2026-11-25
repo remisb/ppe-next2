@@ -173,11 +173,11 @@ prod-prune-cache: ## Trim Docker's build cache to the newest PROD_BUILD_CACHE (p
 # recreated, once; one already on its image is left running. db is recreated
 # only when its config changes. It fails with the API's last log lines when the
 # API is not ready (GET /ready: the database reachable and migrated) in 60 s.
-PROD_BEHIND_CADDY := db migrate api backup
+PROD_BEHIND_CADDY := db migrate api docworker backup
 
 prod-up: ## Start or update the deployment stack; migrations run before the API starts
 	$(PROD) up -d $(PROD_BEHIND_CADDY)
-	@for svc in api backup; do \
+	@for svc in api docworker backup; do \
 		set -- $$(docker inspect -f '{{.Config.Image}} {{.Image}}' "$$($(PROD) ps -aq $$svc)") && \
 		want=$$(docker image inspect -f '{{.Id}}' "$$1") || exit 1; \
 		if [ "$$want" != "$$2" ]; then \

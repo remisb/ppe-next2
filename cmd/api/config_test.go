@@ -48,12 +48,20 @@ func TestConfigValidate(t *testing.T) {
 		"relative url":                 func(c *config) { c.PublicBaseURL = "/confirm" },
 		"tsa not a url":                func(c *config) { c.AuditTSAURL = "timestamp.digicert.com" },
 		"zero ttl":                     func(c *config) { c.ConfirmTTL = 0 },
-		"apps dir missing":             func(c *config) { c.AppsDir = "/no/such/folder" },
-		"version without publish-app":  func(c *config) { c.PublishVersion = "2026.11.04-abc" },
-		"no SIM codes key id":          func(c *config) { c.SIMCodesKeyID = 0 },
-		"SIM codes key id too big":     func(c *config) { c.SIMCodesKeyID = 40000 },
-		"previous keys not id:key":     func(c *config) { c.SIMCodesPreviousKeys = strings.Repeat("cd", 32) },
-		"previous key not hex":         func(c *config) { c.SIMCodesPreviousKeys = "2:" + strings.Repeat("s", 64) },
+		"worker without concurrency":   func(c *config) { c.Worker, c.WorkerJobTimeout, c.WorkerMaxPages = true, time.Minute, 50 },
+		"job timeout too short": func(c *config) {
+			c.Worker, c.WorkerConcurrency, c.WorkerJobTimeout, c.WorkerMaxPages = true, 1, time.Second, 50
+		},
+		"too many pages": func(c *config) {
+			c.Worker, c.WorkerConcurrency, c.WorkerJobTimeout, c.WorkerMaxPages = true, 1, time.Minute, 1000
+		},
+		"failed without reindex":      func(c *config) { c.VaultReindexFailed = true },
+		"apps dir missing":            func(c *config) { c.AppsDir = "/no/such/folder" },
+		"version without publish-app": func(c *config) { c.PublishVersion = "2026.11.04-abc" },
+		"no SIM codes key id":         func(c *config) { c.SIMCodesKeyID = 0 },
+		"SIM codes key id too big":    func(c *config) { c.SIMCodesKeyID = 40000 },
+		"previous keys not id:key":    func(c *config) { c.SIMCodesPreviousKeys = strings.Repeat("cd", 32) },
+		"previous key not hex":        func(c *config) { c.SIMCodesPreviousKeys = "2:" + strings.Repeat("s", 64) },
 		"previous key id twice": func(c *config) {
 			c.SIMCodesPreviousKeys = "2:" + strings.Repeat("cd", 32) + ",2:" + strings.Repeat("ef", 32)
 		},
@@ -137,6 +145,14 @@ func TestConfigValidate(t *testing.T) {
 	if err := (config{Healthcheck: true}).validate(); err != nil {
 		t.Errorf("-healthcheck needs no database or secret: %v", err)
 	}
+	worker := ok
+	worker.Worker, worker.WorkerConcurrency, worker.WorkerJobTimeout, worker.WorkerMaxPages = true, 2, 5*time.Minute, 50
+	if err := worker.validate(); err != nil {
+		t.Errorf("a worker: %v", err)
+	}
+	if err := (config{HealthcheckWorker: true}).validate(); err != nil {
+		t.Errorf("-healthcheck-worker needs nothing: %v", err)
+	}
 	if c, err := loadConfig([]string{"-healthcheck", "-addr", ":9000"}); err != nil || !c.Healthcheck || c.Addr != ":9000" {
 		t.Errorf("-healthcheck flag = %+v, %v", c.Healthcheck, err)
 	}
@@ -145,7 +161,7 @@ func TestConfigValidate(t *testing.T) {
 // TestLoadConfigDefaults loads the real defaults, so a setting added to the
 // struct but not read in loadConfig fails here rather than at startup.
 func TestLoadConfigDefaults(t *testing.T) {
-	for _, k := range []string{"API_PUBLIC_BASE_URL", "API_CONFIRM_TTL", "API_ORG_TIMEZONE", "API_JWT_TTL", "API_SESSION_MAX_AGE", "API_SESSION_KEEP_MAX_AGE", "API_SESSION_KEEP_IDLE", "API_RECENT_SIGN_IN", "API_TRUSTED_PROXIES", "API_LOGIN_EMAIL_FAILURES", "API_LOGIN_EMAIL_INTERVAL", "API_AUTH_EVENTS_RETENTION", "API_METRICS_ADDR", "API_AUDIT_RETENTION", "API_APPS_DIR"} {
+	for _, k := range []string{"API_PUBLIC_BASE_URL", "API_CONFIRM_TTL", "API_ORG_TIMEZONE", "API_JWT_TTL", "API_SESSION_MAX_AGE", "API_SESSION_KEEP_MAX_AGE", "API_SESSION_KEEP_IDLE", "API_RECENT_SIGN_IN", "API_TRUSTED_PROXIES", "API_LOGIN_EMAIL_FAILURES", "API_LOGIN_EMAIL_INTERVAL", "API_AUTH_EVENTS_RETENTION", "API_METRICS_ADDR", "API_AUDIT_RETENTION", "API_APPS_DIR", "API_WORKER_CONCURRENCY", "API_WORKER_JOB_TIMEOUT", "API_WORKER_MAX_PAGES"} {
 		t.Setenv(k, "")
 	}
 	t.Setenv("API_DB_DSN", "postgres://x")
@@ -163,6 +179,9 @@ func TestLoadConfigDefaults(t *testing.T) {
 		c.SessionKeepMaxAge != 30*24*time.Hour || c.SessionKeepIdle != 14*24*time.Hour || c.RecentSignIn != 12*time.Hour ||
 		c.AuthEventsRetention != 180*24*time.Hour || c.MetricsAddr != "" || c.AuditRetention != 3653*24*time.Hour || c.AuditTSAURL != "" || c.AppsDir != "" {
 		t.Errorf("defaults = %+v", c)
+	}
+	if c.WorkerConcurrency != 1 || c.WorkerJobTimeout != 5*time.Minute || c.WorkerMaxPages != 50 || c.Worker || c.VaultReindex {
+		t.Errorf("worker defaults = %d %s %d", c.WorkerConcurrency, c.WorkerJobTimeout, c.WorkerMaxPages)
 	}
 	if len(c.TrustedProxies) != 0 {
 		t.Errorf("trusted proxies default = %v, want none", c.TrustedProxies)

@@ -144,6 +144,22 @@ type config struct {
 	// found and exits; non-zero on a mismatch. For the restore drill.
 	VerifyAudit bool
 
+	// Worker runs the worker instead of the server (`api -worker`, the
+	// docworker image, ADR 0008 decision 9): it claims the outbox's jobs of
+	// the kinds its tools can serve, WorkerConcurrency at a time, each for at
+	// most WorkerJobTimeout; reading text reads at most WorkerMaxPages pages.
+	Worker            bool
+	WorkerConcurrency int
+	WorkerJobTimeout  time.Duration
+	WorkerMaxPages    int
+	// HealthcheckWorker checks that this container's worker beat recently
+	// (its heartbeat file) and exits: the docworker's healthcheck.
+	HealthcheckWorker bool
+	// VaultReindex gives every document version still waiting for its text a
+	// job, and with VaultReindexFailed the failed ones too, then exits.
+	VaultReindex       bool
+	VaultReindexFailed bool
+
 	// Upkeep runs the hourly upkeep once (purges, samples, audit seals and
 	// their check) and exits; non-zero when a part failed.
 	Upkeep bool
@@ -213,6 +229,15 @@ func loadConfig(args []string) (config, error) {
 	if c.PersonnelScanDays, err = envInt("API_PERSONNEL_SCAN_DAYS", scan.DefaultDays); err != nil {
 		return c, err
 	}
+	if c.WorkerConcurrency, err = envInt("API_WORKER_CONCURRENCY", 1); err != nil {
+		return c, err
+	}
+	if c.WorkerJobTimeout, err = envDuration("API_WORKER_JOB_TIMEOUT", 5*time.Minute); err != nil {
+		return c, err
+	}
+	if c.WorkerMaxPages, err = envInt("API_WORKER_MAX_PAGES", 50); err != nil {
+		return c, err
+	}
 	c.VaultKey = env("API_VAULT_KEY", "")
 	c.VaultPreviousKeys = env("API_VAULT_PREVIOUS_KEYS", "")
 	if c.VaultKeyID, err = envInt("API_VAULT_KEY_ID", 1); err != nil {
@@ -262,6 +287,10 @@ func loadConfig(args []string) (config, error) {
 	fs.BoolVar(&c.SeedDemo, "seed-demo", false, "fill an empty database with demo data as the API_SEED_USER_EMAIL admin and exit")
 	fs.BoolVar(&c.Healthcheck, "healthcheck", false, "check that the API at -addr is ready (GET /ready) and exit")
 	fs.BoolVar(&c.VerifyAudit, "verify-audit", false, "verify the Audit log against its seals, print the result as JSON and exit")
+	fs.BoolVar(&c.Worker, "worker", false, "run the worker: read documents' text and the outbox's other jobs, until stopped")
+	fs.BoolVar(&c.HealthcheckWorker, "healthcheck-worker", false, "check that this container's worker beat within the last 2 minutes and exit")
+	fs.BoolVar(&c.VaultReindex, "vault-reindex", false, "give every document version still waiting for its text a job for the worker, print how many and exit")
+	fs.BoolVar(&c.VaultReindexFailed, "failed", false, "with -vault-reindex: the versions whose reading failed too")
 	fs.BoolVar(&c.Upkeep, "upkeep", false, "run the hourly upkeep once (purges, samples, audit seals) and exit")
 	fs.StringVar(&c.ImportSIMs, "import-sims", "", "check the SIM card list at this CSV path (- for standard input), print what it would import and exit")
 	fs.BoolVar(&c.ImportCommit, "commit", false, "with -import-sims: import the SIM cards")
@@ -278,11 +307,15 @@ func loadConfig(args []string) (config, error) {
 }
 
 func (c config) validate() error {
-	// The probe needs only Addr, which loadConfig has already parsed.
-	if c.Healthcheck {
+	// The probe needs only Addr, which loadConfig has already parsed; the
+	// worker's, nothing.
+	if c.Healthcheck || c.HealthcheckWorker {
 		return nil
 	}
 	var errs []error
+	if c.VaultReindexFailed && !c.VaultReindex {
+		errs = append(errs, errors.New("-failed is for -vault-reindex"))
+	}
 	if c.DBDSN == "" {
 		errs = append(errs, errors.New("API_DB_DSN is required"))
 	}
@@ -295,7 +328,7 @@ func (c config) validate() error {
 		}
 		return errors.Join(errs...)
 	}
-	if c.VerifyAudit || c.Upkeep {
+	if c.VerifyAudit || c.Upkeep || c.VaultReindex {
 		return errors.Join(errs...)
 	}
 	if c.ResealSIMCodes {
@@ -328,6 +361,18 @@ func (c config) validate() error {
 			errs = append(errs, errors.New("-import-sims needs API_SEED_USER_EMAIL (the user the import is recorded as)"))
 		}
 		return errors.Join(errs...)
+	}
+	// The worker's own settings; otherwise it needs what the server does.
+	if c.Worker {
+		if c.WorkerConcurrency < 1 || c.WorkerConcurrency > 8 {
+			errs = append(errs, errors.New("API_WORKER_CONCURRENCY must be from 1 to 8"))
+		}
+		if c.WorkerJobTimeout < 10*time.Second || c.WorkerJobTimeout > time.Hour {
+			errs = append(errs, errors.New("API_WORKER_JOB_TIMEOUT must be from 10s to 1h"))
+		}
+		if c.WorkerMaxPages < 1 || c.WorkerMaxPages > 500 {
+			errs = append(errs, errors.New("API_WORKER_MAX_PAGES must be from 1 to 500"))
+		}
 	}
 	if c.SeedDemo {
 		if c.SeedUserEmail == "" {

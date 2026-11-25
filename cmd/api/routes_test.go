@@ -1131,6 +1131,7 @@ var policy = map[string]rule{
 	"POST /api/v1/security/access-review":                                       {role.SecurityRead, "admins"},
 	"GET /api/v1/system/status":                                                 {role.SystemRead, "admins"},
 	"GET /api/v1/system/errors":                                                 {role.SystemRead, "admins"},
+	"GET /api/v1/system/worker":                                                 {role.SystemRead, "admins"},
 	"GET /api/v1/system/errors/{id}":                                            {role.SystemRead, "admins"},
 	"POST /api/v1/client-errors":                                                {"", "any"},
 	"GET /api/v1/overview":                                                      {"", "any"},
@@ -1146,6 +1147,7 @@ var policy = map[string]rule{
 	"POST /api/v1/vault/documents/{id}/versions":                                {"", "documents"},
 	"GET /api/v1/vault/documents/{id}/versions/{n}/file":                        {"", "documents"},
 	"PUT /api/v1/vault/documents/{id}/hold":                                     {"", "documents"},
+	"POST /api/v1/vault/documents/{id}/versions/{n}/read-again":                 {"", "documents"},
 	"GET /api/v1/document-templates":                                            {role.DocumentTemplatesManage, "admins"},
 	"GET /api/v1/document-templates/fields":                                     {role.DocumentTemplatesManage, "admins"},
 	"POST /api/v1/document-templates":                                           {role.DocumentTemplatesManage, "admins"},
@@ -1204,6 +1206,12 @@ func (stubVault) SetRetainUntil(context.Context, uuid.UUID, *string) error { ret
 func (stubVault) Shred(context.Context, uuid.UUID, time.Time, string, audit.Event) ([]string, error) {
 	return nil, nil
 }
+func (stubVault) VersionDocument(context.Context, uuid.UUID) (uuid.UUID, error) {
+	return uuid.Nil, vaultdoc.ErrNotFound
+}
+func (stubVault) SetText(context.Context, uuid.UUID, vaultdoc.TextUpdate) error { return nil }
+func (stubVault) ReadAgain(context.Context, uuid.UUID, time.Time) error         { return nil }
+func (stubVault) QueueUnread(context.Context, bool, time.Time) (int64, error)   { return 0, nil }
 
 // allowedRoles is who each audience was before permissions: the three fixed
 // roles, and Equipment Assignments, which reaches what any signed-in user does
@@ -1245,7 +1253,7 @@ func init() {
 	for _, pattern := range []string{
 		"POST /api/v1/vault/documents", "PUT /api/v1/vault/documents/{id}", "DELETE /api/v1/vault/documents/{id}",
 		"PUT /api/v1/vault/documents/{id}/hold", "POST /api/v1/vault/documents/{id}/versions",
-		"GET /api/v1/vault/templates", "POST /api/v1/vault/generate/preview", "POST /api/v1/vault/generate",
+		"POST /api/v1/vault/documents/{id}/versions/{n}/read-again", "GET /api/v1/vault/templates", "POST /api/v1/vault/generate/preview", "POST /api/v1/vault/generate",
 	} {
 		anyOf[pattern] = []role.Permission{role.VaultManage, role.VaultEmploymentManage}
 	}

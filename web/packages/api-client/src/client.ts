@@ -133,6 +133,7 @@ import type {
   Sizes,
   SupplierChatInput,
   SystemStatus,
+  WorkerStatus,
   UsageReport,
   User,
   UserCreateInput,
@@ -399,6 +400,8 @@ export function createClient(options: ClientOptions) {
       status: () => request<SystemStatus>('GET', '/api/v1/system/status'),
       errors: (query: ErrorQuery = {}) => request<ErrorPage>('GET', `/api/v1/system/errors${historyQueryString(query)}`),
       error: (id: string) => request<ErrorEvent>('GET', `/api/v1/system/errors/${seg(id)}`),
+      /** The worker: its heartbeats and tools, jobs by kind and state, recent failures. */
+      worker: () => request<WorkerStatus>('GET', '/api/v1/system/worker'),
     },
     /** Administration's Usage screen: who uses the system and how (usage.read). */
     usage: () => request<UsageReport>('GET', '/api/v1/usage'),
@@ -798,6 +801,9 @@ export function createClient(options: ClientOptions) {
         body.append('file', file)
         return request<VaultDocument>('POST', `/api/v1/vault/documents/${seg(id)}/versions`, body)
       },
+      /** Read Again: the worker reads the version's file for search once more (the document's manage permission). */
+      readAgain: (id: string, version: number) =>
+        request<VaultDocument>('POST', `/api/v1/vault/documents/${seg(id)}/versions/${version}/read-again`),
       /** A version's file, as the file it is. */
       file: (id: string, version: number) => download(`/api/v1/vault/documents/${seg(id)}/versions/${version}/file`),
       /** A sealed document's file: a POST that asks Confirm your password when the sign-in is not recent, and is recorded. */

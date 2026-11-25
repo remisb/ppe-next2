@@ -44,6 +44,24 @@ RUN --mount=type=cache,id=ppe-go-build,target=/root/.cache/go-build \
 # target itself root's 0755, which the API's user could not write.
 RUN mkdir -p /out/published /out/root/tmp && chmod 1777 /out/root/tmp
 
+# The worker (`api -worker`, ADR 0008 decision 9, docs/specs/outbox-service.md):
+# the same binary on Debian with the tools it runs, Poppler (pdftotext,
+# pdftoppm) and Tesseract with English, Lithuanian, Russian and orientation
+# and script detection (eng and osd come with tesseract-ocr). Built with
+# `--target docworker`; the API's image below stays scratch, and is the
+# default target as the last stage (TestAPIImageHasTmp).
+FROM debian:trixie-slim AS docworker
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends poppler-utils tesseract-ocr tesseract-ocr-lit tesseract-ocr-rus && \
+    rm -rf /var/lib/apt/lists/*
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=build /out/api /api
+USER 65532:65532
+# Exec form: the binary is PID 1 and gets SIGTERM, so running jobs are given back.
+ENTRYPOINT ["/api", "-worker"]
+# Healthy while the worker records its heartbeat (every 30 s).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=1m --retries=3 CMD ["/api", "-healthcheck-worker"]
+
 FROM scratch
 # Root certificates for a managed (TLS) database.
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/

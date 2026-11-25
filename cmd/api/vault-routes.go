@@ -40,6 +40,7 @@ func registerVaultRoutes(rt *router, documents *vaultdoc.Service, sensitive func
 	rt.restrictedAny("PUT /api/v1/vault/documents/{id}/hold", h.hold, vaultManagers...)
 	rt.restrictedAny("POST /api/v1/vault/documents/{id}/versions", h.addVersion, vaultManagers...)
 	rt.restrictedAny("GET /api/v1/vault/documents/{id}/versions/{n}/file", h.file, vaultReaders...)
+	rt.restrictedAny("POST /api/v1/vault/documents/{id}/versions/{n}/read-again", h.readAgain, vaultManagers...)
 	rt.restricted("POST /api/v1/vault/documents/{id}/versions/{n}/file",
 		sensitive(role.VaultEmploymentRead, h.sealedFile), role.VaultEmploymentRead)
 }
@@ -290,6 +291,25 @@ func (h *vaultHandler) file(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeAttachment(w, f.FileName, f.ContentType, data)
+}
+
+// readAgain is Read Again on a version: its file read for search once more, by the worker.
+func (h *vaultHandler) readAgain(w http.ResponseWriter, r *http.Request) {
+	reader, id, ok := vaultDocument(w, r)
+	if !ok {
+		return
+	}
+	n, err := strconv.Atoi(r.PathValue("n"))
+	if err != nil || n < 1 {
+		writeError(w, r, vaultdoc.ErrNotFound)
+		return
+	}
+	d, err := h.documents.ReadAgain(r.Context(), reader, id, n)
+	if err != nil {
+		writeError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusAccepted, d)
 }
 
 // sealedFile sends a sealed document's file, after the sensitive check (a

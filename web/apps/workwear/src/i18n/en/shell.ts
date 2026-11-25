@@ -65,6 +65,7 @@ export const shell = {
     actions: 'Actions',
     screens: 'Screens',
     employees: 'Employees',
+    documents: 'Documents',
     items: 'Items',
     apps: 'Apps',
   },

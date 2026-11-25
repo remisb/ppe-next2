@@ -75,6 +75,20 @@ export const overview = {
         }),
       action: 'Open the Audit log',
     },
+    worker_silent: {
+      title: 'The worker is not running',
+      detail: () => 'Jobs have waited over 5 minutes and no worker has been seen, so documents\' text is not being read. Start the docworker service on the server.',
+      action: 'Open System',
+    },
+    jobs_failed: {
+      title: 'Jobs failed',
+      detail: ({ count }) =>
+        plural(count, {
+          one: 'A job failed in the last 7 days after all its attempts. System lists it with its reason.',
+          other: '# jobs failed in the last 7 days after all their attempts. System lists them with their reasons.',
+        }),
+      action: 'Open System',
+    },
     database_growth: {
       title: 'The database is growing fast',
       detail: ({ percent, days }) => `It grew ${percent}% in ${days} days. Check that the disk has room.`,

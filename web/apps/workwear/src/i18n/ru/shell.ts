@@ -62,6 +62,7 @@ export const shell: ShellText = {
     actions: 'Действия',
     screens: 'Экраны',
     employees: 'Сотрудники',
+    documents: 'Документы',
     items: 'Предметы',
     apps: 'Приложения',
   },

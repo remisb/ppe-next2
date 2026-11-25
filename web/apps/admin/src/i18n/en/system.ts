@@ -75,6 +75,30 @@ export const system = {
   upkeepFailed: 'Part of it failed; the API’s log says why.',
   notYet: 'Not yet',
 
+
+  // Worker (System → Status)
+  worker: 'Worker',
+  workerHint: 'The background program that reads documents’ text. It runs beside the API as the docworker service.',
+  workerRunning: (n: number) => (n > 1 ? `Running (${n})` : 'Running'),
+  workerStopped: 'Not running',
+  workerNever: 'Not started yet',
+  workerSilentIssue: {
+    title: 'Jobs are waiting and no worker is running.',
+    detail: 'Start the docworker service on the server: make prod-up starts it.',
+  },
+  tools: 'Tools',
+  serves: 'Runs',
+  servesNothing: 'Nothing: its tools are missing',
+  oldestWaiting: 'Waiting since',
+  jobs: 'Jobs',
+  jobKind: 'Job',
+  jobsWaiting: 'Waiting',
+  jobsRunning: 'Running',
+  jobsDone: 'Done',
+  jobsFailed: 'Failed',
+  failedJobs: (n: number) => plural(n, { one: 'Failed in the last 7 days', other: 'Failed in the last 7 days (#)' }),
+  attempts: (n: number) => plural(n, { one: '# attempt', other: '# attempts' }),
+  jobKinds: { 'vault.extract_text': 'Read documents’ text' } as Record<string, string>,
   // Errors
   kind: 'Kind',
   allKinds: 'All kinds',

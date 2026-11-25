@@ -86,6 +86,12 @@ type Version struct {
 	File         File      `json:"file"`
 	// TextState is what the worker made of its file (vault.version_text); pending until it runs.
 	TextState string `json:"text_state"`
+	// TextMethod (pdf_text, ocr, blocks), TextLanguage, TextPages and TextError
+	// say how it was read, or why not.
+	TextMethod   *string `json:"text_method"`
+	TextLanguage *string `json:"text_language"`
+	TextPages    *int    `json:"text_pages"`
+	TextError    *string `json:"text_error"`
 	// DataSealed is a sealed version's note and file name (sealedData), sealed with the document's key.
 	DataSealed []byte `json:"-"`
 	// Data are a generated version's values as they printed (not sealed types'); Text its words, for search.

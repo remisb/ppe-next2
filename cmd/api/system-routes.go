@@ -14,6 +14,7 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/backup"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/monitor"
+	"github.com/remisb/ppe-next2/internal/outbox"
 	"github.com/remisb/ppe-next2/internal/overview"
 	"github.com/remisb/ppe-next2/internal/security"
 	"github.com/remisb/ppe-next2/internal/system"
@@ -63,6 +64,21 @@ func registerSystemRoutes(rt *router, svc services, cfg config, tok *tokens) {
 			return
 		}
 		writeJSON(w, http.StatusOK, e)
+	}, role.SystemRead)
+
+	// The worker (ADR 0008 decision 9): its heartbeats and tools, the jobs by
+	// kind and state, and those that failed in the last 7 days.
+	rt.restricted("GET /api/v1/system/worker", func(w http.ResponseWriter, r *http.Request) {
+		if svc.outbox == nil {
+			writeJSON(w, http.StatusOK, outbox.Status{Workers: []outbox.Worker{}, Kinds: []outbox.KindCount{}, Failed: []outbox.Job{}})
+			return
+		}
+		st, err := svc.outbox.Status(r.Context())
+		if err != nil {
+			writeError(w, r, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, st)
 	}, role.SystemRead)
 
 	limiter := middleware.RateLimiter(middleware.RateLimitConfig{
@@ -297,6 +313,19 @@ func buildOverview(r *http.Request, svc services, tok *tokens) (Overview, error)
 		in.Database = &overview.Database{Bytes: db.Bytes, OwnerRights: db.OwnerRights}
 		if db.Earlier != nil {
 			in.Database.EarlierBytes, in.Database.EarlierDay = db.Earlier.Bytes, db.Earlier.Day
+		}
+		if svc.outbox != nil {
+			st, err := svc.outbox.Status(ctx)
+			if err != nil {
+				return out, err
+			}
+			in.Worker = &overview.Worker{OldestWaiting: st.OldestWaiting, FailedRecently: st.FailedRecently}
+			for _, w := range st.Workers {
+				if in.Worker.LastSeen == nil || w.SeenAt.After(*in.Worker.LastSeen) {
+					at := w.SeenAt
+					in.Worker.LastSeen = &at
+				}
+			}
 		}
 	}
 	if can(role.AuditRead) {

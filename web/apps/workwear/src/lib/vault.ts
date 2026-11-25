@@ -4,7 +4,7 @@
  * to expire, and the checks Upload Document…, Edit… and Add Version… make
  * before sending, which the API makes again.
  */
-import type { Permission, VaultDetails, VaultDocument, VaultLink, VaultLinkRef, VaultSubjectKind, VaultType } from '@ppe/api-client'
+import type { Permission, VaultDetails, VaultDocument, VaultLink, VaultLinkRef, VaultSubjectKind, VaultType, VaultVersion } from '@ppe/api-client'
 
 import { t } from '@/i18n'
 import type { Route } from '@/lib/router'
@@ -132,4 +132,20 @@ export function draftProblems(
  */
 export function uploadTypes(types: readonly VaultType[], can: (p: string) => boolean, given: readonly VaultSubjectKind[]): VaultType[] {
   return types.filter((ty) => ty.origins.includes('uploaded') && can(ty.manage) && ty.must.every((k) => k === 'employee' || given.includes(k)))
+}
+
+/** What reading a version's file for search made of it: its state, how it was read, or why it was not. */
+export function textLine(v: Pick<VaultVersion, 'text_state' | 'text_method' | 'text_pages' | 'text_error'>): string {
+  const parts = [t.vault.textStates[v.text_state]]
+  if (v.text_state === 'read' && v.text_method && v.text_method !== 'blocks') {
+    parts.push(t.vault.textMethods[v.text_method])
+    if (v.text_pages) parts.push(t.vault.textPages(v.text_pages))
+  }
+  if (v.text_state === 'failed' && v.text_error) parts.push(t.vault.textErrors[v.text_error] ?? v.text_error)
+  return parts.join(' · ')
+}
+
+/** Read Again is for a file read (or not) already, never a generated version, whose text is its own. */
+export function canReadAgain(v: Pick<VaultVersion, 'origin' | 'text_state'>, manage: boolean): boolean {
+  return manage && v.origin !== 'generated' && v.text_state !== 'pending' && v.text_state !== 'reading'
 }

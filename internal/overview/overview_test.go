@@ -91,3 +91,24 @@ func TestWebClientListsTheKeys(t *testing.T) {
 		t.Errorf("overview.ts lists %v, Go %v", web, Keys())
 	}
 }
+
+func TestWorkerAttention(t *testing.T) {
+	now := time.Date(2026, 11, 25, 12, 0, 0, 0, time.UTC)
+	ago := func(d time.Duration) *time.Time { at := now.Add(-d); return &at }
+	for name, c := range map[string]struct {
+		in   Worker
+		want []string
+	}{
+		"idle, no worker yet":        {Worker{}, nil},
+		"a job waiting, just now":    {Worker{OldestWaiting: ago(time.Minute)}, nil},
+		"waiting, the worker alive":  {Worker{LastSeen: ago(30 * time.Second), OldestWaiting: ago(time.Hour)}, nil},
+		"waiting, never a worker":    {Worker{OldestWaiting: ago(10 * time.Minute)}, []string{"warning:worker_silent"}},
+		"waiting, the worker silent": {Worker{LastSeen: ago(3 * time.Minute), OldestWaiting: ago(6 * time.Minute)}, []string{"warning:worker_silent"}},
+		"failures":                   {Worker{LastSeen: ago(time.Second), FailedRecently: 3}, []string{"warning:jobs_failed"}},
+	} {
+		got := Attention(Inputs{Worker: &c.in}, now)
+		if !slices.Equal(keys(got), c.want) && !(len(c.want) == 0 && len(got) == 0) {
+			t.Errorf("%s: %v, want %v", name, keys(got), c.want)
+		}
+	}
+}

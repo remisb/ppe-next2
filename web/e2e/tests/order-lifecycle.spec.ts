@@ -2695,6 +2695,8 @@ test('Document Vault: a certificate uploaded on the employee page, found by her 
   await expect(pane.getByRole('heading', { name: 'Darbas aukštyje' })).toBeVisible()
   await expect(pane.getByRole('link', { name: 'Ona Kazlauskienė' })).toBeVisible()
   await expect(pane.getByRole('button', { name: 'Download Darbas_aukštyje.pdf' })).toBeVisible()
+  // Its text waits for the worker, which e2e does not run (outbox-service.md).
+  await expect(pane.getByText('Waiting to be read')).toBeVisible()
   // Edit… renames it; its Changes say so.
   await pane.getByRole('button', { name: 'Edit…' }).click()
   const edit = page.getByRole('dialog', { name: 'Edit Document' })
@@ -2704,6 +2706,16 @@ test('Document Vault: a certificate uploaded on the employee page, found by her 
   await pane.getByRole('button', { name: /^Changes/ }).click()
   await expect(pane.getByText('Document changed')).toBeVisible()
   await expect(pane.getByText('Document uploaded')).toBeVisible()
+
+  // ⌘K finds it too, under Documents, and opens it in the vault.
+  await page.keyboard.press('ControlOrMeta+k')
+  const palette = page.getByRole('dialog', { name: 'Search or jump to' })
+  await palette.getByRole('combobox').fill('kazlausk')
+  const found = palette.getByRole('option', { name: /^Darbas aukštyje 2026/ })
+  await expect(found).toBeVisible()
+  await expect(palette.getByText('Documents', { exact: true })).toBeVisible()
+  await found.click()
+  await expect(page).toHaveURL(/\/vault\/[0-9a-f-]{36}$/)
 })
 
 test('Company Assets: a SIM card held since the import prints a form built now, dated 2026 08 03', async () => {

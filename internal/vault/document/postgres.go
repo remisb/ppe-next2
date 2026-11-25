@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/remisb/ppe-next2/internal/audit"
+	"github.com/remisb/ppe-next2/internal/outbox"
 	"github.com/remisb/ppe-next2/internal/vault"
 )
 
@@ -79,7 +80,7 @@ func versionsOf(ctx context.Context, q querier, id uuid.UUID) ([]Version, error)
 	rows, err := q.Query(ctx, `
 		SELECT v.id, v.number, v.origin, v.document_hash, v.note, v.created_at, v.created_by_user_id, coalesce(u.name, ''),
 			f.id, f.object_key, f.file_name, f.content_type, f.size_bytes, f.sha256, f.sealed,
-			coalesce(t.state, 'pending'), v.data_sealed, v.data
+			coalesce(t.state, 'pending'), t.method, t.language, t.pages, t.error, v.data_sealed, v.data
 		FROM vault.versions v
 		JOIN vault.files f ON f.version_id = v.id AND f.role = 'main'
 		LEFT JOIN users u ON u.id = v.created_by_user_id
@@ -95,7 +96,8 @@ func versionsOf(ctx context.Context, q querier, id uuid.UUID) ([]Version, error)
 		var v Version
 		f := &v.File
 		if err := rows.Scan(&v.ID, &v.Number, &v.Origin, &v.DocumentHash, &v.Note, &v.CreatedAt, &v.CreatedByUserID, &v.CreatedByName,
-			&f.ID, &f.ObjectKey, &f.FileName, &f.ContentType, &f.SizeBytes, &f.SHA256, &f.Sealed, &v.TextState, &v.DataSealed, &v.Data); err != nil {
+			&f.ID, &f.ObjectKey, &f.FileName, &f.ContentType, &f.SizeBytes, &f.SHA256, &f.Sealed, &v.TextState, &v.TextMethod, &v.TextLanguage, &v.TextPages, &v.TextError,
+			&v.DataSealed, &v.Data); err != nil {
 			return nil, err
 		}
 		v.CreatedAt = v.CreatedAt.UTC()
@@ -170,20 +172,26 @@ func insertVersion(ctx context.Context, tx pgx.Tx, id uuid.UUID, v Version) erro
 		return err
 	}
 	if v.Text == "" {
-		_, err := tx.Exec(ctx, `INSERT INTO vault.version_text (version_id, state) VALUES ($1, 'pending')`, v.ID)
-		return err
+		// Its words are read by the worker: the job is written with the version.
+		if _, err := tx.Exec(ctx, `INSERT INTO vault.version_text (version_id, state) VALUES ($1, 'pending')`, v.ID); err != nil {
+			return err
+		}
+		kind, key, payload := readTextFor(v.ID)
+		return outbox.Insert(ctx, tx, kind, key, payload, v.CreatedAt)
 	}
-	// A generated version's words are known: read already. A sealed one keeps
-	// only its search words, none holding a digit (codes, sums), and no text.
+	// A generated version's words are known: read already.
 	_, err := tx.Exec(ctx, `
 		INSERT INTO vault.version_text (version_id, state, method, content, tsv, read_at)
-		SELECT $1::uuid, 'read', 'blocks', CASE WHEN $3::boolean THEN NULL ELSE $2::text END,
-			CASE WHEN $3::boolean THEN array_to_tsvector(coalesce(
-				(SELECT array_agg(w) FROM unnest(tsvector_to_array(to_tsvector('vault.ppe', $2::text))) AS w WHERE w !~ '[0-9]'), '{}'))
-			ELSE to_tsvector('vault.ppe', $2::text) END,
-			$4`, v.ID, v.Text, f.Sealed, v.CreatedAt)
+		SELECT $1::uuid, 'read', 'blocks', CASE WHEN $3::boolean THEN NULL ELSE $2::text END, `+textVector+`, $4`,
+		v.ID, v.Text, f.Sealed, v.CreatedAt)
 	return err
 }
+
+// textVector is the search words of text $2: a sealed one's ($3) only the
+// words that hold no digit (codes, sums), and its text is not kept.
+const textVector = `CASE WHEN $3::boolean THEN array_to_tsvector(coalesce(
+		(SELECT array_agg(w) FROM unnest(tsvector_to_array(to_tsvector('vault.ppe', $2::text))) AS w WHERE w !~ '[0-9]'), '{}'))
+	ELSE to_tsvector('vault.ppe', $2::text) END`
 
 // nullJSON keeps absent data as SQL NULL.
 func nullJSON(b json.RawMessage) any {
@@ -532,4 +540,115 @@ func translate(err error) error {
 		return fmt.Errorf("%w: %s", ErrInvalid, pgErr.ConstraintName)
 	}
 	return err
+}
+
+// VersionDocument is the document version is of.
+func (r *PostgresRepository) VersionDocument(ctx context.Context, version uuid.UUID) (uuid.UUID, error) {
+	var id uuid.UUID
+	err := r.pool.QueryRow(ctx, `SELECT document_id FROM vault.versions WHERE id = $1`, version).Scan(&id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return uuid.Nil, ErrNotFound
+	}
+	return id, err
+}
+
+// SetText writes version's text row and rebuilds its document's search; the
+// text, method and the rest only when it was read.
+func (r *PostgresRepository) SetText(ctx context.Context, version uuid.UUID, t TextUpdate) error {
+	return pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		var read *time.Time
+		if t.State != TextReading {
+			read = &t.At
+		}
+		var content *string
+		if t.State == TextRead {
+			content = &t.Content
+		}
+		// Reading or failing keeps what an earlier reading found; reading it
+		// replaces it, and finding nothing clears it.
+		tag, err := tx.Exec(ctx, `
+			UPDATE vault.version_text SET state = $4,
+				method = CASE WHEN $4 = 'read' THEN $5 WHEN $4 IN ('none', 'skipped') THEN NULL ELSE method END,
+				language = CASE WHEN $4 = 'read' THEN $6 WHEN $4 IN ('none', 'skipped') THEN NULL ELSE language END,
+				pages = CASE WHEN $4 = 'read' THEN $7 WHEN $4 IN ('none', 'skipped') THEN NULL ELSE pages END,
+				content = CASE WHEN $4 = 'read' THEN (CASE WHEN $3::boolean THEN NULL ELSE $2::text END)
+					WHEN $4 IN ('none', 'skipped') THEN NULL ELSE content END,
+				tsv = CASE WHEN $4 = 'read' THEN `+textVector+` WHEN $4 IN ('none', 'skipped') THEN NULL ELSE tsv END,
+				read_at = coalesce($8, read_at), error = $9
+			WHERE version_id = $1`,
+			version, content, t.Sealed, t.State, nullText(t.Method), nullText(t.Language), nullPages(t), read, nullText(t.Error))
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return ErrNotFound
+		}
+		if t.State == TextReading {
+			return nil
+		}
+		_, err = tx.Exec(ctx, `SELECT vault.refresh_search(document_id) FROM vault.versions WHERE id = $1`, version)
+		return err
+	})
+}
+
+func nullText(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func nullPages(t TextUpdate) *int {
+	if t.State != TextRead {
+		return nil
+	}
+	return &t.Pages
+}
+
+// ReadAgain makes version's text pending again, keeping its words until it
+// is read, and writes its job.
+func (r *PostgresRepository) ReadAgain(ctx context.Context, version uuid.UUID, at time.Time) error {
+	return pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		tag, err := tx.Exec(ctx, `UPDATE vault.version_text SET state = 'pending', error = NULL WHERE version_id = $1`, version)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return ErrNotFound
+		}
+		kind, key, payload := readTextFor(version)
+		return outbox.Insert(ctx, tx, kind, key, payload, at)
+	})
+}
+
+// QueueUnread writes a job for each live, unshredded version waiting for its
+// text; one already queued is left as it is.
+func (r *PostgresRepository) QueueUnread(ctx context.Context, failed bool, at time.Time) (int64, error) {
+	states := []string{TextPending, TextReading}
+	if failed {
+		states = append(states, TextFailed)
+	}
+	var n int64
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		if failed {
+			if _, err := tx.Exec(ctx, `UPDATE vault.version_text SET state = 'pending', error = NULL WHERE state = 'failed'`); err != nil {
+				return err
+			}
+		}
+		tag, err := tx.Exec(ctx, `
+			INSERT INTO outbox.jobs (id, kind, key, payload, state, run_after, created_at)
+			SELECT gen_random_uuid(), $1, t.version_id::text, jsonb_build_object('version', t.version_id), 'pending', $3, $3
+			FROM vault.version_text t
+			JOIN vault.versions v ON v.id = t.version_id
+			JOIN vault.documents d ON d.id = v.document_id
+			WHERE t.state = ANY($2) AND d.deleted_at IS NULL AND d.shredded_at IS NULL
+			ON CONFLICT (kind, key) WHERE state IN ('pending', 'running') DO NOTHING`, KindReadText, states, at)
+		if err != nil {
+			return err
+		}
+		n = tag.RowsAffected()
+		_, err = tx.Exec(ctx, `SELECT pg_notify($1, $2)`, outbox.Channel, KindReadText)
+		return err
+	})
+	return n, err
 }
