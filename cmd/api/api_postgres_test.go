@@ -375,6 +375,14 @@ func TestPostgresSeedDemo(t *testing.T) {
 	if employees < 8 || former != 1 {
 		t.Errorf("seeded %d employees, Inga Buvusi %d", employees, former)
 	}
+	// The Document Vault's: 4 forms and 3 records archived, 1 signed copy, 6 uploads; a published template.
+	var documents, archived, templates int
+	owner.QueryRow(ctx, `SELECT count(*) FROM vault.documents WHERE deleted_at IS NULL`).Scan(&documents)
+	owner.QueryRow(ctx, `SELECT count(*) FROM vault.documents WHERE origin = 'archived'`).Scan(&archived)
+	owner.QueryRow(ctx, `SELECT count(*) FROM vault.template_versions WHERE state = 'published'`).Scan(&templates)
+	if documents != 14 || archived != 7 || templates != 1 {
+		t.Errorf("vault: %d documents, %d archived, %d published templates", documents, archived, templates)
+	}
 	if err := seedDemo(ctx, owner, api.svc.users, cfg, time.UTC, testLogger); err == nil || !strings.Contains(err.Error(), "refusing to seed") {
 		t.Errorf("second run = %v, want a refusal", err)
 	}

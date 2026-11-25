@@ -8,8 +8,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { InfoTip } from './info-tip.tsx'
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip.tsx'
 
-/** The widths a toolbar control can start being a button from (Tailwind's sm, md, lg). */
-export type ToolbarWidth = 'sm' | 'md' | 'lg'
+/** The widths a toolbar control can start being a button from (Tailwind's sm, md, lg, xl). */
+export type ToolbarWidth = 'sm' | 'md' | 'lg' | 'xl'
 
 /**
  * A toolbar control that is a button, or an item in ⋯ where the row is too
@@ -33,14 +33,16 @@ export interface ToolbarAction {
 }
 
 // Whole class names, so Tailwind finds them.
-const buttonFrom = { sm: 'max-sm:hidden', md: 'max-md:hidden', lg: 'max-lg:hidden' } as const
-const itemFrom = { sm: 'sm:hidden', md: 'md:hidden', lg: 'lg:hidden' } as const
-const widthOrder: ToolbarWidth[] = ['sm', 'md', 'lg']
+const buttonFrom = { sm: 'max-sm:hidden', md: 'max-md:hidden', lg: 'max-lg:hidden', xl: 'max-xl:hidden' } as const
+const itemFrom = { sm: 'sm:hidden', md: 'md:hidden', lg: 'lg:hidden', xl: 'xl:hidden' } as const
+const widthOrder: ToolbarWidth[] = ['sm', 'md', 'lg', 'xl']
+
+const isWidth = (w: ToolbarAction['showFrom']): w is ToolbarWidth => w !== undefined && (widthOrder as readonly string[]).includes(w)
 
 /** The ⋯ menu's classes: shown only at the widths where it holds something. */
 export function moreShownBelow(actions: readonly ToolbarAction[], always: boolean): 'always' | ToolbarWidth | null {
   if (always || actions.some((a) => a.showFrom === 'never')) return 'always'
-  const from = actions.map((a) => a.showFrom).filter((w): w is ToolbarWidth => w === 'sm' || w === 'md' || w === 'lg')
+  const from = actions.map((a) => a.showFrom).filter(isWidth)
   if (from.length === 0) return null
   return widthOrder[Math.max(...from.map((w) => widthOrder.indexOf(w)))] ?? null
 }
@@ -71,7 +73,7 @@ function ActionButton({ action, variant }: { action: ToolbarAction; variant: 'de
   // 'never' is only ever an item in ⋯ (ActionItem), never a button too.
   if (action.showFrom === 'never') return null
   const Icon = action.icon
-  const from = action.showFrom === 'sm' || action.showFrom === 'md' || action.showFrom === 'lg' ? buttonFrom[action.showFrom] : undefined
+  const from = isWidth(action.showFrom) ? buttonFrom[action.showFrom] : undefined
   const className = cn(from, action.hiddenBelow && buttonFrom[action.hiddenBelow])
   const content = (
     <>
@@ -99,7 +101,7 @@ function ActionButton({ action, variant }: { action: ToolbarAction; variant: 'de
 
 function ActionItem({ action }: { action: ToolbarAction }) {
   const Icon = action.icon
-  const from = action.showFrom === 'sm' || action.showFrom === 'md' || action.showFrom === 'lg' ? itemFrom[action.showFrom] : undefined
+  const from = isWidth(action.showFrom) ? itemFrom[action.showFrom] : undefined
   const inner = (
     <>
       {Icon ? <Icon aria-hidden /> : null}

@@ -17,11 +17,14 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
 	"github.com/remisb/ppe-next2/internal/domain/order"
+	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/settings"
 	"github.com/remisb/ppe-next2/internal/domain/supplier"
 	"github.com/remisb/ppe-next2/internal/domain/user"
 	"github.com/remisb/ppe-next2/internal/files"
+	"github.com/remisb/ppe-next2/internal/vault"
 	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
+	vaulttemplate "github.com/remisb/ppe-next2/internal/vault/template"
 )
 
 // seedClock is the clock every seeding service reads. Moving it back lets the
@@ -90,9 +93,15 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 		assets = asset.NewService(asset.NewPostgresRepository(pool), append([]asset.Option{asset.WithLocation(loc), asset.WithClock(clock.now)}, assetOpts...)...)
 	)
 
-	// Signed copies are kept in the vault, which names their links itself.
-	asset.WithSignedForms(assetSignedForms{vaultdoc.NewService(vaultdoc.NewPostgresRepository(pool), vaultSubjects{},
-		vaultdoc.WithFiles(store), vaultdoc.WithClock(clock.now))})(assets)
+	// The Document Vault: signed copies are kept there, forms and records
+	// archived there (as the worker would, here at once) and documents
+	// uploaded to it; templates are its documents' (ADR 0008).
+	vaultDocs := vaultdoc.NewService(vaultdoc.NewPostgresRepository(pool),
+		vaultSubjects{employees: employees, companies: companies, assets: assets, suppliers: suppliers, orders: orders},
+		vaultdoc.WithFiles(store), vaultdoc.WithClock(clock.now), vaultdoc.WithLocation(loc),
+		vaultdoc.WithEmployments(vaultEmployments{employees}), vaultdoc.WithRecords(vaultRecords{assets: assets, orders: orders, loc: loc}))
+	asset.WithSignedForms(assetSignedForms{vaultDocs})(assets)
+	templates := vaulttemplate.NewService(vaulttemplate.NewPostgresRepository(pool), vaulttemplate.WithFiles(store), vaulttemplate.WithClock(clock.now))
 
 	existingItems, err := items.List(ctx)
 	if err != nil {
@@ -184,20 +193,24 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 	}
 
 	// Orders, oldest first so record numbers follow the dates.
+	var given []uuid.UUID // orders given, whose records the vault archives
 	clock.daysAgo(start, loc, 120)
 	o := s.orderSet(jonas, starter)
 	clock.daysAgo(start, loc, 115)
 	s.givePaper(o)
+	given = append(given, o)
 
 	clock.daysAgo(start, loc, 60)
 	o = s.orderLines(ona, shoes, 1, gloves, 10)
 	clock.daysAgo(start, loc, 57)
 	s.givePaper(o)
+	given = append(given, o)
 
 	clock.daysAgo(start, loc, 30)
 	o = s.orderLines(mindaugas, jacket, 1, trousers, 2)
 	clock.daysAgo(start, loc, 28)
 	s.giveElectronic(o)
+	given = append(given, o)
 
 	clock.daysAgo(start, loc, 10)
 	s.orderLines(aleksandr, jacket, 1, trousers, 2, shoes, 1)
@@ -246,13 +259,13 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 		s.signedCopy(sim1, jonasSIM, "SIM-000001 Jonas Petraitis signed.pdf")
 	}
 	clock.daysAgo(start, loc, 90)
-	s.give(sim4, tomas)
+	tomasSIM := s.give(sim4, tomas)
 	clock.daysAgo(start, loc, 60)
-	s.give(sim3, mindaugas)
+	mindaugasSIM := s.give(sim3, mindaugas)
 	clock.daysAgo(start, loc, 45)
 	s.give(chair, ona)
 	clock.daysAgo(start, loc, 30)
-	s.give(sim2, aleksandr)
+	aleksandrSIM := s.give(sim2, aleksandr)
 	s.give(phone, aleksandr)
 	clock.daysAgo(start, loc, 25)
 	s.giveBack(sim4)
@@ -266,11 +279,101 @@ func seedDemo(ctx context.Context, pool *pgxpool.Pool, users *user.Service, cfg 
 		return s.err
 	}
 
+	// Document Vault: the SIM cards' forms and the given orders' records
+	// archived, as the worker does after each; documents uploaded over the
+	// months, one certificate expiring soon; an employment contract template.
+	if store != nil {
+		clock.daysAgo(start, loc, 20)
+		for _, id := range []uuid.UUID{jonasSIM, tomasSIM, mindaugasSIM, aleksandrSIM} {
+			s.fail("archive form", vaultDocs.Archive(ctx, vault.SourceAssignment, id))
+		}
+		for _, id := range given {
+			s.fail("archive record", vaultDocs.Archive(ctx, vault.SourceOrder, id))
+		}
+		uploader := vaultdoc.Reader{ID: admin.ID, Perms: []string{vault.PermRead, vault.PermManage, string(role.SIMCardsRead)}}
+		day := func(n int) *string { d := clock.now().In(loc).AddDate(0, 0, n).Format(time.DateOnly); return &d }
+		upload := func(typeKey, title, file string, date, until *string, links ...vaultdoc.LinkRef) {
+			if s.err != nil {
+				return
+			}
+			_, err := vaultDocs.Upload(ctx, uploader, typeKey, vaultdoc.Details{Title: title, DocumentDate: date, ValidUntil: until, Links: links},
+				vaultdoc.Upload{FileName: file, Data: onePagePDF(title)})
+			s.fail("document "+title, err)
+		}
+		clock.daysAgo(start, loc, 140)
+		upload("employee.certificate", "Pirmoji pagalba", "Pirmoji_pagalba_Kazlauskiene.pdf", day(0), day(160),
+			vaultdoc.LinkRef{Kind: vault.Employee, ID: ona.ID})
+		clock.daysAgo(start, loc, 110)
+		upload("employee.training", "Darbų saugos instruktažas", "Instruktazas_Petraitis.pdf", day(0), day(365),
+			vaultdoc.LinkRef{Kind: vault.Employee, ID: jonas.ID})
+		clock.daysAgo(start, loc, 98)
+		upload("asset.document", "Telia Biz 10 GB sutartis", "Telia_sutartis.pdf", day(0), nil,
+			vaultdoc.LinkRef{Kind: vault.Asset, ID: sim1.ID})
+		clock.daysAgo(start, loc, 64)
+		upload("invoice", "Sąskaita DR-2026-0412", "DR-2026-0412.pdf", day(0), nil,
+			vaultdoc.LinkRef{Kind: vault.Supplier, ID: *clothing}, vaultdoc.LinkRef{Kind: vault.Company, ID: home.ID})
+		clock.daysAgo(start, loc, 12)
+		upload("employee.certificate", "Darbas aukštyje", "Darbas_aukstyje_Jankauskas.pdf", day(-700), day(28),
+			vaultdoc.LinkRef{Kind: vault.Employee, ID: tomas.ID})
+		upload("invoice", "Sąskaita AP-2026-0087", "AP-2026-0087.pdf", day(0), nil,
+			vaultdoc.LinkRef{Kind: vault.Supplier, ID: *safety}, vaultdoc.LinkRef{Kind: vault.Company, ID: home.ID})
+		if s.err != nil {
+			return s.err
+		}
+		clock.daysAgo(start, loc, 7)
+		if err := seedContractTemplate(ctx, templates, admin.ID); err != nil {
+			return fmt.Errorf("document template: %w", err)
+		}
+	}
+
 	logger.Info("demo data seeded",
 		slog.Int("catalogue_items", 10), slog.Int("item_sets", 2), slog.Int("employees", 6), slog.Int("orders", s.ordered),
 		slog.Int("assets", s.assetCount),
 		slog.String("without_shoe_size", rasa.FirstName+" "+rasa.LastName))
 	return nil
+}
+
+// seedContractTemplate adds and publishes an employment contract's template,
+// with the employer's and employee's details, two asked fields and the
+// signatures.
+func seedContractTemplate(ctx context.Context, templates *vaulttemplate.Service, actor uuid.UUID) error {
+	type R = vaulttemplate.Run
+	text := func(t string) R { return R{Text: t} }
+	field := func(k string) R { return R{Field: k} }
+	tpl, err := templates.Create(ctx, vaulttemplate.Details{Type: "employment.contract", Name: "Darbo sutartis, neterminuota", Language: "lt"}, actor)
+	if err != nil {
+		return err
+	}
+	body := vaulttemplate.Body{Format: vaulttemplate.Format, Blocks: []vaulttemplate.Block{
+		{Type: vaulttemplate.Heading, Level: 1, Text: []R{text("DARBO SUTARTIS Nr. "), field("document.number")}},
+		{Type: vaulttemplate.Paragraph, Text: []R{field("document.date"), text(", Vilnius")}},
+		{Type: vaulttemplate.Fields, Pairs: []vaulttemplate.Pair{
+			{Label: []R{text("Darbdavys")}, Value: []R{field("company.name"), text(", įmonės kodas "), field("company.code")}},
+			{Label: []R{text("Darbuotojas")}, Value: []R{field("employee.name")}},
+			{Label: []R{text("Pareigos")}, Value: []R{field("input.position")}},
+			{Label: []R{text("Darbo užmokestis")}, Value: []R{field("input.salary"), text(" per mėnesį")}},
+			{Label: []R{text("Darbo pradžia")}, Value: []R{field("employment.from")}},
+		}},
+		{Type: vaulttemplate.Heading, Level: 2, Text: []R{text("Sutarties sąlygos")}},
+		{Type: vaulttemplate.List, Ordered: true, Items: [][]R{
+			{text("Darbuotojas dirba visą darbo laiką, 40 valandų per savaitę.")},
+			{text("Darbo užmokestis mokamas du kartus per mėnesį.")},
+			{text("Sutartis neterminuota; ją nutraukti galima Darbo kodekso nustatyta tvarka.")},
+		}},
+		{Type: vaulttemplate.Signatures, Signatures: []vaulttemplate.Signature{
+			{Label: []R{text("Darbdavys")}, Under: []R{field("user.name")}},
+			{Label: []R{text("Darbuotojas")}, Under: []R{field("employee.name")}},
+		}},
+	}}
+	asked := []vaulttemplate.Asked{
+		{Key: "position", Label: "Pareigos", Kind: vaulttemplate.AskText, Required: true},
+		{Key: "salary", Label: "Darbo užmokestis", Kind: vaulttemplate.AskMoney, Required: true},
+	}
+	if _, err := templates.SaveDraft(ctx, tpl.ID, body, asked, actor); err != nil {
+		return err
+	}
+	_, err = templates.Publish(ctx, tpl.ID, actor)
+	return err
 }
 
 // seeder makes each call as the admin and keeps the first error, so the

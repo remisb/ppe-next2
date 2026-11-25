@@ -478,6 +478,7 @@ export const lt: Guide = {
         {
           p: 'Lauke **Ieškoti dokumentų** dokumentą rasite pagal pavadinimą, numerį, susietus vardus, tipą ar žodžius jo faile. Didžiosios raidės ir diakritikai nesvarbūs, užtenka žodžio pradžios: `zuk` randa **Žukauskaitė**. Jei niekas nesutampa, parodomi panašūs rašybos variantai, ir sąraše tai pasakyta. **Tipas** palieka vienos rūšies dokumentus. Pasirinktas dokumentas atsidaro šalia sąrašo, o siauresniame ekrane – vietoj jo.',
         },
+        { shots: [{ name: 'vault', alt: 'Dokumentų saugykla: dokumentai su tipu, susiejimais ir galiojimo data, paieška' }] },
         {
           p: '**Įkelti dokumentą…** prideda naują: pasirinkite **Tipas** ir failą – PDF, JPEG ar PNG iki 20 MB, tada įrašykite **Pavadinimas**, datas ir su kuo jis susietas. Iš nuotraukos pašalinama vieta ir fotoaparato duomenys. Kai kurių tipų dokumentai turi būti susieti: pažymėjimas – su darbuotoju, turto dokumentas – su SIM ar įranga.',
         },
@@ -485,6 +486,7 @@ export const lt: Guide = {
           p: 'Dokumente matyti jo tipas, datos, **Kilmė** (**Įkelta**, **Sugeneruota** ar **Išsaugota automatiškai**), **Susieta su** – su kuo jis susietas – ir **Versijos**, naujausia pirma, kiekviena su atsisiunčiamu failu, kas ją pridėjo ir kada. **Pridėti versiją…** prideda naujesnį failą; ankstesni lieka. **Keisti…** keičia pavadinimą, datas ir susiejimus, o **Pašalinti dokumentą…** jį pašalina, prieš tai paklausęs. Visa tai įrašoma skiltyje **Pakeitimai**.',
         },
         { p: 'Dokumentas su **Galioja iki**, pvz., pažymėjimas, likus 30 dienų rodo **Greitai baigs galioti**, vėliau – **Nebegalioja**.' },
+        { shots: [{ name: 'vault-document', alt: 'Pažymėjimas atvertas šalia sąrašo: datos, Greitai baigs galioti, susiejimai ir versija' }] },
         {
           p: 'Po kiekviena versija eilutė nurodo, kaip paieškai nuskaityti jos žodžiai: **Laukia nuskaitymo**, **Nuskaityta**, **Teksto nerasta** ar **Nepavyko nuskaityti**. Naudojamas paties PDF tekstas; skenuotas dokumentas ar nuotrauka atpažįstami OCR būdu lietuvių, rusų ar anglų kalba, fone. **Nuskaityti dar kartą** nuskaito iš naujo.',
         },
@@ -494,6 +496,7 @@ export const lt: Guide = {
         {
           p: 'Dokumentai, kurių kilmė **Išsaugota automatiškai**, kyla iš pačios programos įrašų, ir čia jų keisti ar pašalinti negalima: kiekviena kopija, įkelta per **Įkelti pasirašytą aktą**, perdavimo akto PDF, išdavus SIM ar įrangą, ir užsakymo išdavimo įrašo PDF, kai užsakymas tampa **Išduota**. Ant išsaugoto akto ar įrašo **Patikrinti** palygina jį su įrašu, iš kurio jis padarytas: **Sutampa** reiškia, kad įrašo maiša tokia pati, kokia buvo darant kopiją, ir kopijos failas nepakeistas.',
         },
+        { shots: [{ name: 'vault-verify', alt: 'Automatiškai išsaugota perdavimo forma, patikrinta mygtuku Patikrinti: Sutampa' }] },
         {
           p: 'Ieškant darbuotojo pagal vardą arba paliekant vieną darbuotoją, virš sąrašo rodomi ir jo **Asmens dokumentai** iš asmens bylų: kiekvieno rūšis, išdavusi valstybė ir galiojimas. Jie nelaikomi Dokumentų saugykloje: vardas atveria darbuotojo puslapį ties **Asmens duomenys**.',
         },
@@ -728,6 +731,7 @@ export const lt: Guide = {
         {
           p: 'Rašykite jį redaktoriuje kaip **Blokai**: antraštės, pastraipos, sąrašai, lentelės, duomenys ir parašų eilutės. Laukai, pvz., `{{employee.name}}`, užpildomi generuojant dokumentą; **Laukai** įterpia lauką ten, kur žymeklis. **Klausiami laukai** – reikšmės, kurias įveda generuojantis, pvz., atlyginimas: **Pridėti klausiamą lauką**. **Peržiūra** parodo šabloną su pavyzdinėmis reikšmėmis.',
         },
+        { shots: [{ name: 'document-templates', alt: 'Dokumentų šablonai: darbo sutarties šablonas redaktoriuje su laukais' }] },
         {
           p: 'Arba rašykite jį Word: **⋯ → Įkelti DOCX šabloną…** padaro Word dokumentą juodraščiu, su jo paties išdėstymu, šriftais, lentelėmis, antraštėmis ir poraštėmis. Kiekvieną lauką jame rašykite kaip `{{employee.name}}`; puslapyje išvardyti naudojami laukai ir pasakyta, kurie iš jų nėra laukai. **Pakeisti DOCX…** įkelia pataisytą, **Atsisiųsti DOCX** jį išsaugo, o **Rašyti redaktoriuje** grįžta prie blokų.',
         },
