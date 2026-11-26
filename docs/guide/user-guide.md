@@ -155,7 +155,7 @@ Dates on the record, and on the printed and PDF assignment forms of Company Asse
 
 ## 9. Employees
 
-The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee. When someone is missing a size, **All** and **Missing a size** above the list choose who is shown; point at one to see what it lists.
+The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee. When someone is missing a size, **All** and **Missing a size** above the list choose who is shown; point at one to see what it lists. The employees added most recently come first. To sort by another column, choose its heading, or the sort button above the list where headings are hidden; choosing the same heading a third time goes back to **Newest first**.
 
 From the **Employees** list, an employee opens beside it: `J` and `K` move to the next or previous one, and `Esc` closes it. From anywhere else, such as an order, a SIM or an item they hold, **Replacements due**, a dashboard or **Search**, the **employee's page** opens instead: the same record the width of the screen, with what they were given and hold on the left and their sizes, photos and documents on the right. The link above its name, such as **← WE-000010**, takes you back where you came from. Beside the list, **Open page** opens their page too, and so does a name in the list opened in a new tab.
 
@@ -215,7 +215,7 @@ An item may name its **Supplier**, the company it is bought from. An open item s
 
 Click an item to open it beside the list. `J` and `K` move between items, and `Esc` closes it. An item without a price or service period is marked **Incomplete**; point at the mark to see which is missing.
 
-An item set is a kit of items with default quantities. You apply it on Create Order in one tap.
+An item set is a kit of items with default quantities. You apply it on Create Order in one tap. **Item Sets** shows the newest sets first.
 
 *Administrators and managers only:*
 
@@ -281,7 +281,7 @@ Open it from the sidebar, or press `G` then `A`. If you also see **Equipment**, 
 
 The **Company Assets** card on the Dashboard shows the same figures. Choose one to open that screen on its tab.
 
-The tabs above the list count the SIMs: **All**, **In Office** and **With Employees**. **Equipment** adds **Not Returned**; its counts overlap, since an item not returned is still with an employee. Search by number or employee, and filter by location, provider and documents, or by category for equipment. A SIM or an item you choose opens beside the list, or in its place on a narrower screen.
+The tabs above the list count the SIMs: **All**, **In Office** and **With Employees**. **Equipment** adds **Not Returned**; its counts overlap, since an item not returned is still with an employee. Search by number or employee, and filter by location, provider and documents, or by category for equipment. A SIM or an item you choose opens beside the list, or in its place on a narrower screen. Both lists start with the SIMs or items added most recently (**Newest first**); a column heading or the sort button sorts them another way.
 
 A SIM's **Status** is what the provider confirms: **Not Activated**, **Active** or **Blocked**. It is separate from where the card is and who holds it: blocking a card does not return it, and returning it does not change its status.
 
@@ -425,6 +425,7 @@ You are signed in to both at once, and **Sign out** in either signs you out of b
 *Administrators only.*
 
 - Add, edit or deactivate accounts. Give each account one or more roles: a user may do what any of their roles allows. **Roles & permissions** says what each role allows.
+- The newest accounts come first; a column heading sorts them another way.
 - A role change reaches the user within minutes, without signing in again. A deactivated user is signed out on every device.
 - To reset a password, use **⋯ → Reset password…**.
 - You can't deactivate your own account, or take from yourself the role that lets you manage users or roles. Someone active always holds **Administrator**.
@@ -549,7 +550,7 @@ A card already registered keeps its provider, even one you remove from the list,
 
 *Administrators only.*
 
-**Suppliers**, in Administration, lists the companies catalogue items are bought from: each one's **Internal code**, name, where it is, how many items name it, and whom to contact. Search by code, name, city or contact. On a phone it is under **More**.
+**Suppliers**, in Administration, lists the companies catalogue items are bought from: each one's **Internal code**, name, where it is, how many items name it, and whom to contact. Search by code, name, city or contact. On a phone it is under **More**. The newest come first; a column heading sorts them another way.
 
 **Add Supplier** adds one. Its **Internal code**, your own short code for it, and its **Name** are required; the code must differ from every other supplier's, whatever the case. Add the rest as you know it: the **Company code** and **VAT code**, the **Bank account** (IBAN), the address with a two-letter **Country**, such as LT, the contact person, email, phone, website and notes. **Edit** changes it; every item from that supplier shows the change.
 
@@ -563,7 +564,7 @@ An item's supplier is chosen on **Edit Item**, in the Item Catalogue. Someone gi
 
 *Administrators only.*
 
-**Document Templates** holds the templates employment contracts and other documents are generated from. Each is for one type of document and in one language, which sets how dates and amounts are written. **Add Template** starts one as a draft.
+**Document Templates** holds the templates employment contracts and other documents are generated from. Each is for one type of document and in one language, which sets how dates and amounts are written. **Add Template** starts one as a draft. The list groups them by type, the newest first in each, with retired ones last.
 
 Write it in the editor as **Blocks**: headings, paragraphs, lists, tables, details and signature lines. Fields such as `{{employee.name}}` are filled in when a document is generated; **Fields** puts one where the cursor is. **Asked fields** are the values the person generating types in, such as a salary: **Add Asked Field**. **Preview** draws the template with sample values.
 
