@@ -11,6 +11,7 @@ import { ExportSheet } from '@ppe/ui/components/export-sheet'
 import { MoreActions } from '@ppe/ui/components/more-actions'
 import { linkVariants } from '@ppe/ui/components/link'
 import { ActionError, Loaded, PageHeader } from '@ppe/ui/components/states'
+import { newestFirst } from '@ppe/ui/lib/sort'
 import { combineLoads, errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { ArrowDown, ArrowUp, ClipboardList, Download, Plus, X } from 'lucide-react'
@@ -34,7 +35,8 @@ export function ItemSets({ navigate }: { navigate: (to: Route) => void }) {
   const session = useSession()
   const canManageItems = session.can('item_sets.manage')
   const canExport = session.can('data.export')
-  const sets = useLoad(() => client.itemSets.list())
+  // Newest first, as every list of records opens (WARE-55); the cards and Export alike.
+  const sets = useLoad(() => client.itemSets.list().then(newestFirst))
   const catalogue = useLoad(() => client.catalogue.list())
   const [editing, setEditing] = useState<ItemSet | 'new' | null>(null)
   const [changes, setChanges] = useState<ItemSet | null>(null)

@@ -8,7 +8,7 @@ import { RowActions } from '@ppe/ui/components/action-menu'
 import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { ActionError, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
-import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
+import { type SortColumn, type SortState, newestFirst, sortRows } from '@ppe/ui/lib/sort'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { linkVariants } from '@ppe/ui/components/link'
 import { Segmented } from '@ppe/ui/components/segmented'
@@ -114,7 +114,8 @@ export function Employees({
   const [editing, setEditing] = useState<Employee | 'new' | null>(null)
   const [sizing, setSizing] = useState<Employee | null>(null)
   const action = useAction()
-  const [sort, setSort] = useState<SortState<EmployeeSort> | null>({ key: 'name', dir: 'asc' })
+  // Newest first until a column is sorted (WARE-55); a third click on it returns there.
+  const [sort, setSort] = useState<SortState<EmployeeSort> | null>(null)
 
   const shown = useMemo(() => {
     const q = filter.trim().toLowerCase()
@@ -125,7 +126,7 @@ export function Employees({
         (!companyShown || !company || e.company?.id === company),
     )
     // Clothing (EU) and shoe sizes are numbers, so they sort as numbers.
-    return sortRows(matching, sort, (e, key) => {
+    return sortRows(newestFirst(matching), sort, (e, key) => {
       switch (key) {
         case 'name':
           return e.full_name
@@ -142,7 +143,7 @@ export function Employees({
       }
     })
   }, [employees.data, filter, tab, onlyMissing, company, companyShown, sort])
-  const sortProps = { sort, onSort: setSort }
+  const sortProps = { sort, onSort: setSort, allowNone: true }
   const missingCount = seesSizes ? (employees.data ?? []).filter((e) => e.status !== 'former' && isMissingASize(e)).length : 0
   const counts = countByStatus(employees.data ?? [])
 

@@ -311,12 +311,12 @@ describe('state and versions', () => {
     expect(draftKey(toBody(changed), [])).not.toBe(savedKey(v))
   })
 
-  it('groups templates by type in the types\' order, retired ones last', () => {
+  it('groups templates by type in the types\' order, newest first, retired ones last', () => {
     const list = [
       template({ id: '1', type: 'employment.nda', name: 'NDA' }),
-      template({ id: '2', name: 'B', retired: true }),
-      template({ id: '3', name: 'A' }),
-      template({ id: '4', name: 'C' }),
+      template({ id: '2', name: 'B', retired: true, created_at: '2026-11-03T00:00:00Z' }),
+      template({ id: '4', name: 'C', created_at: '2026-11-01T00:00:00Z' }),
+      template({ id: '3', name: 'A', created_at: '2026-11-02T00:00:00Z' }),
     ]
     expect(byType(list, ['employment.contract', 'employment.annex', 'employment.nda']).map((g) => [g.type, g.templates.map((t) => t.id)])).toEqual([
       ['employment.contract', ['3', '4', '2']],

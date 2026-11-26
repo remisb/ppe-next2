@@ -65,7 +65,8 @@ import { type AssetTile, type NavigateOptions, type Route, linkTo } from '@/lib/
  * The sortable columns. A SIM is known by its numbers, so SIM Cards starts
  * with the phone number over the SIM No., then the employee who holds it
  * (its Inventory No. is on the card's page, and still a sort); Equipment
- * starts with the Inventory No. Both open in inventory order.
+ * starts with the Inventory No. Both open newest first (WARE-55), which a
+ * third click on a sorted column returns to.
  */
 const columns = (kind: AssetKind): SortColumn<AssetSort>[] =>
   kind === 'SIM'
@@ -88,7 +89,8 @@ const assetId = (a: Asset) => a.id
 /** The select mode in which SIM Cards' Change Status ticks the cards (WARE-45). */
 const STATUS_MODE = 'status'
 
-const byNumber: SortState<AssetSort> = { key: 'inventory', dir: 'asc' }
+/** Newest first: the register's own order, when no column is sorted, as the API's 'added' sort. */
+const newestFirst: SortState<AssetSort> = { key: 'added', dir: 'desc' }
 
 
 
@@ -132,7 +134,8 @@ export function Assets({
   const [filters, setFilters] = useState<AssetFilters>(() => (opened ? chooseTile(noAssetFilters, opened) : noAssetFilters))
   // The search as typed; it filters a moment after typing stops.
   const [search, setSearch] = useState('')
-  const [sort, setSort] = useState<SortState<AssetSort>>(byNumber)
+  const [sort, setSort] = useState<SortState<AssetSort> | null>(null)
+  const order = sort ?? newestFirst
   const [page, setPage] = useState(1)
   const [reloads, setReloads] = useState(0)
   // Phone only: the filters fold away so the cards start near the top.
@@ -154,7 +157,7 @@ export function Assets({
     return () => window.clearTimeout(id)
   }, [search])
 
-  const query = assetQuery(kind, filters, sort.key, sort.dir, page)
+  const query = assetQuery(kind, filters, order.key, order.dir, page)
   // The tab, search and filters, not the sort or page: what an open SIM or item must stay in to stay open (useCloseFilteredOut).
   const filterKey = JSON.stringify(filters)
   // Each page remembers the filters it was loaded for, so a page still on screen while the next loads is not taken for it.
@@ -177,7 +180,7 @@ export function Assets({
   const [pdf, setPdf] = useState<PdfFile | null>(null)
   const previewPdf = async () => {
     setPdfLoading(true)
-    await action.run(async () => setPdf(await client.assets.simCardsPDF(simCardsReportQuery(filters, sort.key, sort.dir))))
+    await action.run(async () => setPdf(await client.assets.simCardsPDF(simCardsReportQuery(filters, order.key, order.dir))))
     setPdfLoading(false)
   }
 
@@ -303,8 +306,9 @@ export function Assets({
   const pages = list.data ? Math.max(1, Math.ceil(list.data.total / ASSET_PAGE_SIZE)) : 1
   const sortProps = {
     sort,
+    allowNone: true,
     onSort: (next: SortState<AssetSort> | null) => {
-      setSort(next ?? byNumber)
+      setSort(next)
       setPage(1)
     },
   }

@@ -86,6 +86,9 @@ func TestFilterText(t *testing.T) {
 	if got := sortText(asset.ListFilter{Sort: asset.SortGiven, Desc: true}, lt); got != "Išdavimo data, mažėjančiai" {
 		t.Errorf("sortText = %q", got)
 	}
+	if got := sortText(asset.ListFilter{Sort: asset.SortAdded, Desc: true}, en); got != "Date Added, descending" {
+		t.Errorf("sortText = %q", got)
+	}
 }
 
 func TestFilename(t *testing.T) {

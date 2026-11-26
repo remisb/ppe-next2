@@ -16,7 +16,7 @@ import { TableHead } from './table.tsx'
 export interface SortProps<K extends string> {
   sort: SortState<K> | null
   onSort: (next: SortState<K> | null) => void
-  /** The list has a natural order to return to on a third click (catalogue display order, newest first). */
+  /** The list has a natural order to return to on a third click: newest first (WARE-55), or an arranged one (catalogue display order). */
   allowNone?: boolean
 }
 
@@ -60,11 +60,11 @@ export function SortableHead<K extends string>({
 /**
  * The words a stacked list's Sort ▾ shows for an order: the column and, where
  * its values have a kind, the direction in words ("Date, newest first");
- * the list's own order by its name.
+ * the list's own order by its name, Newest first unless named otherwise.
  */
 export function sortLabel<K extends string>(columns: readonly SortColumn<K>[], sort: SortState<K> | null, noneLabel?: string): string {
   const column = columns.find((c) => c.key === sort?.key)
-  if (!column || !sort) return noneLabel ?? uiText().defaultOrder
+  if (!column || !sort) return noneLabel ?? uiText().newestFirst
   return column.kind ? `${column.label}, ${uiText().sortWords[column.kind][sort.dir]}` : column.label
 }
 
@@ -97,7 +97,7 @@ export function SortMenu<K extends string>({
               onSort(next ? { key: next.key, dir: next.firstDir ?? 'asc' } : null)
             }}
           >
-            {allowNone ? <DropdownMenuRadioItem value="">{noneLabel ?? text.defaultOrder}</DropdownMenuRadioItem> : null}
+            {allowNone ? <DropdownMenuRadioItem value="">{noneLabel ?? text.newestFirst}</DropdownMenuRadioItem> : null}
             {columns.map((c) => (
               <DropdownMenuRadioItem key={c.key} value={c.key}>
                 {c.label}

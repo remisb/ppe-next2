@@ -36,7 +36,7 @@ var en = words{
 	colValue: "Non-return Value",
 	statuses: map[asset.Status]string{asset.StatusNotActivated: "Not Activated", asset.StatusActive: "Active", asset.StatusBlocked: "Blocked"},
 	sorts: map[asset.SortKey]string{asset.SortPhone: "Phone / SIM", asset.SortHolder: "Employee", asset.SortInventory: "Inventory No.",
-		asset.SortStatus: "Status", asset.SortGiven: "Given Date"},
+		asset.SortStatus: "Status", asset.SortGiven: "Given Date", asset.SortAdded: "Date Added"},
 	page: func(n, total int) string { return "Page " + itoa(n) + " of " + itoa(total) },
 	count: func(n int) string {
 		if n == 1 {
@@ -58,7 +58,7 @@ var lt = words{
 	colValue: "Negrąžinimo vertė",
 	statuses: map[asset.Status]string{asset.StatusNotActivated: "Neaktyvuota", asset.StatusActive: "Aktyvi", asset.StatusBlocked: "Užblokuota"},
 	sorts: map[asset.SortKey]string{asset.SortPhone: "Telefonas / SIM", asset.SortHolder: "Darbuotojas", asset.SortInventory: "Inventoriaus Nr.",
-		asset.SortStatus: "Būsena", asset.SortGiven: "Išdavimo data"},
+		asset.SortStatus: "Būsena", asset.SortGiven: "Išdavimo data", asset.SortAdded: "Pridėjimo data"},
 	page:       func(n, total int) string { return "Puslapis " + itoa(n) + " iš " + itoa(total) },
 	count:      func(n int) string { return itoa(n) + " SIM" },
 	lastHeldBy: func(name string) string { return "paskutinis turėjo " + name },
@@ -75,7 +75,7 @@ var ru = words{
 	colValue: "Стоимость при невозврате",
 	statuses: map[asset.Status]string{asset.StatusNotActivated: "Не активирована", asset.StatusActive: "Активна", asset.StatusBlocked: "Заблокирована"},
 	sorts: map[asset.SortKey]string{asset.SortPhone: "Телефон / SIM", asset.SortHolder: "Сотрудник", asset.SortInventory: "Инвентарный №",
-		asset.SortStatus: "Статус", asset.SortGiven: "Дата выдачи"},
+		asset.SortStatus: "Статус", asset.SortGiven: "Дата выдачи", asset.SortAdded: "Дата добавления"},
 	page:       func(n, total int) string { return "Стр. " + itoa(n) + " из " + itoa(total) },
 	count:      func(n int) string { return itoa(n) + " SIM" },
 	lastHeldBy: func(name string) string { return "последний держатель: " + name },

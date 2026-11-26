@@ -18,6 +18,7 @@ const (
 	SortGiven     SortKey = "given"
 	SortName      SortKey = "name"  // equipment
 	SortPhone     SortKey = "phone" // SIMs: the phone number, spaces ignored, then the SIM No.
+	SortAdded     SortKey = "added" // when each was added to the register: the screens' Newest first (WARE-55)
 )
 
 const (
@@ -147,10 +148,10 @@ func (p ListParams) filter() (ListFilter, int, int, error) {
 	switch SortKey(p.Sort) {
 	case "", SortInventory:
 		f.Sort = SortInventory
-	case SortStatus, SortHolder, SortGiven, SortName, SortPhone:
+	case SortStatus, SortHolder, SortGiven, SortName, SortPhone, SortAdded:
 		f.Sort = SortKey(p.Sort)
 	default:
-		return ListFilter{}, 0, 0, fieldError("sort", "must be inventory, name, phone, status, holder or given")
+		return ListFilter{}, 0, 0, fieldError("sort", "must be inventory, name, phone, status, holder, given or added")
 	}
 	switch p.Dir {
 	case "", "asc":

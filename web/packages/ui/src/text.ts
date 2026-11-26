@@ -25,7 +25,7 @@ const en = {
   showPassword: 'Show password',
   hidePassword: 'Hide password',
   sortBy: 'Sort by',
-  defaultOrder: 'Default order',
+  newestFirst: 'Newest first',
   // Sort ▾'s directions for a column whose values have no words of their own (a status).
   sortAsc: 'Ascending',
   sortDesc: 'Descending',
@@ -146,7 +146,7 @@ const lt: UiText = {
   showPassword: 'Rodyti slaptažodį',
   hidePassword: 'Slėpti slaptažodį',
   sortBy: 'Rikiuoti pagal',
-  defaultOrder: 'Numatytoji tvarka',
+  newestFirst: 'Naujausi pirmiau',
   sortAsc: 'Didėjančiai',
   sortDesc: 'Mažėjančiai',
   sortWords: {
@@ -253,7 +253,7 @@ const ru: UiText = {
   showPassword: 'Показать пароль',
   hidePassword: 'Скрыть пароль',
   sortBy: 'Сортировать по',
-  defaultOrder: 'Порядок по умолчанию',
+  newestFirst: 'Сначала новые',
   sortAsc: 'По возрастанию',
   sortDesc: 'По убыванию',
   sortWords: {

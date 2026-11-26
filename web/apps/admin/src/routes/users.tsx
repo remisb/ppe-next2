@@ -11,7 +11,7 @@ import { Segmented } from '@ppe/ui/components/segmented'
 import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
-import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
+import { type SortColumn, type SortState, newestFirst, sortRows } from '@ppe/ui/lib/sort'
 import { combineLoads, errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
@@ -63,8 +63,9 @@ export function UsersPage({
   const [saved, setSaved] = useState('')
   const [resetting, setResetting] = useState<User | null>(null)
 
-  const [sort, setSort] = useState<SortState<UserSort> | null>({ key: 'name', dir: 'asc' })
-  const sortProps = { sort, onSort: setSort }
+  // Newest first until a column is sorted (WARE-55); a third click on it returns there.
+  const [sort, setSort] = useState<SortState<UserSort> | null>(null)
+  const sortProps = { sort, onSort: setSort, allowNone: true }
   const timeZone = useLoad(() => (allowed ? client.settings() : Promise.resolve(undefined))).data?.timezone
 
   // The status tabs and the role filter are in the address (a role's user count on Roles opens them); the search is not.
@@ -81,7 +82,7 @@ export function UsersPage({
   const activeCount = matching.filter((u) => u.is_active).length
   const shown = useMemo(() => {
     const inTab = matching.filter((u) => !status || u.is_active === (status === 'active'))
-    return sortRows(inTab, sort, (u, key) => {
+    return sortRows(newestFirst(inTab), sort, (u, key) => {
       switch (key) {
         case 'name':
           return u.name

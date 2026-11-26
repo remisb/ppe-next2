@@ -9,7 +9,7 @@ import { MoreActions } from '@ppe/ui/components/more-actions'
 import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { ActionError, EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
-import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
+import { type SortColumn, type SortState, newestFirst, sortRows } from '@ppe/ui/lib/sort'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { EXPORT_MODE, ExportMode } from '@ppe/ui/components/export-mode'
@@ -52,13 +52,14 @@ export function SuppliersPage({ navigate }: { navigate: (to: Route) => void }) {
   // What the last save or delete did, as a status line (a screen reader hears it too).
   const [saved, setSaved] = useState('')
   const action = useAction()
-  const [sort, setSort] = useState<SortState<SupplierSort> | null>({ key: 'name', dir: 'asc' })
-  const sortProps = { sort, onSort: setSort }
+  // Newest first until a column is sorted (WARE-55); a third click on it returns there.
+  const [sort, setSort] = useState<SortState<SupplierSort> | null>(null)
+  const sortProps = { sort, onSort: setSort, allowNone: true }
 
   const shown = useMemo(
     () =>
       sortRows(
-        (list.data ?? []).filter((s) => matches(s, filter)),
+        newestFirst((list.data ?? []).filter((s) => matches(s, filter))),
         sort,
         (s, key) => (key === 'place' ? placeOf(s) : key === 'items' ? s.item_count : s[key]),
       ),

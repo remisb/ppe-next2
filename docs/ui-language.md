@@ -555,8 +555,10 @@ Lithuanian or Russian label wraps rather than overflow.
   newest first"; named "Sort by: …"), its menu the columns, then the two directions in the
   column's words. A long list's column heads stay in view under the stuck header on a
   desktop (`stickyHead`). A **group row** heads a group (Orders' months, the Catalogue's size
-  groups); group rows do not stick.
-- **Code:** `Table` (`stickyHead`), `SortableHead`, `SortMenu`, `TableGroupRow`, `sortRows`.
+  groups); group rows do not stick. A list of records opens **Newest first** (WARE-55): its
+  own order, no head sorted, which a third click on a sorted column returns to; only an order
+  someone arranges (the Item Catalogue's display order) opens in that instead.
+- **Code:** `Table` (`stickyHead`), `SortableHead`, `SortMenu`, `TableGroupRow`, `sortRows`, `newestFirst`.
 
 ### Stacked
 - **Brief:** a table with too little room for its columns turns each row into a stacked row
