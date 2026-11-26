@@ -381,13 +381,21 @@ list row takes the same array (every action as an item, the main one first).
 | `FileText` | Open the document | View Order |
 | `Signature` | Mark as signed | Mark as Signed & Given (not `PenLine`: at 16px it reads as `Pencil`) |
 | `KeyRound` | Show PIN and PUK | SIM card |
-| `Mail` | Prepare an email | activation, blocking |
+| `MailCheck` | Prepare Activation Email | SIM card |
+| `MailX` | Prepare Blocking Email | SIM card |
 | `MessageCircle` (green) | WhatsApp | Copy for WhatsApp |
 | `Copy` | Copy | numbers |
 | `Plus` | New / Add | New order, Add … |
-| `Undo2` | Take back | Return |
+| `Undo2` | Take back | Return (equipment) |
+| `SimGive` | Give SIM: the SIM card with an arrow out | SIM card, Given SIM |
+| `SimReturn` | Return a SIM card: the card with an arrow in | SIM card, Given SIM, the register |
+| `SimNotReturned` | Mark a SIM card as Not Returned: the card with an alert sign | SIM card's ⋯ |
 | `Trash2` | Delete | ⋯ only, never a tool |
 
+- **SIM icons** (`@ppe/ui/lib/sim-icons.ts`, chosen in `docs/ux/mockups/sim-action-icons.html`): lucide's
+  `CardSim` opened at the bottom right for a badge that says the act, made with `createLucideIcon`. Besides
+  the three above, `SimActive`, `SimBlocked` and `SimNotActivated` (a check, a ban sign and a clock, in the
+  status colours) stand before the statuses in Change Status ▾. Equipment keeps the plain icons.
 - **Tooltip**: on hover after 300ms and on keyboard focus (the existing `Tooltip`), the full
   `label`, plus `disabledReason` when disabled. On a touch screen a long-press (500ms) shows
   it without running the action; ⋯ also lists every tool by name at the top on a touch screen

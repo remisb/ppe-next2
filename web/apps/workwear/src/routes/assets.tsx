@@ -8,6 +8,7 @@ import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { type Help, Tooltip, TooltipContent, TooltipTrigger } from '@ppe/ui/components/tooltip'
 import { ActionError, EmptyState, ErrorState, ListSkeleton, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
+import { SimGive } from '@ppe/ui/lib/sim-icons'
 import type { SortColumn, SortState } from '@ppe/ui/lib/sort'
 import { useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
@@ -634,7 +635,13 @@ export function Assets({
                           {/* In select mode the row's own actions step aside: a click ticks the row. */}
                           {ticking ? null : action === 'give' ? (
                             <Button size="sm" variant="outline" onClick={() => setSheet({ kind: 'give', asset: a })}>
-                              {sim ? t.assets.giveSimCard : t.assets.giveAsset}
+                              {sim ? (
+                                <>
+                                  <SimGive aria-hidden /> {t.assets.giveSimCard}
+                                </>
+                              ) : (
+                                t.assets.giveAsset
+                              )}
                             </Button>
                           ) : action === 'return' ? (
                             <ReturnButton kind={a.kind} size="sm" variant="outline" onClick={() => setSheet({ kind: 'return', asset: a })} />

@@ -13,7 +13,9 @@ import {
 import { RowActions } from '@ppe/ui/components/action-menu'
 import { IssueBadge } from '@ppe/ui/components/issue-badge'
 import { HelpTooltip } from '@ppe/ui/components/tooltip'
-import { ChevronDown } from 'lucide-react'
+import { SimActive, SimBlocked, SimNotActivated, SimReturn } from '@ppe/ui/lib/sim-icons'
+import { cn } from '@ppe/ui/lib/utils'
+import { ChevronDown, MailCheck } from 'lucide-react'
 import type { ComponentProps } from 'react'
 
 import { t } from '@/i18n'
@@ -21,6 +23,18 @@ import { type AssetRunners, assetActions } from '@/lib/asset-actions'
 import { statusLabel, statusVariant } from '@/lib/assets'
 
 const statuses: ConnectionStatus[] = ['NOT_ACTIVATED', 'ACTIVE', 'BLOCKED']
+
+const statusIcons = {
+  NOT_ACTIVATED: { icon: SimNotActivated, className: 'text-warning' },
+  ACTIVE: { icon: SimActive, className: 'text-success' },
+  BLOCKED: { icon: SimBlocked, className: 'text-destructive' },
+} as const satisfies Record<ConnectionStatus, unknown>
+
+/** A connection status's SIM icon in its colour, as the Change Status menus draw it before the status's name. */
+export function StatusIcon({ status, className }: { status: ConnectionStatus; className?: string }) {
+  const { icon: Icon, className: colour } = statusIcons[status]
+  return <Icon aria-hidden className={cn('size-4 shrink-0', colour, className)} />
+}
 
 /**
  * Not Returned, saying what that means and what to do (IssueBadge): for a SIM,
@@ -71,6 +85,7 @@ export function BulkStatusMenu({ onChange, disabled = false }: { onChange: (next
         <DropdownMenuSeparator />
         {statuses.map((s) => (
           <DropdownMenuItem key={s} onClick={() => onChange(s)}>
+            <StatusIcon status={s} />
             {statusLabel(s)}
           </DropdownMenuItem>
         ))}
@@ -106,7 +121,12 @@ export function StatusMenu({
       <DropdownMenuContent>
         <DropdownMenuNote>{t.assets.statusNote}</DropdownMenuNote>
         {status === 'NOT_ACTIVATED' ? <DropdownMenuNote className="text-foreground">{t.assets.activateNote}</DropdownMenuNote> : null}
-        {status === 'NOT_ACTIVATED' && onActivationEmail ? <DropdownMenuItem onClick={onActivationEmail}>{t.assets.prepareActivationEmail}</DropdownMenuItem> : null}
+        {status === 'NOT_ACTIVATED' && onActivationEmail ? (
+          <DropdownMenuItem onClick={onActivationEmail}>
+            <MailCheck aria-hidden />
+            {t.assets.prepareActivationEmail}
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuRadioGroup
           value={status}
@@ -116,6 +136,7 @@ export function StatusMenu({
         >
           {statuses.map((s) => (
             <DropdownMenuRadioItem key={s} value={s}>
+              <StatusIcon status={s} />
               {statusLabel(s)}
             </DropdownMenuRadioItem>
           ))}
@@ -138,6 +159,8 @@ export function ReturnButton({
   return (
     <HelpTooltip title={t.assets.takeBack} help={t.assets.takeBackHelp[kind === 'EQUIPMENT' ? 'EQUIPMENT' : 'SIM']}>
       <Button {...props} onClick={onClick}>
+        {/* A SIM card's Return draws the card with an arrow in, as its action bar does. */}
+        {kind === 'SIM' ? <SimReturn aria-hidden /> : null}
         {t.assets.takeBack}
       </Button>
     </HelpTooltip>
@@ -173,6 +196,7 @@ export function AssetMoreActions({
           <DropdownMenuRadioGroup value={current} onValueChange={(next: ConnectionStatus) => next !== current && onStatus(next)}>
             {statuses.map((s) => (
               <DropdownMenuRadioItem key={s} value={s}>
+                <StatusIcon status={s} />
                 {statusLabel(s)}
               </DropdownMenuRadioItem>
             ))}
