@@ -213,8 +213,8 @@ export const lt: Guide = {
       id: 'employees',
       title: 'Darbuotojai',
       blocks: [
-        { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite atidarę darbuotoją. Kai kuriam nors trūksta dydžio, **Visi** ir **Trūksta dydžio** virš sąrašo pasirenka, kas rodoma.', devices: ['phone', 'tablet'] },
-        { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją. Kai kuriam nors trūksta dydžio, **Visi** ir **Trūksta dydžio** virš sąrašo pasirenka, kas rodoma; užvedę žymeklį ant vieno, matysite, ką jis rodo.', devices: ['desktop'] },
+        { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite atidarę darbuotoją. Kai kuriam nors trūksta dydžio, **Visi** ir **Trūksta dydžio** virš sąrašo pasirenka, kas rodoma. Pirmiausia rodomi naujausiai pridėti darbuotojai. Norėdami rikiuoti pagal kitą stulpelį, pasirinkite jo antraštę arba rikiavimo mygtuką virš sąrašo, kai antraštės paslėptos; trečią kartą pasirinkus tą pačią antraštę grįžtama į **Naujausi pirmiau**.', devices: ['phone', 'tablet'] },
+        { p: 'Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją. Kai kuriam nors trūksta dydžio, **Visi** ir **Trūksta dydžio** virš sąrašo pasirenka, kas rodoma; užvedę žymeklį ant vieno, matysite, ką jis rodo. Pirmiausia rodomi naujausiai pridėti darbuotojai. Norėdami rikiuoti pagal kitą stulpelį, pasirinkite jo antraštę arba rikiavimo mygtuką virš sąrašo, kai antraštės paslėptos; trečią kartą pasirinkus tą pačią antraštę grįžtama į **Naujausi pirmiau**.', devices: ['desktop'] },
         {
           p: 'Iš sąrašo **Darbuotojai** darbuotojas atidaromas šalia jo: `J` ir `K` pereina prie kito ar ankstesnio, `Esc` uždaro. Iš bet kur kitur, pavyzdžiui, iš užsakymo, jo turimos SIM ar daikto, **Reikia pakeisti**, suvestinės ar **Paieška** rezultatų, atsiveria **darbuotojo puslapis**: tas pats įrašas per visą ekrano plotį, kairėje – kas jam išduota ir ką jis turi, dešinėje – jo dydžiai, nuotraukos ir dokumentai. Nuoroda virš vardo, pavyzdžiui, **← WE-000010**, grąžina ten, iš kur atėjote. Šalia sąrašo jo puslapį atveria ir **Atidaryti puslapį**, taip pat sąraše esantis vardas, atidarytas naujame skirtuke.',
           devices: ['desktop'],
@@ -278,7 +278,7 @@ export const lt: Guide = {
           p: 'Palieskite prekę, kad ją atidarytumėte; rodyklė **←** viršuje grąžina atgal. Prekė be kainos ar naudojimo laikotarpio pažymėta **Neužpildyta**; atidarę ją matysite, ko trūksta.',
           devices: ['phone', 'tablet'],
         },
-        { p: 'Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane „Kurti užsakymą“ jį pritaikote vienu paspaudimu.' },
+        { p: 'Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane „Kurti užsakymą“ jį pritaikote vienu paspaudimu. **Prekių rinkiniai** pirmiausia rodo naujausius rinkinius.' },
         { p: 'Prekes kuriate ir keičiate ekrane **Prekių katalogas**, o komplektus – ekrane **Prekių rinkiniai**.', roles: ['admin', 'manager'] },
         { p: 'Languose **Pridėti prekę** ir **Redaguoti prekę** pasirinkite **Tiekėją** iš sąrašo, kurį administratoriai tvarko **Administravime**, ekrane **Tiekėjai**, arba **Tiekėjas nenurodytas**. Ten ištrynus tiekėją, jo prekės lieka be tiekėjo.', roles: ['admin', 'manager'] },
         {
@@ -369,11 +369,11 @@ export const lt: Guide = {
         { p: 'Jį atidarysite šoninėje juostoje arba paspaudę `G`, tada `A`. Jei matote ir **Įranga**, ji ir **SIM kortelės** išvardytos po **Įmonės turtas**: pasirinkite vieną, kad atidarytumėte. Pasirinkę **Įmonės turtas**, jas paslėpsite arba parodysite.', devices: ['desktop'] },
         { p: 'Kortelėje **Įmonės turtas** suvestinėje rodomi tie patys skaičiai. Pasirinkite vieną, kad atidarytumėte tą ekraną jo skirtuke.', roles: ['admin', 'manager'] },
         {
-          p: 'Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, **Biure** ir **Pas darbuotojus**. Ekrane **Įranga** dar yra **Negrąžinta**; jo skaičiai persidengia, nes negrąžintas daiktas vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją, filtruokite pagal vietą, tiekėją ir dokumentus, o įrangą – pagal kategoriją. Pasirinkta SIM ar daiktas atsidaro šalia sąrašo, o siauresniame ekrane – jo vietoje.',
+          p: 'Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, **Biure** ir **Pas darbuotojus**. Ekrane **Įranga** dar yra **Negrąžinta**; jo skaičiai persidengia, nes negrąžintas daiktas vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją, filtruokite pagal vietą, tiekėją ir dokumentus, o įrangą – pagal kategoriją. Pasirinkta SIM ar daiktas atsidaro šalia sąrašo, o siauresniame ekrane – jo vietoje. Abu sąrašai prasideda naujausiai pridėtomis SIM ar daiktais (**Naujausi pirmiau**); stulpelio antraštė ar rikiavimo mygtukas surikiuoja juos kitaip.',
           devices: ['tablet', 'desktop'],
         },
         {
-          p: 'Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, **Biure** ir **Pas darbuotojus**. Ekrane **Įranga** dar yra **Negrąžinta**; jo skaičiai persidengia, nes negrąžintas daiktas vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją; mygtuke **Filtrai** – vieta, tiekėjas ir dokumentai, o įrangai – kategorija. Palieskite SIM ar daiktą, kad jį atidarytumėte; rodyklė **←** jo viršuje grąžina į sąrašą.',
+          p: 'Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, **Biure** ir **Pas darbuotojus**. Ekrane **Įranga** dar yra **Negrąžinta**; jo skaičiai persidengia, nes negrąžintas daiktas vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją; mygtuke **Filtrai** – vieta, tiekėjas ir dokumentai, o įrangai – kategorija. Palieskite SIM ar daiktą, kad jį atidarytumėte; rodyklė **←** jo viršuje grąžina į sąrašą. Abu sąrašai prasideda naujausiai pridėtomis SIM ar daiktais (**Naujausi pirmiau**); stulpelio antraštė ar rikiavimo mygtukas surikiuoja juos kitaip.',
           devices: ['phone'],
         },
         {
@@ -549,6 +549,7 @@ export const lt: Guide = {
         {
           ul: [
             'Kurkite, redaguokite ar deaktyvuokite paskyras. Kiekvienai paskyrai priskirkite vieną ar kelias roles: naudotojas gali tai, ką leidžia bet kuri jo rolė. Ką leidžia kiekviena rolė, rodo **Rolės ir teisės**.',
+            'Pirmiausia rodomos naujausios paskyros; stulpelio antraštė surikiuoja jas kitaip.',
             'Rolės pakeitimas naudotoją pasiekia per kelias minutes, nereikia jungtis iš naujo. Deaktyvuotas naudotojas atjungiamas visuose įrenginiuose.',
             'Slaptažodžiui atkurti naudokite **⋯ → Nustatyti naują slaptažodį…**.',
             'Negalite deaktyvuoti savo paskyros ar atimti iš savęs rolės, kuri leidžia tvarkyti naudotojus ar roles. Rolę **Administratorius** visada turi bent vienas aktyvus naudotojas.',
@@ -708,7 +709,7 @@ export const lt: Guide = {
       roles: ['admin'],
       blocks: [
         {
-          p: '**Tiekėjai** Administravime – tai įmonės, iš kurių perkamos katalogo prekės: kiekvienos **Vidinis kodas**, pavadinimas, vieta, kiek prekių jai priskirta ir su kuo susisiekti. Ieškokite pagal kodą, pavadinimą, miestą ar kontaktą. Telefone šis ekranas yra **Daugiau**.',
+          p: '**Tiekėjai** Administravime – tai įmonės, iš kurių perkamos katalogo prekės: kiekvienos **Vidinis kodas**, pavadinimas, vieta, kiek prekių jai priskirta ir su kuo susisiekti. Ieškokite pagal kodą, pavadinimą, miestą ar kontaktą. Telefone šis ekranas yra **Daugiau**. Pirmiausia rodomi naujausi; stulpelio antraštė surikiuoja juos kitaip.',
         },
         {
           p: '**Pridėti tiekėją** prideda naują. Privalomi jo **Vidinis kodas** (jūsų pačių trumpas kodas) ir **Pavadinimas**; kodas turi skirtis nuo kitų tiekėjų kodų, nepaisant didžiųjų ir mažųjų raidžių. Kitus duomenis įveskite, kiek žinote: **Įmonės kodą** ir **PVM mokėtojo kodą**, **Banko sąskaitą** (IBAN), adresą su dviejų raidžių **Šalimi**, pvz., LT, kontaktinį asmenį, el. paštą, telefoną, svetainę ir pastabas. **Redaguoti** jį pakeičia; pakeitimas matomas visose šio tiekėjo prekėse.',
@@ -726,7 +727,7 @@ export const lt: Guide = {
       roles: ['admin'],
       blocks: [
         {
-          p: '**Dokumentų šablonai** – šablonai, pagal kuriuos generuojamos darbo sutartys ir kiti dokumentai. Kiekvienas skirtas vienam dokumentų tipui ir vienai kalbai, kuri nustato, kaip rašomos datos ir sumos. **Pridėti šabloną** sukuria naują juodraštį.',
+          p: '**Dokumentų šablonai** – šablonai, pagal kuriuos generuojamos darbo sutartys ir kiti dokumentai. Kiekvienas skirtas vienam dokumentų tipui ir vienai kalbai, kuri nustato, kaip rašomos datos ir sumos. **Pridėti šabloną** sukuria naują juodraštį. Sąraše jie sugrupuoti pagal tipą, kiekvienoje grupėje naujausi pirmiau, o nebenaudojami – paskutiniai.',
         },
         {
           p: 'Rašykite jį redaktoriuje kaip **Blokai**: antraštės, pastraipos, sąrašai, lentelės, duomenys ir parašų eilutės. Laukai, pvz., `{{employee.name}}`, užpildomi generuojant dokumentą; **Laukai** įterpia lauką ten, kur žymeklis. **Klausiami laukai** – reikšmės, kurias įveda generuojantis, pvz., atlyginimas: **Pridėti klausiamą lauką**. **Peržiūra** parodo šabloną su pavyzdinėmis reikšmėmis.',

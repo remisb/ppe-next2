@@ -155,7 +155,7 @@ Datos įraše ir Įmonės turto atspausdintuose bei PDF išdavimo aktuose rašom
 
 ## 9. Darbuotojai
 
-Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją. Kai kuriam nors trūksta dydžio, **Visi** ir **Trūksta dydžio** virš sąrašo pasirenka, kas rodoma; užvedę žymeklį ant vieno, matysite, ką jis rodo.
+Sąraše matyti kiekvieno darbuotojo dydžiai ir pastabos. Darbuotojai, kuriems trūksta dydžio, pažymėti. Ilga pastaba sutrumpinama iki vienos eilutės; visą ją matysite užvedę žymeklį arba atidarę darbuotoją. Kai kuriam nors trūksta dydžio, **Visi** ir **Trūksta dydžio** virš sąrašo pasirenka, kas rodoma; užvedę žymeklį ant vieno, matysite, ką jis rodo. Pirmiausia rodomi naujausiai pridėti darbuotojai. Norėdami rikiuoti pagal kitą stulpelį, pasirinkite jo antraštę arba rikiavimo mygtuką virš sąrašo, kai antraštės paslėptos; trečią kartą pasirinkus tą pačią antraštę grįžtama į **Naujausi pirmiau**.
 
 Iš sąrašo **Darbuotojai** darbuotojas atidaromas šalia jo: `J` ir `K` pereina prie kito ar ankstesnio, `Esc` uždaro. Iš bet kur kitur, pavyzdžiui, iš užsakymo, jo turimos SIM ar daikto, **Reikia pakeisti**, suvestinės ar **Paieška** rezultatų, atsiveria **darbuotojo puslapis**: tas pats įrašas per visą ekrano plotį, kairėje – kas jam išduota ir ką jis turi, dešinėje – jo dydžiai, nuotraukos ir dokumentai. Nuoroda virš vardo, pavyzdžiui, **← WE-000010**, grąžina ten, iš kur atėjote. Šalia sąrašo jo puslapį atveria ir **Atidaryti puslapį**, taip pat sąraše esantis vardas, atidarytas naujame skirtuke.
 
@@ -215,7 +215,7 @@ Prekė gali nurodyti savo **Tiekėją** – įmonę, iš kurios ji perkama. Atid
 
 Spustelėjus prekę, ji atsidaro šalia sąrašo. `J` ir `K` pereina tarp prekių, o `Esc` prekę uždaro. Prekė be kainos ar naudojimo laikotarpio pažymėta **Neužpildyta**; užvedę žymeklį ant žymos, matysite, ko trūksta.
 
-Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane „Kurti užsakymą“ jį pritaikote vienu paspaudimu.
+Prekių rinkinys – tai prekių komplektas su numatytais kiekiais. Ekrane „Kurti užsakymą“ jį pritaikote vienu paspaudimu. **Prekių rinkiniai** pirmiausia rodo naujausius rinkinius.
 
 *Tik administratoriams ir vadovams:*
 
@@ -281,7 +281,7 @@ Jį atidarysite šoninėje juostoje arba paspaudę `G`, tada `A`. Jei matote ir 
 
 Kortelėje **Įmonės turtas** suvestinėje rodomi tie patys skaičiai. Pasirinkite vieną, kad atidarytumėte tą ekraną jo skirtuke.
 
-Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, **Biure** ir **Pas darbuotojus**. Ekrane **Įranga** dar yra **Negrąžinta**; jo skaičiai persidengia, nes negrąžintas daiktas vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją, filtruokite pagal vietą, tiekėją ir dokumentus, o įrangą – pagal kategoriją. Pasirinkta SIM ar daiktas atsidaro šalia sąrašo, o siauresniame ekrane – jo vietoje.
+Skirtukai virš sąrašo skaičiuoja SIM: **Visos**, **Biure** ir **Pas darbuotojus**. Ekrane **Įranga** dar yra **Negrąžinta**; jo skaičiai persidengia, nes negrąžintas daiktas vis dar yra pas darbuotoją. Ieškokite pagal numerį ar darbuotoją, filtruokite pagal vietą, tiekėją ir dokumentus, o įrangą – pagal kategoriją. Pasirinkta SIM ar daiktas atsidaro šalia sąrašo, o siauresniame ekrane – jo vietoje. Abu sąrašai prasideda naujausiai pridėtomis SIM ar daiktais (**Naujausi pirmiau**); stulpelio antraštė ar rikiavimo mygtukas surikiuoja juos kitaip.
 
 SIM **Būsena** – tai, ką patvirtina tiekėjas: **Neaktyvuota**, **Aktyvi** arba **Užblokuota**. Ji nepriklauso nuo to, kur kortelė yra ir pas ką ji: užblokuota kortelė negrąžinama, o grąžinus kortelę jos būsena nesikeičia.
 
@@ -425,6 +425,7 @@ Prisijungiate prie abiejų iš karto, o **Atsijungti** bet kuriame atjungia nuo 
 *Tik administratoriams.*
 
 - Kurkite, redaguokite ar deaktyvuokite paskyras. Kiekvienai paskyrai priskirkite vieną ar kelias roles: naudotojas gali tai, ką leidžia bet kuri jo rolė. Ką leidžia kiekviena rolė, rodo **Rolės ir teisės**.
+- Pirmiausia rodomos naujausios paskyros; stulpelio antraštė surikiuoja jas kitaip.
 - Rolės pakeitimas naudotoją pasiekia per kelias minutes, nereikia jungtis iš naujo. Deaktyvuotas naudotojas atjungiamas visuose įrenginiuose.
 - Slaptažodžiui atkurti naudokite **⋯ → Nustatyti naują slaptažodį…**.
 - Negalite deaktyvuoti savo paskyros ar atimti iš savęs rolės, kuri leidžia tvarkyti naudotojus ar roles. Rolę **Administratorius** visada turi bent vienas aktyvus naudotojas.
@@ -549,7 +550,7 @@ Jau užregistruota kortelė savo tiekėjo nekeičia, net jei jį pašalinate iš
 
 *Tik administratoriams.*
 
-**Tiekėjai** Administravime – tai įmonės, iš kurių perkamos katalogo prekės: kiekvienos **Vidinis kodas**, pavadinimas, vieta, kiek prekių jai priskirta ir su kuo susisiekti. Ieškokite pagal kodą, pavadinimą, miestą ar kontaktą. Telefone šis ekranas yra **Daugiau**.
+**Tiekėjai** Administravime – tai įmonės, iš kurių perkamos katalogo prekės: kiekvienos **Vidinis kodas**, pavadinimas, vieta, kiek prekių jai priskirta ir su kuo susisiekti. Ieškokite pagal kodą, pavadinimą, miestą ar kontaktą. Telefone šis ekranas yra **Daugiau**. Pirmiausia rodomi naujausi; stulpelio antraštė surikiuoja juos kitaip.
 
 **Pridėti tiekėją** prideda naują. Privalomi jo **Vidinis kodas** (jūsų pačių trumpas kodas) ir **Pavadinimas**; kodas turi skirtis nuo kitų tiekėjų kodų, nepaisant didžiųjų ir mažųjų raidžių. Kitus duomenis įveskite, kiek žinote: **Įmonės kodą** ir **PVM mokėtojo kodą**, **Banko sąskaitą** (IBAN), adresą su dviejų raidžių **Šalimi**, pvz., LT, kontaktinį asmenį, el. paštą, telefoną, svetainę ir pastabas. **Redaguoti** jį pakeičia; pakeitimas matomas visose šio tiekėjo prekėse.
 
@@ -563,7 +564,7 @@ Prekės tiekėjas pasirenkamas prekių kataloge, lange **Redaguoti prekę**. Š�
 
 *Tik administratoriams.*
 
-**Dokumentų šablonai** – šablonai, pagal kuriuos generuojamos darbo sutartys ir kiti dokumentai. Kiekvienas skirtas vienam dokumentų tipui ir vienai kalbai, kuri nustato, kaip rašomos datos ir sumos. **Pridėti šabloną** sukuria naują juodraštį.
+**Dokumentų šablonai** – šablonai, pagal kuriuos generuojamos darbo sutartys ir kiti dokumentai. Kiekvienas skirtas vienam dokumentų tipui ir vienai kalbai, kuri nustato, kaip rašomos datos ir sumos. **Pridėti šabloną** sukuria naują juodraštį. Sąraše jie sugrupuoti pagal tipą, kiekvienoje grupėje naujausi pirmiau, o nebenaudojami – paskutiniai.
 
 Rašykite jį redaktoriuje kaip **Blokai**: antraštės, pastraipos, sąrašai, lentelės, duomenys ir parašų eilutės. Laukai, pvz., `{{employee.name}}`, užpildomi generuojant dokumentą; **Laukai** įterpia lauką ten, kur žymeklis. **Klausiami laukai** – reikšmės, kurias įveda generuojantis, pvz., atlyginimas: **Pridėti klausiamą lauką**. **Peržiūra** parodo šabloną su pavyzdinėmis reikšmėmis.
 

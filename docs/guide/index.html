@@ -264,7 +264,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 
 <section id="employees">
   <h2><span class="n">9</span>Employees</h2>
-    <p>The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee. When someone is missing a size, <b>All</b> and <b>Missing a size</b> above the list choose who is shown; point at one to see what it lists.</p>
+    <p>The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee. When someone is missing a size, <b>All</b> and <b>Missing a size</b> above the list choose who is shown; point at one to see what it lists. The employees added most recently come first. To sort by another column, choose its heading, or the sort button above the list where headings are hidden; choosing the same heading a third time goes back to <b>Newest first</b>.</p>
     <p>From the <b>Employees</b> list, an employee opens beside it: <kbd>J</kbd> and <kbd>K</kbd> move to the next or previous one, and <kbd>Esc</kbd> closes it. From anywhere else, such as an order, a SIM or an item they hold, <b>Replacements due</b>, a dashboard or <b>Search</b>, the <b>employee's page</b> opens instead: the same record the width of the screen, with what they were given and hold on the left and their sizes, photos and documents on the right. The link above its name, such as <b>← WE-000010</b>, takes you back where you came from. Beside the list, <b>Open page</b> opens their page too, and so does a name in the list opened in a new tab.</p>
     <p>Each employee shows:</p>
     <ul>
@@ -313,7 +313,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <p>An item can also have a <b>Purchase price</b>: what we pay the supplier. It is optional, never needed to order, and orders don't show it. An open item shows both prices and how they changed, and its <b>Changes</b>, closed at first, list who changed the item, and when.</p>
     <p>An item may name its <b>Supplier</b>, the company it is bought from. An open item shows it, or <b>No supplier</b>.</p>
     <p>Click an item to open it beside the list. <kbd>J</kbd> and <kbd>K</kbd> move between items, and <kbd>Esc</kbd> closes it. An item without a price or service period is marked <b>Incomplete</b>; point at the mark to see which is missing.</p>
-    <p>An item set is a kit of items with default quantities. You apply it on Create Order in one tap.</p>
+    <p>An item set is a kit of items with default quantities. You apply it on Create Order in one tap. <b>Item Sets</b> shows the newest sets first.</p>
     <p class="who">Administrators and managers only</p>
     <p>You add and change items in <b>Item Catalogue</b>, and kits in <b>Item Sets</b>.</p>
     <p>On <b>Add Item</b> and <b>Edit Item</b>, choose the <b>Supplier</b> from the list administrators keep in <b>Administration</b>, on <b>Suppliers</b>, or <b>No supplier</b>. A supplier deleted there leaves its items with none.</p>
@@ -369,7 +369,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
     <p>Open it from the sidebar, or press <kbd>G</kbd> then <kbd>A</kbd>. If you also see <b>Equipment</b>, it and <b>SIM Cards</b> are listed under <b>Company Assets</b>: choose one to open it. Choosing <b>Company Assets</b> hides or shows them.</p>
     <p class="who">Administrators and managers only</p>
     <p>The <b>Company Assets</b> card on the Dashboard shows the same figures. Choose one to open that screen on its tab.</p>
-    <p>The tabs above the list count the SIMs: <b>All</b>, <b>In Office</b> and <b>With Employees</b>. <b>Equipment</b> adds <b>Not Returned</b>; its counts overlap, since an item not returned is still with an employee. Search by number or employee, and filter by location, provider and documents, or by category for equipment. A SIM or an item you choose opens beside the list, or in its place on a narrower screen.</p>
+    <p>The tabs above the list count the SIMs: <b>All</b>, <b>In Office</b> and <b>With Employees</b>. <b>Equipment</b> adds <b>Not Returned</b>; its counts overlap, since an item not returned is still with an employee. Search by number or employee, and filter by location, provider and documents, or by category for equipment. A SIM or an item you choose opens beside the list, or in its place on a narrower screen. Both lists start with the SIMs or items added most recently (<b>Newest first</b>); a column heading or the sort button sorts them another way.</p>
     <p>A SIM's <b>Status</b> is what the provider confirms: <b>Not Activated</b>, <b>Active</b> or <b>Blocked</b>. It is separate from where the card is and who holds it: blocking a card does not return it, and returning it does not change its status.</p>
     <div class="shots">
       <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/assets.png" alt="SIM Cards: the tabs with their counts, the search and filters, and each SIM with its holder" loading="lazy"></figure>
@@ -486,6 +486,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
   <p class="who">Administrators only</p>
     <ul>
       <li>Add, edit or deactivate accounts. Give each account one or more roles: a user may do what any of their roles allows. <b>Roles &amp; permissions</b> says what each role allows.</li>
+      <li>The newest accounts come first; a column heading sorts them another way.</li>
       <li>A role change reaches the user within minutes, without signing in again. A deactivated user is signed out on every device.</li>
       <li>To reset a password, use <b>⋯ → Reset password…</b>.</li>
       <li>You can't deactivate your own account, or take from yourself the role that lets you manage users or roles. Someone active always holds <b>Administrator</b>.</li>
@@ -617,7 +618,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 <section id="suppliers">
   <h2><span class="n">26</span>Suppliers</h2>
   <p class="who">Administrators only</p>
-    <p><b>Suppliers</b>, in Administration, lists the companies catalogue items are bought from: each one's <b>Internal code</b>, name, where it is, how many items name it, and whom to contact. Search by code, name, city or contact. On a phone it is under <b>More</b>.</p>
+    <p><b>Suppliers</b>, in Administration, lists the companies catalogue items are bought from: each one's <b>Internal code</b>, name, where it is, how many items name it, and whom to contact. Search by code, name, city or contact. On a phone it is under <b>More</b>. The newest come first; a column heading sorts them another way.</p>
     <p><b>Add Supplier</b> adds one. Its <b>Internal code</b>, your own short code for it, and its <b>Name</b> are required; the code must differ from every other supplier's, whatever the case. Add the rest as you know it: the <b>Company code</b> and <b>VAT code</b>, the <b>Bank account</b> (IBAN), the address with a two-letter <b>Country</b>, such as LT, the contact person, email, phone, website and notes. <b>Edit</b> changes it; every item from that supplier shows the change.</p>
     <p><b>⋯ → Delete supplier…</b> deletes one after asking first, and says how many items name it: they are left with no supplier. Orders are not changed. <b>⋯ → Changes</b> opens the <b>Audit log</b> for that supplier.</p>
     <p>An item's supplier is chosen on <b>Edit Item</b>, in the Item Catalogue. Someone given <b>Manage Suppliers</b> on <b>Roles &amp; permissions</b> sees this screen too.</p>
@@ -629,7 +630,7 @@ footer{color:var(--muted); font-size:14px; max-width:68ch}
 <section id="document-templates">
   <h2><span class="n">27</span>Document Templates</h2>
   <p class="who">Administrators only</p>
-    <p><b>Document Templates</b> holds the templates employment contracts and other documents are generated from. Each is for one type of document and in one language, which sets how dates and amounts are written. <b>Add Template</b> starts one as a draft.</p>
+    <p><b>Document Templates</b> holds the templates employment contracts and other documents are generated from. Each is for one type of document and in one language, which sets how dates and amounts are written. <b>Add Template</b> starts one as a draft. The list groups them by type, the newest first in each, with retired ones last.</p>
     <p>Write it in the editor as <b>Blocks</b>: headings, paragraphs, lists, tables, details and signature lines. Fields such as <kbd>{{employee.name}}</kbd> are filled in when a document is generated; <b>Fields</b> puts one where the cursor is. <b>Asked fields</b> are the values the person generating types in, such as a salary: <b>Add Asked Field</b>. <b>Preview</b> draws the template with sample values.</p>
     <div class="shots">
       <figure><img src="../../web/apps/workwear/public/help-img/en/desktop/document-templates.png" alt="Document Templates: an employment contract template in the editor, with its fields" loading="lazy"></figure>

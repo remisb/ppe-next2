@@ -210,8 +210,8 @@ export const en: Guide = {
       id: 'employees',
       title: 'Employees',
       blocks: [
-        { p: 'The list shows each employee\'s sizes and note, and marks anyone missing a size. A long note is cut to one line; open the employee to read it all. When someone is missing a size, **All** and **Missing a size** above the list choose who is shown.', devices: ['phone', 'tablet'] },
-        { p: "The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee. When someone is missing a size, **All** and **Missing a size** above the list choose who is shown; point at one to see what it lists.", devices: ['desktop'] },
+        { p: 'The list shows each employee\'s sizes and note, and marks anyone missing a size. A long note is cut to one line; open the employee to read it all. When someone is missing a size, **All** and **Missing a size** above the list choose who is shown. The employees added most recently come first. To sort by another column, choose its heading, or the sort button above the list where headings are hidden; choosing the same heading a third time goes back to **Newest first**.', devices: ['phone', 'tablet'] },
+        { p: "The list shows each employee's sizes and note, and marks anyone missing a size. A long note is cut to one line; point at it to read it all, or open the employee. When someone is missing a size, **All** and **Missing a size** above the list choose who is shown; point at one to see what it lists. The employees added most recently come first. To sort by another column, choose its heading, or the sort button above the list where headings are hidden; choosing the same heading a third time goes back to **Newest first**.", devices: ['desktop'] },
         {
           p: "From the **Employees** list, an employee opens beside it: `J` and `K` move to the next or previous one, and `Esc` closes it. From anywhere else, such as an order, a SIM or an item they hold, **Replacements due**, a dashboard or **Search**, the **employee's page** opens instead: the same record the width of the screen, with what they were given and hold on the left and their sizes, photos and documents on the right. The link above its name, such as **← WE-000010**, takes you back where you came from. Beside the list, **Open page** opens their page too, and so does a name in the list opened in a new tab.",
           devices: ['desktop'],
@@ -275,7 +275,7 @@ export const en: Guide = {
           p: 'Tap an item to open it; the arrow **←** at its top takes you back. An item without a price or service period is marked **Incomplete**; open it to see which is missing.',
           devices: ['phone', 'tablet'],
         },
-        { p: 'An item set is a kit of items with default quantities. You apply it on Create Order in one tap.' },
+        { p: 'An item set is a kit of items with default quantities. You apply it on Create Order in one tap. **Item Sets** shows the newest sets first.' },
         { p: 'You add and change items in **Item Catalogue**, and kits in **Item Sets**.', roles: ['admin', 'manager'] },
         { p: "On **Add Item** and **Edit Item**, choose the **Supplier** from the list administrators keep in **Administration**, on **Suppliers**, or **No supplier**. A supplier deleted there leaves its items with none.", roles: ['admin', 'manager'] },
         {
@@ -366,11 +366,11 @@ export const en: Guide = {
         { p: 'Open it from the sidebar, or press `G` then `A`. If you also see **Equipment**, it and **SIM Cards** are listed under **Company Assets**: choose one to open it. Choosing **Company Assets** hides or shows them.', devices: ['desktop'] },
         { p: 'The **Company Assets** card on the Dashboard shows the same figures. Choose one to open that screen on its tab.', roles: ['admin', 'manager'] },
         {
-          p: 'The tabs above the list count the SIMs: **All**, **In Office** and **With Employees**. **Equipment** adds **Not Returned**; its counts overlap, since an item not returned is still with an employee. Search by number or employee, and filter by location, provider and documents, or by category for equipment. A SIM or an item you choose opens beside the list, or in its place on a narrower screen.',
+          p: 'The tabs above the list count the SIMs: **All**, **In Office** and **With Employees**. **Equipment** adds **Not Returned**; its counts overlap, since an item not returned is still with an employee. Search by number or employee, and filter by location, provider and documents, or by category for equipment. A SIM or an item you choose opens beside the list, or in its place on a narrower screen. Both lists start with the SIMs or items added most recently (**Newest first**); a column heading or the sort button sorts them another way.',
           devices: ['tablet', 'desktop'],
         },
         {
-          p: 'The tabs above the list count the SIMs: **All**, **In Office** and **With Employees**. **Equipment** adds **Not Returned**; its counts overlap, since an item not returned is still with an employee. Search by number or employee; **Filters** holds location, provider and documents, or category for equipment. Tap a SIM or an item to open it; the arrow **←** at its top takes you back.',
+          p: 'The tabs above the list count the SIMs: **All**, **In Office** and **With Employees**. **Equipment** adds **Not Returned**; its counts overlap, since an item not returned is still with an employee. Search by number or employee; **Filters** holds location, provider and documents, or category for equipment. Tap a SIM or an item to open it; the arrow **←** at its top takes you back. Both lists start with the SIMs or items added most recently (**Newest first**); a column heading or the sort button sorts them another way.',
           devices: ['phone'],
         },
         {
@@ -557,6 +557,7 @@ export const en: Guide = {
         {
           ul: [
             'Add, edit or deactivate accounts. Give each account one or more roles: a user may do what any of their roles allows. **Roles & permissions** says what each role allows.',
+            'The newest accounts come first; a column heading sorts them another way.',
             'A role change reaches the user within minutes, without signing in again. A deactivated user is signed out on every device.',
             'To reset a password, use **⋯ → Reset password…**.',
             "You can't deactivate your own account, or take from yourself the role that lets you manage users or roles. Someone active always holds **Administrator**.",
@@ -741,7 +742,7 @@ export const en: Guide = {
       roles: ['admin'],
       blocks: [
         {
-          p: "**Suppliers**, in Administration, lists the companies catalogue items are bought from: each one's **Internal code**, name, where it is, how many items name it, and whom to contact. Search by code, name, city or contact. On a phone it is under **More**.",
+          p: "**Suppliers**, in Administration, lists the companies catalogue items are bought from: each one's **Internal code**, name, where it is, how many items name it, and whom to contact. Search by code, name, city or contact. On a phone it is under **More**. The newest come first; a column heading sorts them another way.",
         },
         {
           p: "**Add Supplier** adds one. Its **Internal code**, your own short code for it, and its **Name** are required; the code must differ from every other supplier's, whatever the case. Add the rest as you know it: the **Company code** and **VAT code**, the **Bank account** (IBAN), the address with a two-letter **Country**, such as LT, the contact person, email, phone, website and notes. **Edit** changes it; every item from that supplier shows the change.",
@@ -759,7 +760,7 @@ export const en: Guide = {
       roles: ['admin'],
       blocks: [
         {
-          p: "**Document Templates** holds the templates employment contracts and other documents are generated from. Each is for one type of document and in one language, which sets how dates and amounts are written. **Add Template** starts one as a draft.",
+          p: "**Document Templates** holds the templates employment contracts and other documents are generated from. Each is for one type of document and in one language, which sets how dates and amounts are written. **Add Template** starts one as a draft. The list groups them by type, the newest first in each, with retired ones last.",
         },
         {
           p: "Write it in the editor as **Blocks**: headings, paragraphs, lists, tables, details and signature lines. Fields such as `{{employee.name}}` are filled in when a document is generated; **Fields** puts one where the cursor is. **Asked fields** are the values the person generating types in, such as a salary: **Add Asked Field**. **Preview** draws the template with sample values.",
