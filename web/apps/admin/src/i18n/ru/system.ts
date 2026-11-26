@@ -95,7 +95,11 @@ export const system: SystemText = {
   jobsFailed: 'Не выполнено',
   failedJobs: (n: number) => plural(n, { one: 'Не выполнено за 7 дней', few: 'Не выполнено за 7 дней (#)', many: 'Не выполнено за 7 дней (#)', other: 'Не выполнено за 7 дней (#)' }),
   attempts: (n: number) => plural(n, { one: '# попытка', few: '# попытки', many: '# попыток', other: '# попытки' }),
-  jobKinds: { 'vault.extract_text': 'Распознать текст документов' } as Record<string, string>,
+  jobKinds: {
+    'vault.extract_text': 'Распознать текст документов',
+    'vault.archive': 'Сохранить акты и записи в PDF',
+    'vault.render_docx': 'Создать PDF из шаблонов DOCX',
+  },
 
   kind: 'Вид',
   allKinds: 'Все виды',
