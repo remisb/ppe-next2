@@ -226,7 +226,7 @@ func TestRefreshRefusals(t *testing.T) {
 		"garbage":      "a.b.c",
 		"unknown":      other.String() + ".1.AAAA",
 		"another key":  forged,
-		"tampered":     keptToken[:len(keptToken)-2] + "AA",
+		"tampered":     tamper(keptToken),
 		"generation 0": kept.ID.String() + ".0." + strings.Split(keptToken, ".")[2],
 	} {
 		if _, _, err := svc.Refresh(ctx, raw, Seen{}); !errors.Is(err, ErrInvalidToken) {
@@ -451,4 +451,16 @@ func TestLive(t *testing.T) {
 	if _, err := svc.Live(ctx, uuid.New()); !errors.Is(err, ErrNotFound) {
 		t.Errorf("unknown: %v, want ErrNotFound", err)
 	}
+}
+
+// tamper changes the first character of the token's signature to a different
+// one, so the result never equals the original. (The last characters of a
+// base64url signature may carry unused bits, so they are not safe to change.)
+func tamper(token string) string {
+	i := strings.LastIndex(token, ".") + 1
+	c := byte('A')
+	if token[i] == 'A' {
+		c = 'B'
+	}
+	return token[:i] + string(c) + token[i+1:]
 }
