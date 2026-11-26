@@ -92,6 +92,6 @@ describe('Sort ▾', () => {
     // A column without words of its own says its name alone; its arrow tells the direction.
     expect(sortLabel(columns, { key: 'status', dir: 'desc' })).toBe('Status')
     expect(sortLabel(columns, null, 'Newest first')).toBe('Newest first')
-    expect(sortLabel(columns, null)).toBe('Default order')
+    expect(sortLabel(columns, null)).toBe('Newest first')
   })
 })

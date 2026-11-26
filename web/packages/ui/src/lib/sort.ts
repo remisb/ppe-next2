@@ -54,6 +54,20 @@ export function compareValues(a: SortValue, b: SortValue): number {
 }
 
 /**
+ * rows newest first by when each was added (a new array; WARE-55): the order a
+ * list of records opens in, its "Newest first", which a third click on a sorted
+ * column returns to. Lists someone arranges (the Item Catalogue's display order)
+ * keep theirs. Parsed, not compared as text: the API's timestamps vary in their
+ * fraction's digits. Stable, so rows added at once keep the API's order.
+ */
+export function newestFirst<T extends { created_at: string }>(rows: readonly T[]): T[] {
+  return rows
+    .map((row, i) => ({ row, i, t: Date.parse(row.created_at) }))
+    .sort((a, b) => b.t - a.t || a.i - b.i)
+    .map((x) => x.row)
+}
+
+/**
  * rows ordered by sort (a new array; null keeps the given order). Stable, so
  * ties keep the natural order, and empty values stay last in both directions.
  */

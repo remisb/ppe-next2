@@ -12,7 +12,7 @@ import { RowCheckbox, SelectAllCheckbox, selectCellClass, selectRowClass } from 
 import { SortMenu, SortableHead } from '@ppe/ui/components/sortable'
 import { ActionError, EmptyState, Loaded, PageHeader } from '@ppe/ui/components/states'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ppe/ui/components/table'
-import { type SortColumn, type SortState, sortRows } from '@ppe/ui/lib/sort'
+import { type SortColumn, type SortState, newestFirst, sortRows } from '@ppe/ui/lib/sort'
 import { useAction } from '@ppe/ui/lib/use-action'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { selectRowProps, useSelection } from '@ppe/ui/lib/use-selection'
@@ -53,14 +53,14 @@ export function CompaniesPage({ navigate }: { navigate: (to: Route) => void }) {
   // What the last save, Make Default or delete did, as a status line (a screen reader hears it too).
   const [saved, setSaved] = useState('')
   const action = useAction()
-  // The default first, then by name, as the API lists them, until a column is chosen.
+  // Newest first until a column is sorted (WARE-55); a third click on it returns there.
   const [sort, setSort] = useState<SortState<CompanySort> | null>(null)
-  const sortProps = { sort, onSort: setSort }
+  const sortProps = { sort, onSort: setSort, allowNone: true }
 
   const shown = useMemo(
     () =>
       sortRows(
-        (list.data ?? []).filter((c) => matches(c, filter)),
+        newestFirst((list.data ?? []).filter((c) => matches(c, filter))),
         sort,
         (c, key) => (key === 'place' ? placeOf(c) : key === 'employees' ? c.employee_count : c[key]),
       ),

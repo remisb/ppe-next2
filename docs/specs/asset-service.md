@@ -504,8 +504,9 @@ ServeMux.
 /api/v1/orders`: `kind` (required), `q` (SIM No., Phone No. or Inventory No. with spaces
 ignored, or the name, serial number or holder's name), `location`, `held=true` (someone holds
 it, whereabouts known or not: the With Employees tile), `employee_id`, `provider`,
-`status`, `category` (equipment), `not_returned=true`, `sort` (`inventory`, `name`, `phone`, `status`, `holder`,
-`given`; `phone` is the phone number with spaces ignored, a card without one last either way, then the SIM No.), `dir`,
+`status`, `category` (equipment), `not_returned=true`, `sort` (`inventory`, the default, `name`, `phone`, `status`, `holder`,
+`given`, `added`; `phone` is the phone number with spaces ignored, a card without one last either way, then the SIM No.;
+`added` is when each was added, the screens' Newest first; ties by Inventory No. in the same direction), `dir`,
 `signed_copy=missing` (held on a form with no signed copy yet), `page`, `page_size` (default
 50, at most 100, `page` at most 1,000,000). An unknown or
 repeated parameter is 400, and no match is an empty page: `{assets, page, page_size,
@@ -582,8 +583,9 @@ for them, the screen switches between the two itself:
   column (the Inventory No. is on the card's page too); provider and plan; status; given date and Days Held; Paper form signed; comment (from `2xl` only: the headers
   wrap and the comment waits so that the columns fit beside the rail or sidebar; it is on
   the card's page). Sorted on the server, 50 a page, by phone number (`phone`: spaces
-  ignored, a card without one last, then the SIM No.), Inventory No. (the default, and on a
-  phone's Sort by), status, employee or given date. On a phone a row is the phone number (the SIM No. until there is
+  ignored, a card without one last, then the SIM No.), Inventory No., status, employee or given
+  date; it opens Newest first (`added`, descending; WARE-55), which a third click on a sorted
+  column, or Newest first in a phone's Sort by, returns to. On a phone a row is the phone number (the SIM No. until there is
   one) and the status, then the SIM No., provider and where the card is.
 - **Change Status** is the row's everyday action for `sim_cards.manage` on a Blocked card in the
   Office: a menu of the three statuses with the brief's note. Elsewhere it is under ⋯, with the

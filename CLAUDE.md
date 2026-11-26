@@ -684,6 +684,10 @@ in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TA
   the user asks for those updates separately. When a change leaves them out of date, say
   so in one line. Developer docs (`docs/testing.md`, `docs/specs/`, `web/AGENTS.md`, this
   file) are still updated with the change.
+- **Lists open newest first** (WARE-55, principle 9 of `docs/ux/ui-ux-guidelines.md`): a list of
+  records starts with the latest added (`@ppe/ui/lib/sort`'s `newestFirst` before `sortRows`, `allowNone`;
+  Sort ▾ says Newest first; SIM Cards and Equipment ask the API for `sort=added&dir=desc`); only an
+  arranged order (the Item Catalogue's display order, Roles, Manage apps) opens in that instead.
 - Mobile first; the responsive rules (one Main nav reshaped per breakpoint, `<Table stack>`
   with the screen-only `stacked:` container-query variant, 44px touch targets) are in
   `web/AGENTS.md`. The e2e step "phone and tablet: no screen scrolls sideways" fails if

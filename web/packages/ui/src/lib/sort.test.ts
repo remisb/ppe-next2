@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { nextSort, sortRows } from './sort.ts'
+import { newestFirst, nextSort, sortRows } from './sort.ts'
 
 describe('nextSort', () => {
   const name = { key: 'name', label: 'Name' } as const
@@ -44,5 +44,18 @@ describe('sortRows', () => {
     expect(names(sortRows(rows, { key: 'h', dir: 'asc' }, get))).toEqual(['Birutė', 'Ona', 'Ąžuolas', 'jonas'])
     expect(names(sortRows(rows, { key: 'h', dir: 'desc' }, get))).toEqual(['Ąžuolas', 'Ona', 'Birutė', 'jonas'])
     expect(names(sortRows(rows, { key: 'code', dir: 'desc' }, get))).toEqual(['Ona', 'Ąžuolas', 'jonas', 'Birutė'])
+  })
+})
+
+describe('newestFirst', () => {
+  it('puts the latest added first, by time not text, and keeps ties in the given order', () => {
+    const rows = [
+      { id: 'a', created_at: '2026-11-20T08:00:00Z' },
+      { id: 'b', created_at: '2026-11-25T08:21:04.2394Z' },
+      { id: 'c', created_at: '2026-11-25T08:21:04.239422Z' },
+      { id: 'd', created_at: '2026-11-20T08:00:00Z' },
+    ]
+    expect(newestFirst(rows).map((r) => r.id)).toEqual(['b', 'c', 'a', 'd'])
+    expect(rows[0]?.id).toBe('a')
   })
 })

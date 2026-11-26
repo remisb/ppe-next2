@@ -1624,8 +1624,8 @@ export interface SimCodes {
   puk: string
 }
 
-/** The register's sorts. */
-export type AssetSort = 'inventory' | 'name' | 'phone' | 'status' | 'holder' | 'given'
+/** The register's sorts; 'added' is when each was added, the screens' Newest first (WARE-55). */
+export type AssetSort = 'inventory' | 'name' | 'phone' | 'status' | 'holder' | 'given' | 'added'
 
 /** The register's filters (GET /api/v1/assets); empty ones are left out. */
 export interface AssetQuery {

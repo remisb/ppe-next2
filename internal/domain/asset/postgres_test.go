@@ -324,6 +324,37 @@ func TestPostgresSortByPhone(t *testing.T) {
 	}
 }
 
+// The register by when each was added, the screens' Newest first (WARE-55):
+// not the inventory order; the same time falls back to it, in the same direction.
+func TestPostgresSortByAdded(t *testing.T) {
+	app, _, actor, _ := newTestPool(t)
+	ctx := context.Background()
+	at := time.Date(2026, 11, 20, 9, 0, 0, 0, time.UTC)
+	for _, c := range []struct {
+		inv string
+		day int
+	}{{"SIM-000002", 0}, {"SIM-000003", 2}, {"SIM-000001", 1}, {"SIM-000004", 1}} {
+		svc := NewService(NewPostgresRepository(app), WithLocation(vilnius), WithClock(func() time.Time { return at.AddDate(0, 0, c.day) }))
+		if _, err := svc.Create(ctx, CreateParams{Kind: KindSIM, Params: Params{InventoryNo: c.inv, SimNo: sp(c.inv[4:]), Provider: sp("Telia")}}, actor); err != nil {
+			t.Fatal(err)
+		}
+	}
+	svc := newPostgresService(app)
+	for dir, want := range map[string]string{"desc": "SIM-000003 SIM-000004 SIM-000001 SIM-000002", "asc": "SIM-000002 SIM-000001 SIM-000004 SIM-000003"} {
+		res, err := svc.List(ctx, ListParams{Kind: "SIM", Sort: "added", Dir: dir}, all)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := make([]string, len(res.Assets))
+		for i, v := range res.Assets {
+			got[i] = v.Asset.InventoryNo
+		}
+		if strings.Join(got, " ") != want {
+			t.Errorf("%s: %v; want %s", dir, got, want)
+		}
+	}
+}
+
 // SIM numbers compare without spaces and in either case: an ICCID may end in
 // a hex digit typed in capitals or not.
 func TestPostgresSIMNumbersIgnoreCase(t *testing.T) {

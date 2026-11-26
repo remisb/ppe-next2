@@ -45,6 +45,16 @@ If a rule here and either of those disagree, fix the one that is out of date in 
    [ubiquitous-language.md](../ubiquitous-language.md). A new term is added there first.
 8. **Load what is shown.** A closed section, a closed sheet or a hidden list reads nothing.
    A count is read cheaply. A run of changes is followed by one reload, not one per change.
+9. **Lists open newest first** (WARE-55). A list of records people add (Employees, Orders,
+   Users, Suppliers, Companies, Item Sets, Document Templates, SIM Cards, Equipment, the
+   Document Vault, Shared Links, the logs) opens with the latest added at the top, by when
+   each was created. That is the list's own order: no column head shows as sorted, Sort ▾
+   says **Newest first**, and a third click on a sorted column comes back to it. Only an
+   order someone arranges stays first (the Item Catalogue's display order, Roles' built-ins
+   then the rest, Manage apps' tiles); a list grouped by kind (Document Templates' types)
+   is newest first within each group. In code: `newestFirst` (`@ppe/ui/lib/sort`) before
+   `sortRows`, with `allowNone`; a list paged by the API asks it for the same (SIM Cards' and
+   Equipment's `sort=added&dir=desc`).
 
 ---
 
@@ -362,6 +372,7 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
 | A screen's header: one sticky row, the title and its toolbar in a fixed order, the overflow under ⋯ | `PageHeader` (`filters`, `refresh`, `secondary`, `menu`, `primary`, `more`, `moreAsk`), `ToolbarAction` | `@ppe/ui/components/page-header` |
 | A menu of one kind of choice, the current one ticked (Dashboards, Guide language, Device) | `MenuButton` with `DropdownMenuRadioGroup` | `@ppe/ui/components/page-header` |
 | A stacked list's sort, in words | `SortMenu` (Sort ▾) as the `Table`'s `sortControl` | `@ppe/ui/components/sortable` |
+| A list's own order, newest added first (WARE-55) | `newestFirst`, then `sortRows`; `allowNone` on the sort props | `@ppe/ui/lib/sort` |
 | Column heads that stay in view under the stuck header | `Table stickyHead` | `@ppe/ui/components/table` |
 | A long log's filter bar that sticks under the header, one row (the Audit log only) | `StickyFilters` in an `@container` | `@ppe/ui/components/sticky-filters` |
 | A button's shorter words on a phone, the full ones its name | `ShortWords` | `@ppe/ui/components/page-header` |
@@ -411,6 +422,7 @@ moved row keeps the pointer) and the pure helpers in `lib/list-order.ts`.
       and by screen reader (names, descriptions, live result).
 - [ ] Nothing loads while hidden or closed. Counts are cheap, and a run of changes reloads
       once.
+- [ ] A new list opens newest first (§1, principle 9) unless someone arranges its order.
 - [ ] Every word is in three languages, with new terms in the glossary first.
 - [ ] Tested: e2e for what a user does (opening, tapping, the words shown); unit tests for the
       pure rules. [testing.md](../testing.md) maps the rule to its tests.

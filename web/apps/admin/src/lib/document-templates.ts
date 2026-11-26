@@ -1,4 +1,5 @@
 import type { AskedField, AskedKind, DocumentTemplate, DocxTemplateBody, TemplateBlock, TemplateBlockType, TemplateBody, TemplateRun, TemplateVersion } from '@ppe/api-client'
+import { newestFirst } from '@ppe/ui/lib/sort'
 
 /**
  * Document Templates' editing rules, as pure functions (ADR 0008 phase 3,
@@ -626,9 +627,8 @@ export function byType(templates: readonly DocumentTemplate[], typeOrder: readon
   const types = [...new Set([...typeOrder.filter((k) => templates.some((t) => t.type === k)), ...templates.map((t) => t.type)])]
   return types.map((type) => ({
     type,
-    templates: templates
-      .filter((t) => t.type === type)
-      .sort((a, b) => Number(a.retired) - Number(b.retired) || a.name.localeCompare(b.name)),
+    // In use first, each part newest first, as every list of records opens (WARE-55).
+    templates: newestFirst(templates.filter((t) => t.type === type)).sort((a, b) => Number(a.retired) - Number(b.retired)),
   }))
 }
 
