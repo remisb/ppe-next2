@@ -2,7 +2,8 @@
  * An asset's actions as its action bar and ⋯ show them (record-actions.md §6):
  * the one action its state calls for with its words (Give SIM, Give Asset,
  * Return), Show PIN and PUK and Print Form as tools, the rest in ⋯ with Mark
- * as Not Returned last.
+ * as Not Returned last. A SIM card's own actions draw the SIM icons
+ * (docs/ux/mockups/sim-action-icons.html); equipment keeps the plain ones.
  */
 import type { Asset } from '@ppe/api-client'
 import type { RecordAction } from '@ppe/ui/lib/record-actions'
@@ -42,10 +43,13 @@ export function assetActions(
   const actions: RecordAction[] = []
   if (manage) {
     const primary = primaryAction(a)
-    // Give has no icon in the vocabulary: it keeps its words at every width.
-    if (primary === 'give') actions.push({ id: 'give', label: sim ? t.assets.giveSimCard : t.assets.giveAsset, place: 'main', run: run.give })
+    // A SIM card's Give and Return are the card with an arrow out and in (sim-icons.ts);
+    // Give Asset has no icon in the vocabulary, so it keeps its words at every width.
+    if (primary === 'give') {
+      actions.push(sim ? { id: 'give', label: t.assets.giveSimCard, icon: 'simGive', place: 'main', run: run.give } : { id: 'give', label: t.assets.giveAsset, place: 'main', run: run.give })
+    }
     if (primary === 'return') {
-      actions.push({ id: 'return', label: t.assets.takeBack, icon: 'return', place: 'main', help: t.assets.takeBackHelp[sim ? 'SIM' : 'EQUIPMENT'], run: run.return })
+      actions.push({ id: 'return', label: t.assets.takeBack, icon: sim ? 'simReturn' : 'return', place: 'main', help: t.assets.takeBackHelp[sim ? 'SIM' : 'EQUIPMENT'], run: run.return })
     }
   }
   if (codes) actions.push(codes)
@@ -53,9 +57,11 @@ export function assetActions(
     // The holder's form again; for a SIM held since the import, one built now.
     if (held && (held.paper_form_signed || sim)) actions.push({ id: 'printForm', label: t.assets.printForm, icon: 'print', place: 'tool', pending: printing, run: run.printForm })
     actions.push({ id: 'edit', label: t.common.edit, icon: 'edit', place: 'menu', run: run.edit })
-    if (status && status !== 'ACTIVE') actions.push({ id: 'activationEmail', label: t.assets.prepareActivationEmail, icon: 'email', place: 'menu', run: run.activationEmail })
-    if (status && status !== 'BLOCKED') actions.push({ id: 'blockingEmail', label: t.assets.prepareBlockingEmail, icon: 'email', place: 'menu', run: run.blockingEmail })
-    if (canMarkNotReturned(a)) actions.push({ id: 'notReturned', label: t.assets.markNotReturned, place: 'menu', asks: true, run: run.notReturned })
+    if (status && status !== 'ACTIVE') actions.push({ id: 'activationEmail', label: t.assets.prepareActivationEmail, icon: 'activationEmail', place: 'menu', run: run.activationEmail })
+    if (status && status !== 'BLOCKED') actions.push({ id: 'blockingEmail', label: t.assets.prepareBlockingEmail, icon: 'blockingEmail', place: 'menu', run: run.blockingEmail })
+    if (canMarkNotReturned(a)) {
+      actions.push({ id: 'notReturned', label: t.assets.markNotReturned, ...(sim ? { icon: 'simNotReturned' as const } : {}), place: 'menu', asks: true, run: run.notReturned })
+    }
   }
   return actions
 }

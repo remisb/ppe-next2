@@ -5,6 +5,7 @@ import { DisclosureSection } from '@ppe/ui/components/disclosure-section'
 import { RuleList } from '@ppe/ui/components/rule-list'
 import { Loaded } from '@ppe/ui/components/states'
 import { useRememberedOpen } from '@ppe/ui/lib/remembered-open'
+import { SimGive } from '@ppe/ui/lib/sim-icons'
 import { errorText, useLoad } from '@ppe/ui/lib/use-load'
 import { cn } from '@ppe/ui/lib/utils'
 import { linkVariants } from '@ppe/ui/components/link'
@@ -92,7 +93,8 @@ export function HeldAssets({
               setSheet({ kind: 'giveTo', employee, assetKind: kind })
             }}
           >
-            <Plus aria-hidden /> {sim ? t.assets.giveSimCard : t.assets.giveAsset}
+            {/* Given SIM's Give SIM draws the card with an arrow out, as a SIM card's own action bar does. */}
+            {sim ? <SimGive aria-hidden /> : <Plus aria-hidden />} {sim ? t.assets.giveSimCard : t.assets.giveAsset}
           </Button>
         ) : null
       }

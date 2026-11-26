@@ -9,7 +9,8 @@ import {
   KeyRound,
   Link2,
   type LucideIcon,
-  Mail,
+  MailCheck,
+  MailX,
   Maximize2,
   MessageCircle,
   Pencil,
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react'
 
 import type { Help } from '../components/tooltip.tsx'
+import { SimGive, SimNotReturned, SimReturn } from './sim-icons.ts'
 
 /**
  * The icon vocabulary: one meaning per icon across the apps. An action may be
@@ -38,15 +40,23 @@ export const actionIcons = {
   sign: { icon: Signature, className: 'text-warning' },
   /** Show PIN and PUK. */
   codes: { icon: KeyRound },
-  /** Prepare an email. */
-  email: { icon: Mail },
+  /** Prepare Activation Email: asking the provider to switch a SIM card on. */
+  activationEmail: { icon: MailCheck },
+  /** Prepare Blocking Email: asking the provider to stop a SIM card. */
+  blockingEmail: { icon: MailX },
   /** WhatsApp, in its green. */
   whatsapp: { icon: MessageCircle, className: 'text-whatsapp' },
   copy: { icon: Copy },
   /** New, Add. */
   add: { icon: Plus },
-  /** Take back: Return. */
+  /** Take back: Return, for equipment. */
   return: { icon: Undo2 },
+  /** Give SIM: the SIM card with an arrow out (sim-icons.ts). */
+  simGive: { icon: SimGive },
+  /** Return, for a SIM card: the card with an arrow in. */
+  simReturn: { icon: SimReturn },
+  /** Mark as Not Returned, for a SIM card: the card with an alert sign. */
+  simNotReturned: { icon: SimNotReturned },
   /** Open the record as a page, the width of the screen (the employee's page from the pane). */
   page: { icon: Maximize2 },
   /** Delete: only ever in ⋯, never a tool. */
