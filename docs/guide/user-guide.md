@@ -367,17 +367,23 @@ Open it from the sidebar, below **Company Assets**.
 
 Type in **Search documents** to find a document by its title, number, the names it is linked to, its type, or the words in its file. Case and accents do not matter, and the start of a word is enough: `zuk` finds **Žukauskaitė**. When nothing matches, near spellings are listed, and the list says so. **Type** keeps one kind of document. A document you choose opens beside the list, or in its place on a narrower screen.
 
+![Document Vault: documents with their type, links and Valid until, and the search](../../web/apps/workwear/public/help-img/en/desktop/vault.png)
+
 **Upload Document…** adds one: choose its **Type** and its file, a PDF, JPEG or PNG of up to 20 MB, then give it a **Title**, its dates and what it is linked to. A photo's location and camera details are removed. Some types must be linked: a certificate to an employee, an asset document to a SIM or an item.
 
 A document shows its type, its dates, its **Origin** (**Uploaded**, **Generated** or **Kept automatically**), what it is **Linked to**, and its **Versions**, newest first, each with its file to download, who added it and when. **Add Version…** adds a newer file; the earlier ones stay. **Edit…** changes its title, dates and links, and **Remove document…** removes it, after asking. Its **Changes** record each.
 
 A document with **Valid until**, such as a certificate, shows **Expires soon** 30 days before that day, then **Expired**.
 
+![A certificate open beside the list: its dates, Expires soon, its links and its version](../../web/apps/workwear/public/help-img/en/desktop/vault-document.png)
+
 Under each version, a line says how its words were read for search: **Waiting to be read**, **Read**, **No text found** or **Couldn't read**. A PDF's own text is used; a scan or a photo is read by OCR, in Lithuanian, Russian or English, in the background. **Read Again** reads it once more.
 
 **Documents**, on an employee's page and on a SIM's or an item's, lists the documents linked to them. **Upload Document…** there links the new one to them; **Open Document Vault** opens the whole list.
 
 Documents **Kept automatically** come from the app's own records, and cannot be changed or removed here: each copy uploaded with **Upload Signed Form**, a PDF of the assignment form when a SIM or an item is given, and a PDF of an order's Items Given Record once it is **Given**. On a kept form or record, **Verify** checks it against the record it was made from: **Matches** says the record still has the hash the copy was made with and the copy's file is unchanged.
+
+![An assignment form kept automatically, checked with Verify: Matches](../../web/apps/workwear/public/help-img/en/desktop/vault-verify.png)
 
 Searching for an employee by name, or keeping one employee, also lists their **ID documents** from Personnel files above the list: each one's kind, issuing state and validity. They are not kept in the Document Vault: the name opens the employee's page at **Identity**.
 
@@ -560,6 +566,8 @@ An item's supplier is chosen on **Edit Item**, in the Item Catalogue. Someone gi
 **Document Templates** holds the templates employment contracts and other documents are generated from. Each is for one type of document and in one language, which sets how dates and amounts are written. **Add Template** starts one as a draft.
 
 Write it in the editor as **Blocks**: headings, paragraphs, lists, tables, details and signature lines. Fields such as `{{employee.name}}` are filled in when a document is generated; **Fields** puts one where the cursor is. **Asked fields** are the values the person generating types in, such as a salary: **Add Asked Field**. **Preview** draws the template with sample values.
+
+![Document Templates: an employment contract template in the editor, with its fields](../../web/apps/workwear/public/help-img/en/desktop/document-templates.png)
 
 Or write it in Word: **⋯ → Upload DOCX Template…** makes a Word document the draft, with its own layout, fonts, tables, headers and footers. Write each field in it as `{{employee.name}}`; the page lists the fields it uses and says which are not fields. **Replace DOCX…** uploads a corrected one, **Download DOCX** saves it, and **Write in the Editor Instead** goes back to blocks.
 

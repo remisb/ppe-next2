@@ -72,7 +72,8 @@ describe('healthText', () => {
 
 describe('formats', () => {
   it('sizes, durations and schedules', () => {
-    expect(formatBytes(512)).toBe('512 byte')
+    expect(formatBytes(512)).toBe('512 bytes')
+    expect(formatBytes(1)).toBe('1 byte')
     expect(formatBytes(54_000)).toBe('52.7 kB')
     expect(formatBytes(3 * 1024 ** 3)).toBe('3 GB')
     expect(formatDuration(850)).toBe('0.9 secs')
@@ -86,5 +87,6 @@ describe('formats', () => {
     applyLanguage('lt')
     expect(describeSchedule('0 3 * * *')).toBe('Kasdien 03:00')
     expect(formatBytes(54_000).replace(/\s/g, ' ')).toBe('52,7 kB')
+    expect(formatBytes(591)).toBe('591 baitas')
   })
 })

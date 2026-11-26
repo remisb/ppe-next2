@@ -59,7 +59,8 @@ export function formatBytes(n: number): string {
   return new Intl.NumberFormat(intlLocale(), {
     style: 'unit',
     unit: units[i],
-    unitDisplay: 'short',
+    // Bytes in words, which take the plural ("591 bytes"); English's short form would say "591 byte".
+    unitDisplay: i === 0 ? 'long' : 'short',
     maximumFractionDigits: i === 0 ? 0 : 1,
   }).format(v)
 }

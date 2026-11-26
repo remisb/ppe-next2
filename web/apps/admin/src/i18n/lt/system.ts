@@ -94,7 +94,11 @@ export const system: SystemText = {
   jobsFailed: 'Nepavyko',
   failedJobs: (n: number) => plural(n, { one: 'Nepavyko per 7 dienas', few: 'Nepavyko per 7 dienas (#)', other: 'Nepavyko per 7 dienas (#)' }),
   attempts: (n: number) => plural(n, { one: '# bandymas', few: '# bandymai', other: '# bandymų' }),
-  jobKinds: { 'vault.extract_text': 'Nuskaityti dokumentų tekstą' } as Record<string, string>,
+  jobKinds: {
+    'vault.extract_text': 'Nuskaityti dokumentų tekstą',
+    'vault.archive': 'Išsaugoti aktus ir įrašus kaip PDF',
+    'vault.render_docx': 'Sukurti PDF iš DOCX šablonų',
+  },
 
   kind: 'Rūšis',
   allKinds: 'Visos rūšys',

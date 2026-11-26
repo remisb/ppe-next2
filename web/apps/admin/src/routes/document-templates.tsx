@@ -603,9 +603,11 @@ function TemplateForm({
             <span>{words.languages[template.language]}</span>
           </span>
         }
+        // Buttons only where the template's name keeps room beside them: below 1280px the rail takes some
+        // width, and Russian's words are long (Сохранить черновик). Below that, they are in ⋯.
         secondary={[
-          ...(docxB ? [] : [{ label: words.preview, icon: Eye, onClick: () => void preview(), disabled: action.pending, showFrom: 'sm' as const }]),
-          { label: words.publish, icon: Upload, onClick: () => void publish(), disabled: action.pending || nothingToPublish, showFrom: 'md' },
+          ...(docxB ? [] : [{ label: words.preview, icon: Eye, onClick: () => void preview(), disabled: action.pending, showFrom: 'lg' as const }]),
+          { label: words.publish, icon: Upload, onClick: () => void publish(), disabled: action.pending || nothingToPublish, showFrom: 'xl' },
         ]}
         primary={{ label: saving ? t.common.saving : words.saveDraft, icon: Save, onClick: () => void save(), disabled: action.pending || !dirty }}
         more={
