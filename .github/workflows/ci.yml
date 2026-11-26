@@ -57,17 +57,55 @@ jobs:
           make migrate PSQL="$PSQL_CI"
       - name: Tests (unit and Postgres)
         run: go test -p 1 -count=1 ./...
-      # The worker's text reading with the real tools, as the docworker image has them.
-      - name: Text reading with Poppler and Tesseract
+
+  # The worker's tools tested for real, as the docworker image has them: a job of
+  # its own, beside the others, because their packages come from the runners'
+  # Ubuntu mirror, which sometimes serves at a few hundred kB/s (LibreOffice's
+  # 94 MB once took 8 minutes). The downloaded packages are cached between runs.
+  docs-tools:
+    name: Document tools (Poppler, Tesseract, LibreOffice)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Read access to the private dbbackup and pdf-mini modules
+        run: |
+          git config --global url."https://x-access-token:${DBBACKUP_READ_TOKEN}@github.com/remisb/dbbackup".insteadOf "https://github.com/remisb/dbbackup"
+          git config --global url."https://x-access-token:${DBBACKUP_READ_TOKEN}@github.com/remisb/pdf-mini".insteadOf "https://github.com/remisb/pdf-mini"
+        env:
+          DBBACKUP_READ_TOKEN: ${{ secrets.DBBACKUP_READ_TOKEN }}
+      # apt keeps what it downloads in a folder the cache can read (its own is
+      # root's). The key changes each month, so updated packages get cached.
+      - name: Keep apt's downloads for the cache
+        id: apt
+        run: |
+          mkdir -p ~/.cache/apt-archives/partial
+          printf '%s\n' "Dir::Cache::Archives \"$HOME/.cache/apt-archives\";" 'APT::Keep-Downloaded-Packages "true";' 'APT::Sandbox::User "root";' \
+            | sudo tee /etc/apt/apt.conf.d/99ci-archives >/dev/null
+          echo "month=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@v6
+        id: apt-cache
+        with:
+          path: ~/.cache/apt-archives/*.deb
+          key: apt-docs-tools-${{ steps.apt.outputs.month }}
+          restore-keys: apt-docs-tools-
+      - name: Install Poppler, Tesseract and LibreOffice Writer
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends poppler-utils tesseract-ocr tesseract-ocr-lit tesseract-ocr-rus
-          go test -tags tools -count=1 ./internal/vault/extract
-      # DOCX templates' conversion with LibreOffice Writer, as the docworker image has it.
+          sudo apt-get install -y -q --no-install-recommends poppler-utils tesseract-ocr tesseract-ocr-lit tesseract-ocr-rus \
+            libreoffice-writer-nogui fonts-liberation2 fonts-dejavu-core
+          sudo apt-get autoclean -q
+      - uses: actions/cache/save@v6
+        if: steps.apt-cache.outputs.cache-hit != 'true'
+        with:
+          path: ~/.cache/apt-archives/*.deb
+          key: apt-docs-tools-${{ steps.apt.outputs.month }}
+      - name: Text reading with Poppler and Tesseract
+        run: go test -tags tools -count=1 ./internal/vault/extract
       - name: DOCX conversion with LibreOffice
-        run: |
-          sudo apt-get install -y -q --no-install-recommends libreoffice-writer-nogui fonts-liberation2 fonts-dejavu-core
-          go test -tags tools -count=1 ./internal/vault/docx
+        run: go test -tags tools -count=1 ./internal/vault/docx
 
   web:
     name: Web (typecheck, unit tests, build)
@@ -98,7 +136,8 @@ jobs:
   e2e:
     name: End-to-end (Playwright via Caddy)
     runs-on: ubuntu-24.04
-    needs: [go, web]
+    # No `needs`: it starts beside the Go and Web jobs instead of after them
+    # (about 2.5 minutes sooner). A failure there still fails the run.
     services:
       postgres:
         image: postgres:18-alpine
@@ -149,12 +188,40 @@ jobs:
       - run: make migrate PSQL="$PSQL_CI"
       - run: pnpm install --frozen-lockfile
         working-directory: web
-      # vite build only: this job needs the web job, which typechecked.
+      # vite build only: the Web job typechecks.
       - name: Build the web bundle Caddy serves
         run: pnpm --filter "{./apps/*}" exec vite build
         working-directory: web
-      - run: pnpm exec playwright install --with-deps chromium
+      # Chromium is cached per Playwright version, and the system packages it
+      # needs are cached as the Document tools job's are (the same mirror).
+      - name: Keep apt's downloads for the cache
+        id: apt
         working-directory: web/e2e
+        run: |
+          mkdir -p ~/.cache/apt-archives/partial
+          printf '%s\n' "Dir::Cache::Archives \"$HOME/.cache/apt-archives\";" 'APT::Keep-Downloaded-Packages "true";' 'APT::Sandbox::User "root";' \
+            | sudo tee /etc/apt/apt.conf.d/99ci-archives >/dev/null
+          echo "month=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+          echo "playwright=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@v6
+        id: apt-cache
+        with:
+          path: ~/.cache/apt-archives/*.deb
+          key: apt-playwright-${{ steps.apt.outputs.playwright }}-${{ steps.apt.outputs.month }}
+          restore-keys: apt-playwright-
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ steps.apt.outputs.playwright }}
+      - run: |
+          pnpm exec playwright install --with-deps chromium
+          sudo apt-get autoclean -q
+        working-directory: web/e2e
+      - uses: actions/cache/save@v6
+        if: steps.apt-cache.outputs.cache-hit != 'true'
+        with:
+          path: ~/.cache/apt-archives/*.deb
+          key: apt-playwright-${{ steps.apt.outputs.playwright }}-${{ steps.apt.outputs.month }}
       - name: End-to-end through Caddy
         run: pnpm e2e
         working-directory: web/e2e
