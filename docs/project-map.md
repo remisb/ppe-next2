@@ -290,8 +290,8 @@ immutable **versions** (`YYYY.MM.DD-<commit>`, a `dist/` with `ppe-app.json` dec
 (Stable for whoever sees the tile, Beta and Preview for testers; named variants were removed,
 migration 0047; events `app.version_published`,
 `app.channel_moved`; older trails also hold `app.channel_changed`). Scan SIMs is the first, at `/apps/sim-scan/`. Caddy serves a version's files from the `published` volume at
-`/apps/files/<profile>/<slug>/<version>/`; the API (`cmd/api/published-app-routes.go`, public
-`GET /apps/{slug}/{rest...}`) answers only its `index.html`, links rewritten, with `ppe-mount`,
+`/apps/files/<profile>/<slug>/<version>/`; the API (`internal/launcher/releases`' `Pages`, mounted by `cmd/api/published-app-routes.go`, public
+`GET /apps/{slug}/{rest...}`; Caddy's `/apps/` routes are the snippet `deploy/caddy/launcher.caddy`) answers only its `index.html`, links rewritten, with `ppe-mount`,
 `ppe-files`, `ppe-version`, `ppe-channel` meta tags (read by `@ppe/routing`'s `basePath`/`filesBase`;
 kept in memory per version, with an `ETag`)
 and the profile's CSP (`TestPublishedPoliciesMatchCaddy`). `api -publish-app` reads a build's tar on

@@ -59,8 +59,8 @@ serving and holds requests through the API's restart, recreates `api` or `backup
 the previous image, waits until the API's `GET /ready` answers (database reachable, every migration the
 build embeds applied; `internal/db.Migrations`), else fails with the API's log, and only then replaces
 `caddy` on its own (about 2 s without connections; certificates live in the `caddy-data` volume), again
-when the Caddyfile it runs with (mounted from the checkout, so a change to it alone changes no image)
-differs from the checkout's. Recreated with the API, Caddy refused connections from its stop until the
+when the Caddyfile or a snippet it imports (`deploy/caddy/*.caddy`; both mounted from the checkout, so a
+change to them alone changes no image) differs from the checkout's. Recreated with the API, Caddy refused connections from its stop until the
 API had started (about 9 s). `db` is recreated only when its config changes. `GET /health` is liveness only. The image's `HEALTHCHECK` runs `/api -healthcheck` (the
 binary probes its own `/ready`, as scratch has no curl); Docker shows but never acts on it.
 `make prod-build` stamps `git describe` into the binary (`API_COMMIT` → `-X main.commit`),

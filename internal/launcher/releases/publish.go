@@ -1,0 +1,318 @@
+package releases
+
+import (
+	"archive/tar"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/remisb/ppe-next2/internal/domain/launcher"
+)
+
+// Limits is the most a published build may hold.
+type Limits struct {
+	Bytes int64
+	Files int
+}
+
+// DefaultLimits are a deploy's: Scan SIMs' readers are about 15 MB.
+var DefaultLimits = Limits{Bytes: 300 << 20, Files: 5000}
+
+// limits is c's, or DefaultLimits.
+func (c Config) limits() Limits {
+	if c.Limits == (Limits{}) {
+		return DefaultLimits
+	}
+	return c.Limits
+}
+
+// Build names a build to publish: the app, its version, the commit it was
+// built from and the channel to point at it ("" for none).
+type Build struct {
+	Slug, Version, Commit, Channel string
+}
+
+// trailingPadding is how much of what follows a build's end marker untar
+// reads and drops: tar's padding to a whole record, with room to spare.
+const trailingPadding = 1 << 20
+
+// Publish publishes an app's build, a tar of its dist/ read from in (the
+// API's image has no shell, so the build arrives on standard input): the
+// files go to Dir/<profile>/<slug>/<version>/ unless they are there
+// already, then the version is recorded and the build's channel pointed at
+// it (launcher.Service.Publish). A deploy's publish is recorded by no one.
+//
+// The files are decided by the folder, not the registry: the published
+// volume is not backed up, so after a restore or a lost volume the database
+// names versions whose folders are gone, and publishing the same commit
+// again (make prod-up, make prod-publish) puts them back.
+func Publish(ctx context.Context, apps *launcher.Service, cfg Config, b Build, in io.Reader, out io.Writer) error {
+	incoming := filepath.Join(cfg.Dir, ".incoming")
+	if err := os.MkdirAll(incoming, 0o755); err != nil {
+		return err
+	}
+	tmp, err := os.MkdirTemp(incoming, b.Slug+"-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmp)
+	if err := untar(in, tmp, cfg.limits()); err != nil {
+		return fmt.Errorf("the build: %w", err)
+	}
+	raw, err := os.ReadFile(filepath.Join(tmp, "ppe-app.json"))
+	if err != nil {
+		return errors.New("the build has no ppe-app.json")
+	}
+	page, err := os.ReadFile(filepath.Join(tmp, "index.html"))
+	if err != nil {
+		return errors.New("the build has no index.html")
+	}
+	// The API puts the page's meta tags (where it is mounted, its files, its
+	// version) before </head>: a page without one would run without them.
+	if !strings.Contains(string(page), "</head>") {
+		return errors.New("the build's index.html has no </head>")
+	}
+	var m launcher.Manifest
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return fmt.Errorf("ppe-app.json: %w", err)
+	}
+	p := launcher.PublishParams{Slug: b.Slug, Version: b.Version, Commit: b.Commit, Channel: b.Channel, Manifest: m}
+	if _, err := apps.CheckPublish(ctx, p); err != nil {
+		return err
+	}
+	profile, err := m.ProfileOf()
+	if err != nil {
+		return err
+	}
+	recorded, found, err := apps.Version(ctx, p.Slug, p.Version)
+	if err != nil {
+		return err
+	}
+	if found && recorded.Profile != profile {
+		return fmt.Errorf("version %s is recorded with the %s profile, this build asks for %s", p.Version, recorded.Profile, profile)
+	}
+	dest := filepath.Join(cfg.Dir, string(profile), p.Slug, p.Version)
+	wrote, err := placeBuild(tmp, dest)
+	if err != nil {
+		return err
+	}
+	v, err := apps.Publish(ctx, p, nil)
+	if err != nil {
+		return err
+	}
+	state := "published"
+	switch {
+	case found && wrote:
+		state = "published again: its files were missing"
+	case found:
+		state = "already published"
+	}
+	channel := ""
+	if p.Channel != "" {
+		channel = ", " + p.Channel + " points at it"
+	}
+	_, err = fmt.Fprintf(out, "%s %s %s (%s)%s\n", p.Slug, v.Version, state, v.Profile, channel)
+	return err
+}
+
+// placeBuild moves the unpacked build at tmp to dest, unless dest holds a
+// build already (its index.html; a build is moved in whole, so a folder with
+// one is complete), and says whether it did. A folder without one is a
+// leftover and is replaced. Two publishes of one version at once: the second
+// finds the first's folder, complete, and keeps it.
+func placeBuild(tmp, dest string) (bool, error) {
+	if complete(dest) {
+		return false, nil
+	}
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return false, err
+	}
+	if err := os.RemoveAll(dest); err != nil {
+		return false, err
+	}
+	if err := os.Rename(tmp, dest); err != nil {
+		if complete(dest) {
+			return false, nil
+		}
+		return false, err
+	}
+	// Caddy, another user, reads the files.
+	return true, os.Chmod(dest, 0o755)
+}
+
+// complete reports whether a version's folder is whole: it has its index.html.
+func complete(dir string) bool {
+	info, err := os.Stat(filepath.Join(dir, "index.html"))
+	return err == nil && info.Mode().IsRegular()
+}
+
+// staleAfter is how old a folder no version names must be before Prune
+// removes it: a publish moves its folder into place a moment before it
+// records the version, and one may be running beside the prune.
+const staleAfter = time.Hour
+
+// Prune removes the versions launcher.Service.Prune drops from the
+// registry, then their files; then what no version names: a killed publish's
+// folder under .incoming/, and a version folder the registry does not know
+// (which Caddy would otherwise go on serving), and an app's folder left empty.
+// A folder that will not go is reported, not fatal.
+func Prune(ctx context.Context, apps *launcher.Service, cfg Config, out io.Writer) error {
+	removed, err := apps.Prune(ctx)
+	if err != nil {
+		return err
+	}
+	for _, p := range removed {
+		dir := filepath.Join(cfg.Dir, string(p.Version.Profile), p.Slug, p.Version.Version)
+		if err := os.RemoveAll(dir); err != nil {
+			fmt.Fprintf(out, "%s %s removed; its files stay: %v\n", p.Slug, p.Version.Version, err)
+			continue
+		}
+		fmt.Fprintf(out, "%s %s removed\n", p.Slug, p.Version.Version)
+	}
+	if len(removed) == 0 {
+		fmt.Fprintln(out, "no published version to remove")
+	}
+	recorded, err := apps.Recorded(ctx)
+	if err != nil {
+		return err
+	}
+	known := map[string]bool{}
+	for _, r := range recorded {
+		known[filepath.Join(string(r.Version.Profile), r.Slug, r.Version.Version)] = true
+	}
+	var stray []string
+	if dirs, err := filepath.Glob(filepath.Join(cfg.Dir, ".incoming", "*")); err == nil {
+		stray = append(stray, dirs...)
+	}
+	for _, profile := range launcher.Profiles {
+		dirs, _ := filepath.Glob(filepath.Join(cfg.Dir, string(profile), "*", "*"))
+		for _, dir := range dirs {
+			if rel, _ := filepath.Rel(cfg.Dir, dir); !known[rel] {
+				stray = append(stray, dir)
+			}
+		}
+	}
+	for _, dir := range stray {
+		info, err := os.Stat(dir)
+		if err != nil || time.Since(info.ModTime()) < staleAfter {
+			continue
+		}
+		rel, _ := filepath.Rel(cfg.Dir, dir)
+		if err := os.RemoveAll(dir); err != nil {
+			fmt.Fprintf(out, "%s, which no version names, stays: %v\n", rel, err)
+			continue
+		}
+		fmt.Fprintf(out, "%s, which no version names, removed\n", rel)
+	}
+	// Every channel's version must have its files, or its page answers 500:
+	// after a restore or a lost volume (not backed up), publishing the same
+	// commit again puts them back. Said loudly, so a deploy does not end
+	// green while an app is down.
+	opened, err := apps.OpenedVersions(ctx)
+	if err != nil {
+		return err
+	}
+	missing := 0
+	for _, o := range opened {
+		if complete(filepath.Join(cfg.Dir, string(o.Version.Profile), o.Slug, o.Version.Version)) {
+			continue
+		}
+		missing++
+		ref := o.Version.Commit
+		if ref == "" {
+			ref = "<its commit>"
+		}
+		again := ""
+		if cfg.Republish != nil {
+			again = "; publish it again: " + cfg.Republish(o.Slug, ref)
+		}
+		fmt.Fprintf(out, "%s: %s opens %s, whose files are missing%s\n", o.Slug, o.Channel, o.Version.Version, again)
+	}
+	// An app's folder with no version left in it (all pruned, or strays
+	// removed), as old: os.Remove takes only an empty one.
+	for _, profile := range launcher.Profiles {
+		apps, _ := filepath.Glob(filepath.Join(cfg.Dir, string(profile), "*"))
+		for _, dir := range apps {
+			info, err := os.Stat(dir)
+			if err != nil || !info.IsDir() || time.Since(info.ModTime()) < staleAfter {
+				continue
+			}
+			if os.Remove(dir) == nil {
+				rel, _ := filepath.Rel(cfg.Dir, dir)
+				fmt.Fprintf(out, "%s, empty, removed\n", rel)
+			}
+		}
+	}
+	if missing > 0 {
+		return fmt.Errorf("%d channel(s) open a version whose files are missing", missing)
+	}
+	return nil
+}
+
+// untar writes the tar's directories and regular files under dir: no
+// absolute names, none outside dir, no links or devices, no name twice,
+// within the limits.
+func untar(in io.Reader, dir string, limits Limits) error {
+	tr := tar.NewReader(in)
+	var total int64
+	files := 0
+	for {
+		h, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			// tar pads its archive to a whole record (10 KB) after the end marker,
+			// which archive/tar does not read. Read it too: the build arrives
+			// through a pipe, and a writer whose last bytes are never read fails
+			// (SIGPIPE under make's pipefail, EPIPE in the e2e setup) though the
+			// build was published. At most a few records; more is not waited for.
+			_, _ = io.Copy(io.Discard, io.LimitReader(in, trailingPadding))
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		name := path.Clean(strings.TrimPrefix(h.Name, "./"))
+		if name == "." {
+			continue
+		}
+		if path.IsAbs(name) || name == ".." || strings.HasPrefix(name, "../") {
+			return fmt.Errorf("%q is outside the build", h.Name)
+		}
+		target := filepath.Join(dir, filepath.FromSlash(name))
+		switch h.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(target, 0o755); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			if files++; files > limits.Files {
+				return fmt.Errorf("more than %d files", limits.Files)
+			}
+			if total += h.Size; total > limits.Bytes {
+				return fmt.Errorf("larger than %d MB", limits.Bytes>>20)
+			}
+			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+				return err
+			}
+			f, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+			if err != nil {
+				return err
+			}
+			_, err = io.Copy(f, io.LimitReader(tr, h.Size))
+			if cerr := f.Close(); err == nil {
+				err = cerr
+			}
+			if err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("%q is not a file or a folder", h.Name)
+		}
+	}
+}

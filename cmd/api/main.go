@@ -405,7 +405,7 @@ func buildRouter(cfg config, svc services, tok *tokens) *router {
 	registerSettingsRoutes(rt, svc.settings, cfg.OrgTimezone)
 	registerMailTemplateRoutes(rt, svc.templates)
 	registerLauncherRoutes(rt, svc.launcher, svc.usage, svc.system)
-	registerPublishedAppRoutes(rt, svc.launcher, cfg.AppsDir)
+	registerPublishedAppRoutes(rt, svc.launcher, cfg)
 	registerBackupRoutes(rt, svc.backups)
 	registerAuditRoutes(rt, svc)
 	registerSystemRoutes(rt, svc, cfg, tok)

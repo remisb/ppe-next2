@@ -1,4 +1,4 @@
-package main
+package releases
 
 import (
 	"archive/tar"
@@ -43,7 +43,7 @@ func tarOf(t *testing.T, entries ...entry) *bytes.Buffer {
 // untar takes a build's folders and files and nothing else: no links or
 // devices, no name outside the build or twice, within the limits.
 func TestUntar(t *testing.T) {
-	limits := buildLimits{bytes: 64, files: 3}
+	limits := Limits{Bytes: 64, Files: 3}
 	ok := tarOf(t, entry{h: tar.Header{Name: "./", Typeflag: tar.TypeDir, Mode: 0o755}}, file("./index.html", "<head></head>"),
 		entry{h: tar.Header{Name: "assets/", Typeflag: tar.TypeDir, Mode: 0o755}}, file("assets/a.js", "1"), file("b/../c.js", "2"))
 	dir := t.TempDir()

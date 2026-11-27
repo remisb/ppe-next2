@@ -189,6 +189,7 @@ jobs:
       - name: Caddyfile is formatted and valid
         run: |
           caddy fmt --diff deploy/Caddyfile
+          caddy fmt --diff deploy/caddy/launcher.caddy
           caddy validate --adapter caddyfile --config deploy/Caddyfile
         env:
           SITE_ADDRESS: http://localhost:5181
