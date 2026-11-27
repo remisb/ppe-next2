@@ -1,9 +1,11 @@
-# App Launcher's addresses under /apps/ (ADR 0006, 0009): the launcher's
+# App Launcher's addresses under /apps/: the launcher's
 # own files, published apps' files by profile, and every other /apps/ address
-# to the API, which answers a published app's page (internal/launcher/releases).
-# Imported by deploy/Caddyfile, used in its site as `import launcher`; it
-# needs the Caddyfile's `api` snippet, LAUNCHER_ROOT and PUBLISHED_ROOT.
-# The profiles' policies are the Caddyfile's own, beside the site's.
+# to the API, which answers a published app's page (releases.Pages).
+# A host's Caddyfile imports it and uses it in its site as `import launcher`;
+# it needs an `api` snippet (the reverse proxy to the host's API),
+# LAUNCHER_ROOT (the launcher's built page) and PUBLISHED_ROOT (releases.Config.Dir,
+# read only). The profiles' policies are the host's, set beside its own
+# (the API sends the same with each page: releases.Config.Policies).
 (launcher) {
 	# App Launcher (ADR 0006), every app a user's roles open, on the same
 	# origin as the staff app, so they share the sign-in cookie: /apps/ and
@@ -35,7 +37,7 @@
 	# Every other address under /apps/ is a published app's page
 	# (/apps/<slug>/, /apps/<slug>/<channel>/, /apps/<slug>/@<version>/ and
 	# the app's own screens): the API answers its version's index.html with
-	# the profile's policy (internal/launcher/releases, mounted by cmd/api/published-app-routes.go).
+	# the profile's policy (releases.Pages).
 	handle /apps/* {
 		import api
 	}

@@ -1,6 +1,7 @@
 # ADR 0009: App Launcher as a reusable module, embedded in each client's application
 
-- **Status:** accepted (decisions made 2026-11-27); not built
+- **Status:** accepted (decisions made 2026-11-27); steps 1 to 3 built 2026-11-27 (remisb/PPE-next2#82,
+  #83 and the step 3 pull request; the module `github.com/remisb/applauncher` v0.1.0), as "As built" below says
 - **Date:** 2026-11-27
 - **Scope:** backend (`internal/domain/launcher`, `cmd/api`'s launcher and published-app code,
   migrations 0042 to 0047), frontend (`@ppe/launcher`, `web/apps/launcher`, Administration's Manage
@@ -201,6 +202,30 @@ Each step is one pull request and leaves this project deployable.
    Packages; the web image and CI read them; this project's apps mount them.
 5. **The second client** mounts the Go layers with its adapters and tiles, the React packages in its
    apps and admin, the Caddy snippet, and publishes its first app by the recipe.
+
+## As built, steps 1 to 3
+
+- **Layout of v0.1.0** (`github.com/remisb/applauncher`): `launcher` holds the registry, its service
+  and its Postgres repository in one package (no `pgstore` split yet); `launcherhttp`, `releases`;
+  the root package `applauncher` holds the schema's migrations (`Migrate`, `Migrations`, `SQL`) and
+  `CaddySnippet`; `caddy/launcher.caddy`; `example/`, a host to read. Its tests run on a database
+  per package (`APPLAUNCHER_TEST_DSN`); its CI runs gofmt, vet, golangci-lint and the tests on Postgres 18.
+- **Errors**: the module's own `launcher.Error` of four kinds (`KindInvalid`, `KindNotFound`,
+  `KindConflict`, `KindUnauthenticated`) with stable codes; this project maps the kinds in
+  `kindStatuses` (`cmd/api/http.go`), and `apperr.CodeOf` reads any error with a `Code()`.
+- **Erasure**: `Service.ForgetUser` (pins, channel choices, feedback text) for a host whose users
+  do not cascade; this project's foreign keys still cascade pins and choices.
+- **Migrations (open question 1), for now:** this project keeps its own migrations of the schema
+  (0042 to 0068) and does not call `Migrate`; `TestPostgresLauncherSchemaIsTheModules` checks that
+  they make the module's schema, the foreign keys to `users` aside. The first module migration
+  after 0001 must answer the question.
+- **The Caddy snippet** is copied into `deploy/caddy/launcher.caddy`, kept equal to the module's by
+  `TestCaddySnippetIsTheModules`.
+- **Still this project's:** the build manifest's name `ppe-app.json` (the module reads it), the
+  `ppe-` meta prefix and `X-PPE-App` (configured), and the slug rule's web copy
+  (`TestWebClientKeepsTheSlugRule`, now in `cmd/api`).
+- Step 1 put `launcherhttp` at `internal/launcher/launcherhttp` (depguard keeps `net/http` out of
+  `internal/domain`), and the Trials port came with it rather than in step 2.
 
 ## Open questions
 

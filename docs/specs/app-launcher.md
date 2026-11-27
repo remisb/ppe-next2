@@ -7,9 +7,9 @@ Administration's **Manage apps**, and published apps' versions and channels serv
 `/apps/<slug>/` (Scan SIMs first), with phase 5's **Trials** view. Phase 4 (the sandbox
 domain) follows ADR 0006 and `docs/ux/app-launcher.md`.
 
-Code: the domain `internal/domain/launcher` (migrations 0042 to 0045 and 0047, routes
+Code: the domain `github.com/remisb/applauncher/launcher` (migrations 0042 to 0045 and 0047, routes
 `cmd/api/launcher-routes.go`; published apps `versions.go`, `service_versions.go`,
-`internal/launcher/releases`: the pages, `Publish` and `Prune`, configured by `releasesConfig` in
+`github.com/remisb/applauncher/releases`: the pages, `Publish` and `Prune`, configured by `releasesConfig` in
 `cmd/api/published-app-routes.go`; Caddy's `/apps/` addresses `deploy/caddy/launcher.caddy`), the package `web/packages/launcher` (`@ppe/launcher`: the
 list loaded once per user and page, its rules, the words, the tile pictures, recent apps),
 the app `web/apps/launcher` (`@ppe/launcher-app`) and Administration's `routes/apps.tsx`.
@@ -22,7 +22,7 @@ order. The registry knows no site: `launcher.Config` (here `launcherConfig` in
 `cmd/api/launcher-tiles.go`) gives it the permission catalogue, the preview permission
 (`apps.preview`), the languages (EN, LT, RU), the groups and the pictures; it records its events
 through an `Auditor` (here the audit trail, in the same transaction), names feedback's senders
-through `UserNames`, and its HTTP API is `internal/launcher/launcherhttp`, mounted by
+through `UserNames`, and its HTTP API is `github.com/remisb/applauncher/launcherhttp`, mounted by
 `cmd/api/launcher-routes.go`. The API inserts the defaults below
 at start-up (`PostgresRepository.EnsureDefaults` with `launcherTiles`), and Postgres tests and e2e get them back after
 emptying the database. **Code owns a default tile until an administrator changes it**: a

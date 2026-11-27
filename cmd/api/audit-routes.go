@@ -10,8 +10,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/applauncher/launcher"
 	"github.com/remisb/ppe-next2/internal/audit"
-	"github.com/remisb/ppe-next2/internal/domain/launcher"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 

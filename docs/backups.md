@@ -21,18 +21,19 @@ the **Backups** screen. What the screen shows: [specs/backup-service.md](specs/b
 
 After a change: `make prod-build && make prod-up`.
 
-### The GitHub token (dbbackup and pdf-mini are private repositories)
+### The GitHub token (dbbackup, pdf-mini and applauncher are private repositories)
 
-The `api` image (Go module download) fetches `github.com/remisb/dbbackup` and
-`github.com/remisb/pdf-mini` (the assignment form's PDF) from GitHub, and the `backup`
+The `api` image (Go module download) fetches `github.com/remisb/dbbackup`,
+`github.com/remisb/pdf-mini` (the assignment form's PDF) and `github.com/remisb/applauncher`
+(App Launcher, ADR 0009) from GitHub, and the `backup`
 image (`go install`) fetches dbbackup. They read a token from the file `.github-token`
 next to `.env.prod`, passed to the build as a BuildKit secret, so it never ends up in an
 image or a layer:
 
 1. On GitHub: Settings → Developer settings → Fine-grained tokens → Generate. Resource
-   owner remisb, repository access "Only select repositories": `remisb/dbbackup` and
-   `remisb/pdf-mini`, permissions Contents: Read-only. (An existing token: edit it and add
-   `remisb/pdf-mini`; the file and the CI secret need not change.) Give it a long expiry and note the date.
+   owner remisb, repository access "Only select repositories": `remisb/dbbackup`,
+   `remisb/pdf-mini` and `remisb/applauncher`, permissions Contents: Read-only. (An existing
+   token: edit it and add the missing repositories; the file and the CI secret need not change.) Give it a long expiry and note the date.
 2. On the droplet: `install -m 600 /dev/stdin /opt/ppe-next2/.github-token`, paste the
    token, then Ctrl-D.
 3. CI: add the same kind of token as the repository secret `DBBACKUP_READ_TOKEN` of

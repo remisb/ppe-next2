@@ -7,8 +7,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/remisb/muxstack/middleware"
 
+	"github.com/remisb/applauncher/launcher"
 	"github.com/remisb/ppe-next2/internal/audit"
-	"github.com/remisb/ppe-next2/internal/domain/launcher"
 )
 
 // appHeader names the app a request comes from; @ppe/api-client sends it.

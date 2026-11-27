@@ -54,6 +54,8 @@ github.com/prometheus/common v0.70.1 h1:1HvjP4D5oL3t8RsPlwxA9onvvStjtIHYE5XuuwOi
 github.com/prometheus/common v0.70.1/go.mod h1:VdFUQDMZK3VLkurFUVhia6uys/0suUp86TJz5qbJRhc=
 github.com/prometheus/procfs v0.21.1 h1:GljZCt+zSTS+NZq88cyQ1LjZ+RCHp3uVuabBWA5+OJI=
 github.com/prometheus/procfs v0.21.1/go.mod h1:aB55Cww9pdSJVHk0hUf0inxWyyjPogFIjmHKYgMKmtY=
+github.com/remisb/applauncher v0.1.0 h1:U0DbTCGNTJc+RkISPkr/bYCjUsVwTtxHCSv/F9U26UE=
+github.com/remisb/applauncher v0.1.0/go.mod h1:Os1VQwwZXb9MzMB8JiwKGLR4VRean+S1qnx2WTLBEV8=
 github.com/remisb/dbbackup v0.1.0 h1:PcRGBPs7by2I+fjzSz9/OivV2FglO8WbhowsGaYnefE=
 github.com/remisb/dbbackup v0.1.0/go.mod h1:364/TzrrTKy0wMkwm8+7x5W+z2QpeTAP95QwapSZ9M0=
 github.com/remisb/dbbackup/postgres v0.1.0 h1:hOmquCK4khVJR0554veKMzKJXw+GlwBTszfiHQ/XrGw=

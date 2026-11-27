@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/remisb/muxstack/middleware"
 
+	"github.com/remisb/applauncher/launcher"
 	"github.com/remisb/ppe-next2/internal/aiusage"
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/db"
@@ -32,7 +33,6 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
-	"github.com/remisb/ppe-next2/internal/domain/launcher"
 	"github.com/remisb/ppe-next2/internal/domain/mailtemplate"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"

@@ -18,6 +18,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/remisb/muxstack/middleware"
 
+	"github.com/remisb/applauncher/launcher"
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/domain/asset"
 	"github.com/remisb/ppe-next2/internal/domain/backup"
@@ -27,7 +28,6 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
-	"github.com/remisb/ppe-next2/internal/domain/launcher"
 	"github.com/remisb/ppe-next2/internal/domain/mailtemplate"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"
@@ -778,6 +778,7 @@ func (stubLauncher) Reorder(_ context.Context, m launcher.OrderMutation) ([]laun
 func (stubLauncher) Pins(context.Context, uuid.UUID) ([]string, error)     { return []string{}, nil }
 func (stubLauncher) SetPins(context.Context, uuid.UUID, []uuid.UUID) error { return nil }
 func (stubLauncher) AddFeedback(context.Context, launcher.Feedback) error  { return nil }
+func (stubLauncher) ForgetUser(context.Context, uuid.UUID) error           { return nil }
 func (stubLauncher) Versions(context.Context, uuid.UUID) ([]launcher.Version, error) {
 	return []launcher.Version{}, nil
 }

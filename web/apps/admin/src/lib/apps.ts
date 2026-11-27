@@ -4,7 +4,7 @@ import { APP_SLUG_PATTERN, RESERVED_APP_SLUGS } from '@ppe/api-client'
 import { t } from '@/i18n'
 
 /**
- * Manage apps' form rules. The API enforces them (internal/domain/launcher);
+ * Manage apps' form rules. The API enforces them (github.com/remisb/applauncher/launcher);
  * these say what is wrong before a round trip, in the language in use.
  */
 

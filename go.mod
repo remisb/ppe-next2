@@ -10,6 +10,7 @@ require (
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/minio/minio-go/v7 v7.3.0
 	github.com/prometheus/client_golang v1.24.1
+	github.com/remisb/applauncher v0.1.0
 	github.com/remisb/dbbackup v0.1.0
 	github.com/remisb/dbbackup/postgres v0.1.0
 	github.com/remisb/muxstack v0.1.1

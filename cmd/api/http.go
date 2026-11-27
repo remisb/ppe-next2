@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/applauncher/launcher"
 	"github.com/remisb/ppe-next2/internal/apperr"
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/personnel/mrz"
@@ -47,7 +48,7 @@ func writeErrorMessage(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
 }
 
-// kindStatuses maps each error kind (internal/apperr) to its status. Every
+// kindStatuses maps each error kind (internal/apperr, and a module's own) to its status. Every
 // sentinel a domain answers is declared with apperr.New and one kind, so a new
 // sentinel needs no entry here. Checked in order with errors.Is: a chain holding
 // two kinded errors answers the first kind listed.
@@ -70,6 +71,12 @@ var kindStatuses = []struct {
 	{apperr.TooMany, http.StatusTooManyRequests},
 	{apperr.Invalid, http.StatusBadRequest},
 	{apperr.BadRequest, http.StatusBadRequest},
+	// App Launcher's (github.com/remisb/applauncher, ADR 0009): its own kinds,
+	// as the module knows no host's.
+	{launcher.KindUnauthenticated, http.StatusUnauthorized},
+	{launcher.KindNotFound, http.StatusNotFound},
+	{launcher.KindConflict, http.StatusConflict},
+	{launcher.KindInvalid, http.StatusBadRequest},
 }
 
 // writeError is the only place errors become status codes. Unauthenticated

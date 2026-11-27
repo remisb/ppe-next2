@@ -266,13 +266,15 @@ adapted in `cmd/api/checkers.go`), updates, merges or adds them; kept scans gain
 a page route and a link to the saved document (migration 0056, built; `ppe_app` may update those three columns alone); its mockup is `docs/ux/mockups/docs-scan.html`. It replaces Import
 Documents after its trial, sharing `@ppe/id-docs`, and uses ui-sdk only through `@ppe/ui`.
 **App Launcher** (ADR 0006, accepted with every recommended decision; phases 1 to 3 built; spec
-`docs/specs/app-launcher.md`, guide `docs/ux/app-launcher.html`; ADR 0009, accepted, not built, makes
-App Launcher, registry and releases, a reusable Go module and npm packages (`remisb/applauncher`)
-embedded in each client's application through ports (`Can`, `Auditor`, `TrialStats`), its tables in
-schema `launcher`, cut loose inside this repository first): a fourth app at `/apps/`
+`docs/specs/app-launcher.md`, guide `docs/ux/app-launcher.html`; ADR 0009, steps 1 to 3 built, makes
+App Launcher, registry and releases, a reusable Go module, `github.com/remisb/applauncher` (private,
+`../../remis-libs/applauncher`, required at a tag; npm packages are step 4), embedded through ports
+(`Can`, `Auditor`, `UserNames`, `TrialStats`, `launcherConfig` and `releasesConfig` in `cmd/api`), its
+tables in schema `launcher`; to change it, `replace` the module with the checkout, run `make test-db`
+and e2e here, tag it, then require the tag): a fourth app at `/apps/`
 (`web/apps/launcher`) showing every app and shortcut a user sees as big tiles in groups, with pins
 (the user's, by the API) and recent apps (per device). Its list is the API's registry
-(`internal/domain/launcher`, migration 0042: `launcher_apps`, `launcher_pins`, `launcher_feedback`, schema `launcher` since 0068;
+(`github.com/remisb/applauncher/launcher`, migration 0042: `launcher_apps`, `launcher_pins`, `launcher_feedback`, schema `launcher` since 0068;
 `GET /api/v1/launcher` filtered per user by permission), whose default tiles the API inserts at
 start-up (`EnsureDefaults` with `cmd/api/launcher-tiles.go`'s `launcherTiles`, also after a test empties the database); administrators manage it
 on Administration's **Manage apps** (`apps.manage`: register, edit, move, retire, feedback, Changes;
@@ -290,7 +292,7 @@ immutable **versions** (`YYYY.MM.DD-<commit>`, a `dist/` with `ppe-app.json` dec
 (Stable for whoever sees the tile, Beta and Preview for testers; named variants were removed,
 migration 0047; events `app.version_published`,
 `app.channel_moved`; older trails also hold `app.channel_changed`). Scan SIMs is the first, at `/apps/sim-scan/`. Caddy serves a version's files from the `published` volume at
-`/apps/files/<profile>/<slug>/<version>/`; the API (`internal/launcher/releases`' `Pages`, mounted by `cmd/api/published-app-routes.go`, public
+`/apps/files/<profile>/<slug>/<version>/`; the API (`github.com/remisb/applauncher/releases`' `Pages`, mounted by `cmd/api/published-app-routes.go`, public
 `GET /apps/{slug}/{rest...}`; Caddy's `/apps/` routes are the snippet `deploy/caddy/launcher.caddy`) answers only its `index.html`, links rewritten, with `ppe-mount`,
 `ppe-files`, `ppe-version`, `ppe-channel` meta tags (read by `@ppe/routing`'s `basePath`/`filesBase`;
 kept in memory per version, with an `ETag`)

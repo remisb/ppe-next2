@@ -4,6 +4,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/remisb/applauncher/launcher"
 	"github.com/remisb/ppe-next2/internal/aiusage"
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/domain/asset"
@@ -12,7 +13,6 @@ import (
 	"github.com/remisb/ppe-next2/internal/domain/employee"
 	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
 	"github.com/remisb/ppe-next2/internal/domain/itemset"
-	"github.com/remisb/ppe-next2/internal/domain/launcher"
 	"github.com/remisb/ppe-next2/internal/domain/mailtemplate"
 	"github.com/remisb/ppe-next2/internal/domain/order"
 	"github.com/remisb/ppe-next2/internal/domain/role"
