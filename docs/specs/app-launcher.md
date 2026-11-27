@@ -21,7 +21,7 @@ order. The registry knows no site: `launcher.Config` (here `launcherConfig` in
 `cmd/api/launcher-tiles.go`) gives it the permission catalogue, the preview permission
 (`apps.preview`), the languages (EN, LT, RU), the groups and the pictures; it records its events
 through an `Auditor` (here the audit trail, in the same transaction), names feedback's senders
-through `UserNames`, and its HTTP API is `launcher/launcherhttp`, mounted by
+through `UserNames`, and its HTTP API is `internal/launcher/launcherhttp`, mounted by
 `cmd/api/launcher-routes.go`. The API inserts the defaults below
 at start-up (`PostgresRepository.EnsureDefaults` with `launcherTiles`), and Postgres tests and e2e get them back after
 emptying the database. **Code owns a default tile until an administrator changes it**: a
