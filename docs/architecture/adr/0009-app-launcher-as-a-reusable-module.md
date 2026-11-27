@@ -1,8 +1,8 @@
 # ADR 0009: App Launcher as a reusable module, embedded in each client's application
 
-- **Status:** accepted (decisions made 2026-11-27); steps 1 to 4 built 2026-11-27 (remisb/PPE-next2#82,
-  #83, #84 and the step 4 pull request; `github.com/remisb/applauncher` v0.1.0, and v0.2.0 with the npm
-  packages), as "As built" below says
+- **Status:** accepted (decisions made 2026-11-27); built 2026-11-27: steps 1 to 4 in remisb/PPE-next2#82,
+  #83, #84 and #85 (`github.com/remisb/applauncher` v0.1.0, and v0.2.0 with the npm packages), step 5 as
+  the reference host `remisb/launcher-demo` on v0.3.0, as "As built" below says
 - **Date:** 2026-11-27
 - **Scope:** backend (`internal/domain/launcher`, `cmd/api`'s launcher and published-app code,
   migrations 0042 to 0047), frontend (`@ppe/launcher`, `web/apps/launcher`, Administration's Manage
@@ -245,6 +245,29 @@ Each step is one pull request and leaves this project deployable.
   `AppNames` became a type alias so this site's tiles read as the package's.
 - Each app's `index.css` also scans `@remisb/launcher-react`'s `dist` with `@source`, which its
   `tailwind-sources.test.ts` checks.
+
+## As built, step 5
+
+- **The second client is a reference host for now:** `remisb/launcher-demo` (private,
+  `../../remis-libs/launcher-demo`), a small Go + React application built the way a client's project
+  embeds the module, to copy from when the client's own project starts. It has the module's every
+  layer: its own `launcher.Config` (three permissions, EN/LT/RU, two groups), default tiles, an
+  `Auditor` into its own `audit_events`, `UserNames` from its users, `launcherhttp.Routes` behind its
+  sign-in and permissions with errors mapped by `launcher.Kind*`, `releases` with its policies, the
+  `launcher-` meta prefix and an `app.json` manifest, Caddy importing the module's snippet, and the
+  two web apps: `/apps/` (`LauncherScreen`) and the published app `hello` (`ChannelStripe`).
+- **Its sign-in is minimal** (users with permissions, bcrypt, a hashed session token in an HttpOnly,
+  SameSite=Strict cookie, a per-address attempt limit): enough to run the launcher, to be replaced by
+  the client's. It runs the module's `Migrate` and adds the foreign keys to its users in its own
+  migration, as decision 6 allows.
+- **The module gained `releases.Config.Manifest`** (v0.3.0; default `ppe-app.json`, so this project is
+  unchanged) and a test that publishes and serves a build.
+- **Checked:** its Go tests run the server on a fresh database (sign-in, tiles by permission, Manage
+  apps, pins, publishing, the page's meta tags); `TestPoliciesMatchCaddy` keeps its policies and the
+  snippet in step; in a browser through Caddy, a version on Beta chosen in the launcher opened with the
+  stripe. Its CI reads the module with the secret `APPLAUNCHER_READ_TOKEN`.
+- **Not yet:** the client's own project, which starts from this host (and from open question 3 on who
+  may read the repositories).
 
 ## Open questions
 
