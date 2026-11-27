@@ -19,6 +19,8 @@
     "@ppe/launcher": "workspace:*",
     "@ppe/routing": "workspace:*",
     "@ppe/ui": "workspace:*",
+    "@remisb/launcher-core": "git+https://github.com/remisb/applauncher.git#v0.2.0&path:/web/packages/launcher-core",
+    "@remisb/launcher-react": "git+https://github.com/remisb/applauncher.git#v0.2.0&path:/web/packages/launcher-react",
     "lucide-react": "^1.48.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

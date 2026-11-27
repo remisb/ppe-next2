@@ -10,9 +10,13 @@ domain) follows ADR 0006 and `docs/ux/app-launcher.md`.
 Code: the domain `github.com/remisb/applauncher/launcher` (migrations 0042 to 0045 and 0047, routes
 `cmd/api/launcher-routes.go`; published apps `versions.go`, `service_versions.go`,
 `github.com/remisb/applauncher/releases`: the pages, `Publish` and `Prune`, configured by `releasesConfig` in
-`cmd/api/published-app-routes.go`; Caddy's `/apps/` addresses `deploy/caddy/launcher.caddy`), the package `web/packages/launcher` (`@ppe/launcher`: the
-list loaded once per user and page, its rules, the words, the tile pictures, recent apps),
-the app `web/apps/launcher` (`@ppe/launcher-app`) and Administration's `routes/apps.tsx`.
+`cmd/api/published-app-routes.go`; Caddy's `/apps/` addresses `deploy/caddy/launcher.caddy`), the packages `@remisb/launcher-core` (the
+wire types, the rules over a user's tiles and channels, recent apps on the device, the words in EN,
+LT and RU) and `@remisb/launcher-react` (`LauncherScreen`, `ChannelStripe`, `TileIcon`), installed
+from `remisb/applauncher` at a tag (ADR 0009, step 4), `web/packages/launcher` (`@ppe/launcher`: them
+bound to this site's session, language, routing and group names, with `AppFrame`, `SignedIn` and the
+published apps' tooling), the app `web/apps/launcher` (`@ppe/launcher-app`: the sign-in gate around
+`LauncherScreen`) and Administration's `routes/apps.tsx`.
 Terms: `docs/ubiquitous-language.md` §13. How people use it, how a new app is built for it, and a critique with proposed improvements: `docs/ux/app-launcher-handbook.md` (and `.html`).
 
 ## The registry

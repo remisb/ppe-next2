@@ -131,6 +131,11 @@ jobs:
           node-version: 22
           cache: pnpm
           cache-dependency-path: web/pnpm-lock.yaml
+      # @remisb/launcher-core and -react are installed from the private remisb/applauncher.
+      - name: Read access to the private applauncher packages
+        run: git config --global url."https://x-access-token:${DBBACKUP_READ_TOKEN}@github.com/remisb/applauncher".insteadOf "https://github.com/remisb/applauncher"
+        env:
+          DBBACKUP_READ_TOKEN: ${{ secrets.DBBACKUP_READ_TOKEN }}
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm lint

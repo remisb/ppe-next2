@@ -26,4 +26,11 @@ describe('Tailwind sources', () => {
   it.each(packages)("names $name's components in index.css", ({ dir }) => {
     expect(indexCss).toContain(`@source '../../../packages/${dir}/src';`)
   })
+
+  // @ppe/launcher draws @remisb/launcher-react's components (ADR 0009), from its built files.
+  it('names @remisb/launcher-react with @ppe/launcher', () => {
+    if (indexCss.includes("@source '../../../packages/launcher/src';")) {
+      expect(indexCss).toContain("@source '../../../packages/launcher/node_modules/@remisb/launcher-react/dist';")
+    }
+  })
 })

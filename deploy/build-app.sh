@@ -15,6 +15,8 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 git worktree add --quiet --detach "$tmp/src" "$ref" >&2
-docker build --quiet --target app-dist --build-arg APP="$app" --output "type=local,dest=$tmp/dist" "$tmp/src/web" >&2
+# The App Launcher packages come from a private repository: the deploy's token (web/Dockerfile).
+token="$(cd "$(dirname "$0")/.." && pwd)/.github-token"
+docker build --quiet --secret id=github_token,src="$token" --target app-dist --build-arg APP="$app" --output "type=local,dest=$tmp/dist" "$tmp/src/web" >&2
 test -f "$tmp/dist/ppe-app.json" || { echo "$app at $ref has no ppe-app.json: it is not a published app there" >&2; exit 1; }
 tar -C "$tmp/dist" -cf - .

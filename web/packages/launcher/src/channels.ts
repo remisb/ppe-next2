@@ -1,91 +1,23 @@
-import type { AppChannel, LauncherApp, LauncherList } from '@ppe/api-client'
-import { stripBase } from '@ppe/routing'
+import { channelName as nameIn } from '@remisb/launcher-core'
 
 import { launcherText } from './text.ts'
 
 /**
- * Published apps' channels (ADR 0006, phase 3): names that point at one
- * version of an app, Stable for everyone the tile is for, Beta and Preview for
- * testers (named variants were removed, migration 0047). The list the API gave
- * holds the ones each user sees and the one they chose.
+ * Published apps' channels (ADR 0006, phase 3): @remisb/launcher-core's
+ * rules, with channel names in the language in use.
  */
-
-/** An app's channels: Stable for whoever sees its tile, Beta and Preview for testers. */
-export const FIXED_CHANNELS = ['stable', 'beta', 'preview'] as const
-
-/** The channels of a published app the user sees, Stable first; none for an app on an address of its own. */
-export const channelsOf = (list: LauncherList | null, slug: string): AppChannel[] => list?.channels?.[slug] ?? []
-
-/** The channel the user opens an app on: the one they chose, else Stable. */
-export const chosenChannel = (list: LauncherList | null, slug: string): string => list?.choices?.[slug] ?? 'stable'
-
-/** Where a channel of a published app opens: Stable at the app's address, any other under it. */
-export function channelHref(app: LauncherApp, channel: string): string {
-  if (channel === 'stable' || !app.href.endsWith('/')) return app.href
-  return `${app.href}${channel}/`
-}
-
-/** Where a tile opens: a published app on the user's chosen channel, anything else at its address. */
-export function openHref(app: LauncherApp, list: LauncherList | null): string {
-  if (app.kind !== 'app' || channelsOf(list, app.slug).length === 0) return app.href
-  return channelHref(app, chosenChannel(list, app.slug))
-}
+export {
+  FIXED_CHANNELS,
+  channelHref,
+  channelPath,
+  channelsOf,
+  chosenChannel,
+  chosenHref,
+  mayOpenChannel,
+  mayStay,
+  openHref,
+  stablePath,
+} from '@remisb/launcher-core'
 
 /** A channel's name in the language in use: Stable, Beta, Preview, or a version's name (@<version>). */
-export function channelName(name: string): string {
-  const t = launcherText()
-  if (name === 'stable' || name === 'beta' || name === 'preview') return t.channels[name]
-  return name.startsWith('@') ? name.slice(1) : name
-}
-
-/**
- * Whether the user may stay on the channel the page was opened on (appChannel
- * from @ppe/routing): Stable, and any channel they see; a version's own
- * address (@<version>) for testers and whoever manages apps. Anyone else goes
- * to Stable.
- */
-export function mayOpenChannel(list: LauncherList, slug: string, channel: string | null, managesApps: boolean): boolean {
-  if (!channel || channel === 'stable') return true
-  if (channel.startsWith('@')) return list.preview || managesApps
-  return channelsOf(list, slug).some((c) => c.name === channel)
-}
-
-/**
- * Whether a page opened on a channel may stay there now: while the user's
- * list is loading, yes (it decides); once it has failed, only Stable, since
- * the list is the only check (fail closed); else mayOpenChannel. A channel's
- * audience chooses who sees it and is sent there, not who may open it: the
- * page and its files are public, and the data behind them is the API's.
- */
-export function mayStay(list: LauncherList | null, failed: boolean, slug: string, channel: string | null, managesApps: boolean): boolean {
-  if (!channel || channel === 'stable') return true
-  if (list) return mayOpenChannel(list, slug, channel, managesApps)
-  return !failed
-}
-
-/** A channel's address for the screen open now: /apps/<slug>/<channel>/<path>, Stable at /apps/<slug>/<path>. */
-export function channelPath(slug: string, channel: string, rest: string, search = ''): string {
-  const tail = rest === '/' ? '/' : rest
-  return channel === 'stable' ? `/apps/${slug}${tail}${search}` : `/apps/${slug}/${channel}${tail}${search}`
-}
-
-/**
- * Stable asked for on purpose, /apps/<slug>/stable/<path>: unlike the app's
- * own address it never sends the user on to the channel they chose (see
- * chosenHref), so Back to Stable reaches Stable even when saving the choice
- * failed.
- */
-export const stablePath = (slug: string, rest: string, search = ''): string => `/apps/${slug}/stable${rest === '/' ? '/' : rest}${search}`
-
-/**
- * Where a page opened at an app's Stable address (/apps/<slug>/…, a bookmark
- * or a link from another app) goes for a user who chose another channel they
- * see: that channel, on the same screen. Null to stay, as at
- * /apps/<slug>/stable/…, which asks for Stable on purpose.
- */
-export function chosenHref(list: LauncherList | null, slug: string, channel: string | null, mount: string, pathname: string, search = ''): string | null {
-  if (channel !== 'stable' || mount !== `/apps/${slug}`) return null
-  const chosen = chosenChannel(list, slug)
-  if (chosen === 'stable' || !channelsOf(list, slug).some((c) => c.name === chosen)) return null
-  return channelPath(slug, chosen, stripBase(pathname, mount), search)
-}
+export const channelName = (name: string): string => nameIn(name, launcherText())

@@ -1,7 +1,8 @@
 # ADR 0009: App Launcher as a reusable module, embedded in each client's application
 
-- **Status:** accepted (decisions made 2026-11-27); steps 1 to 3 built 2026-11-27 (remisb/PPE-next2#82,
-  #83 and the step 3 pull request; the module `github.com/remisb/applauncher` v0.1.0), as "As built" below says
+- **Status:** accepted (decisions made 2026-11-27); steps 1 to 4 built 2026-11-27 (remisb/PPE-next2#82,
+  #83, #84 and the step 4 pull request; `github.com/remisb/applauncher` v0.1.0, and v0.2.0 with the npm
+  packages), as "As built" below says
 - **Date:** 2026-11-27
 - **Scope:** backend (`internal/domain/launcher`, `cmd/api`'s launcher and published-app code,
   migrations 0042 to 0047), frontend (`@ppe/launcher`, `web/apps/launcher`, Administration's Manage
@@ -226,6 +227,24 @@ Each step is one pull request and leaves this project deployable.
   (`TestWebClientKeepsTheSlugRule`, now in `cmd/api`).
 - Step 1 put `launcherhttp` at `internal/launcher/launcherhttp` (depguard keeps `net/http` out of
   `internal/domain`), and the Trials port came with it rather than in step 2.
+
+## As built, step 4
+
+- **Scope:** the launcher side only. `@remisb/launcher-core` (types, rules, channels, recent apps,
+  words) and `@remisb/launcher-react` (`LauncherScreen`, `ChannelStripe`, `TileIcon`,
+  `useLauncherList`, on a few parts of its own over the shadcn theme). Manage apps stays in
+  Administration on `@ppe/ui`; `AppFrame`, `SignedIn` and `NotForYou` stay in `@ppe/launcher` (this
+  site's sign-in), as do `new-app.ts` and `published-apps.ts` (this repository's tooling).
+- **Distribution, instead of GitHub Packages:** git dependencies at a tag,
+  `git+https://github.com/remisb/applauncher.git#v0.2.0&path:/web/packages/launcher-*`, with `dist/`
+  committed (the module's CI checks a build matches it). The same fine-grained token as the Go
+  module reads them: CI's web and e2e jobs, and the web image's `pnpm fetch` through the
+  `github_token` build secret (also in `deploy/build-app.sh`). No classic `read:packages` token.
+- **This site's bindings** in `@ppe/launcher`: the group names (EN, LT, RU), `currentLang()`, the
+  `workwear.launcher` device keys, `client.launcher`, the `ppe-*` meta tags, `apps.manage`.
+  `AppNames` became a type alias so this site's tiles read as the package's.
+- Each app's `index.css` also scans `@remisb/launcher-react`'s `dist` with `@source`, which its
+  `tailwind-sources.test.ts` checks.
 
 ## Open questions
 

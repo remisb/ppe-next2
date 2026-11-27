@@ -4,7 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "description": "App Launcher's tiles as the API's registry gives them (ADR 0006): loaded once per user and page, the rules the apps apply to them, the launcher's words in each language, and each user's recent apps on the device. Read by the launcher at /apps/ and by every app's Apps entry.",
-  "exports": { ".": "./src/index.ts", "./testing": "./src/testing.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
+  },
   "types": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -16,6 +19,8 @@
     "@ppe/i18n": "workspace:*",
     "@ppe/routing": "workspace:*",
     "@ppe/ui": "workspace:*",
+    "@remisb/launcher-core": "git+https://github.com/remisb/applauncher.git#v0.2.0&path:/web/packages/launcher-core",
+    "@remisb/launcher-react": "git+https://github.com/remisb/applauncher.git#v0.2.0&path:/web/packages/launcher-react",
     "lucide-react": "^1.48.0"
   },
   "peerDependencies": {
