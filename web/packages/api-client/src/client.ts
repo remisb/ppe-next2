@@ -248,7 +248,7 @@ export function createClient(options: ClientOptions) {
     if (!res.ok) {
       const text = await res.text()
       if (res.status === 401) options.onUnauthenticated?.()
-      throw new ApiError(res.status, errorMessage(text, res.status), errorReference(text))
+      throw new ApiError(res.status, errorMessage(text, res.status), errorReference(text), undefined, undefined, errorDetails(text))
     }
     return { blob: await res.blob(), filename: attachmentName(res.headers.get('Content-Disposition')) }
   }
@@ -873,11 +873,12 @@ function errorField(text: string, key: 'reference' | 'existing_id'): string | un
   }
 }
 
-/** A refused identity document's conflict (document_on_file, other_employee) and MRZ problems. */
-function errorDetails(text: string): { conflict?: string; problems?: MrzIssue[] } {
+/** An error's stable code, and a refused identity document's conflict (document_on_file, other_employee) and MRZ problems. */
+function errorDetails(text: string): { conflict?: string; problems?: MrzIssue[]; code?: string } {
   try {
-    const parsed = JSON.parse(text) as { conflict?: unknown; problems?: unknown }
-    const out: { conflict?: string; problems?: MrzIssue[] } = {}
+    const parsed = JSON.parse(text) as { conflict?: unknown; problems?: unknown; code?: unknown }
+    const out: { conflict?: string; problems?: MrzIssue[]; code?: string } = {}
+    if (typeof parsed.code === 'string' && parsed.code !== '') out.code = parsed.code
     if (typeof parsed.conflict === 'string') out.conflict = parsed.conflict
     if (Array.isArray(parsed.problems)) out.problems = parsed.problems as MrzIssue[]
     return out

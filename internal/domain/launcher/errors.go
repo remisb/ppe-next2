@@ -1,20 +1,21 @@
 package launcher
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/remisb/ppe-next2/internal/apperr"
 )
 
 var (
 	// ErrNotFound: no tile has the slug, or not one the user sees (feedback, a
 	// channel choice), or an address under /apps/ opens nothing (404).
-	ErrNotFound = errors.New("app not found")
+	ErrNotFound = apperr.New(apperr.NotFound, "launcher.not_found", "app not found")
 	// ErrInvalid: a field breaks a rule (400); fieldError names it.
-	ErrInvalid = errors.New("invalid app")
+	ErrInvalid = apperr.New(apperr.Invalid, "launcher.invalid", "invalid app")
 	// ErrSlugTaken: another tile has the slug (409).
-	ErrSlugTaken = errors.New("app slug already in use")
+	ErrSlugTaken = apperr.New(apperr.Conflict, "launcher.slug_taken", "app slug already in use")
 	// ErrActorNotFound: the acting or choosing user no longer exists (401).
-	ErrActorNotFound = errors.New("acting user not found")
+	ErrActorNotFound = apperr.New(apperr.Unauthenticated, "launcher.actor_not_found", "acting user not found")
 )
 
 // fieldError is ErrInvalid, naming the field and what is wrong with it.

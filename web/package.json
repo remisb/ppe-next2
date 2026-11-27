@@ -9,9 +9,13 @@
   },
   "scripts": {
     "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "pnpm -r --if-present lint",
+    "lint": "biome lint --diagnostic-level=error .",
+    "lint:all": "biome lint .",
     "test": "pnpm -r --if-present test",
     "build": "pnpm -r --if-present build",
     "check:new-app": "node --experimental-strip-types --no-warnings=ExperimentalWarning packages/launcher/src/new-app.ts --check"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.9"
   }
 }

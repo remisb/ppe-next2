@@ -2,12 +2,12 @@ package audit
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/remisb/ppe-next2/internal/db/dbtest"
 )
 
 func TestNewMarshalsSides(t *testing.T) {
@@ -25,10 +25,7 @@ func TestNewMarshalsSides(t *testing.T) {
 
 // TestAppendOnly checks the database refuses UPDATE and DELETE on audit rows.
 func TestAppendOnly(t *testing.T) {
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {

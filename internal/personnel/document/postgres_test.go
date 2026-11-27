@@ -3,7 +3,6 @@ package document
 import (
 	"context"
 	"errors"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -21,10 +20,7 @@ import (
 // folder for the files store.
 func pgSetup(t *testing.T) (*Service, *pgxpool.Pool, uuid.UUID) {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	owner, err := pgxpool.New(ctx, dsn)
@@ -192,7 +188,7 @@ func TestPostgresAppRoleMayNotChangeADataKey(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	app := dbtest.AppPool(t, owner, os.Getenv("API_TEST_DB_DSN"))
+	app := dbtest.AppPool(t, owner, dbtest.DSN(t))
 	_, err = app.Exec(ctx, `UPDATE personnel.subject_keys SET key_id = 2 WHERE employee_id = $1`, doc.EmployeeID)
 	var pgErr *pgconn.PgError
 	if !errors.As(err, &pgErr) || pgErr.Code != "42501" {

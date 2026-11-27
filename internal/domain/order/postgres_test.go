@@ -3,7 +3,6 @@ package order
 import (
 	"context"
 	"errors"
-	"os"
 	"strconv"
 	"sync"
 	"testing"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/remisb/ppe-next2/internal/db/dbtest"
 )
 
 type pgFixture struct {
@@ -23,10 +23,7 @@ type pgFixture struct {
 // newPGFixture empties the database and seeds an actor, an employee and items.
 func newPGFixture(t *testing.T) pgFixture {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	pool, err := pgxpool.New(ctx, dsn)

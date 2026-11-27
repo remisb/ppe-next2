@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/apperr"
 	"github.com/remisb/ppe-next2/internal/audit"
 )
 
@@ -29,7 +30,7 @@ var (
 	// ErrMergePersonnel refuses removing a record that has identity
 	// documents: their data key is sealed to that record (ADR 0007), so it is
 	// the one kept.
-	ErrMergePersonnel = errors.New("the employee removed has identity documents; keep that record instead")
+	ErrMergePersonnel = apperr.New(apperr.Conflict, "employee.merge_personnel", "the employee removed has identity documents; keep that record instead")
 )
 
 // MergedError is a read of a record merged into another, which it names, so

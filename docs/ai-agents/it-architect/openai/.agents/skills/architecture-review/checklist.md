@@ -27,7 +27,7 @@ Each item names the rule's source. Apply a section only when its area changed.
 - A new route has a `policy` entry in `cmd/api/routes_test.go` and requires one permission
   from `internal/domain/role/permission.go`; a new permission is also in
   `web/packages/api-client/src/permissions.ts`, same order. (ADR 0002)
-- New sentinel errors map in `errorStatuses` / `writeError` only. (cmd/api/http.go)
+- New sentinel errors are `apperr.New(kind, code, msg)`; `writeError` alone maps kinds to statuses (cmd/api/http.go), each sentinel pinned in cmd/api/http_errors_test.go.
 - Request bodies via `decodeJSON`; no `id`, timestamps or actor fields accepted.
 - Client address from `middleware.ClientAddr`, never `RemoteAddr`.
 - A new setting is read in `loadConfig` and checked in `validate`.

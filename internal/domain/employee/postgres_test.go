@@ -3,22 +3,19 @@ package employee
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/remisb/ppe-next2/internal/db/dbtest"
 )
 
-// newTestPool connects to API_TEST_DB_DSN (skipping when unset), empties the
+// newTestPool connects to the package's database, dbtest.DSN (skipping when unset), empties the
 // tables and inserts one user to act as the actor.
 func newTestPool(t *testing.T) (*pgxpool.Pool, uuid.UUID) {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	pool, err := pgxpool.New(ctx, dsn)

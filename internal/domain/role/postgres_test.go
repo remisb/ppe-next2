@@ -3,23 +3,20 @@ package role
 import (
 	"context"
 	"errors"
-	"os"
 	"slices"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/remisb/ppe-next2/internal/db/dbtest"
 )
 
-// newTestPool connects to API_TEST_DB_DSN (skipping without it), empties users
+// newTestPool connects to the package's database, dbtest.DSN (skipping without it), empties users
 // (and so roles) and puts the built-in roles back.
 func newTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	pool, err := pgxpool.New(ctx, dsn)

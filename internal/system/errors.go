@@ -8,7 +8,6 @@ package system
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -16,14 +15,15 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/apperr"
 	"github.com/remisb/ppe-next2/internal/audit"
 )
 
 var (
 	// ErrInvalid wraps every refused report or filter, naming it.
-	ErrInvalid = errors.New("invalid system request")
+	ErrInvalid = apperr.New(apperr.Invalid, "system.invalid", "invalid system request")
 	// ErrNotFound: no such error on the list.
-	ErrNotFound = errors.New("not found")
+	ErrNotFound = apperr.New(apperr.NotFound, "system.not_found", "not found")
 )
 
 // fieldError is ErrInvalid naming field and its problem.

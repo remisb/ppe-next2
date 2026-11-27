@@ -2,7 +2,6 @@ package audit
 
 import (
 	"context"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -17,10 +16,7 @@ import (
 // the API role's (ppe_app), which the service uses, as in production.
 func sealPools(t *testing.T) (owner, app *pgxpool.Pool) {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx := context.Background()
 	owner, err := pgxpool.New(ctx, dsn)
 	if err != nil {

@@ -2,7 +2,6 @@ package aiusage
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"maps"
 	"regexp"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/apperr"
 	"github.com/remisb/ppe-next2/internal/audit"
 )
 
@@ -76,13 +76,13 @@ type SettingsInput struct {
 }
 
 var (
-	ErrInvalid = errors.New("invalid AI settings")
+	ErrInvalid = apperr.New(apperr.Invalid, "ai.invalid", "invalid AI settings")
 	// ErrNoKey is colouring without a saved OpenAI key, or removing none.
-	ErrNoKey = errors.New("no OpenAI key is saved")
+	ErrNoKey = apperr.New(apperr.Conflict, "ai.no_key", "no OpenAI key is saved")
 	// ErrNoSecretsKey is saving a key without API_SECRETS_KEY to seal it (503).
-	ErrNoSecretsKey = errors.New("the server has no API_SECRETS_KEY to seal the key with")
+	ErrNoSecretsKey = apperr.New(apperr.Unavailable, "ai.no_secrets_key", "the server has no API_SECRETS_KEY to seal the key with")
 	// ErrKeyUnopenable is a saved key that does not open (another API_SECRETS_KEY).
-	ErrKeyUnopenable = errors.New("the saved OpenAI key does not open")
+	ErrKeyUnopenable = apperr.New(apperr.Conflict, "ai.key_unopenable", "the saved OpenAI key does not open")
 )
 
 func fieldError(field, problem string) error {

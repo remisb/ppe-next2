@@ -1,7 +1,8 @@
-// Package testlock keeps one test run at a time on the shared test database
+// Package testlock keeps one e2e run at a time on the shared test database
 // (ppe2_test). Every session and worktree on a machine shares that database
 // and the e2e ports, and a run empties the database as it starts, so a
-// second run started meanwhile wrecks the first. A run holds a Postgres
+// second run started meanwhile wrecks the first. Go tests do not take it:
+// each package clones a database of its own (internal/db/dbtest). A run holds a Postgres
 // advisory lock on the database for its whole length, from a connection
 // named after it, so the next one waits and can say who it waits for; the
 // lock goes with the connection, so a run that crashes frees it too.

@@ -356,7 +356,7 @@ The routes are `rt.restrictedAny` over `vault.read`/`vault.employment.read` (rea
 `vault.manage`/`vault.employment.manage` (changes), the service checking each document's type and
 links; opening a sealed file is `rt.restricted` to `vault.employment.read` behind `sensitive`. A
 document's Changes are `GET /api/v1/audit-events/vault/{id}`, for whoever may see it. Every route
-goes into `routes_test.go`'s policy table, the errors into `errorStatuses` (`ErrNotFound` 404,
+goes into `routes_test.go`'s policy table, the errors are `apperr` kinds (`ErrNotFound` 404,
 `ErrInvalid` 400, `ErrLocked` 409, `ErrHeld` 409, `ErrTooLarge` 413, `ErrFileType` 415,
 `ErrNotConfigured` 503, `ErrNoStorage` 503).
 

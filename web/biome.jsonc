@@ -1,0 +1,49 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true, "root": ".." },
+  "files": {
+    "includes": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.mjs", "!**/dist", "!**/node_modules", "!**/public", "!spikes"]
+  },
+  "formatter": { "enabled": false },
+  "assist": { "enabled": false },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      // Ratchet: the rules below are warnings only because the tree broke them when Biome was
+      // added (2026-11-27). Fix a file's warnings when you touch it; when a rule has none left,
+      // delete its line so it fails CI again. `pnpm lint:all` lists them. Some are false
+      // positives by name (useHookAtTopLevel on t.order.useSize, useBlocks()).
+      "correctness": {
+        "useExhaustiveDependencies": "warn",
+        "noComponentHookFactories": "warn",
+        "noUnsafeOptionalChaining": "warn",
+        "useHookAtTopLevel": "warn",
+        "useJsxKeyInIterable": "warn",
+        "noVoidTypeReturn": "warn",
+        "noChildrenProp": "warn"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "warn",
+        "useIterableCallbackReturn": "warn",
+        "noControlCharactersInRegex": "warn",
+        "noAssignInExpressions": "warn",
+        "noShadowRestrictedNames": "warn"
+      },
+      "a11y": {
+        "useSemanticElements": "warn",
+        "useAriaPropsSupportedByRole": "warn",
+        "useKeyWithClickEvents": "warn",
+        "noStaticElementInteractions": "warn",
+        "noLabelWithoutControl": "warn",
+        "noNoninteractiveElementToInteractiveRole": "warn",
+        "useValidAnchor": "warn",
+        "useFocusableInteractive": "warn",
+        "useAriaPropsForRole": "warn",
+        "noSvgWithoutTitle": "warn",
+        "useMediaCaption": "warn",
+        "noNoninteractiveTabindex": "warn"
+      }
+    }
+  }
+}

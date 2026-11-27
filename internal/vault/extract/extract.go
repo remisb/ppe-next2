@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -194,10 +195,10 @@ var pageNumber = regexp.MustCompile(`-(\d+)\.png$`)
 func sortPages(imgs []string) {
 	num := func(s string) int {
 		m := pageNumber.FindStringSubmatch(s)
-		n := 0
-		if m != nil {
-			fmt.Sscan(m[1], &n)
+		if m == nil {
+			return 0
 		}
+		n, _ := strconv.Atoi(m[1]) // the pattern matched digits only
 		return n
 	}
 	sort.SliceStable(imgs, func(i, j int) bool { return num(imgs[i]) < num(imgs[j]) })

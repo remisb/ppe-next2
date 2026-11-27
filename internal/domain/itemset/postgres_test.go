@@ -3,21 +3,18 @@ package itemset
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/remisb/ppe-next2/internal/db/dbtest"
 )
 
 // newTestPool empties the database and inserts an actor plus n catalogue items.
 func newTestPool(t *testing.T, n int) (*pgxpool.Pool, uuid.UUID, []uuid.UUID) {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	pool, err := pgxpool.New(ctx, dsn)

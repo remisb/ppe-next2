@@ -45,19 +45,46 @@ into the domain's sentinels (`pgx.ErrNoRows` → `ErrNotFound`, SQLSTATE `23505`
 ## Errors
 
 Each domain exports `ErrNotFound`, `ErrInvalid`, and any domain-specific conflicts
-(supplier adds `ErrNameTaken`). Build validation errors with `fieldError(field, problem)`
+(supplier adds `ErrCodeTaken`). Build validation errors with `fieldError(field, problem)`
 so they wrap `ErrInvalid` and name the offending input. Wrap with `%w` when adding
 context; callers match with `errors.Is`.
 
-`writeError` in the routes file is the *only* place errors become status codes:
+Every sentinel the API answers is declared with **`internal/apperr`**, which gives it a
+**kind** and a stable **code** and keeps the domain's own message:
 
-| Error | Status |
-| --- | --- |
-| `ErrNotFound` | 404 |
-| `ErrNameTaken` (or other conflict) | 409 |
-| `ErrInvalid` | 400 |
-| malformed body / bad UUID | 400 |
-| anything else | 500, detail logged, opaque body |
+```go
+ErrCodeTaken = apperr.New(apperr.Conflict, "supplier.code_taken", "supplier code already in use")
+```
+
+The package variable stays the sentinel (`errors.Is(err, supplier.ErrCodeTaken)`), and the
+error also matches its kind (`errors.Is(err, apperr.Conflict)`), through `%w` wrapping too.
+The code is `<area>.<name>` in snake case (`order.price_missing`, `asset.sim_no_taken`),
+unique and never changed once released: apps may branch on it. `apperr` imports no domain
+and no `net/http`. A sentinel that is not `apperr`'s is a 500 like any unnamed error.
+
+`writeError` (`cmd/api/http.go`) is the *only* place errors become status codes, by kind
+(`kindStatuses`, checked in this order); a new sentinel needs no entry there:
+
+| Kind | Status | For |
+| --- | --- | --- |
+| `Forbidden` | 403 | the caller may not do this (`ErrNotPermitted`) |
+| `Unauthenticated` | 401 | bad credentials or token; every `ErrActorNotFound` |
+| `NotFound` | 404 | `ErrNotFound`, and a missing record the path names |
+| `TooLarge` | 413 | a file or body over its limit |
+| `UnsupportedType` | 415 | a file of a type not taken |
+| `Unavailable` | 503 | a feature the server is not set up for (no key, no storage) |
+| `Conflict` | 409 | a taken name or code, a status or setting that refuses it |
+| `Gone` | 410 | an expired link |
+| `Unprocessable` | 422 | content read but not converted (a DOCX render) |
+| `TooMany` | 429 | a limit on attempts or spending reached |
+| `Invalid` | 400 | `ErrInvalid`, and a record the body names that does not exist |
+| `BadRequest` | 400 | malformed body / bad UUID (`errBadRequest`) |
+| anything else | 500 | detail logged, opaque body with the request's `reference` |
+
+The body is `{"error": "<message>", "code": "<code>"}` plus the extras an error offers
+(`existing_id`, `index`, `conflict`, `problems`). A 401 answers `{"error": "unauthenticated"}`
+alone, whatever failed, and a 500 has no code. `cmd/api/http_errors_test.go` pins every
+sentinel's status and code; add a new one there.
 
 Never let a storage error reach the client.
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"os"
 	"testing"
 	"time"
 
@@ -19,10 +18,7 @@ import (
 // on the real repository, connected as ppe_app, with a folder for the store.
 func pgSetup(t *testing.T) (*Service, *pgxpool.Pool, *clock, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	owner, err := pgxpool.New(ctx, dsn)
@@ -138,7 +134,7 @@ func TestPostgresScansChangeOnlyWhenSaved(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	app := dbtest.AppPool(t, owner, os.Getenv("API_TEST_DB_DSN"))
+	app := dbtest.AppPool(t, owner, dbtest.DSN(t))
 	for _, sql := range []string{
 		`UPDATE personnel.scans SET pages = 2 WHERE id = $1`,
 		`UPDATE personnel.scans SET expires_at = expires_at + interval '1 year' WHERE id = $1`,

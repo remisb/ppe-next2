@@ -1,7 +1,7 @@
 // Command testlock runs a command while holding the shared test database's
 // lock (internal/db/testlock), so only one test run at a time empties and
-// uses it: `make test`, `make test-db` and web/e2e's `pnpm e2e` and
-// `pnpm guide` run through it.
+// uses it: `make e2e-caddy` and web/e2e's `pnpm e2e` and `pnpm guide` run
+// through it (Go tests clone databases of their own, internal/db/dbtest).
 //
 //	go run ./cmd/testlock [-e2e] [-wait 20m] -- <command> [args…]
 //
@@ -79,7 +79,8 @@ func run(args []string) int {
 		fmt.Fprintf(os.Stderr, "testlock: %v\n", err)
 		return 1
 	}
-	defer lock.Release(context.Background())
+	// Ending the process frees the lock anyway; Release only makes it prompt.
+	defer func() { _ = lock.Release(context.Background()) }()
 	return runCommand(command, token)
 }
 

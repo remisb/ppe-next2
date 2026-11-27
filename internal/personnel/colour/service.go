@@ -3,7 +3,6 @@ package colour
 import (
 	"bytes"
 	"context"
-	"errors"
 	"image"
 	"image/jpeg"
 	"sync"
@@ -12,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/remisb/ppe-next2/internal/aiusage"
+	"github.com/remisb/ppe-next2/internal/apperr"
 )
 
 // Make Colour Photo (AI) (FR-12, ADR 0007 decision 7): the grey portrait
@@ -37,11 +37,11 @@ type Runner interface {
 
 var (
 	// ErrOff is colouring while Settings → AI's AI colour photos is off (409).
-	ErrOff = errors.New("AI colour photos are off in Settings")
+	ErrOff = apperr.New(apperr.Conflict, "colour.off", "AI colour photos are off in Settings")
 	// ErrNotPortrait is a portrait that is not a JPEG of at most 2 MB and 2400 px (415).
-	ErrNotPortrait = errors.New("the portrait must be a JPEG of at most 2 MB and 2400 px")
+	ErrNotPortrait = apperr.New(apperr.UnsupportedType, "colour.not_portrait", "the portrait must be a JPEG of at most 2 MB and 2400 px")
 	// ErrTooOften is a user colouring more than RateLimit portraits an hour (429).
-	ErrTooOften = errors.New("too many colour photos in the last hour")
+	ErrTooOften = apperr.New(apperr.TooMany, "colour.too_often", "too many colour photos in the last hour")
 )
 
 const (

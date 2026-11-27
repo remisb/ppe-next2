@@ -2,13 +2,13 @@ package dashboard
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/remisb/ppe-next2/internal/db/dbtest"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
@@ -26,10 +26,7 @@ type pgData struct {
 // service would have stored them, around a fixed "now" of 15 September 2026.
 func seedPG(t *testing.T) pgData {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
@@ -73,6 +70,9 @@ func seedPG(t *testing.T) pgData {
 	exec(`INSERT INTO item_sets (id, name, created_at, updated_at, created_by_user_id, updated_by_user_id)
 		VALUES ($1, 'Starter', now(), now(), $2, $2)`, uuid.New(), admin)
 
+	// These orders number their records 1, 2, …; orders a test adds later take
+	// the sequence's, which starts far above them in a fresh database too.
+	exec(`SELECT setval('order_record_seq', GREATEST(1000000, (SELECT last_value FROM order_record_seq)))`)
 	seq := int64(0)
 	type line struct {
 		item      uuid.UUID

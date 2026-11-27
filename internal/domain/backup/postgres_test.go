@@ -2,22 +2,19 @@ package backup
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/remisb/dbbackup"
 	dbpg "github.com/remisb/dbbackup/postgres"
+	"github.com/remisb/ppe-next2/internal/db/dbtest"
 )
 
 // TestPostgresRead seeds the tables through dbbackup's own Recorder, as the
 // agent writes them, and reads them back.
 func TestPostgresRead(t *testing.T) {
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {

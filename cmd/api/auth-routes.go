@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/remisb/muxstack/middleware"
 
+	"github.com/remisb/ppe-next2/internal/apperr"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 	"github.com/remisb/ppe-next2/internal/domain/user"
@@ -21,11 +22,11 @@ import (
 // errRecentSignInRequired refuses managing users when the password was last
 // entered longer than API_RECENT_SIGN_IN ago (403). The web app recognises the
 // message, asks for the password (POST /api/v1/auth/reauth) and tries again.
-var errRecentSignInRequired = errors.New("recent sign-in required")
+var errRecentSignInRequired = apperr.New(apperr.Forbidden, "auth.recent_sign_in_required", "recent sign-in required")
 
 // errTooManyAttempts refuses a sign-in for an account that has had too many
 // failed ones recently (429).
-var errTooManyAttempts = errors.New("too many failed sign-ins for this account; try again later")
+var errTooManyAttempts = apperr.New(apperr.TooMany, "auth.too_many_attempts", "too many failed sign-ins for this account; try again later")
 
 type authHandler struct {
 	users    *user.Service
@@ -377,7 +378,7 @@ func (h *authHandler) signedIn(w http.ResponseWriter, r *http.Request) (actor uu
 
 // errPermissionWithdrawn: the token grants the route's permission, but the
 // user's roles no longer do (changed since the token was issued).
-var errPermissionWithdrawn = errors.New("forbidden: your roles no longer allow this")
+var errPermissionWithdrawn = apperr.New(apperr.Forbidden, "auth.permission_withdrawn", "forbidden: your roles no longer allow this")
 
 // requireSensitive wraps the handlers of sensitive routes (managing users,
 // roles and their sessions, Show Document, the AI key; Show PIN and PUK needs

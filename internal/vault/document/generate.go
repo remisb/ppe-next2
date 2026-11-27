@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/apperr"
 	"github.com/remisb/ppe-next2/internal/docpdf"
 	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/vault"
@@ -33,7 +34,7 @@ const (
 )
 
 // ErrStale: a value changed after the preview; preview again.
-var ErrStale = errors.New("the values changed since the preview: preview again")
+var ErrStale = apperr.New(apperr.Conflict, "vault_document.stale", "the values changed since the preview: preview again")
 
 // Templates is the port to the published templates.
 type Templates interface {

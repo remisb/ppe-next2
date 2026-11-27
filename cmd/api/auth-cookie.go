@@ -1,13 +1,13 @@
 package main
 
 import (
-	"errors"
 	"net/http"
 	"net/url"
 	"slices"
 	"strings"
 	"time"
 
+	"github.com/remisb/ppe-next2/internal/apperr"
 	"github.com/remisb/ppe-next2/internal/domain/session"
 )
 
@@ -22,7 +22,7 @@ const (
 )
 
 // errCrossOrigin refuses a cookie route called from another site's page (403).
-var errCrossOrigin = errors.New("cross-origin request refused")
+var errCrossOrigin = apperr.New(apperr.Forbidden, "request.cross_origin", "cross-origin request refused")
 
 type cookiePolicy struct {
 	secure bool

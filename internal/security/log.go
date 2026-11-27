@@ -1,18 +1,18 @@
 package security
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/apperr"
 	"github.com/remisb/ppe-next2/internal/audit"
 )
 
 var (
 	// ErrInvalid wraps every refused filter or parameter, naming it.
-	ErrInvalid = errors.New("invalid security request")
+	ErrInvalid = apperr.New(apperr.Invalid, "security.invalid", "invalid security request")
 )
 
 // fieldError is ErrInvalid naming field and its problem.

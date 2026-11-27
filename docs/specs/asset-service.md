@@ -104,7 +104,7 @@ second asset, even after a correction or a soft delete. Taking a number `PREFIX-
 the asset's own prefix raises its counter to it; the suggestion skips any number already
 used. The system never changes a number by itself.
 
-A duplicate answers 409 with the existing asset's id (`{"error", "existing_id"}`, from
+A duplicate answers 409 with the existing asset's id (`{"error", "code", "existing_id"}`, from
 `asset.DuplicateError`), and the form shows *This SIM number is
 already registered. Open the existing SIM card.* (§4) with a link. The same goes for an
 inventory number.

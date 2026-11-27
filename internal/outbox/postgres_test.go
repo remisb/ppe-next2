@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"log/slog"
-	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -21,10 +20,7 @@ import (
 // ppe_app, its clock at *now, and the owner's pool.
 func newQueue(t *testing.T) (*Queue, *pgxpool.Pool, *time.Time) {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx := context.Background()
 	owner, err := pgxpool.New(ctx, dsn)
 	if err != nil {

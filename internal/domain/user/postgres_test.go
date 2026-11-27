@@ -3,7 +3,6 @@ package user
 import (
 	"context"
 	"errors"
-	"os"
 	"slices"
 	"sync"
 	"testing"
@@ -13,17 +12,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/remisb/ppe-next2/internal/audit"
+	"github.com/remisb/ppe-next2/internal/db/dbtest"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
-// newTestPool connects to API_TEST_DB_DSN, skipping when it is unset so
+// newTestPool connects to the package's database, dbtest.DSN, skipping when it is unset so
 // `go test ./...` passes without a database. It empties users first.
 func newTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	pool, err := pgxpool.New(ctx, dsn)

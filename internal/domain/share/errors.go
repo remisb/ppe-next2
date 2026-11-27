@@ -1,20 +1,21 @@
 package share
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/remisb/ppe-next2/internal/apperr"
 )
 
 var (
 	// ErrNotFound: no such link, or not the reader's (Revoke), or no longer
 	// open (Revoke of a revoked or expired link).
-	ErrNotFound = errors.New("shared link not found")
+	ErrNotFound = apperr.New(apperr.NotFound, "share.not_found", "shared link not found")
 	// ErrGone: the link was revoked or has expired (Open).
-	ErrGone = errors.New("shared link is no longer available")
+	ErrGone = apperr.New(apperr.Gone, "share.gone", "shared link is no longer available")
 	// ErrInvalid: the request breaks a rule; fieldError wraps it.
-	ErrInvalid = errors.New("invalid shared link")
+	ErrInvalid = apperr.New(apperr.Invalid, "share.invalid", "invalid shared link")
 	// ErrActorNotFound: the acting user is not a user.
-	ErrActorNotFound = errors.New("acting user not found")
+	ErrActorNotFound = apperr.New(apperr.Unauthenticated, "share.actor_not_found", "acting user not found")
 )
 
 // fieldError is ErrInvalid naming field and its problem.

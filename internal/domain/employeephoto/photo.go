@@ -5,12 +5,13 @@
 package employeephoto
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/remisb/ppe-next2/internal/apperr"
 )
 
 // MaxBytes is the largest photo accepted: a phone photo.
@@ -68,19 +69,19 @@ type Consent struct {
 
 var (
 	// ErrNotFound is no live photo by that id for the employee (404).
-	ErrNotFound = errors.New("employee photo not found")
+	ErrNotFound = apperr.New(apperr.NotFound, "employee_photo.not_found", "employee photo not found")
 	// ErrEmployeeNotFound is no live employee by that id (404).
-	ErrEmployeeNotFound = errors.New("employee not found")
+	ErrEmployeeNotFound = apperr.New(apperr.NotFound, "employee_photo.employee_not_found", "employee not found")
 	// ErrInvalid is a field that breaks a rule (400); fieldError names it.
-	ErrInvalid = errors.New("invalid employee photo")
+	ErrInvalid = apperr.New(apperr.Invalid, "employee_photo.invalid", "invalid employee photo")
 	// ErrActorNotFound is an acting user who no longer exists (401).
-	ErrActorNotFound = errors.New("acting user not found")
+	ErrActorNotFound = apperr.New(apperr.Unauthenticated, "employee_photo.actor_not_found", "acting user not found")
 	// ErrFileTooLarge is a photo over MaxBytes (413).
-	ErrFileTooLarge = errors.New("photo is too large")
+	ErrFileTooLarge = apperr.New(apperr.TooLarge, "employee_photo.file_too_large", "photo is too large")
 	// ErrFileType is a file whose bytes are not a JPEG or PNG (415).
-	ErrFileType = errors.New("photo must be a JPEG or PNG image")
+	ErrFileType = apperr.New(apperr.UnsupportedType, "employee_photo.file_type", "photo must be a JPEG or PNG image")
 	// ErrNoStorage is a service without a files store (503).
-	ErrNoStorage = errors.New("file storage is not set up")
+	ErrNoStorage = apperr.New(apperr.Unavailable, "employee_photo.no_storage", "file storage is not set up")
 )
 
 // fieldError is ErrInvalid, naming the field and what is wrong with it.

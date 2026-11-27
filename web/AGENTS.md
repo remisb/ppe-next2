@@ -7,6 +7,11 @@ UI component are `ui.shadcn.com` based.
 What the parts, patterns and states are called, and how the words on screen are written
 (casing, verbs, ellipsis, messages), is `docs/ui-language.md`; follow it for every new label.
 
+`pnpm lint` (Biome, `web/biome.jsonc`, linter only, no formatter) must pass; it runs in CI.
+Rules the tree broke when it was added are warnings for now (`pnpm lint:all` lists them): fix
+a file's warnings when you change it. A rule here that a lint rule or test can check belongs
+in `biome.jsonc` or a test rather than in this file.
+
 
 ## Layout
 
