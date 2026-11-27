@@ -4,19 +4,22 @@ FROM golang:1.27.3-alpine AS build
 
 WORKDIR /src
 COPY go.mod go.sum ./
-# github.com/remisb/dbbackup and github.com/remisb/pdf-mini are private, so they
-# come straight from GitHub with the github_token build secret (the file
-# .github-token, read-only on both; docs/backups.md). The token exists only
+# github.com/remisb/dbbackup, github.com/remisb/pdf-mini and
+# github.com/remisb/applauncher are private, so they come straight from GitHub
+# with the github_token build secret (the file .github-token, read-only on the
+# three; docs/backups.md). The token exists only
 # during this RUN: it is in no layer and no image.
 RUN apk add --no-cache git
-ENV GOPRIVATE=github.com/remisb/dbbackup,github.com/remisb/pdf-mini
+ENV GOPRIVATE=github.com/remisb/dbbackup,github.com/remisb/pdf-mini,github.com/remisb/applauncher
 RUN --mount=type=secret,id=github_token \
     TOKEN="$(cat /run/secrets/github_token 2>/dev/null)" && \
-    GIT_CONFIG_COUNT=2 \
+    GIT_CONFIG_COUNT=3 \
     GIT_CONFIG_KEY_0="url.https://x-access-token:${TOKEN}@github.com/remisb/dbbackup.insteadOf" \
     GIT_CONFIG_VALUE_0="https://github.com/remisb/dbbackup" \
     GIT_CONFIG_KEY_1="url.https://x-access-token:${TOKEN}@github.com/remisb/pdf-mini.insteadOf" \
     GIT_CONFIG_VALUE_1="https://github.com/remisb/pdf-mini" \
+    GIT_CONFIG_KEY_2="url.https://x-access-token:${TOKEN}@github.com/remisb/applauncher.insteadOf" \
+    GIT_CONFIG_VALUE_2="https://github.com/remisb/applauncher" \
     go mod download
 
 COPY cmd/ cmd/

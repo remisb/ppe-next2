@@ -69,11 +69,12 @@ func (e *Error) Kind() error { return e.kind }
 // Code is the stable name, such as "supplier.not_found".
 func (e *Error) Code() string { return e.code }
 
-// CodeOf is the code of the first kinded error in err's chain, or "".
+// CodeOf is the code of the first coded error in err's chain (an *Error, or
+// a module's error with a Code method, such as App Launcher's), or "".
 func CodeOf(err error) string {
-	var e *Error
+	var e interface{ Code() string }
 	if errors.As(err, &e) {
-		return e.code
+		return e.Code()
 	}
 	return ""
 }

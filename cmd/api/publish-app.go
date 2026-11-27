@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/remisb/ppe-next2/internal/launcher/releases"
+	"github.com/remisb/applauncher/releases"
 )
 
 // publishApp is api -publish-app: the build, a tar of its dist/ on in,

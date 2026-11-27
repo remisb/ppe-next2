@@ -91,7 +91,7 @@ from `@ppe/launcher`, over `useLauncher().list`: the API's list, loaded once per
 page), an **Apps** entry (`Grip` icon, `launcherText().apps`, `launcherHref('/')`) sits in the
 app's own menu: the More panel on a phone and the rail's or sidebar's foot elsewhere, or an
 icon in the header of an app with no menu. A new tile is registered on Administration's
-**Manage apps** (or, for every installation, added to `internal/domain/launcher` `Defaults`).
+**Manage apps** (or, for every installation, added to `cmd/api/launcher-tiles.go` `launcherTiles`).
 Each app's `ApiProvider` sends its own slug as `app` (the `X-PPE-App` header), and an app
 that shows records' sources calls `setAppNames(appNames(list.apps))` (`@ppe/audit`).
 
@@ -528,7 +528,7 @@ images and requests come from the app's own origin only. So:
   in `script-src` (its barcode and text readers are WebAssembly; still no `eval`) and
   `worker-src 'self'` (the text reader's worker, from its own file, `workerBlobURL: false`),
   and `Permissions-Policy: camera=(self)`. The API sends it with the page
-  (`internal/launcher/releases`, its policies from `cmd/api/published-app-routes.go`), Caddy with the files under `/apps/files/<profile>/`
+  (`github.com/remisb/applauncher/releases`, its policies from `cmd/api/published-app-routes.go`), Caddy with the files under `/apps/files/<profile>/`
   (`@devicepolicy`; the staff policy goes on `@staffpolicy`, everything but a published
   app's page), outside the global `header` block (whose `-Server` defers it, so it would
   overwrite a per-path policy). Keep the staff app's line first: the staff and

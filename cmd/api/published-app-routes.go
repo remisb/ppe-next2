@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/remisb/ppe-next2/internal/domain/launcher"
-	"github.com/remisb/ppe-next2/internal/launcher/releases"
+	"github.com/remisb/applauncher/launcher"
+	"github.com/remisb/applauncher/releases"
 )
 
 // The policies a published app's page gets, by its version's profile. They

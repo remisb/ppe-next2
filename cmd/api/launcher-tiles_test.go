@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/remisb/ppe-next2/internal/domain/launcher"
+	"github.com/remisb/applauncher/launcher"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 

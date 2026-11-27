@@ -1178,7 +1178,7 @@ The front door of the company's apps (ADR 0006; rules in
 - **Brief:** App Launcher's list of tiles, kept by the API (`launcher.apps`).
 - **Detail:** phase 1's tiles are its defaults, put back at start-up when missing, never
   over a change. Managed on **Manage apps**.
-- **Code:** `internal/domain/launcher`, `GET /api/v1/launcher`.
+- **Code:** `github.com/remisb/applauncher/launcher`, `GET /api/v1/launcher`.
 
 ### Manage apps
 - **Brief:** Administration's screen of App Launcher's tiles: **Register app**, **Edit**,

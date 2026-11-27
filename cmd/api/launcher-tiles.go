@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/remisb/ppe-next2/internal/domain/launcher"
+	"github.com/remisb/applauncher/launcher"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
 // App Launcher's configuration in this project (ADR 0009): the registry
-// (internal/domain/launcher) knows no host's permissions, languages, groups,
+// (github.com/remisb/applauncher/launcher) knows no host's permissions, languages, groups,
 // pictures or tiles; launcherConfig and launcherTiles are this site's.
 
 // launcherConfig is this site's: the permission catalogue, Testers'

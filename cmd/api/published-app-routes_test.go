@@ -8,7 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/remisb/ppe-next2/internal/domain/launcher"
+	"github.com/remisb/applauncher"
+	"github.com/remisb/applauncher/launcher"
 )
 
 // The API sends a published app's page the policy Caddy sends with its
@@ -138,4 +139,16 @@ func caddyConfig(t *testing.T) []byte {
 		out = append(append(out, raw...), '\n')
 	}
 	return out
+}
+
+// deploy/caddy/launcher.caddy is the module's snippet as released
+// (applauncher.CaddySnippet): copy it again after upgrading the module.
+func TestCaddySnippetIsTheModules(t *testing.T) {
+	ours, err := os.ReadFile("../../deploy/caddy/launcher.caddy")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(ours) != applauncher.CaddySnippet {
+		t.Error("deploy/caddy/launcher.caddy differs from github.com/remisb/applauncher's caddy/launcher.caddy: copy the module's")
+	}
 }
