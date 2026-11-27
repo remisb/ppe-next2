@@ -14,7 +14,7 @@ func TestMigrationsListEveryUpFileButBookkeeping(t *testing.T) {
 	}
 	var want []string
 	for _, p := range onDisk {
-		if n := filepath.Base(p); n != bookkeeping {
+		if n := filepath.Base(p); n != Bookkeeping {
 			want = append(want, n)
 		}
 	}
@@ -25,7 +25,24 @@ func TestMigrationsListEveryUpFileButBookkeeping(t *testing.T) {
 	if len(got) == 0 || !slices.IsSorted(got) {
 		t.Fatalf("Migrations() must be non-empty and sorted: %v", got)
 	}
-	if _, err := os.Stat(filepath.Join("migrations", bookkeeping)); err != nil {
+	if _, err := os.Stat(filepath.Join("migrations", Bookkeeping)); err != nil {
 		t.Fatalf("the bookkeeping migration moved: %v", err)
+	}
+}
+
+func TestUpSQLAndGrantsAreTheFilesOnDisk(t *testing.T) {
+	for _, name := range append([]string{Bookkeeping}, Migrations()...) {
+		got, err := UpSQL(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want, err := os.ReadFile(filepath.Join("migrations", name))
+		if err != nil || got != string(want) {
+			t.Fatalf("UpSQL(%q) differs from the file (%v)", name, err)
+		}
+	}
+	want, err := os.ReadFile("grants.sql")
+	if err != nil || Grants() != string(want) {
+		t.Fatalf("Grants() differs from grants.sql (%v)", err)
 	}
 }

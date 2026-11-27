@@ -1,0 +1,67 @@
+# golangci-lint v2. Run with `make lint` (pinned version, built with this module's Go).
+# Bug-finding linters only; style is gofmt's. Add a linter only when the tree passes it.
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - depguard
+  settings:
+    staticcheck:
+      checks:
+        - all
+        - -ST1000 # package comments
+        - -ST1003 # naming (initialisms)
+        - -ST1005 # error strings: several are shown to people as written
+        - -ST1016 # receiver names
+        - -ST1020
+        - -ST1021
+        - -ST1022
+        - -QF*    # quick-fix suggestions, not bugs
+        - -S1016  # struct conversion: explicit literals keep param and entity types apart
+    errcheck:
+      exclude-functions:
+        - (*mime/multipart.Form).RemoveAll # deferred cleanup of upload temp files
+        - (net/http.ResponseWriter).Write  # the client went away; nothing to do
+    depguard:
+      rules:
+        # CLAUDE.md / the domain-service contract: domains never speak HTTP.
+        domain-no-http:
+          files:
+            - "**/internal/domain/**"
+            - "**/internal/vault/**"
+            - "**/internal/personnel/**"
+            - "!**/*_test.go"
+            # An outbound client to an outside service, not the API's HTTP.
+            - "!**/internal/personnel/colour/openai.go"
+          deny:
+            - pkg: net/http
+              desc: "domains never import net/http; cmd/api adapts them"
+        # ADR 0008: the vault imports no domain (adapters live in cmd/api/wire_vault.go).
+        vault-no-domains:
+          files:
+            - "**/internal/vault/**"
+          deny:
+            - pkg: github.com/remisb/ppe-next2/internal/domain
+              desc: "the vault imports no domain; declare a port and adapt it in cmd/api"
+            - pkg: github.com/remisb/ppe-next2/internal/personnel
+              desc: "the vault imports no domain; declare a port and adapt it in cmd/api"
+  exclusions:
+    presets:
+      - std-error-handling     # unchecked Close/Remove/Fprint* and friends
+      - common-false-positives
+    rules:
+      # Test setup ignores errors it would only t.Fatal on a moment later anyway.
+      - path: _test\.go
+        linters: [errcheck]
+      # Kinds read as apperr.NotFound, apperr.Conflict; the domains' sentinels keep ErrFoo.
+      - path: internal/apperr/apperr\.go
+        text: ST1012
+        linters: [staticcheck]
+
+formatters:
+  enable:
+    - gofmt

@@ -10,7 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # The CI database is disposable; tests and e2e truncate it.
+  # The CI database is disposable: e2e truncates it, and Go tests clone a
+  # database per package on its server (internal/db/dbtest).
   API_TEST_DB_DSN: postgres://ppe2:ppe2@localhost:5432/ppe2_test?sslmode=disable
   # The Makefile runs psql inside docker compose locally; CI talks to the service directly.
   PSQL_CI: psql -d postgres://ppe2:ppe2@localhost:5432/ppe2_test?sslmode=disable -v ON_ERROR_STOP=1 -q
@@ -50,13 +51,18 @@ jobs:
       - name: gofmt
         run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
       - run: go vet ./...
+      # The same version as the Makefile's GOLANGCI_LINT; keep them equal.
+      - name: golangci-lint
+        run: |
+          go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0 run ./...
+          go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0 run --build-tags tools ./internal/vault/...
       - name: Migrations apply, revert and re-apply
         run: |
           make migrate PSQL="$PSQL_CI"
           make migrate-down PSQL="$PSQL_CI"
           make migrate PSQL="$PSQL_CI"
       - name: Tests (unit and Postgres)
-        run: go test -p 1 -count=1 ./...
+        run: go test -count=1 ./...
 
   # The worker's tools tested for real, as the docworker image has them: a job of
   # its own, beside the others, because their packages come from the runners'
@@ -125,6 +131,7 @@ jobs:
           cache-dependency-path: web/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
+      - run: pnpm lint
       - run: pnpm test
       # make new-app's template still starts an app that typechecks, passes its tests and builds.
       - run: pnpm check:new-app

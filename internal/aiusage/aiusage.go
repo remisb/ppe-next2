@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/apperr"
 	"github.com/remisb/ppe-next2/internal/audit"
 )
 
@@ -98,9 +99,9 @@ type Store interface {
 
 var (
 	// ErrBudgetSpent refuses a call once the month's AI budget is spent (429).
-	ErrBudgetSpent = errors.New("this month's AI budget is spent")
+	ErrBudgetSpent = apperr.New(apperr.TooMany, "ai.budget_spent", "this month's AI budget is spent")
 	// ErrNoPrices refuses a call to a model the price table does not price.
-	ErrNoPrices = errors.New("the AI model has no prices in Settings")
+	ErrNoPrices = apperr.New(apperr.Conflict, "ai.no_prices", "the AI model has no prices in Settings")
 )
 
 // Request is a call about to be made: what for, to which model, by whom, at

@@ -14,6 +14,12 @@ export class ApiError extends Error {
   readonly conflict: string | undefined
   /** On a 400 for an identity document, its MRZ's problems, as codes and fields. */
   readonly problems: { code: string; field?: string }[] | undefined
+  /**
+   * The error's stable name, the body's `code` (such as `supplier.code_taken` or
+   * `order.price_missing`), to tell refusals apart without reading the message.
+   * A 401, a 500 and plain-text answers have none.
+   */
+  readonly code: string | undefined
 
   constructor(
     status: number,
@@ -21,7 +27,7 @@ export class ApiError extends Error {
     reference?: string,
     existingId?: string,
     index?: number,
-    details: { conflict?: string; problems?: { code: string; field?: string }[] } = {},
+    details: { conflict?: string; problems?: { code: string; field?: string }[]; code?: string } = {},
   ) {
     super(message)
     this.name = 'ApiError'
@@ -31,6 +37,7 @@ export class ApiError extends Error {
     this.index = index
     this.conflict = details.conflict
     this.problems = details.problems
+    this.code = details.code
   }
 
   /** The reference as people quote it: its first 8 characters, enough to grep the log. */

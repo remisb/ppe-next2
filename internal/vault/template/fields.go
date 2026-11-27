@@ -1,32 +1,33 @@
 package template
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/remisb/ppe-next2/internal/apperr"
 )
 
 var (
 	// ErrNotFound: no live template with that id, or no such version.
-	ErrNotFound = errors.New("document template not found")
+	ErrNotFound = apperr.New(apperr.NotFound, "document_template.not_found", "document template not found")
 	// ErrNoStorage: no files store, so a DOCX cannot be kept.
-	ErrNoStorage = errors.New("document template: file storage is not set up")
+	ErrNoStorage = apperr.New(apperr.Unavailable, "document_template.no_storage", "document template: file storage is not set up")
 	// ErrFileType: an upload that is not a Word document (.docx).
-	ErrFileType = errors.New("document template: the file is not a Word document (.docx)")
+	ErrFileType = apperr.New(apperr.UnsupportedType, "document_template.file_type", "document template: the file is not a Word document (.docx)")
 	// ErrTooLarge: a DOCX over 5 MB, or one that unpacks too large.
-	ErrTooLarge = errors.New("document template: the DOCX is too large")
+	ErrTooLarge = apperr.New(apperr.TooLarge, "document_template.too_large", "document template: the DOCX is too large")
 	// ErrInvalid: the request breaks a rule; fieldError wraps it.
-	ErrInvalid = errors.New("invalid document template")
+	ErrInvalid = apperr.New(apperr.Invalid, "document_template.invalid", "invalid document template")
 	// ErrNameTaken: another live template of the type has the name.
-	ErrNameTaken = errors.New("another template of this type has that name")
+	ErrNameTaken = apperr.New(apperr.Conflict, "document_template.name_taken", "another template of this type has that name")
 	// ErrNotPublished: the template has no published version to generate with, or is retired.
-	ErrNotPublished = errors.New("the template has no published version")
+	ErrNotPublished = apperr.New(apperr.Conflict, "document_template.not_published", "the template has no published version")
 	// ErrActorNotFound: the acting user is not a user.
-	ErrActorNotFound = errors.New("acting user not found")
+	ErrActorNotFound = apperr.New(apperr.Unauthenticated, "document_template.actor_not_found", "acting user not found")
 )
 
 // fieldError is ErrInvalid naming field and its problem.

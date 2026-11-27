@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"slices"
 	"strings"
 	"sync"
@@ -19,15 +18,12 @@ import (
 	"github.com/remisb/ppe-next2/internal/db/dbtest"
 )
 
-// newTestPool connects to API_TEST_DB_DSN (skipping when unset), empties the
+// newTestPool connects to the package's database, dbtest.DSN (skipping when unset), empties the
 // tables, and inserts an actor and two employees. It returns a pool connected
 // as the API's role ppe_app, and the owner's for setup and checks.
 func newTestPool(t *testing.T) (app, owner *pgxpool.Pool, actor uuid.UUID, emps [2]EmployeeView) {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	owner, err := pgxpool.New(ctx, dsn)

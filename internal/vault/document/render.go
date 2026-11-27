@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/apperr"
 	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/files"
 	"github.com/remisb/ppe-next2/internal/sealbox"
@@ -50,7 +51,7 @@ const (
 const renderMaxAge = time.Hour
 
 // ErrRenderFailed: the worker could not convert the DOCX.
-var ErrRenderFailed = errors.New("vault: the document could not be converted to PDF")
+var ErrRenderFailed = apperr.New(apperr.Unprocessable, "vault_document.render_failed", "vault: the document could not be converted to PDF")
 
 // Render is a DOCX on its way to a PDF.
 type Render struct {

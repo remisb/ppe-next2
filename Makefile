@@ -14,7 +14,7 @@ DB ?= $(POSTGRES_DB)
 TEST_DB ?= $(POSTGRES_DB)_test
 PSQL := docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' db psql -v ON_ERROR_STOP=1 -q -U $(POSTGRES_USER) -d $(DB)
 
-.PHONY: help build run vet test test-db e2e e2e-caddy new-app db-up db-down db-test-create migrate migrate-down migrate-status seed-admin seed-demo import-sims \
+.PHONY: help build run vet lint test test-db e2e e2e-caddy new-app db-up db-down db-test-create db-test-clean migrate migrate-down migrate-status seed-admin seed-demo import-sims \
 	prod-build prod-prune-cache prod-up prod-ready prod-down prod-ps prod-logs prod-seed-admin prod-seed-demo prod-import-sims prod-vault-backfill prod-reseal-sim-codes \
 	prod-backup prod-backups prod-restore prod-drill backup-once publish-app prod-publish
 
@@ -30,21 +30,31 @@ run: ## Run the API (needs db-up + migrate)
 vet: ## go vet
 	go vet ./...
 
-# The test database (API_TEST_DB_DSN) and the e2e ports are shared by every
-# session and worktree on this machine, and a run empties the database as it
-# starts: these targets hold its lock for the whole run, waiting while another
-# run holds it (cmd/testlock; web/e2e's pnpm e2e and pnpm guide take it too).
+# Pinned, and built with this module's Go (a golangci-lint built with an older Go
+# refuses a newer go.mod); the first run compiles it, later runs use the build cache.
+GOLANGCI_LINT = go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
+
+lint: ## golangci-lint (.golangci.yml) and Biome for the web workspace (web/biome.jsonc)
+	$(GOLANGCI_LINT) run ./...
+	$(GOLANGCI_LINT) run --build-tags tools ./internal/vault/...
+	cd web && pnpm lint
+
+# The e2e database (ppe2_test) and the e2e ports are shared by every session
+# and worktree on this machine, and a run empties the database as it starts:
+# e2e runs hold its lock for the whole run, waiting while another run holds it
+# (cmd/testlock; web/e2e's pnpm e2e and pnpm guide take it too). Go tests need
+# no lock: each package clones a database of its own (internal/db/dbtest).
 TESTLOCK = go run ./cmd/testlock
 
 test: ## Unit tests; Postgres tests skip (make test-db runs them)
 # API_TEST_DB_DSN is blanked: .env sets it and is exported, so the Postgres tests
-# would otherwise run and empty the test database without test-db's checks.
-	API_TEST_DB_DSN= $(TESTLOCK) -- go test -p 1 ./...
+# would otherwise run without test-db's checks.
+	API_TEST_DB_DSN= go test ./...
 
-test-db: ## All tests including Postgres ones against API_TEST_DB_DSN
+test-db: ## All tests including Postgres ones, each package in its own database cloned on API_TEST_DB_DSN's server
 	@test -n "$(API_TEST_DB_DSN)" || { echo "API_TEST_DB_DSN is not set"; exit 1; }
 	@test "$(API_TEST_DB_DSN)" != "$(API_DB_DSN)" || { echo "API_TEST_DB_DSN must differ from API_DB_DSN (tests truncate)"; exit 1; }
-	$(TESTLOCK) -- go test -p 1 -count=1 ./...
+	go test -count=1 ./...
 
 e2e: ## Playwright end-to-end tests (empties the _test database; needs db-test-create first)
 	cd web/e2e && pnpm e2e
@@ -67,6 +77,14 @@ db-test-create: ## Create and migrate the test database
 		"SELECT 1 FROM pg_database WHERE datname = '$(TEST_DB)'" | grep -q 1 || \
 		docker compose exec -T db createdb -U $(POSTGRES_USER) $(TEST_DB)
 	$(MAKE) migrate DB=$(TEST_DB)
+
+# Go tests' databases (ppe2_t_*, one per package and checkout) and their
+# templates (ppe2_tmpl_*, one per set of migrations) stay between runs; this
+# drops them all, ending any Go test run using one.
+db-test-clean: ## Drop the Go tests' cloned databases and templates
+	@docker compose exec -T db psql -U $(POSTGRES_USER) -d postgres -tAc \
+		"SELECT format('DROP DATABASE IF EXISTS %I WITH (FORCE);', datname) FROM pg_database WHERE datname LIKE 'ppe2\_t\_%' OR datname LIKE 'ppe2\_tmpl\_%'" | \
+		docker compose exec -T db psql -v ON_ERROR_STOP=1 -q -U $(POSTGRES_USER) -d postgres -f -
 
 migrate: ## Apply pending *.up.sql migrations, each in its own transaction
 	@$(PSQL) -f - < $(MIGRATIONS)/0000_schema_migrations.up.sql

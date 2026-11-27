@@ -3,7 +3,6 @@ package aiusage
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
@@ -16,10 +15,7 @@ import (
 
 func pgStore(t *testing.T) (*PostgresStore, *pgxpool.Pool, uuid.UUID) {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx := context.Background()
 	owner, err := pgxpool.New(ctx, dsn)
 	if err != nil {

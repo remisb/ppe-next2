@@ -7,31 +7,32 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/remisb/ppe-next2/internal/apperr"
 	"github.com/remisb/ppe-next2/internal/personnel/mrz"
 )
 
 var (
 	// ErrNotFound is no live document (or copy, or personnel file) by that id (404).
-	ErrNotFound = errors.New("identity document not found")
+	ErrNotFound = apperr.New(apperr.NotFound, "identity_document.not_found", "identity document not found")
 	// ErrInvalid is a field that breaks a rule (400); fieldError names it, and
 	// ProblemsError wraps it for an MRZ the parser refuses.
-	ErrInvalid = errors.New("invalid identity document")
+	ErrInvalid = apperr.New(apperr.Invalid, "identity_document.invalid", "invalid identity document")
 	// ErrActorNotFound is an acting user who no longer exists (401).
-	ErrActorNotFound = errors.New("acting user not found")
+	ErrActorNotFound = apperr.New(apperr.Unauthenticated, "identity_document.actor_not_found", "acting user not found")
 	// ErrEmployeeNotFound is a document for an employee who is not there (or deleted).
-	ErrEmployeeNotFound = errors.New("employee not found")
+	ErrEmployeeNotFound = apperr.New(apperr.NotFound, "identity_document.employee_not_found", "employee not found")
 	// ErrScanNotFound is a Save naming a kept scan that is not the actor's
 	// own, live and unsaved (404): none, another user's, expired or saved.
-	ErrScanNotFound = errors.New("scan not found")
+	ErrScanNotFound = apperr.New(apperr.NotFound, "identity_document.scan_not_found", "scan not found")
 	// ErrEmployeeCodeTaken is a new employee with a code another live employee has.
-	ErrEmployeeCodeTaken = errors.New("employee code already in use")
+	ErrEmployeeCodeTaken = apperr.New(apperr.Conflict, "identity_document.employee_code_taken", "employee code already in use")
 	// ErrNotConfigured is Personnel files without its keys (API_PERSONNEL_KEY,
 	// API_PERSONNEL_INDEX_KEY) or without a files store: nothing is sealed or kept.
-	ErrNotConfigured = errors.New("personnel files are not configured")
+	ErrNotConfigured = apperr.New(apperr.Unavailable, "identity_document.not_configured", "personnel files are not configured")
 	// ErrCopyTooLarge is a copy over 5 MB.
-	ErrCopyTooLarge = errors.New("a document copy is too large")
+	ErrCopyTooLarge = apperr.New(apperr.TooLarge, "identity_document.copy_too_large", "a document copy is too large")
 	// ErrCopyNotJPEG is a copy that is not a JPEG of at most 2400 px.
-	ErrCopyNotJPEG = errors.New("a document copy must be a JPEG of at most 2400 px")
+	ErrCopyNotJPEG = apperr.New(apperr.UnsupportedType, "identity_document.copy_not_jpeg", "a document copy must be a JPEG of at most 2400 px")
 	// ErrUnopenable is a sealed value that does not open: another key, a
 	// changed byte. Never names the value.
 	ErrUnopenable = errors.New("a sealed document does not open")
@@ -88,7 +89,7 @@ func (e *DuplicateError) Error() string {
 }
 
 // ErrDuplicate is what every DuplicateError is (409).
-var ErrDuplicate = errors.New("identity document conflict")
+var ErrDuplicate = apperr.New(apperr.Conflict, "identity_document.duplicate", "identity document conflict")
 
 // Unwrap makes every DuplicateError an ErrDuplicate.
 func (e *DuplicateError) Unwrap() error { return ErrDuplicate }

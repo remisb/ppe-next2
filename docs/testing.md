@@ -6,13 +6,14 @@ three layers (`.github/workflows/ci.yml`).
 | Layer | Where | Needs |
 | --- | --- | --- |
 | Go unit | `internal/**/service_test.go`, `*_test.go` with fakes | nothing |
-| Go + Postgres | `internal/**/postgres_test.go`, `cmd/api/api_postgres_test.go` | `API_TEST_DB_DSN` (skipped otherwise) |
+| Go + Postgres | `internal/**/postgres_test.go`, `cmd/api/api_postgres_test.go` | `API_TEST_DB_DSN` (skipped otherwise): its server and a user who may create databases |
 | Web unit | `web/**/src/**/*.test.ts` (Vitest) | nothing |
 | End-to-end | `web/e2e/tests/order-lifecycle.spec.ts` (Playwright) | a migrated `*_test` database; starts its own API (:18090) and Vite (:5181) |
 
-Go Postgres tests and the e2e suite each empty the test database: never run them at the same
-time, and never point them at dev data (e2e refuses a database whose name does not end in
-`_test`).
+Go Postgres tests run in a database of their package's own, cloned by `dbtest.DSN` from a
+template of every migration, so packages run in parallel and beside e2e. The e2e suite empties
+the `*_test` database itself: one e2e run at a time (it holds `cmd/testlock`'s lock), and never
+point it at dev data (e2e refuses a database whose name does not end in `_test`).
 
 ## Manual §7 — validation and failure behaviour
 

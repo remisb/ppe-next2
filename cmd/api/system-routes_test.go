@@ -24,7 +24,7 @@ type failingBackups struct{ panics bool }
 func (f failingBackups) Read(context.Context, int) (backup.Status, error) {
 	if f.panics {
 		var m map[string]int
-		m["boom"]++ // a nil map: a real panic
+		m["boom"]++ //nolint:staticcheck // SA5000 on purpose: a nil map, a real panic
 	}
 	return backup.Status{}, errors.New("backup store: connection refused")
 }

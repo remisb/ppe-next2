@@ -54,10 +54,10 @@ import (
 	vaulttemplate "github.com/remisb/ppe-next2/internal/vault/template"
 )
 
-// newPostgresAPI wires the real repositories against API_TEST_DB_DSN, skipping
-// when it is unset. Tables are emptied first. The services connect as the
-// API's role ppe_app, as in production, so every flow here exercises its
-// grants; the pool returned is the owner's, for setup.
+// newPostgresAPI wires the real repositories against the package's database,
+// dbtest.DSN, skipping without API_TEST_DB_DSN. Tables are emptied first. The
+// services connect as the API's role ppe_app, as in production, so every flow
+// here exercises its grants; the pool returned is the owner's, for setup.
 // testFiles is a folder for the test's uploads.
 func testFiles(t *testing.T) files.Store {
 	t.Helper()
@@ -70,10 +70,7 @@ func testFiles(t *testing.T) files.Store {
 
 func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
@@ -2181,7 +2178,7 @@ func TestPostgresSystemHTTP(t *testing.T) {
 // trail by mistake either.
 func TestPostgresAPIRoleIsLeastPrivileged(t *testing.T) {
 	_, owner := newPostgresAPI(t)
-	app := dbtest.AppPool(t, owner, os.Getenv("API_TEST_DB_DSN"))
+	app := dbtest.AppPool(t, owner, dbtest.DSN(t))
 	ctx := context.Background()
 	var who string
 	if err := app.QueryRow(ctx, `SELECT current_user`).Scan(&who); err != nil || who != "ppe_app" {

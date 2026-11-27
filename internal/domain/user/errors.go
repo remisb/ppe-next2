@@ -1,32 +1,33 @@
 package user
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
+
+	"github.com/remisb/ppe-next2/internal/apperr"
 )
 
 var (
 	// ErrNotFound: no live user with that id or email.
-	ErrNotFound = errors.New("user not found")
+	ErrNotFound = apperr.New(apperr.NotFound, "user.not_found", "user not found")
 	// ErrInvalid: the request breaks a rule the service checks; fieldError
 	// wraps it with the field and the problem.
-	ErrInvalid = errors.New("invalid user")
+	ErrInvalid = apperr.New(apperr.Invalid, "user.invalid", "invalid user")
 	// ErrEmailTaken: another live user has the email, compared case-insensitively.
-	ErrEmailTaken = errors.New("email already in use")
+	ErrEmailTaken = apperr.New(apperr.Conflict, "user.email_taken", "email already in use")
 	// ErrInvalidCredentials: a sign-in refused, whatever the reason
 	// (SignInRefused says which, for the security log alone).
-	ErrInvalidCredentials = errors.New("invalid email or password")
+	ErrInvalidCredentials = apperr.New(apperr.Unauthenticated, "user.invalid_credentials", "invalid email or password")
 	// ErrActorNotFound means the acting user ID does not name a user. The actor
 	// comes from a verified token, so the transport maps this to 401.
-	ErrActorNotFound = errors.New("acting user not found")
+	ErrActorNotFound = apperr.New(apperr.Unauthenticated, "user.actor_not_found", "acting user not found")
 	// ErrNotPermitted: the actor tried to give or take away, or to manage a
 	// user with, permissions the actor does not hold.
-	ErrNotPermitted = errors.New("you cannot manage permissions you do not have")
+	ErrNotPermitted = apperr.New(apperr.Forbidden, "user.not_permitted", "you cannot manage permissions you do not have")
 	// ErrLastAdministrator: the change would leave no active user holding
 	// the Administrator role, and so no one able to manage users and roles.
-	ErrLastAdministrator = errors.New("at least one active user must keep the Administrator role")
+	ErrLastAdministrator = apperr.New(apperr.Conflict, "user.last_administrator", "at least one active user must keep the Administrator role")
 )
 
 // Why Authenticate refused a sign-in, for the security log; the response

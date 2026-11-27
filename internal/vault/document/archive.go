@@ -44,11 +44,6 @@ type ArchiveJob struct {
 	ID     uuid.UUID `json:"id"`
 }
 
-// archiveFor is the job that archives source's record id.
-func archiveFor(source string, id uuid.UUID) (kind, key string, payload ArchiveJob) {
-	return KindArchive, source + ":" + id.String(), ArchiveJob{Source: source, ID: id}
-}
-
 // Record is a record of another context as the vault archives it: its PDF
 // drawn from the stored snapshot, the snapshot's own document hash, what the
 // document is called, its date and links, and who made the record and when.

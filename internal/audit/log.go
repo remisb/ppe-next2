@@ -3,19 +3,20 @@ package audit
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/remisb/ppe-next2/internal/apperr"
 )
 
 var (
 	// ErrInvalid wraps every refused filter, naming it.
-	ErrInvalid = errors.New("invalid audit filter")
+	ErrInvalid = apperr.New(apperr.Invalid, "audit.invalid", "invalid audit filter")
 	// ErrNotFound is a history asked of a record that does not exist.
-	ErrNotFound = errors.New("not found")
+	ErrNotFound = apperr.New(apperr.NotFound, "audit.not_found", "not found")
 )
 
 // fieldError is ErrInvalid naming field and its problem.

@@ -11,39 +11,16 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/remisb/ppe-next2/internal/aiusage"
+	"github.com/remisb/ppe-next2/internal/apperr"
 	"github.com/remisb/ppe-next2/internal/audit"
-	"github.com/remisb/ppe-next2/internal/domain/asset"
-	"github.com/remisb/ppe-next2/internal/domain/catalogue"
-	"github.com/remisb/ppe-next2/internal/domain/company"
-	"github.com/remisb/ppe-next2/internal/domain/dashboard"
-	"github.com/remisb/ppe-next2/internal/domain/employee"
-	"github.com/remisb/ppe-next2/internal/domain/employeephoto"
-	"github.com/remisb/ppe-next2/internal/domain/itemset"
-	"github.com/remisb/ppe-next2/internal/domain/launcher"
-	"github.com/remisb/ppe-next2/internal/domain/mailtemplate"
-	"github.com/remisb/ppe-next2/internal/domain/order"
-	"github.com/remisb/ppe-next2/internal/domain/role"
-	"github.com/remisb/ppe-next2/internal/domain/session"
-	"github.com/remisb/ppe-next2/internal/domain/settings"
-	"github.com/remisb/ppe-next2/internal/domain/share"
-	"github.com/remisb/ppe-next2/internal/domain/supplier"
-	"github.com/remisb/ppe-next2/internal/domain/user"
-	"github.com/remisb/ppe-next2/internal/personnel/colour"
-	"github.com/remisb/ppe-next2/internal/personnel/document"
 	"github.com/remisb/ppe-next2/internal/personnel/mrz"
-	"github.com/remisb/ppe-next2/internal/personnel/scan"
-	"github.com/remisb/ppe-next2/internal/security"
-	"github.com/remisb/ppe-next2/internal/system"
-	vaultdoc "github.com/remisb/ppe-next2/internal/vault/document"
-	vaulttemplate "github.com/remisb/ppe-next2/internal/vault/template"
 )
 
 const maxBodyBytes = 1 << 20
 
 var (
-	errBadRequest      = errors.New("malformed request")
-	errUnauthenticated = errors.New("unauthenticated")
+	errBadRequest      = apperr.New(apperr.BadRequest, "request.bad", "malformed request")
+	errUnauthenticated = apperr.New(apperr.Unauthenticated, "auth.unauthenticated", "unauthenticated")
 )
 
 // decodeJSON reads one JSON object into dst. Unknown fields are rejected so a
@@ -70,194 +47,42 @@ func writeErrorMessage(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
 }
 
-// errorStatuses maps every domain sentinel to its status. Checked in order with
-// errors.Is; each domain adds its sentinels here.
-var errorStatuses = []struct {
-	err    error
+// kindStatuses maps each error kind (internal/apperr) to its status. Every
+// sentinel a domain answers is declared with apperr.New and one kind, so a new
+// sentinel needs no entry here. Checked in order with errors.Is: a chain holding
+// two kinded errors answers the first kind listed.
+var kindStatuses = []struct {
+	kind   error
 	status int
 }{
-	{errBadRequest, http.StatusBadRequest},
-	{errTooManyAttempts, http.StatusTooManyRequests},
-	{errCrossOrigin, http.StatusForbidden},
-	{errRecentSignInRequired, http.StatusForbidden},
-	{errPermissionWithdrawn, http.StatusForbidden},
-	{user.ErrNotPermitted, http.StatusForbidden},
-	{role.ErrNotPermitted, http.StatusForbidden},
-	{asset.ErrNotPermitted, http.StatusForbidden},
-	{asset.ErrSIMsNotPermitted, http.StatusForbidden},
-	{asset.ErrMayNotChange, http.StatusForbidden},
-	{catalogue.ErrNotPermitted, http.StatusForbidden},
-	{employee.ErrNotPermitted, http.StatusForbidden},
-	{vaultdoc.ErrForbidden, http.StatusForbidden},
-
+	{apperr.Forbidden, http.StatusForbidden},
 	// The actor comes from a verified token, so an unknown actor is an
-	// authentication problem, not a bad request.
-	{errUnauthenticated, http.StatusUnauthorized},
-	{user.ErrInvalidCredentials, http.StatusUnauthorized},
-	{user.ErrActorNotFound, http.StatusUnauthorized},
-	{session.ErrInvalidToken, http.StatusUnauthorized},
-	{employee.ErrActorNotFound, http.StatusUnauthorized},
-	{catalogue.ErrActorNotFound, http.StatusUnauthorized},
-	{supplier.ErrActorNotFound, http.StatusUnauthorized},
-	{vaultdoc.ErrActorNotFound, http.StatusUnauthorized},
-	{vaulttemplate.ErrActorNotFound, http.StatusUnauthorized},
-	{share.ErrActorNotFound, http.StatusUnauthorized},
-	{company.ErrActorNotFound, http.StatusUnauthorized},
-	{itemset.ErrActorNotFound, http.StatusUnauthorized},
-	{order.ErrActorNotFound, http.StatusUnauthorized},
-	{settings.ErrActorNotFound, http.StatusUnauthorized},
-	{mailtemplate.ErrActorNotFound, http.StatusUnauthorized},
-	{launcher.ErrActorNotFound, http.StatusUnauthorized},
-	{role.ErrActorNotFound, http.StatusUnauthorized},
-	{asset.ErrActorNotFound, http.StatusUnauthorized},
-	{employeephoto.ErrActorNotFound, http.StatusUnauthorized},
-	{document.ErrActorNotFound, http.StatusUnauthorized},
-	{scan.ErrActorNotFound, http.StatusUnauthorized},
-
-	{user.ErrNotFound, http.StatusNotFound},
-	{role.ErrNotFound, http.StatusNotFound},
-	{session.ErrNotFound, http.StatusNotFound},
-	{employee.ErrNotFound, http.StatusNotFound},
-	{employee.ErrEmploymentNotFound, http.StatusNotFound},
-	{catalogue.ErrNotFound, http.StatusNotFound},
-	{supplier.ErrNotFound, http.StatusNotFound},
-	{vaultdoc.ErrNotFound, http.StatusNotFound},
-	{vaulttemplate.ErrNotFound, http.StatusNotFound},
-	{vaultdoc.ErrSubjectNotFound, http.StatusNotFound},
-	{share.ErrNotFound, http.StatusNotFound},
-	{company.ErrNotFound, http.StatusNotFound},
-	{catalogue.ErrPictureNotFound, http.StatusNotFound},
-	{itemset.ErrNotFound, http.StatusNotFound},
-	{order.ErrNotFound, http.StatusNotFound},
-	{order.ErrEmployeeNotFound, http.StatusNotFound},
-	{order.ErrItemSetNotFound, http.StatusNotFound},
-	{audit.ErrNotFound, http.StatusNotFound},
-	{mailtemplate.ErrNotFound, http.StatusNotFound},
-	{launcher.ErrNotFound, http.StatusNotFound},
-	{asset.ErrNotFound, http.StatusNotFound},
-	{asset.ErrEmployeeNotFound, http.StatusNotFound},
-	{asset.ErrNoForm, http.StatusNotFound},
-	{asset.ErrAssignmentNotFound, http.StatusNotFound},
-	{asset.ErrFileTooLarge, http.StatusRequestEntityTooLarge},
-	{vaultdoc.ErrTooLarge, http.StatusRequestEntityTooLarge},
-	{asset.ErrFileType, http.StatusUnsupportedMediaType},
-	{vaultdoc.ErrFileType, http.StatusUnsupportedMediaType},
-	{asset.ErrNoStorage, http.StatusServiceUnavailable},
-	{vaultdoc.ErrNoStorage, http.StatusServiceUnavailable},
-	{vaultdoc.ErrNotConfigured, http.StatusServiceUnavailable},
-	{asset.ErrNoSIMCodes, http.StatusNotFound},
-	{asset.ErrSIMCodesUnavailable, http.StatusServiceUnavailable},
-	{employeephoto.ErrNotFound, http.StatusNotFound},
-	{employeephoto.ErrEmployeeNotFound, http.StatusNotFound},
-	{employeephoto.ErrFileTooLarge, http.StatusRequestEntityTooLarge},
-	{employeephoto.ErrFileType, http.StatusUnsupportedMediaType},
-	{employeephoto.ErrNoStorage, http.StatusServiceUnavailable},
-	{document.ErrNotFound, http.StatusNotFound},
-	{document.ErrEmployeeNotFound, http.StatusNotFound},
-	{document.ErrScanNotFound, http.StatusNotFound},
-	{document.ErrCopyTooLarge, http.StatusRequestEntityTooLarge},
-	{document.ErrCopyNotJPEG, http.StatusUnsupportedMediaType},
-	{document.ErrNotConfigured, http.StatusServiceUnavailable},
-	{scan.ErrNotFound, http.StatusNotFound},
-	{scan.ErrTooManyPages, http.StatusRequestEntityTooLarge},
-	{scan.ErrPageTooLarge, http.StatusRequestEntityTooLarge},
-	{scan.ErrPageNotJPEG, http.StatusUnsupportedMediaType},
-	{scan.ErrNotConfigured, http.StatusServiceUnavailable},
-	{aiusage.ErrNoSecretsKey, http.StatusServiceUnavailable},
-	{aiusage.ErrNoKey, http.StatusConflict},
-	{aiusage.ErrKeyUnopenable, http.StatusConflict},
-	{aiusage.ErrBudgetSpent, http.StatusTooManyRequests},
-	{aiusage.ErrNoPrices, http.StatusConflict},
-	{colour.ErrOff, http.StatusConflict},
-	{colour.ErrTooOften, http.StatusTooManyRequests},
-	{colour.ErrNotPortrait, http.StatusUnsupportedMediaType},
-	{errKeyRefused, http.StatusBadRequest},
-
-	{user.ErrEmailTaken, http.StatusConflict},
-	{user.ErrLastAdministrator, http.StatusConflict},
-	{role.ErrNameTaken, http.StatusConflict},
-	{launcher.ErrSlugTaken, http.StatusConflict},
-	{role.ErrInUse, http.StatusConflict},
-	{role.ErrBuiltIn, http.StatusConflict},
-	{employee.ErrCodeTaken, http.StatusConflict},
-	{catalogue.ErrNameTaken, http.StatusConflict},
-	{supplier.ErrCodeTaken, http.StatusConflict},
-	{vaultdoc.ErrLocked, http.StatusConflict},
-	{vaultdoc.ErrHeld, http.StatusConflict},
-	{vaultdoc.ErrStale, http.StatusConflict},
-	{vaulttemplate.ErrNameTaken, http.StatusConflict},
-	{vaulttemplate.ErrNotPublished, http.StatusConflict},
-	{vaulttemplate.ErrNoStorage, http.StatusServiceUnavailable},
-	{vaulttemplate.ErrFileType, http.StatusUnsupportedMediaType},
-	{vaulttemplate.ErrTooLarge, http.StatusRequestEntityTooLarge},
-	{vaultdoc.ErrRenderFailed, http.StatusUnprocessableEntity},
-	{vaultdoc.ErrSealed, http.StatusConflict},
-	{company.ErrCodeTaken, http.StatusConflict},
-	{company.ErrDefaultTaken, http.StatusConflict},
-	{company.ErrIsDefault, http.StatusConflict},
-	{company.ErrInUse, http.StatusConflict},
-	{itemset.ErrNameTaken, http.StatusConflict},
-	{order.ErrPriceMissing, http.StatusConflict},
-	{order.ErrItemUnavailable, http.StatusConflict},
-	{order.ErrNotOrdered, http.StatusConflict},
-	{employee.ErrHoldsAssets, http.StatusConflict},
-	{employee.ErrMergePersonnel, http.StatusConflict},
-	{employee.ErrBothEmployed, http.StatusConflict},
-	{employee.ErrEmployed, http.StatusConflict},
-	{employee.ErrEnded, http.StatusConflict},
-	{employee.ErrOverlap, http.StatusConflict},
-	{asset.ErrInventoryNoTaken, http.StatusConflict},
-	{asset.ErrSIMNoTaken, http.StatusConflict},
-	{asset.ErrAlreadyGiven, http.StatusConflict},
-	{asset.ErrBlocked, http.StatusConflict},
-	{asset.ErrNotGiven, http.StatusConflict},
-	{asset.ErrAlreadyMarked, http.StatusConflict},
-	{asset.ErrFormChanged, http.StatusConflict},
-	{document.ErrDuplicate, http.StatusConflict},
-	{document.ErrEmployeeCodeTaken, http.StatusConflict},
-	{order.ErrLinkExpired, http.StatusGone},
-	{share.ErrGone, http.StatusGone},
-
-	{user.ErrInvalid, http.StatusBadRequest},
-	{role.ErrInvalid, http.StatusBadRequest},
-	{session.ErrInvalid, http.StatusBadRequest},
-	{employee.ErrInvalid, http.StatusBadRequest},
-	{employee.ErrCompanyNotFound, http.StatusBadRequest},
-	{catalogue.ErrInvalid, http.StatusBadRequest},
-	{supplier.ErrInvalid, http.StatusBadRequest},
-	{vaultdoc.ErrInvalid, http.StatusBadRequest},
-	{vaulttemplate.ErrInvalid, http.StatusBadRequest},
-	{share.ErrInvalid, http.StatusBadRequest},
-	{company.ErrInvalid, http.StatusBadRequest},
-	{itemset.ErrInvalid, http.StatusBadRequest},
-	{itemset.ErrUnknownItem, http.StatusBadRequest},
-	{order.ErrInvalid, http.StatusBadRequest},
-	{dashboard.ErrInvalid, http.StatusBadRequest},
-	{settings.ErrInvalid, http.StatusBadRequest},
-	{mailtemplate.ErrInvalid, http.StatusBadRequest},
-	{launcher.ErrInvalid, http.StatusBadRequest},
-	{audit.ErrInvalid, http.StatusBadRequest},
-	{security.ErrInvalid, http.StatusBadRequest},
-	{asset.ErrInvalid, http.StatusBadRequest},
-	{employeephoto.ErrInvalid, http.StatusBadRequest},
-	{document.ErrInvalid, http.StatusBadRequest},
-	{scan.ErrInvalid, http.StatusBadRequest},
-	{aiusage.ErrInvalid, http.StatusBadRequest},
-	{system.ErrNotFound, http.StatusNotFound},
-	{system.ErrInvalid, http.StatusBadRequest},
+	// authentication problem, not a bad request: every ErrActorNotFound is
+	// apperr.Unauthenticated.
+	{apperr.Unauthenticated, http.StatusUnauthorized},
+	{apperr.NotFound, http.StatusNotFound},
+	{apperr.TooLarge, http.StatusRequestEntityTooLarge},
+	{apperr.UnsupportedType, http.StatusUnsupportedMediaType},
+	{apperr.Unavailable, http.StatusServiceUnavailable},
+	{apperr.Conflict, http.StatusConflict},
+	{apperr.Gone, http.StatusGone},
+	{apperr.Unprocessable, http.StatusUnprocessableEntity},
+	{apperr.TooMany, http.StatusTooManyRequests},
+	{apperr.Invalid, http.StatusBadRequest},
+	{apperr.BadRequest, http.StatusBadRequest},
 }
 
 // writeError is the only place errors become status codes. Unauthenticated
 // responses get a fixed message; anything unrecognised is logged and returned
 // as an opaque 500 so storage details never reach the client.
 func writeError(w http.ResponseWriter, r *http.Request, err error) {
-	for _, m := range errorStatuses {
-		if errors.Is(err, m.err) {
-			msg := err.Error()
+	for _, m := range kindStatuses {
+		if errors.Is(err, m.kind) {
+			body := errorBody{Error: err.Error(), Code: apperr.CodeOf(err)}
 			if m.status == http.StatusUnauthorized {
-				msg = "unauthenticated"
+				// Which check failed is not the caller's to know.
+				body = errorBody{Error: "unauthenticated"}
 			}
-			body := errorBody{Error: msg}
 			// A conflict with an existing record names it, so the app can open it.
 			var existing interface{ ExistingID() uuid.UUID }
 			if errors.As(err, &existing) {
@@ -298,7 +123,11 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 // app shows it for a person to quote, and it finds the error on System's list
 // and the request's log lines.
 type errorBody struct {
-	Error     string `json:"error"`
+	Error string `json:"error"`
+	// Code is the error's stable name (apperr's, such as "supplier.code_taken"),
+	// for an app to tell refusals apart without reading the message. A 401 and
+	// a 500 have none.
+	Code      string `json:"code,omitempty"`
 	Reference string `json:"reference,omitempty"`
 	// ExistingID is the record a conflict is with: the asset that already
 	// has the SIM or inventory number.

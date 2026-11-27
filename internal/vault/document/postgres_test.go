@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"log/slog"
-	"os"
 	"slices"
 	"strings"
 	"testing"
@@ -26,10 +25,7 @@ import (
 // API's role, ppe_app, the owner's pool, and an actor.
 func newTestPool(t *testing.T) (app, owner *pgxpool.Pool, actor uuid.UUID) {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	owner, err := pgxpool.New(ctx, dsn)

@@ -1,16 +1,17 @@
 package settings
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/remisb/ppe-next2/internal/apperr"
 )
 
 var (
 	// ErrInvalid: the request breaks a rule the service checks; fieldError
 	// wraps it with the field and the problem.
-	ErrInvalid = errors.New("invalid settings")
+	ErrInvalid = apperr.New(apperr.Invalid, "settings.invalid", "invalid settings")
 	// ErrActorNotFound: the acting user is not a user.
-	ErrActorNotFound = errors.New("acting user not found")
+	ErrActorNotFound = apperr.New(apperr.Unauthenticated, "settings.actor_not_found", "acting user not found")
 )
 
 // fieldError is ErrInvalid naming field and its problem.

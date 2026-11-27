@@ -1,361 +1,27 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file is how to work in this repository. It is loaded into every session, so it holds only
+what most sessions need. More context loads only when it applies:
 
-## Status
+- `.claude/rules/backend.md`: Go and SQL architecture, the database invariants. Loads for `*.go` and `*.sql`.
+- `.claude/rules/frontend.md`: the web workspace. Loads for `web/**`; the binding rules are `web/AGENTS.md`.
+- `.claude/rules/e2e.md`: the Playwright suite. Loads for `web/e2e/**`.
+- `docs/project-map.md`: what is built and where, area by area (packages, migrations, routes,
+  apps, specs). Read the part for the area you change before you change it.
+- `docs/deployment.md`: production, the droplet, `prod-*` targets. Read it before deploying.
 
-Early build-out, following the slice plan derived from the Developer Logic Manual.
-Implemented: the Go API skeleton, the **user service** (JWT login, roles
-`admin`/`manager`/`employee`), and Slice 1 — migrations 0002–0007 (audit, employees,
-catalogue, item sets, orders + snapshot lines, confirmations), `internal/audit`,
-`internal/domain/size` (vocabulary + resolution rules), entity types for all domains, and
-Slice 2 — employee and catalogue services with routes and audit events — and Slice 3:
-item sets, Create Order resolution (`order/resolve.go`, read-only), and the
-`web/apps/workwear` app (Create Order, Employees with a per-employee page of items given,
-Item Catalogue with each item opened beside the list, Item Sets, and Users for admins) — and
-Slice 4: Mark as Ordered (`POST /api/v1/orders`, snapshot copy in one transaction) and
-Copy for WhatsApp — and Slice 5: History, the Orders screen at `/orders` (`GET /api/v1/orders`, query-parameter filters
-in the organisation timezone `API_ORG_TIMEZONE`, server-computed `usage_months`).
-— and Slice 6: confirmation links (hashed tokens, sent in request bodies), paper
-confirmation, in-person confirmation on a staff device (hand-over mode, method `IN_PERSON`,
-an addition to the manual), idempotent ORDERED → GIVEN, and the locked bilingual receipt with document
-hash and A4 print (`order/confirmation.go`, `order/receipt.go`, `web/.../routes/confirm.tsx`).
-The public `/confirm/<token>` page renders before the sign-in gate. An administrator starts on the
-Dashboard, a manager on the Manager Dashboard and the employee role on the Employee
-Dashboard (`internal/domain/dashboard`, read-only figures, `GET /api/v1/dashboard` admins
-only, `/dashboard/manager` managers only, `/dashboard/employee` the employee role only, for
-the signed-in user's own orders; spec `docs/specs/dashboard-service.md`). Slice 7 added the
-Playwright e2e suite (`web/e2e`), CI (`.github/workflows/ci.yml`) and `docs/testing.md`,
-which maps every manual §7 rule and status transition to its tests. Administrators set the
-supplier's WhatsApp group on Settings (`internal/domain/settings`, migration 0018, one row
-at most; spec `docs/specs/settings-service.md`), which Copy for WhatsApp opens for order messages;
-the same row holds the SIM providers Add SIM offers, the default one and the default Non-return Value it fills in (migrations 0031, 0033, 0034), listed on Settings; each provider is a row of `sim_providers` (migration 0039, going with the settings row) with the e-mail its SIM emails go to and the default plan Add SIM and Give SIM fill in (one plan for all until 0039).
-**Suppliers** (`internal/domain/supplier`, migration 0054, spec `docs/specs/supplier-service.md`): the companies
-catalogue items are bought from (internal code unique among live suppliers, name, company and VAT codes, address,
-contact, IBAN, notes), managed on Administration's **Suppliers** (`suppliers.manage`, Administrator), read by everyone;
-an item names one optionally (`catalogue_items.supplier_id`, chosen on Edit Item, checked through `catalogue.Suppliers`),
-and a deleted supplier reads as none (the catalogue's reads join live suppliers only).
-**Companies and employment** (migrations 0057, 0058; specs `docs/specs/company-service.md` and "Employment" in
-`employee-service.md`): the organisation's companies (`internal/domain/company`, Administration's **Companies**,
-`companies.manage`, Administrator; name required, optional internal code, legal details), one the **default company**
-(the first added; **Make Default**), which Add New Employee chooses first and `{{company.name}}` writes (Settings'
-Company name became it in 0057). An employee's **employments** (`employments`, a child of the employee under its row
-lock: one open, none overlapping) make a record an employee, a **candidate** (none; may be employed later, may still
-receive orders and assets) or a **former employee** (`Employee.status`, derived; the list's tabs and `?status=`);
-Employ…, Move to Another Company…, End Employment… on the employee's page (`components/employment-section.tsx`),
-`employee_profiles.manage`. The names stay `employee*` (the sealed audit trail's events included): People is ADR 0001's
-later step. Merge moves the periods and refuses two records employed now. `TRUNCATE users CASCADE` empties `companies`
-too, so a test that adds employees adds a company first (e2e's Companies step does).
-**Document Vault**, phase 1 (ADR 0008, migration 0061, spec `docs/specs/vault-service.md`): `internal/vault` (types fixed in code,
-`vault.Types()`) and `internal/vault/document` (upload, versions, links, search), schema `vault` with `unaccent`, `pg_trgm` and the
-search configuration `vault.ppe`; routes `cmd/api/vault-routes.go`, adapters `cmd/api/wire_vault.go` (the vault imports no domain:
-`internal/vault/imports_test.go`); `vault.read`/`vault.manage` (Administrator, Manager). The staff app's **Document Vault**
-(`/vault`, a document beside the list at `/vault/<id>`, `routes/vault.tsx`, `lib/vault.ts`) and a **Documents** section on the
-employee page and an asset. Versions and files are append-only; Merge Employees moves the links; the upkeep renames them.
-Phase 2 (migration 0062): **sealed** Employment documents (`employment.contract`, `.annex`, `.nda`, `.other`), each sealed with a data key
-of its own under the optional `API_VAULT_KEY` (`vault.document_keys`; without it they answer 503), for the add-on role **Employment
-Documents** alone (`vault.employment.read`/`.manage`, Administrator included only when holding it); a sealed file opens only by
-`POST …/versions/{n}/file` behind `sensitive`, recorded first; the upkeep's `ShredDue` keeps each for its type's months after the
-employee's employment ended, then shreds it through the owner's `vault.shred_document` (a tombstone stays) unless under a **Legal Hold**.
-Phase 3 (migration 0063, spec `docs/specs/document-template-service.md`): **document templates** (`internal/vault/template`: a body of blocks,
-`ppe.blocks.v1`, with `{{field}}` placeholders, `internal/placeholder` shared with Mail Templates, and asked fields), edited in Administration's
-**Document Templates** (`document_templates.manage`, Administrator; a structured editor, no rich-text dependency) and published as versions
-that never change; the staff app's **Generate Document…** on the employee page previews, then generates a numbered (`EC-2026-0001`),
-hashed, locked PDF (`internal/docpdf` on pdf-mini, fonts `internal/pdffonts`), sealed for employment types. `vault.document_number_counters`
-references nothing: Postgres tests and e2e name it in their `TRUNCATE`.
-Phase 4 (migration 0064, spec `docs/specs/outbox-service.md`): the **outbox** (`internal/outbox`: `outbox.jobs` written in the change's
-transaction, claimed `FOR UPDATE SKIP LOCKED` under a lease, retried with back-off; `outbox.workers` heartbeats) and the **worker**,
-`api -worker` in the **docworker** image (the root `Dockerfile`'s `docworker` target: Debian with Poppler and Tesseract eng/lit/rus/osd;
-compose service `docworker`, read-only, `API_WORKER_*`): `vault.extract_text` reads every uploaded version's text (`internal/vault/extract`:
-`pdftotext`, else `pdftoppm` and OCR) for search, a sealed one's as digit-free words only; Read Again on a version, `api -vault-reindex`,
-System's **Worker** card (`GET /api/v1/system/worker`), the Overview's `worker_silent`/`jobs_failed`, and documents in ⌘K. The tools are
-not needed locally: their test is `-tags tools` (CI, or a Debian container); e2e runs no worker. Postgres tests empty `outbox.jobs` too.
-Phase 5 (migration 0065): Company Assets' **signed copies are kept in the vault**, through the `SignedForms` port
-(`asset/signed_copy.go`: `Add`, `Of`, `Open`, `Holding`; adapter `assetSignedForms` in `cmd/api/wire_vault.go`): one `asset.signed_form`
-document per assignment (source kind `asset_signed_form`, a type with a `Source` and no `manage`: added by its source alone), each copy
-a version whose id is the copy's, the asset's own `asset.signed_copy_uploaded` event recorded in the vault's transaction; routes, JSON
-and screens unchanged. The migration's `vault.move_signed_copies()` moved every old row (same ids, keys, hashes; no object copied);
-`asset_signed_copies` is frozen (`ppe_app` only reads it) until a later release drops it; `api -vault-backfill [-commit]`
-(`make prod-vault-backfill`) checks the move and the files. The asset repository no longer knows whether a copy exists: the
-service fills `signed_copy_uploaded` from `Holding` and passes it to the register's `signed_copy=missing` filter.
-Phase 6 (no migration): **assignment forms and Items Given Records are archived** as PDFs (types `asset.assignment_form`,
-`order.record`, each with a `Source`, no `manage`). Give and a confirmation that gives an order call their domain's `Archiver`
-after commit (`asset/archive.go`, `order/archive.go`), which only queues `vault.archive` (adapter `vaultArchiver`); the worker's
-handler draws the record through the `Records` port (`vaultRecords`: `formpdf`, and `internal/recordpdf` for the Items Given
-Record, also `GET /api/v1/orders/{id}/record.pdf`, Download PDF on the record page) and keeps it once (unique source), with
-`vault.document_archived` (no actor). The upkeep sweeps the last 7 days (`sweepArchives`: `FormsSince`, `GivenSince`);
-`api -vault-backfill -commit` queues all records before it. **Verify** (`GET /api/v1/vault/documents/{id}/verify`, the document
-pane's Verify) hashes the domain's snapshot again and checks the file. The domains' snapshots and hashes stay the truth.
-**Retention** (migration 0066, `internal/vault/document/retention.go`): every type's period is Lithuania's minimum (the index for
-internal records, "VAD", from 2024-10-01): contracts, annexes, NDAs 50 years after employment; other employment papers, certificates,
-training 3; invoices, asset papers 10 after their date; forms and signed copies 10 after the asset's return; Items Given Records 1
-after the longest service period (rule `AfterSourceEnds`, `Records.Ended`); each from 1 January after. Every type with a period is
-shredded when due by `vault.shred_document`, sealed or not; Legal Hold for any such type (`vault.manage` for archived ones).
-The decisions and sources: `docs/privacy/document-retention-policy.md`.
-Phase 7 (no migration): **ID documents are listed, metadata only**: the `IdentityDocuments` port (`vault/document/identity.go`,
-adapter `vaultIdentity` over Personnel files' `Documents`) adds `identity` to a search about an employee (filtered by them, or words
-naming a linked employee; at most 10; first page): kind, issuing state, expiry, and with `personnel.documents.read` superseded ones and
-issue dates. The Document Vault shows them above its list; the holder opens `/employees/<id>/page#identity`. By-subject lists none.
-Phase 8 (migration 0067): **DOCX templates**: Administration's ⋯ → Upload DOCX Template… makes a Word document the draft
-(`internal/vault/docx`: placeholders joined across Word's runs, checked, filled; `template.Service.UploadDocx`, stored as
-`vault-templates/<template>/<sha>.docx`; Publish also needs `{{document.hash}}`). Generating from one is asynchronous: the API fills the
-DOCX, keeps it as a sealed **render** (`vault.renders`, needs `API_VAULT_KEY`) and answers 202 `{render_id}`; the worker's
-`vault.render_docx` converts it with LibreOffice (`docx.Converter`, `soffice` in the docworker image); the app polls
-`GET /api/v1/vault/renders/{id}` (`awaitRender`) for the preview's PDF or the document, made once with the PDF as main file and the filled
-DOCX as source. The upkeep purges renders after an hour.
-**Mail templates** (`internal/domain/mailtemplate`, migration 0040, spec
-`docs/specs/mail-template-service.md`): one template per use case fixed in code (`sim.activation`,
-`sim.blocking`), To/Cc/Subject/Message with `{{field}}` placeholders, edited on Administration's
-**Mail Templates** (`mail_templates.manage`, Administrator); `Render` produces a recipient, Cc, subject and
-body and nothing is ever sent from the app (the sheet's **Send Email** is a `mailto:` link to the user's own mail app). Company Assets prepares Prepare Activation Email and Prepare Blocking
-Email through it (`GET /api/v1/assets/{id}/emails/{kind}`, `asset.Mailer` adapted in `cmd/api/checkers.go`
-with Settings' provider e-mail and the default company's name).
-Database backups: the `backup` compose service is the agent from the separate library
-`github.com/remisb/dbbackup` (local checkout `../../remis-libs/dbbackup`), which dumps
-Postgres on a schedule and records each run in `dbbackup_runs`/`dbbackup_agents`
-(migration 0019, dbbackup's schema copied verbatim); administrators read them on the
-Backups tab of Administration's System and a Dashboard card (`internal/domain/backup`, `GET /api/v1/backups`, read-only;
-spec `docs/specs/backup-service.md`, operations and Postgres upgrades `docs/backups.md`).
-Sign-ins are sessions (`internal/domain/session`, migration 0020, spec
-`docs/specs/session-service.md`): an HttpOnly refresh cookie rotated on every refresh, with
-reuse detection, "Keep me signed in" (30 days, 14 idle; else 12h and the browser's life),
-signed-in devices on Account, sessions ended on password change or reset, deactivation and
-deletion, and a recent sign-in (password within `API_RECENT_SIGN_IN`) for managing users.
-Access is by **permission** (ADR 0002): a fixed catalogue in `internal/domain/role`
-(`permission.go`), bundled into **roles** that are rows (migration 0022: `roles`,
-`role_permissions`, `user_roles`; spec `docs/specs/role-service.md`). The built-in
-Administrator, Manager and Employee reproduce the old three roles; administrators add and
-change others on Roles & permissions. The token's `perms` claim carries what the user's
-roles allow. A fourth built-in, **Equipment Assignments** (migration 0032), alone grants
-`equipment.read`: Equipment & Furniture and who holds each item are hidden from everyone
-else, administrators included (`asset.Sight`; the API answers 404 for such an item). Migration 0038 split two
-permissions off wider access, granting them to every role that had it: **See Item Sets**
-(`item_sets.read`; the active sets stay open for Create Order) and **Change Item prices**
-(`item_prices.manage`, needs `catalogue.manage`; `catalogue.Rights` refuses a price change
-without it). **Administration** is a second web app at `/admin/` (`web/apps/admin`:
-Overview, Users, Roles & permissions, Audit log, Security, System, Usage, Settings, Mail Templates, Suppliers, Companies, Manage apps) on the staff app's origin, sharing its sign-in and
-the packages `@ppe/ui`, `@ppe/app-shell`, `@ppe/i18n`, `@ppe/backups` and `@ppe/audit`; the
-administrator's Dashboard stays in the staff app. The **Audit log** (`audit.read`, migration
-0023, spec `docs/specs/audit-service.md`) reads every recorded change with the request,
-sign-in and app it was made in; employees, catalogue items and orders show their own
-**Changes** in the staff app (the glossary's "History" is Orders, so not that word).
-**Security** (`security.read`, migration 0024, spec `docs/specs/security-service.md`, ADR
-0003) reads the security log `auth_events` (`internal/security`): every sign-in, failed
-attempt and ended session with its address, written by the session repository in the
-session's own transaction, kept `API_AUTH_EVENTS_RETENTION` (180 days) and purged hourly by
-the API (`cmd/api/jobs.go`); the per-email sign-in limit counts it. It also lists every
-user's signed-in devices (signing one out takes `users.manage`) and the access review, whose
-Mark as reviewed is an audit event. **System** (`system.read`, migration 0025, spec
-`docs/specs/system-service.md`) shows the API (`internal/monitor`: a 24-hour request window
-in memory, Prometheus `/metrics` on `API_METRICS_ADDR`), the database, the error list
-(`internal/system`, `error_events`: 5xx answers, panics, the apps' browser errors) and Backups as a tab;
-the **Overview**, Administration's first screen, lists what needs attention
-(`internal/overview`) for whatever areas the reader may open. Every request's ID is on its log
-lines (`request_id`) and a 500's `reference`, which the apps show. The **Audit log** is sealed
-daily (`audit_seals`, migration 0026: each UTC day's events hashed and chained), each seal
-anchored by a trusted timestamp (RFC 3161, `internal/tsa`, `audit_seal_stamps`, migration
-0028, `API_AUDIT_TSA_URL`: DigiCert in production, off elsewhere), verified
-hourly and on demand, purged after `API_AUDIT_RETENTION` (10 years) and exported by
-`audit.export` (spec `docs/specs/audit-service.md`). **Usage** (`usage.read`, migration 0027,
-spec `docs/specs/usage-service.md`, `internal/usage`) shows active people per day (from
-`user_activity`, written once a day per user and app by the request middleware), sign-ins,
-changes per week, devices, languages, the confirmation-link funnel
-(`order_confirmations.first_opened_at`, `order.confirmation_link_opened`) and a daily
-data-quality sample; its charts are `@ppe/ui/components/charts`, which the Dashboards use too.
-**Company Assets** (SIM cards, equipment and furniture, ADR 0004; terms in glossary §12):
-the API is built (`internal/domain/asset`, migration 0029, `cmd/api/asset-routes.go`, spec
-`docs/specs/asset-service.md`): assets, assignments with one open per asset, the
-assignment form as a hashed snapshot; SIM cards seen with `sim_cards.read` and changed with
-`sim_cards.manage`, Equipment & Furniture changed with `assets.manage` (migration 0049 split SIM cards'
-off, `asset.Rights`; a route serving both kinds is `rt.restrictedAny`, its kind checked by the handler);
-Employees' names are everyone's; their profile (code, notes, language, photos, identity details) and
-size defaults are `employee_profiles.read`/`.manage` and `employee_sizes.read`/`.manage` (migration 0050,
-`employee.Sight` blanks the API's answers and the employee's Changes, `employee.Rights`: Edit keeps the
-sizes without manage; Create Order still resolves from them). Delete employee refuses an
-employee who holds assets. **Export** (WARE-43, `docs/ux/list-export.html`): Employees' rows, ticked or all shown, with chosen columns as
-Excel or CSV, built in the browser by `@ppe/ui`'s `table-export.ts` (no dependency: its own stored zip), `ExportSheet` and
-`SelectionBar`/`useSelection`; columns offered by permission (`lib/employee-export.ts`). WARE-44 gave every list the same
-(each list's columns in a `lib/*-export.ts`, Administration's in `apps/admin/src/lib/list-export.ts`): a list loaded page by page
-(Orders, SIM Cards, Equipment) exports "All matching the filters" through `ExportSheet`'s `matching` (every page fetched at export);
-Exports are not on the Audit log. Export (every list's: the header button, ⋯ on a phone, select mode, `ExportSheet`) shows only with
-**Export data** (`data.export`, migration 0059: every role but the three add-on ones; no route needs it, so screens check
-`session.can('data.export')`; the Audit log's export stays `audit.export`). **Select mode** (WARE-45, `docs/ux/export-select-mode.html`): no list shows
-checkboxes while browsing; Export (`ExportMode`) and SIM Cards' Change Status… start a mode (`useSelection`'s `mode`, `SelectModeBar`:
-above the list from md, pinned above the tab bar on a phone) in which a row click ticks it (`selectRowProps`); Cancel, Esc or the
-finished action end it. **Share** (WARE-51, migration 0060, spec `docs/specs/share-service.md`, `internal/domain/share`,
-`cmd/api/share-routes.go`): Employees' Export sheet (`ExportSheet`'s `share`, `ShareOptions`) also offers, to everyone and up to
-10 rows, **Copy as Text** (`exportText`, nothing stored) and **Share Link**: the rows as the sharer sees them (`employee.Sight`,
-the chosen columns' fields alone, `employeeShareFields`) kept 1, 7 or 30 days behind a hashed token, opened by anyone at
-`/shared/<token>` (`routes/shared.tsx`, before the sign-in gate; `POST /api/v1/shares/view`, public, rate limited, 410 once
-gone); **Shared Links** (`/shared-links`, Employees' ⋯) lists the user's own open links to Revoke; revoking, or the upkeep once
-expired, erases the rows (`shares.rows = '[]'`); events `share.created`, `share.revoked`. Without Export data Employees' button
-reads Share and the sheet offers no files. **Duplicates and merging** (migration 0052, spec "Duplicates and merging" in
-`employee-service.md`): Add New Employee warns of alike names (`employee.CompareNames`, `POST …/employees/similar`)
-with Use This Employee; Employees offers possible duplicates (Not the Same Person, `employee_distinct_pairs`) and
-**Merge Employees** (`employees.merge`, Administrator and Manager): one transaction moves the removed record's orders,
-asset assignments (`asset_assignments_guard` allows it only under `SET LOCAL ppe.employee_merge = on`) and photos,
-and removes it with `merged_into_id` (its reads answer 404 with `existing_id`); a record with identity documents is kept. Company Assets is two screens, listed under it in the rail, the sidebar and a phone's More panel: SIM Cards
-(`/assets/sim-cards`) and Equipment (`/assets/equipment`). The SIM card register is on screen (`routes/assets.tsx`,
-`lib/assets.ts`: tabs with counts that filter, Add SIM, Change Status; a row opens the card
-beside the register at `/assets/sim-cards/<id>`, as Orders opens an order, and Equipment's at `/assets/equipment/<id>`) and the asset page (`/assets/<id>`, its detail
-`components/asset-detail.tsx` shared with that pane:
-Give SIM against a printed form, Return, Mark as Not Returned, Prepare Blocking
-Email; `components/asset-sheets.tsx`), Given SIM on the employee page, card numbers in ⌘K and a
-Company Assets card on the dashboards, and Equipment & Furniture on the same engine (the Equipment screen,
-`components/equipment-form.tsx`; furniture is given without a form, the API's `needs_form`), and
-the go-live import of the SIM card list (`api -import-sims`, `make prod-import-sims FILE=… COMMIT=yes`:
-a CSV checked in full, then written all or none, held cards given without a form; spec "Import SIM cards"), and
-signed copies (slice 5, migration 0030: Upload Signed Form on an assignment, a PDF, JPEG or PNG up to
-10 MB kept in object storage by `internal/files`, `API_FILES_TARGET`: a private Spaces bucket in
-production, the folder `.files` in development; `components/signed-copies.tsx`). Employees have **photos**
-(`internal/domain/employeephoto`, migration 0037, routes under `/api/v1/employee-photos/{employee}`,
-spec "Photos" in `employee-service.md`): any number each in the files store, one the default
-(`Employee.default_photo_id`, the avatar in the Employees list), each with optional uses from a
-fixed list (`PHOTO_USES`). **Scan SIMs** (ADR 0005, spec "Scan SIM cards" and "PIN and PUK"
-in `asset-service.md`) is a **trial app**, published at `/apps/sim-scan/` (`web/apps/sim-scan`, the third on the
-origin, reporting as `sim-scan`; its rules, readers, words and review list in
-`web/packages/sim-scan`, on `@ppe/scan-kit`'s camera, workers, pictures and reader-files plugin
-(shared with docs-import), to merge into the staff app beside SIM Cards once it passes): newly
-received SIM cards read from their carriers in the browser (zxing-wasm for the SIM No.'s
-barcode, tesseract.js for the PIN and PUK; their files its build's own, under `readers/`), with
-the camera (on a phone full screen, as a camera app: `phone-camera.tsx`) or from photos, checked in a review list (`POST /api/v1/assets/sim-cards/batch/check`)
-and added all or none (`…/batch`, `asset.Service.AddSIMs`, the import's core), and Show PIN and
-PUK (`POST /api/v1/assets/{id}/sim-codes/show`, `sim_cards.read` since migration 0055 retired
-`sim_codes.read`, no recent sign-in, `asset.sim_codes_shown`; WARE-37: the staff app's SIM card, pane
-and page, has the key too, `components/sim-codes.tsx`, greyed out when the asset's `has_sim_codes` is false). PIN and PUK are sealed by the API (AES-256-GCM, `internal/sealbox`,
-`API_SIM_CODES_KEY`, required, never in the database or its backups) in `asset_sim_codes`
-(migration 0041, which also makes `…5` and `…5F` the same SIM No.: `asset.simKey`). Slice 8 (go-live
-tools) waits for the open decisions.
-**Personnel files** (ADR 0007; specs `personnel-service.md`, `ai-usage-service.md`) is being built for the
-docs-import app: migration 0048 (schema `personnel`, the role Personnel Documents and its permissions),
-**Import Documents** (`web/apps/docs-import`, published, device profile, POC; for `personnel.documents.manage`) reads
-a passport's or ID card's MRZ from photos or the live camera in the browser (`@ppe/mrz/reader`: an image worker and
-tesseract.js with the OCR-B model `mrz` committed in `web/packages/mrz/readers`, BSD-3), each photo read twice, a live
-reading taken when two frames agree, and saves it through the routes
-below; its rules are `@ppe/id-docs` (`flow.ts` and the page, portrait and corner rules, moved from its `src/lib` for docs-scan). The staff app's employee page has an **Identity** section
-(`components/identity-section.tsx`): the "valid until" line for everyone, the documents, Show Document, Mark Employment
-Ended and Legal Hold for the personnel permissions. `internal/personnel/mrz` (the Go twin of `@ppe/mrz`) and `internal/personnel/document` (per-person data keys
-under `API_PERSONNEL_KEY`, blind indexes, Check and Save with sealed Document Copies, Show Document (a recent
-sign-in, recorded first), Remove, Mark Employment Ended, Legal Hold, and the upkeep's shredding after
-`API_PERSONNEL_RETENTION_MONTHS`; routes `cmd/api/personnel-routes.go`, optional: without the keys Check, Save and Show Document answer 503).
-**AI usage** (ADR 0007 D4, D8; spec `ai-usage-service.md`; migration 0051): `internal/aiusage` records every AI call
-(`ai_usage`, append-only, its tokens and cost in micro-dollars by Settings' prices, a monthly budget) and keeps Settings → AI
-(`ai_settings`: the switch, model, quality, prices, budget, and the company's OpenAI key sealed with the optional
-`API_SECRETS_KEY`, never returned); routes `cmd/api/ai-routes.go`; Administration's Settings has the card and Usage the
-**AI Usage** section (`ai_usage.read`). The **AI colour photo** (`internal/personnel/colour`: OpenAI's image edit at
-`API_OPENAI_BASE_URL`, then the luminance lock) is Import Documents' Make Colour Photo (AI) on the Portrait step, for
-`personnel.portraits.colorize` (no built-in role), with the person's consent; the photo is saved `ai_generated`, labelled
-AI-coloured in the staff app and never the ID badge's. e2e runs a fake OpenAI on 18095.
-**Scan Document** (plan FR-22), Import Documents' second tab beside **Import to Personnel** (`/scan`,
-`routes/scan`, rules `@ppe/id-docs`' `scan.ts`, `page-box.ts`, `corners.ts`, the pipeline `make-page.ts`): up to 10 photos
-of one person's document, each turned the way up its MRZ reads (`readPhoto(…, { turns: true })`), its 4 corners found
-and flattened by a perspective transform (`@ppe/scan-kit/perspective`: our own edges, Hough lines guided by the MRZ
-band, a homography and warp, in a worker), with Turn Left/Right and Adjust Corners; **Download Archive** keeps the
-pages as a zip and downloads it, **Save to Personnel** hands them to Import. **Kept scans** (ADR 0007 amendment; spec
-"Kept scans" in `personnel-service.md`; migration 0053, `internal/personnel/scan`, `cmd/api/personnel-scan-routes.go`):
-the zip is kept `API_PERSONNEL_SCAN_DAYS` (3) days for its uploader alone, sealed under a per-scan data key in
-`personnel.scans` and `personnel-scans/{id}`, and erased by the upkeep (`PurgeExpired`).
-**Scan Documents** (`docs-scan`, built as a POC published app, device profile, `web/apps/docs-scan`: Scans, Camera, Details,
-Find Employee, Update, Merge, Add New, Saved, Adjust Corners as addresses (`lib/router.tsx`, one router in context), its rules
-`src/lib/flow.ts`, scans in progress in this tab's memory (`lib/sessions.tsx`); the printed names offered and the date of issue
-taken after the MRZ (`@ppe/id-docs` `printed.ts`, `printed-reader.ts`: tesseract.js with `lit`, served from its `readers/`); [plan](docs/apps/docs-scan-plan.md), every decision made 2026-11-21; ADR 0007's
-amendment of that day) reads first, then finds the person (`POST …/personnel/documents/match`, built: `document/match.go`, its `People` port
-adapted in `cmd/api/checkers.go`), updates, merges or adds them; kept scans gain a state (`unread`/`read`/`saved`), `replaces`,
-a page route and a link to the saved document (migration 0056, built; `ppe_app` may update those three columns alone); its mockup is `docs/ux/mockups/docs-scan.html`. It replaces Import
-Documents after its trial, sharing `@ppe/id-docs`, and uses ui-sdk only through `@ppe/ui`.
-**App Launcher** (ADR 0006, accepted with every recommended decision; phases 1 to 3 built; spec
-`docs/specs/app-launcher.md`, guide `docs/ux/app-launcher.html`): a fourth app at `/apps/`
-(`web/apps/launcher`) showing every app and shortcut a user sees as big tiles in groups, with pins
-(the user's, by the API) and recent apps (per device). Its list is the API's registry
-(`internal/domain/launcher`, migration 0042: `launcher_apps`, `launcher_pins`, `launcher_feedback`;
-`GET /api/v1/launcher` filtered per user by permission), whose default tiles the API inserts at
-start-up (`launcher.EnsureDefaults`, also after a test empties the database); administrators manage it
-on Administration's **Manage apps** (`apps.manage`: register, edit, move, retire, feedback, Changes;
-events `app.*`). Apps in testing (POC, In development) are for the built-in **Testers** role
-(`apps.preview`), behind **Show apps in testing**. `@ppe/launcher` loads the list once per user and page
-(`useLauncher`) for every app's **Apps** entry (no extra row), the staff app's ⌘K and the landing:
-someone with several apps (`hasSeveralApps`) who signs in at the staff app's `/` lands on `/apps/`
-(`ApiProvider`'s async `onSignedIn`). Each app sends its slug as `X-PPE-App` (`workwear`, `admin`,
-`launcher`, `sim-scan`, `docs-import`, `docs-scan`); the audit trail, security log, error list and Usage record any registered slug
-(the four source CHECKs widened in 0042). PPE Crew (`../PPE-staff`) is a linked tile opening its own site.
-Phase 3, **published apps** (migration 0043: `launcher_versions`, `launcher_channels`,
-`launcher_channel_choices`; `error_events.app_version`): an app on this site may be published as
-immutable **versions** (`YYYY.MM.DD-<commit>`, a `dist/` with `ppe-app.json` declaring its slug and
-**profile**, `standard` or `device`; older builds' capabilities still read) and **channels**
-(Stable for whoever sees the tile, Beta and Preview for testers; named variants were removed,
-migration 0047; events `app.version_published`,
-`app.channel_moved`; older trails also hold `app.channel_changed`). Scan SIMs is the first, at `/apps/sim-scan/`. Caddy serves a version's files from the `published` volume at
-`/apps/files/<profile>/<slug>/<version>/`; the API (`cmd/api/published-app-routes.go`, public
-`GET /apps/{slug}/{rest...}`) answers only its `index.html`, links rewritten, with `ppe-mount`,
-`ppe-files`, `ppe-version`, `ppe-channel` meta tags (read by `@ppe/routing`'s `basePath`/`filesBase`;
-kept in memory per version, with an `ETag`)
-and the profile's CSP (`TestPublishedPoliciesMatchCaddy`). `api -publish-app` reads a build's tar on
-stdin into `API_APPS_DIR`; a published app is any `web/apps/<slug>` with `public/ppe-app.json`
-(slug, profile, devPort), found from it by the Makefile, the web image, the dev proxy and e2e
-(`@ppe/launcher`'s `published-apps.ts`), and `make new-app` starts one from `web/templates/published-app`
-with its tile in `defaults.go` (POC; CI's `pnpm check:new-app` builds the template); `make prod-up` publishes `PUBLISHED_APPS` from the web image's
-`/srv/build/<app>` to Preview (first time also Stable), `make prod-publish APP= REF= [CHANNEL=]`
-builds a git ref (`deploy/build-app.sh`). Manage apps has **Versions and channels** (Make Stable/Beta/
-Preview, **Stable follows deploys**: migration 0044, a deploy's new version then moves Stable too, a re-run
-never; the Overview's `stable_behind` says when Preview has been ahead for 3 days);
-the launcher's **Versions** keeps each user's choice (by the API), honoured at the app's own address,
-and a published app off Stable shows `@ppe/launcher`'s `ChannelStripe`. A channel's audience decides who
-sees it, not who may open it: the page and files are public, the data the API's (the stripe fails
-closed to Stable). The slug rule is in `@ppe/api-client`'s `app-slugs.ts` too, and profiles map to
-policies in `cmd/api` (tests hold both, and the reserved slugs, to Go and the Caddyfile). Small apps use
-`@ppe/launcher`'s `SignedIn` and `AppFrame` (its bar scrolls away; the screen's header alone sticks).
-Defaults are the code's until an administrator changes one (`EnsureDefaults` syncs untouched
-tiles, audited). Manage apps' **Trials** (migration 0045: `user_version_activity`,
-`launcher_feedback.version`) shows each version's people, errors and feedback.
-`make prod-up` runs `api -prune-apps` (keeps what a channel opens and the newest five per app,
-removes folders no version names, fails naming the `prod-publish` command when a channel's files
-are missing) and publishes nothing from a checkout with local changes or from a web image built from
-another commit (`/srv/build/.commit`); a
-publish writes a recorded version's files again when they are missing (a restore, a lost volume).
+Do not add "what was built" narrative here. A new area gets a paragraph in `docs/project-map.md`,
+its rules go in its spec, and the history is in git and the issues.
 
-Database-enforced invariants worth knowing: `audit_events`, `order_lines`, `auth_events`,
-`audit_seals`, `audit_seal_stamps` and `audit_purges` reject UPDATE/DELETE via triggers (except the purges, which
-go through the owner's `SECURITY DEFINER` functions `purge_audit_events` (rows over 365
-days) and `purge_auth_events` (over 30 days)), and the six refuse TRUNCATE unless the
-transaction sets `SET LOCAL ppe.allow_truncate = on`, as test setup does; `orders` allows only `ORDERED`/`GIVEN` and a CHECK ties the
-`given_*` columns to the status; a catalogue item's accounting price and service period are
-nullable (Mark as Ordered must refuse such items), while order-line snapshots require them.
-`asset_assignments` allow one open assignment per asset (a partial unique index) and a
-trigger refuses deleting one, changing its giving, or setting its Not Returned mark or return
-twice; `asset_numbers` keeps every inventory number ever used (`ppe_app` may not change it);
-App Launcher's tiles are never deleted (Retired instead), and `TRUNCATE users CASCADE` empties
-them through their actor key, so Postgres tests and e2e get the defaults back
-(`launcher.EnsureDefaults`, which the API also runs at start-up);
-`asset_signed_copies` is append-only (trigger and grants): uploading again adds a row. The
-files themselves are in the Spaces bucket, not in the database or its backups
-(`docs/backups.md`, "Uploaded files").
-An item's size group is its **picture's** (migration 0036, `catalogue_pictures`: one fixed
-row per pictogram, ppe_app may only UPDATE it; spec "Pictures" in `catalogue-service.md`):
-`catalogue_items` has no `size_group` column, so SQL over items joins the picture for it, and
-the e2e setup puts the pictures' size groups back. Order lines keep their own.
-An item also has an optional purchase price (migration 0021), snapshotted on order lines
-but shown on no order or record. The app labels the accounting price "Price"; the record's
-`unit_price_cents` key holds it and never changes, because it is part of the document hash.
-Users hold roles only through `user_roles` (no `users.roles` column since 0022); the
-built-in roles have fixed ids (`role.AdminID` …), Administrator is never changed or
-deleted, and at least one active user always holds it (checked after each user write under
-an advisory lock). `TRUNCATE users CASCADE` also empties `roles` (actor keys), so Postgres
-tests and e2e setup call `role.EnsureBuiltins` after it (`-seed-admin` does).
-A manager may
-soft-delete an order (`DELETE /api/v1/orders/{id}`, `orders.delete`, the built-in Manager's, migration 0015), so
-every query over `orders`, the dashboards' included, must filter `deleted_at IS NULL`; the
-dashboard Postgres tests seed deleted orders to catch one that does not. Postgres tests
-must `TRUNCATE ... CASCADE` because of the actor foreign keys, after
-`SET LOCAL ppe.allow_truncate = on` in the same `Exec`, and must name `audit_seals,
-audit_purges` when they empty `audit_events`, and `asset_number_counters` when they need
-inventory numbers to start again (no key reaches it).
-The API connects as the least-privilege role **`ppe_app`** in production (once
-`API_DB_USER`/`API_DB_PASSWORD` are set), in local dev (`.env.example`, with the tests'
-password `ppe-app-test`: roles are shared by `ppe2` and `ppe2_test`) and in the API's
-Postgres tests and e2e; its grants are `internal/db/grants.sql`, applied after the
-migrations on every `make migrate` and `deploy/migrate.sh` run, which also give it its
-password when `API_DB_USER=ppe_app`. A new append-only table goes into its REVOKE line, and a
-migration that needs ppe_app to do anything beyond DML on new tables changes grants.sql.
+## What this is
+
+PPE-next2: workwear, equipment and personnel records for one organisation. It is a Go API
+(`cmd/api`, `internal/`) with a modular-monolith layout (one package per domain under
+`internal/domain/`, plus `internal/vault`, `internal/personnel`, `internal/audit` and others),
+backed by one Postgres. A pnpm workspace in `web/` holds several React apps on one origin: the
+staff app `workwear`, Administration `admin`, App Launcher `launcher`, and published trial apps.
+It runs on one droplet with docker compose and Caddy. The product contract is
+`../PPE-documents/Workwear_Equipment_App_Developer_Logic_Manual.docx`.
 
 ## Commands
 
@@ -372,15 +38,21 @@ make new-app SLUG=size-helper NAME='Size Helper' NAME_LT='…' NAME_RU='…'   #
 make backup-once      # back up the dev DB now (docker-compose.yml backup profile; volume ppe-next2-backups)
 make run              # go run ./cmd/api
 make vet
-make test             # go test -p 1 ./... with API_TEST_DB_DSN blanked, so Postgres tests skip
-make db-test-create   # create + migrate the <POSTGRES_DB>_test database
-make test-db          # all tests incl. Postgres ones (refuses if test DSN == main DSN)
+make lint             # golangci-lint (.golangci.yml) and Biome (web/biome.jsonc)
+make test             # go test ./... with API_TEST_DB_DSN blanked, so Postgres tests skip
+make db-test-create   # create + migrate the <POSTGRES_DB>_test database (e2e's; Go tests clone their own)
+make test-db          # all tests incl. Postgres ones, packages in parallel, each in its own database (refuses if test DSN == main DSN)
+make db-test-clean    # drop the Go tests' databases (ppe2_t_*) and templates (ppe2_tmpl_*)
 make e2e              # Playwright end-to-end; empties the _test DB, starts API :18090 + Vite :5181
 make e2e-caddy        # the same behind deploy/Caddyfile, Caddy in Docker at CI's version (as CI runs it)
 go test ./internal/domain/user -run TestAuthenticate   # single test
 cd web/e2e && pnpm e2e -g "paper confirmation"   # one e2e step (suite is serial; pnpm e2e waits for the test database's lock)
 E2E_APPS= make e2e    # start or publish no published app (E2E_APPS=sim-scan: only it); their steps are skipped
 cd web/e2e && pnpm guide   # Help screenshots on phone, tablet, desktop in EN, LT, RU; docs/guide from src/help (empties the _test DB; stamps its seals with DigiCert, so needs the internet; GUIDE_TSA_URL='' skips that)
+
+cd web && pnpm install
+pnpm typecheck && pnpm lint && pnpm test && pnpm build   # whole web workspace
+pnpm --dir apps/workwear dev                             # http://localhost:5180 (other apps: .claude/rules/frontend.md)
 ```
 
 Ports and names are chosen not to clash with the sibling PPE-next project (5432/5433,
@@ -389,314 +61,88 @@ Ports and names are chosen not to clash with the sibling PPE-next project (5432/
 5188, at `/apps/docs-import/`; Scan Documents 5190, at `/apps/docs-scan/`), e2e 18090/5181 (Administration 5183,
 Scan SIMs 5185, App Launcher 5187, Import Documents 5189, Scan Documents 5191), compose project
 `ppe-next2`, volume `ppe-next2-pgdata`, DB user/databases `ppe2`/`ppe2`/`ppe2_test`. Keep
-new ports out of PPE-next's range.
+new ports out of PPE-next's range. Any psql target can point at another DB: `make migrate DB=ppe2_test`.
+Go test packages run in parallel: each clones a database of its own (`internal/db/dbtest`).
 
-Any psql target can point at another DB: `make migrate DB=ppe2_test`. Tests run with `-p 1`
-because Postgres tests truncate tables.
+On this Mac the corepack pnpm shim may be broken: put `~/.cache/node/corepack/v1/pnpm/12.6.0`
+first on `PATH`.
 
-## Deployment
+## Rules for every change
 
-`docker-compose.prod.yml` (project `ppe-next2-prod`, env file `.env.prod` from
-`.env.prod.example`) runs db → migrate (`deploy/migrate.sh`, must match `make migrate`)
-→ api (scratch image, `Dockerfile`, tzdata embedded, and a writable `/tmp`: uploads over 1 MiB are parsed through temp files, `TestAPIImageHasTmp`) → caddy (`web/Dockerfile` bakes the
-built apps into the Caddy image, the staff app at `WEB_ROOT` served at `/`,
-Administration at `ADMIN_ROOT` served at `/admin/`,
-App Launcher at `LAUNCHER_ROOT` served at `/apps/`, and Scan SIMs' build at `/srv/build/sim-scan`
-for `prod-up` to publish into the `published` volume, which Caddy serves read-only at
-`/apps/files/…`; `deploy/Caddyfile`). Only Caddy publishes ports.
-Both builds keep their cache between deploys: the API's Go build cache is a BuildKit cache
-mount (the modules stay in a layer, so an emptied cache never needs the token), and the web
-image runs `pnpm fetch` from the lockfile alone before copying the sources (`web/.dockerignore`
-keeps tests and e2e out) and only `vite build`, since CI's web job typechecks.
-`make prod-build` ends by trimming Docker's build cache to the newest `PROD_BUILD_CACHE` (6 GB,
-`make prod-prune-cache`): an emptied cache (`docker builder prune` without it) makes the next build
-compile the API and the backup agent afresh, about ten minutes on the droplet's one CPU (WARE-53).
-Caddy retries a connection the API refused for up to 15 s (the `api` snippet), so the API's restart
-in a deploy holds requests rather than answering 502.
-Caddy also sends the security headers, including a Content-Security-Policy that allows
-`index.html`'s inline theme script, the same in every app, by its hash
-(every app's `web/apps/<app>/src/csp.test.ts` keeps them in step; rules in `web/AGENTS.md`);
-published apps get their profile's policy, the `device` one (Scan SIMs) alone `'wasm-unsafe-eval'`,
-`worker-src 'self'` and the camera (ADR 0005; the API sends the page's, Caddy the files').
-`.env.prod` needs `API_SIM_CODES_KEY` (`openssl rand -hex 32`, kept offline too: a restore
-needs the same key; `docs/backups.md`), or the API does not start. Changing it: the new key with
-`API_SIM_CODES_KEY_ID`, the old in `API_SIM_CODES_PREVIOUS_KEYS`, then `make prod-reseal-sim-codes`
-(`docs/backups.md` "Changing the SIM codes key").
-`make prod-build`, `prod-up`, `prod-down`, `prod-ps`, `prod-logs`, `prod-seed-admin`,
-`prod-seed-demo`, `prod-import-sims` (the list on standard input), `prod-backup`, `prod-backups`, `prod-restore`, `prod-drill` (the monthly restore drill into a throwaway database, `deploy/restore-drill.sh`); they run compose under `env -i` so `.env` values cannot leak in.
-The `backup` service (dbbackup agent) is built by `deploy/backup.Dockerfile`
-(`go install` of dbbackup `DBBACKUP_VERSION`) on `POSTGRES_IMAGE`, the image `db` and
-`migrate` also use, so `pg_dump` always matches the server; it backs up to `DBBACKUP_TARGET` (default the `backups`
-volume, on the droplet only; `docs/backups.md` sets up a Spaces bucket, encryption,
-restore and the major-upgrade steps). The db volume is named by `POSTGRES_VOLUME`
-(default `ppe-next2-prod_db-data`, the name compose gave it).
-dbbackup and pdf-mini (the assignment form's PDF, `internal/formpdf`) are **private**
-repositories: the `api` and `backup` image builds read them with the `github_token` build
-secret, the gitignored file `.github-token` (a fine-grained token, read-only on
-remisb/dbbackup and remisb/pdf-mini) beside `.env.prod`; CI uses the `DBBACKUP_READ_TOKEN` secret.
-Locally, Go fetches it over your own git credentials with `GOPRIVATE=github.com/remisb/*`.
-The DigitalOcean droplet serves it at `https://workwear.gavort.nl` (an A record in
-gavort.nl's Hostinger DNS; the domain's own website stays at Hostinger) from
-`/opt/ppe-next2`, a git checkout of this repository with `.env.prod` (chmod 600, never
-committed or printed) beside it. Its Caddy also serves data-sync-ui at `sync.gavort.nl`
-(`deploy/sites/sync.caddy`, basic auth). The old `admin.`/`sync.<ip>.sslip.io` addresses
-were redirected until 2026-11-22 and no longer answer. Deploy a pushed commit on the droplet:
-
-```bash
-cd /opt/ppe-next2 && git pull && make prod-build && make prod-up
-```
-
-`prod-up` runs migrations before the API starts and recreates what changed, Caddy last (WARE-53): it
-first brings up `db`, `migrate`, `api` and `backup` (`PROD_BEHIND_CADDY`) while the old Caddy keeps
-serving and holds requests through the API's restart, recreates `api` or `backup` if compose left it on
-the previous image, waits until the API's `GET /ready` answers (database reachable, every migration the
-build embeds applied; `internal/db.Migrations`), else fails with the API's log, and only then replaces
-`caddy` on its own (about 2 s without connections; certificates live in the `caddy-data` volume), again
-when the Caddyfile it runs with (mounted from the checkout, so a change to it alone changes no image)
-differs from the checkout's. Recreated with the API, Caddy refused connections from its stop until the
-API had started (about 9 s). `db` is recreated only when its config changes. `GET /health` is liveness only. The image's `HEALTHCHECK` runs `/api -healthcheck` (the
-binary probes its own `/ready`, as scratch has no curl); Docker shows but never acts on it.
-`make prod-build` stamps `git describe` into the binary (`API_COMMIT` → `-X main.commit`),
-shown by `/ready` and `make prod-ready`. Every prod service rotates its logs (`x-logging`, 5 × 10 MB).
-The uptime check of `https://<site>/ready` and the droplet's CPU/memory/disk alerts (DigitalOcean Insights, formerly Monitoring; memory and disk need `do-agent` on the droplet)
-are account settings, described in `docs/monitoring.md`.
-The API connects as `ppe_app` once `.env.prod` has `API_DB_USER=ppe_app` and a generated
-`API_DB_PASSWORD` (`docs/monitoring.md` has the steps); until then as the owner, and the
-Overview warns. After `make prod-restore`, start again with `make prod-up`: the restore drops
-grants and `migrate` puts them back.
-
-Accounts need a password, so the first admin is created by a person: set
-`API_SEED_USER_EMAIL`/`_PASSWORD` in `.env.prod`, run `make prod-seed-admin`, then blank
-the password line. `make prod-seed-demo` needs only the email and refuses a non-empty database.
-
-## Source-of-truth docs
-
-- `docs/architecture/` — the context map (bounded contexts and their dependencies) and the
-  ADRs; ADR 0001 (proposed) plans HR and projects/timesheets as contexts in this binary;
-  ADR 0003 keeps security events apart from the audit trail and sets their retention;
-  ADR 0004 adds Company Assets (SIM cards, equipment and furniture as individual assets);
-  ADR 0005 seals SIM cards' PIN and PUK in the app and makes Scan SIMs a trial app with its own CSP;
-  ADR 0007 makes Personnel files (identity documents read by docs-import, sealed per person, kept
-  employment + 3 years) and AI usage (the OpenAI key in Settings, every AI call's tokens and cost);
-  ADR 0008 makes the Document Vault: typed documents with versions and links,
-  sealed Employment documents with retention and shredding, templates made into locked PDFs,
-  Postgres search, and a worker on an outbox (specs `vault-service.md`,
-  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 to 8 are built;
-  ADR 0009 (accepted, not built) makes App Launcher, registry and releases, a reusable Go module and npm
-  packages (`remisb/applauncher`) embedded in each client's application through ports (`Can`, `Auditor`,
-  `TrialStats`), its tables in schema `launcher`, cut loose inside this repository first.
-- `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
-  before touching `internal/domain/` or `cmd/api/`.
-- `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and
-  `session-service.md` cover sign-in).
-- `docs/backups.md` — running the backup agent, restoring, and upgrading Postgres.
-- `docs/monitoring.md` — `/health`, `/ready`, the healthcheck, log rotation, the external
-  uptime check and droplet alerts, and what to look at when one fires.
-- `docs/admin/audit-analytics-monitoring.md` (and `.html`) — the proposal for Administration's
-  audit log, security, usage analytics and monitoring, in phases (all five are built).
-- `docs/ux/company-assets-ux-review.md` (and `.html`) — the assets brief
-  (`../PPE-documents/GAVORT_SIM_ir_inventoriaus_apskaitos_uzduotis.pdf`) against the app,
-  the UI options and the chosen one; the rules are `docs/specs/asset-service.md` (planned).
-- `docs/ux/app-launcher-handbook.md` (and `.html`) — App Launcher as built: using it, Manage apps, how it
-  works, how to design a new app for it, a critique and the proposed improvements.
-- `docs/ubiquitous-language.md` — the project's terms and the labels of the domain's controls
-  (EN/LT/RU), and the words to avoid; add a term there before using it.
-- `docs/ux/ui-ux-guidelines.md` — the UI and UX guidelines: principles, the detail pane's
-  layout and spacing, explaining things (ⓘ, status badges with issues, help tooltips),
-  collapsible sections, moving items, touch and keyboard, loading, the components to use and
-  a checklist for a new pane, section or badge.
-- `docs/ux/screen-header-toolbar.md` (and `.html`) — the sticky screen header, its toolbar
-  order, the screen's ⋯ and Sort ▾ (Option B, built; Option C, the stuck filter bar, on the
-  Audit log alone); the rules are in ui-language.md.
-- `docs/ui-language.md` — the UI and UX language of both apps: the parts of a screen, overlays,
-  controls, list shapes, states and feedback, the named patterns (list and detail, ask first,
-  review first…), casing, verbs and punctuation on screen, and its known deviations.
-- `web/AGENTS.md` — binding rules for frontend apps.
-- `../PPE-documents/Workwear_Equipment_App_Developer_Logic_Manual.docx` — the product
-  contract (ORDERED/GIVEN orders, immutable line snapshots, bilingual receipts).
-
-## Backend (Go) architecture
-
-- **No web framework**: stdlib `net/http` `ServeMux` with method patterns. Middleware is
-  `github.com/remisb/muxstack/middleware`: global `Recoverer`, `Logger`, optional `CORS`,
-  `Timeout` in `routes()`. Routes are registered through `router` (`cmd/api/router.go`):
-  `rt.public`, `rt.authenticated` (any signed-in user) or `rt.restricted(pattern, h,
-  role.CatalogueManage)`, which apply muxstack `Authenticator`/`Authorizer` and record the rule.
-  A route requires one **permission** from the catalogue in `internal/domain/role`
-  (`permission.go`); roles are bundles of permissions (built-ins in `builtin.go`), and the
-  token's `perms` claim carries what the user's roles allow.
-  Handlers get the actor with `actorID(r)` (`cmd/api/auth.go`).
-- **Composition**: `buildRouter()` in `cmd/api/main.go` mounts every
-  `register<Name>Routes(rt, svc)`; `run()` builds the `services` struct.
-- **Request pipeline** (`routes()`): `Recoverer`, `ClientIP`, `requestContext` (the request
-  ID and `audit.Request`), `Logger`, `observe` (metrics, the 24-hour window, 5xx on the error
-  list), CORS, `Timeout`, then `capturePanics`, which must stay inside `Timeout`: muxstack
-  runs the handler on a goroutine of its own (with its own header map, so the handler never
-  shares `w.Header()` with the 503); a panic re-raised to `Recoverer` has lost the handler's
-  stack and the JSON 500 with its `reference`. `observe` counts a request whose client went
-  away as 499, whatever Timeout wrote. `router` wraps
-  every handler in `named`, which tells `observe` the route pattern.
-- **Client address**: the global muxstack `ClientIP` middleware resolves the client,
-  believing `X-Forwarded-For` only from `API_TRUSTED_PROXIES`; rate limits key on
-  `middleware.ClientAddr`. Never key on `RemoteAddr` or the raw header directly.
-- **Config**: every setting must be read in `loadConfig` *and* checked in `validate`;
-  `TestLoadConfigDefaults` loads the real defaults to catch a field that is never read.
-- **Adding a route** requires an entry in the `policy` table in `cmd/api/routes_test.go`
-  (`TestRoutePolicy` fails for unlisted routes and checks 401/403 per permission and per
-  built-in role; `TestSeededRolesKeepPolicy` keeps the built-ins' access), and any new
-  domain sentinel errors in `errorStatuses` (`cmd/api/http.go`).
-- **Audited updates**: repositories take a `Mutation func(cur T) (T, []audit.Event, error)`;
-  they lock the row `FOR UPDATE`, call it, then write the row and its events in one
-  transaction. Services own the mutation and decide which events (one per kind of change,
-  none when nothing changed) to record. `audit.Insert` also records the request's ID, sign-in
-  and app (`source`) from the context `requestContext` (`cmd/api/request.go`) set; domains never
-  read it. A new event name goes into `audit.Events()` and `AUDIT_EVENTS` (`@ppe/api-client`),
-  which tests keep in step with the domains' constants (spec `docs/specs/audit-service.md`).
-- **Layout per domain** `internal/domain/<name>/`: `<name>.go` (entity + `CreateParams`/
-  `UpdateParams` with `Normalize()`/`Validate()`), `errors.go`, `repository.go`
-  (interface), `service.go`, `postgres.go` (pgx). `internal/domain/user` is the reference.
-- **Domain never imports `net/http`**. Interfaces are declared by the consumer; assert with
-  `var _ Repository = (*PostgresRepository)(nil)`.
-- **Service owns policy** (validation, UUIDs, timestamps via `WithClock`);
-  **repository is dumb** except translating storage errors to sentinels
-  (`pgx.ErrNoRows`→`ErrNotFound`, `23505`→conflict, `23503` on actor FK→`ErrActorNotFound`).
-- **Errors**: `fieldError(field, problem)` wraps `ErrInvalid`. `writeError` in
-  `cmd/api/http.go` is the only place mapping errors to status codes (new domains add cases
-  there); unknown errors → logged, opaque 500 with the request's `reference`, and put on
-  System's error list. JSON errors are `{"error": "..."}`.
-- **Actor attribution**: user ID comes from the JWT `sub`, passed explicitly
-  (`Create(ctx, params, actorID)`); `uuid.Nil` is `ErrInvalid`. Request structs use
-  `decodeJSON` (`DisallowUnknownFields`), so `id`, timestamps and actor fields are rejected.
-- **Soft delete everywhere**; reads filter `deleted_at IS NULL`; writes return `ErrNotFound`
-  when `RowsAffected()==0`. Uniqueness via partial index on `lower(col) WHERE deleted_at IS NULL`.
-- **Aggregates / derived state / HTTP shapes**: see the contract (parent-only entry, one
-  repo per aggregate, derive under a row lock; `List` returns `[]` not null; lookups and
-  filters are path segments like `/by-email/{email}`).
+- **Words**: use the terms and control labels in `docs/ubiquitous-language.md` (EN/LT/RU) in
+  code and on screen; add a term there before using it.
+- **Permissions, not roles**: a route requires one permission from `internal/domain/role`'s
+  catalogue; a screen shows controls by `session.can(...)`. Never check a role by name.
+- **API changes** update `web/packages/api-client` (hand-written types and client) in the same change.
+- **New route**: an entry in the `policy` table in `cmd/api/routes_test.go`.
+- **New audit event**: add it to `audit.Events()` and `AUDIT_EVENTS` (`@ppe/api-client`).
+- **Migrations** are append-only once merged; a new table that `ppe_app` must not change goes
+  into `internal/db/grants.sql`'s REVOKE line.
+- **Every query over `orders`** filters `deleted_at IS NULL` (managers soft-delete orders).
+- **Tests**: `docs/testing.md` maps manual rules to tests; update it when adding a rule.
+- **User documentation is not updated as part of a change** (the Help text in `src/help/*.ts`,
+  its screenshots, `docs/guide`, `pnpm guide`): the user asks for those separately. When a change
+  leaves them out of date, say so in one line. Developer docs (`docs/testing.md`, `docs/specs/`,
+  `docs/project-map.md`, `web/AGENTS.md`, `.claude/rules/`, this file) are updated with the change.
+- **Lint** passes: `make lint` (Go) and `pnpm lint` (web). Claude's edits are formatted by the
+  `PostToolUse` hook in `.claude/settings.json`.
 
 ## Testing
-
-`docs/testing.md` is the map from manual rules to tests; update it when adding a rule.
 
 ### Go
 
 - `service_test.go`: table-driven against an in-memory fake repository — no DB; use
   `WithHasher` to skip bcrypt.
-- `postgres_test.go`: real Postgres via `API_TEST_DB_DSN`, `t.Skip` when unset, truncates first.
+- `postgres_test.go`: real Postgres via `dbtest.DSN(t)` (`t.Skip` when `API_TEST_DB_DSN` is
+  unset), truncates first.
 - `cmd/api/routes_test.go` pins the access policy of every route (stub repos; no DB).
   `cmd/api/api_postgres_test.go` runs HTTP flows against the real repositories, connected
   as `ppe_app` (`internal/db/dbtest.AppPool`, which sets its test password through the
   owner); `TestPostgresAPIRoleIsLeastPrivileged` pins what that role may not do.
-- Postgres tests in different packages share one database and truncate it, so always run
-  them with `-p 1` (as `make test`/`make test-db` do).
-- **One run at a time on the test database.** Every session and worktree on the machine shares
-  `ppe2_test` and the e2e ports, and a run empties the database as it starts. `make test`,
-  `make test-db`, `make e2e`, `make e2e-caddy` and web/e2e's `pnpm e2e` and `pnpm guide` hold
-  its lock for the whole run (`cmd/testlock`, `internal/db/testlock`: a Postgres advisory lock
-  from a connection named after the run, freed when it ends or crashes), waiting while another
-  run holds it and saying which. Run single packages' Postgres tests through it too:
-  `go run ./cmd/testlock -- go test -p 1 ./internal/domain/asset`. e2e's `prepare-db.ts`
-  refuses to empty anything while another run holds the lock, so a bare `playwright test`
-  stops instead of wrecking it.
+- **A database per test package.** `dbtest.DSN` clones each package's database
+  (`ppe2_t_<package>_<hash of the directory>`) on `API_TEST_DB_DSN`'s server from a template
+  holding every migration and `grants.sql` (`ppe2_tmpl_<hash of them>`, built once when
+  missing), so Go test packages, sessions and worktrees run in parallel, without `-p 1` or a
+  lock; a rerun drops and clones the package's database again. The user needs CREATEDB
+  (`ppe2` is a superuser). `make db-test-clean` drops them all.
+- **One e2e run at a time.** Every session and worktree on the machine shares `ppe2_test` and
+  the e2e ports, and an e2e run empties the database as it starts. `make e2e`, `make e2e-caddy`
+  and web/e2e's `pnpm e2e` and `pnpm guide` hold its lock for the whole run (`cmd/testlock`,
+  `internal/db/testlock`: a Postgres advisory lock from a connection named after the run, freed
+  when it ends or crashes), waiting while another run holds it and saying which. e2e's
+  `prepare-db.ts` refuses to empty anything while another run holds the lock, so a bare
+  `playwright test` stops instead of wrecking it.
 - The Makefile exports `.env`, so tests that need a var unset must `t.Setenv(key, "")`.
 - CI has no compose service: it runs `make migrate PSQL='psql -d <dsn> ...'`, overriding the
   in-container psql the Makefile uses locally.
 
-### End-to-end (`web/e2e`)
+### End-to-end
 
-One serial spec drives the whole lifecycle through the real UI, API and a `*_test`
-database. Playwright starts its web servers before global setup, so the API's command
-first runs `web/e2e/prepare-db.ts` (empties the database, gives `ppe_app` its test password:
-the API connects as it); global setup then seeds a test admin via `api -seed-admin`. Run
-`pnpm exec playwright install chromium` once. It waits while `make test-db` or another e2e run
-holds the test database's lock (see Go above).
-The web server is Vite by default. With `E2E_WEB_SERVER=caddy` (which CI uses), it serves
-the `pnpm build` output through `deploy/Caddyfile`, the production proxy config. That mode
-needs `caddy` on your `PATH`, or `make e2e-caddy`, which runs it from Docker (`E2E_CADDY=docker`).
-In it, global setup publishes each published app's fresh build as `2026.01.01-e2e` into a temp folder
-(`ppe-next2-e2e-published`), which `prepare-db.ts` empties first, as it empties the database. CI pins the Caddy version and its SHA-512 checksum in
-`ci.yml`, so a Caddy upgrade must update both, and `web/Dockerfile`'s `CADDY_VERSION`, the
-production image's (`TestWebImageRunsCIsCaddy` keeps them equal).
-The Vite web servers are started from `apps/<app>/node_modules/.bin/vite`, not `pnpm exec`:
-pnpm 12 detaches the child, so Playwright could not stop it and the run hung after the last test.
-With Vite, Administration runs on 5183 and the staff app's server proxies `/admin` to it, so
-tests open it at `webURL/admin/` on one origin, as behind Caddy.
+One serial spec (`web/e2e/tests/order-lifecycle.spec.ts`) drives the whole lifecycle through
+the real UI, API and the `_test` database; CI runs it behind `deploy/Caddyfile`. How it starts,
+the Caddy mode and the published apps: `.claude/rules/e2e.md`.
 
-## Frontend (`web/`)
+## Source-of-truth docs
 
-pnpm workspace (pnpm 12, Node ≥ 22), React 19, TypeScript 7, Vite 8, Vitest 5, Tailwind 4,
-shadcn/ui on Base UI, and ui-sdk (`@ui-sdk/react`, a beta, in `@ppe/ui`; its skill in `.claude/skills/ui-sdk`). Follow `web/AGENTS.md`.
-
-```bash
-cd web && pnpm install
-pnpm typecheck && pnpm test && pnpm build           # whole workspace
-pnpm --dir apps/workwear dev                         # http://localhost:5180, proxies /api and /admin
-pnpm --dir apps/admin dev                            # Administration on 5182; open it at http://localhost:5180/admin/
-pnpm --dir apps/sim-scan dev                         # Scan SIMs on 5184; open it at http://localhost:5180/apps/sim-scan/ (VITE_HTTPS=1: https on the LAN, for a phone's camera)
-pnpm --dir apps/launcher dev                         # App Launcher on 5186; open it at http://localhost:5180/apps/
-pnpm --dir apps/docs-import dev                      # Import Documents on 5188; open it at http://localhost:5180/apps/docs-import/ (VITE_HTTPS=1 for a phone's camera)
-pnpm --dir apps/docs-scan dev                        # Scan Documents on 5190; open it at http://localhost:5180/apps/docs-scan/ (VITE_HTTPS=1 for a phone's camera)
-pnpm --dir apps/workwear exec vitest run src/lib/working-order.test.ts   # one test file
-```
-
-The dev server proxies `/api` to `VITE_API_TARGET` (default `http://localhost:8090`; set it
-in `apps/workwear/.env.local` when 8090 is taken) and `/admin` to `VITE_ADMIN_TARGET`
-(default `http://localhost:5182`; the fixed apps' ports are `published-apps.ts`' `fixedApps`, which
-`.claude/launch.json` must match), each published app's `/apps/<slug>` to its manifest's `devPort` (Scan SIMs 5184;
-`VITE_APP_<SLUG>_TARGET`, such as `VITE_APP_SIM_SCAN_TARGET`, overrides it) and the rest of `/apps` to
-`VITE_LAUNCHER_TARGET` (5186). `.claude/launch.json` has `api` (port 8090), `workwear`
-(port 5180), `admin` (port 5182), `sim-scan` (5184), `launcher` (5186), `docs-import` (5188), `docs-scan`
-(5190, and `docs-scan-https` for a phone's camera) and `ui-sdk-csp-spike` (5199) configs.
-
-- `packages/api-client` is a **hand-written** typed client (`types.ts` mirrors the Go JSON);
-  update it with every API change. Its `permissions.ts` lists the permission catalogue in
-  Go's order (a Go test compares them). `packages/routing` holds where each app is mounted.
-- Shared code is in packages, never copied into an app: `@ppe/ui` (shadcn components,
-  `styles.css` tokens and variants, panels, relative dates), `@ppe/app-shell` (sign-in,
-  session with `can(permission)`, Sign in, Confirm your password, theme, density, password
-  rules, the router), `@ppe/i18n` (language machinery; packages keep small dictionaries of
-  their own), `@ppe/backups`, `@ppe/audit` (how recorded changes read: actions, changed
-  fields, the Changes section), `@ppe/scan-kit` (reading with the camera or from photos: the
-  camera, barcode and text readers in workers, pictures, the readers' files' Vite plugin) and
-  `@ppe/mrz` (passports' and ID cards' MRZ, for docs-import; its Go twin is `internal/personnel/mrz`, both tested on `testdata/mrz/vectors.json`), `@ppe/id-docs` (reading a document as rules: photo slots, the draft, Save's input, the page and portrait geometry; docs-import's, shared with docs-scan). `@ppe/ui` also wraps ui-sdk (`drawer.tsx` with the action sheet, `toast.tsx`, `gallery.tsx`, `image-cropper.tsx`); `@ppe/scan-kit`'s `live-camera` is the reading apps' camera hook. A screen shows controls by `session.can(...)`, never by role.
-  A package with components of its own is named with `@source` in each app's `index.css`:
-  Tailwind scans only the app's files and `@ppe/ui`, so its classes would be missing.
-- **The employee's page** (WARE-47, `docs/ux/employee-page.md`): the Employees list opens an employee
-  beside it (`/employees/<id>`); every other link (an order, SIM cards and Equipment, an item's Orders,
-  Replacements due, the Employee Dashboard, ⌘K) opens `/employees/<id>/page` (route `employeePage`), the
-  same `EmployeeDetail` (`routes/employee.tsx`, `place`) in two columns from its container's `@4xl`. A
-  link's `from` label is kept with its history entry (`@ppe/app-shell`'s `fromOf`, `cameFrom`), and the
-  page's way back names and returns there, else Employees; the pane has **Open page**.
-- A record's header is its identity row, then its **action bar** (WARE-46,
-  `docs/ux/record-actions.md`, Option B): `RecordHeader`'s `actions` is a `RecordAction[]`
-  from one model per record kind (`lib/order-actions.ts`, `asset-actions.ts`,
-  `employee-actions.ts`), drawn by `@ppe/ui`'s `ActionBar` (main action with words, icon tools
-  from `actionIcons`, ⋯), collapsing by measured words (`layoutActions`), never wrapping.
-- `apps/workwear/src/lib/working-order.ts` holds all Create Order rules as pure, tested
-  functions (merge by item, manual-size conflicts on employee change, Save as Employee
-  Default, validation, the draft kept per user in localStorage). Screens in `src/routes/` only wire events.
-- Imports inside packages use explicit `.ts` extensions (`allowImportingTsExtensions`).
-- Both apps are in English, Lithuanian and Russian (each user's choice, `users.language`,
-  migration 0016): every visible word comes from `t` in the app's `src/i18n` (typed dictionaries per
-  language and namespace; never read `t` at module level). The confirmation page, hand-over
-  mode and the Items Given Record stay English / Russian. Rules in `web/AGENTS.md`.
-- The user guide is the Help screen (`/help`): typed text in `src/help/{en,lt,ru}.ts`, each
-  part limited to the roles that can do it and, where screens differ, to a phone, tablet or
-  desktop, with that device's screenshots; `pnpm guide` writes `docs/guide` from it.
-- **Do not update the user documentation as part of a change** (the Help text in
-  `src/help/*.ts`, its screenshots in `public/help-img`, `docs/guide`, `pnpm guide`):
-  the user asks for those updates separately. When a change leaves them out of date, say
-  so in one line. Developer docs (`docs/testing.md`, `docs/specs/`, `web/AGENTS.md`, this
-  file) are still updated with the change.
-- **Lists open newest first** (WARE-55, principle 9 of `docs/ux/ui-ux-guidelines.md`): a list of
-  records starts with the latest added (`@ppe/ui/lib/sort`'s `newestFirst` before `sortRows`, `allowNone`;
-  Sort ▾ says Newest first; SIM Cards and Equipment ask the API for `sort=added&dir=desc`); only an
-  arranged order (the Item Catalogue's display order, Roles, Manage apps) opens in that instead.
-- Mobile first; the responsive rules (one Main nav reshaped per breakpoint, `<Table stack>`
-  with the screen-only `stacked:` container-query variant, 44px touch targets) are in
-  `web/AGENTS.md`. The e2e step "phone and tablet: no screen scrolls sideways" fails if
-  any screen or table scrolls sideways at 375, 768, 920, 1100, 1280, 1440 or 1920px.
-  The screen has no width cap (lists grow with the window); see "Screen width" there.
-  Added to a phone's home screen the apps open standalone, as one app (`manifest.json` per language, scope
-  `/`, the icon's shortcuts), Account has **Install app**, `public/sw.js` shows an offline screen and caches
-  nothing else, and `@ppe/app-shell`'s `AppUpdateNotice` offers Reload when a newer build is deployed
-  ("Home-screen app" in `web/AGENTS.md`).
+- `docs/architecture/` — the context map and the ADRs (0001 HR and timesheets, proposed; 0002
+  permissions; 0003 security log; 0004 Company Assets; 0005 SIM codes and Scan SIMs; 0006 App
+  Launcher; 0007 Personnel files and AI usage; 0008 Document Vault; 0009 App Launcher as a reusable
+  module, `remisb/applauncher`, accepted, not built).
+- `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
+  before touching `internal/domain/` or `cmd/api/`.
+- `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and
+  `session-service.md` cover sign-in).
+- `docs/project-map.md` — what is built and where.
+- `docs/testing.md` — manual rules and status transitions mapped to their tests.
+- `docs/backups.md` — running the backup agent, restoring, and upgrading Postgres.
+- `docs/monitoring.md` — `/health`, `/ready`, the healthcheck, log rotation, the external
+  uptime check and droplet alerts, and what to look at when one fires.
+- `docs/deployment.md` — the production stack and how to deploy.
+- `docs/privacy/` — the DPIA note and the document retention policy.
+- `docs/ubiquitous-language.md` — the project's terms and the labels of the domain's controls
+  (EN/LT/RU), and the words to avoid.
+- `docs/ux/ui-ux-guidelines.md`, `docs/ui-language.md`, `docs/ux/screen-header-toolbar.md` —
+  UI and UX guidelines, the UI language of the apps, the screen header and toolbar.
+- `docs/ux/app-launcher-handbook.md`, `docs/ux/company-assets-ux-review.md` — App Launcher as
+  built; the Company Assets brief against the app.
+- `web/AGENTS.md` — binding rules for frontend apps.

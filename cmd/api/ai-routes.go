@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/remisb/ppe-next2/internal/aiusage"
+	"github.com/remisb/ppe-next2/internal/apperr"
 	"github.com/remisb/ppe-next2/internal/domain/role"
 	"github.com/remisb/ppe-next2/internal/personnel/colour"
 )
@@ -99,7 +100,7 @@ func (h *aiHandler) putSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 // errKeyRefused is a key OpenAI does not take: it is not saved (400).
-var errKeyRefused = errors.New("OpenAI refused this key; it was not saved")
+var errKeyRefused = apperr.New(apperr.Invalid, "ai.key_refused", "OpenAI refused this key; it was not saved")
 
 func (h *aiHandler) setKey(w http.ResponseWriter, r *http.Request) {
 	actor, err := actorID(r)

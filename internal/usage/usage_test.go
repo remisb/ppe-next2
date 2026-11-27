@@ -2,7 +2,6 @@ package usage
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
@@ -46,10 +45,7 @@ func TestSeenWritesOncePerDay(t *testing.T) {
 }
 
 func TestPostgresReport(t *testing.T) {
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx := context.Background()
 	owner, err := pgxpool.New(ctx, dsn)
 	if err != nil {

@@ -2,7 +2,6 @@ package security
 
 import (
 	"context"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -11,16 +10,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/remisb/ppe-next2/internal/audit"
+	"github.com/remisb/ppe-next2/internal/db/dbtest"
 )
 
-// newTestPool connects to API_TEST_DB_DSN, skipping when it is unset, and
+// newTestPool connects to the package's database, dbtest.DSN, skipping when it is unset, and
 // empties users, and with them auth_events, sessions and roles.
 func newTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	pool, err := pgxpool.New(ctx, dsn)

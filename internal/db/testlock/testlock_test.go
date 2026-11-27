@@ -2,12 +2,12 @@ package testlock
 
 import (
 	"context"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/remisb/ppe-next2/internal/db/dbtest"
 )
 
 func TestAppName(t *testing.T) {
@@ -23,10 +23,7 @@ func TestAppName(t *testing.T) {
 // One run at a time: a second waits, saying who holds the lock, and takes it
 // once the first lets go, by releasing it or by its connection going.
 func TestPostgresOneRunAtATime(t *testing.T) {
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	key = Key + 1 // the run these tests are part of may hold Key
 	t.Cleanup(func() { key = Key })
 	ctx := context.Background()

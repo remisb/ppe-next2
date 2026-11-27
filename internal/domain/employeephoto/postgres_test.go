@@ -7,13 +7,13 @@ import (
 	"image"
 	"image/color"
 	"image/png"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/remisb/ppe-next2/internal/db/dbtest"
 	"github.com/remisb/ppe-next2/internal/files"
 )
 
@@ -32,10 +32,7 @@ func pngBytes(t *testing.T, shade uint8) []byte {
 
 func setup(t *testing.T) (*Service, *pgxpool.Pool, uuid.UUID, uuid.UUID) {
 	t.Helper()
-	dsn := os.Getenv("API_TEST_DB_DSN")
-	if dsn == "" {
-		t.Skip("API_TEST_DB_DSN not set")
-	}
+	dsn := dbtest.DSN(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	pool, err := pgxpool.New(ctx, dsn)

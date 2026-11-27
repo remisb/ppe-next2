@@ -201,8 +201,10 @@ make db-test-create
 make test-db
 ```
 
-The Postgres tests truncate tables. `make test-db` refuses to run if `API_TEST_DB_DSN`
-equals `API_DB_DSN`. Tests always run with `-p 1`.
+The Postgres tests truncate tables, each package in a database of its own cloned on
+`API_TEST_DB_DSN`'s server (`internal/db/dbtest`), so packages run in parallel; `make
+db-test-clean` drops those databases. `make test-db` refuses to run if `API_TEST_DB_DSN`
+equals `API_DB_DSN`.
 
 ### Web
 

@@ -318,7 +318,7 @@ user who made it, `API_PERSONNEL_SCAN_DAYS` (3) days, so the work need not be do
 | `GET /api/v1/personnel/scans/{id}/pages/{n}` | `personnel.documents.manage` | a page's JPEG; the caller's own; `no-store` |
 | `DELETE /api/v1/personnel/scans/{id}` | `personnel.documents.manage` | the caller's own |
 
-Every route goes into `routes_test.go`'s policy table; the errors into `errorStatuses`
+Every route goes into `routes_test.go`'s policy table; the errors are `apperr` kinds
 (`document.ErrDuplicate` 409 for either `DuplicateError`, `ErrEmployeeCodeTaken` 409, `ErrScanNotFound` 404,
 `ErrCopyTooLarge` 413, `ErrCopyNotJPEG` 415, `ErrNotConfigured` 503; `colour.ErrOff` 409,
 `ErrTooOften` 429, `ErrNotPortrait` 415; `scan.ErrNotFound` 404, `ErrTooManyPages` and
