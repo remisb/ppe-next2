@@ -481,7 +481,10 @@ the password line. `make prod-seed-demo` needs only the email and refuses a non-
   ADR 0008 makes the Document Vault: typed documents with versions and links,
   sealed Employment documents with retention and shredding, templates made into locked PDFs,
   Postgres search, and a worker on an outbox (specs `vault-service.md`,
-  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 to 8 are built.
+  `document-template-service.md`, `outbox-service.md`; DPIA note `docs/privacy/`); phases 1 to 8 are built;
+  ADR 0009 (accepted, not built) makes App Launcher, registry and releases, a reusable Go module and npm
+  packages (`remisb/applauncher`) embedded in each client's application through ports (`Can`, `Auditor`,
+  `TrialStats`), its tables in schema `launcher`, cut loose inside this repository first.
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and
