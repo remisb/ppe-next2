@@ -16,24 +16,30 @@ Terms: `docs/ubiquitous-language.md` §13. How people use it, how a new app is b
 
 ## The registry
 
-`launcher_apps`: one row per tile, in `position` order. The API inserts the defaults below
-at start-up (`launcher.EnsureDefaults`), and Postgres tests and e2e get them back after
+`launcher.apps` (schema `launcher`, migration 0068; ADR 0009): one row per tile, in `position`
+order. The registry knows no site: `launcher.Config` (here `launcherConfig` in
+`cmd/api/launcher-tiles.go`) gives it the permission catalogue, the preview permission
+(`apps.preview`), the languages (EN, LT, RU), the groups and the pictures; it records its events
+through an `Auditor` (here the audit trail, in the same transaction), names feedback's senders
+through `UserNames`, and its HTTP API is `launcher/launcherhttp`, mounted by
+`cmd/api/launcher-routes.go`. The API inserts the defaults below
+at start-up (`PostgresRepository.EnsureDefaults` with `launcherTiles`), and Postgres tests and e2e get them back after
 emptying the database. **Code owns a default tile until an administrator changes it**: a
 missing default is inserted, last; one no administrator has touched (`updated_by_user_id` is
 NULL) takes the code's fields when they differ, recorded as `app.changed` (and
 `app.audience_changed`) by no one; one an administrator edited, moved or switched is never
-overwritten, and its place is never changed. So a default renamed in `defaults.go` reaches
+overwritten, and its place is never changed. So a default renamed in `cmd/api/launcher-tiles.go` reaches
 every installation where no one changed it, and is audited. Tiles are never deleted: **Retired** takes one away from everyone.
 
 A tile: a **slug** (`^[a-z][a-z0-9-]{1,30}$`, set once), a **kind** (app or shortcut, set
 once), a shortcut's **app** (an app on this site), names in EN, LT and RU (1–60
-characters each), a **group**, an icon from a fixed list (`launcher.Icons`, `APP_ICONS`), a
+characters each), a **group**, an icon from a fixed list (`launcherConfig.Icons`, `APP_ICONS`), a
 colour white text passes 4.5:1 against, an **address** (a path on this site, never `//`;
 an https address for a linked site; a shortcut is never linked), a **stage** (Live,
 Pilot, POC, In development, Retired) and **who sees it** (any of some permissions, or
 everyone signed in).
 
-The defaults, phase 1's list and each published app `make new-app` added (`launcher.Defaults`):
+The defaults, phase 1's list and each published app `make new-app` added (`launcherTiles`):
 
 | Tile | Kind | Group | Opens | Seen by (any of) |
 | --- | --- | --- | --- | --- |
@@ -86,14 +92,14 @@ tile's English name.
 
 ## Pins and feedback
 
-- **Pins** are the user's (`launcher_pins`), on every device: `PUT /api/v1/launcher/pins`
+- **Pins** are the user's (`launcher.pins`), on every device: `PUT /api/v1/launcher/pins`
   replaces them, in order, each a tile the user sees, at most 50; two replaces at once (two tabs,
   an effect run twice) take turns under a per-user lock instead of one failing. Phase 1's pins kept on a
   device are handed to the API once, while it has none, and forgotten on the device only once
   it has them (or pins of its own). Saving pins or a channel choice that fails puts them back
   as they were and says so (**Your pins could not be saved.**, **Your choice of version could
   not be saved.**), on the launcher and in the ⋯ dialog. **Recent** apps stay per device.
-- **Feedback** (`launcher_feedback`): from an app's ⋯ in the launcher, **Works well**,
+- **Feedback** (`launcher.feedback`): from an app's ⋯ in the launcher, **Works well**,
   **Confusing** or **Something broke**, with what they were trying to do (at most 2000
   characters), sent with the device (by the window's width) and the language. Only on an
   app the user sees (else 404). Read on Manage apps, newest first, with who sent it.
@@ -174,10 +180,10 @@ follows the registry's rule and may not be a tile's or a folder's already. CI's 
 `pnpm check:new-app`: an app started from the template (without a tile) must typecheck, pass its
 tests and build, and is then removed.
 
-- **Registry** (migration 0043): `launcher_versions` (app, version `YYYY.MM.DD-<commit>`,
+- **Registry** (migration 0043): `launcher.versions` (app, version `YYYY.MM.DD-<commit>`,
   profile, capabilities, commit, published, by whom: nobody for a deploy's),
-  `launcher_channels` (app, name: `stable`, `beta` or `preview`, version) and
-  `launcher_channel_choices` (user, app, channel: `beta` or `preview`). Events
+  `launcher.channels` (app, name: `stable`, `beta` or `preview`, version) and
+  `launcher.channel_choices` (user, app, channel: `beta` or `preview`). Events
   `app.version_published` and `app.channel_moved` (a channel set or pointed at another
   version); `app.channel_changed` (a variant's label or audience) is no longer recorded but
   still reads in older trails.
@@ -248,7 +254,7 @@ tests and build, and is then removed.
   version whose folder is gone (a restore, a lost volume) gets its files back, under the profile
   it was recorded with (another is refused); a folder without `index.html` is replaced; the first version of an app also becomes
   Stable, and so does every version newly published to Preview while the app's **Stable follows
-  deploys** is on (migration 0044, `launcher_apps.stable_follows_deploys`, off by default); a
+  deploys** is on (migration 0044, `launcher.apps.stable_follows_deploys`, off by default); a
   version recorded already (the same deploy run again) moves no channel but the one named, so a
   roll-back on Manage apps survives a re-run. Any
   other channel is refused before any file is written or version recorded. The Makefile runs each publish pipe
@@ -287,7 +293,7 @@ tests and build, and is then removed.
   Usage's window (`usage.Days`, from `user_version_activity`, migration 0045: the request
   middleware's daily note also records `X-PPE-App-Version`), the kinds of error last seen on it
   and their occurrences (System's `error_events.app_version`; a kind counts for the version of
-  its latest occurrence), and the feedback given on it (`launcher_feedback.version`, migration
+  its latest occurrence), and the feedback given on it (`launcher.feedback.version`, migration
   0045: the version the sender's tile opened, their chosen channel's if they still see it, else
   Stable's). Manage apps shows it as **Trials**, beside Versions and channels; each feedback
   item names its version.

@@ -115,6 +115,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		}
 		codes = keys
 	}
+	apps := launcher.NewPostgresRepository(pool, launcherConfig, launcherAudit{})
 	svc := newServices(
 		loc, cfg.ConfirmTTL, cfg.AuditRetention,
 		sessions,
@@ -134,7 +135,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
 		mailtemplate.NewPostgresRepository(pool),
-		launcher.NewPostgresRepository(pool),
+		apps,
 		backup.NewPostgresRepository(pool),
 		audit.NewPostgresStore(pool),
 		system.NewPostgresStore(pool),
@@ -181,7 +182,7 @@ func run(ctx context.Context, args []string, logger *slog.Logger) error {
 	svc.outbox = outbox.NewQueue(pool)
 	// App Launcher's default tiles, put back should the registry have been
 	// emptied, and its apps' slugs, which tell requests' apps apart.
-	if err := launcher.EnsureDefaults(ctx, pool); err != nil {
+	if err := apps.EnsureDefaults(ctx, launcherTiles); err != nil {
 		return fmt.Errorf("app launcher defaults: %w", err)
 	}
 	if err := svc.launcher.Refresh(ctx); err != nil {
@@ -345,7 +346,7 @@ func newServices(loc *time.Location, confirmTTL, auditRetention time.Duration, s
 		dashboard: dashboard.NewService(board, dashboard.WithLocation(loc)),
 		settings:  settings.NewService(prefs),
 		templates: mailtemplate.NewService(templates),
-		launcher:  launcher.NewService(apps),
+		launcher:  launcher.NewService(apps, launcherConfig, launcher.WithUserNames(launcherUserNames(users))),
 		backups:   backup.NewService(backups, backup.WithLocation(loc)),
 		audit:     audit.NewService(trail, audit.WithLocation(loc), audit.WithRetention(auditRetention)),
 		system:    system.NewService(sys, system.WithRecorded(func(k system.Kind) { metrics.ErrorRecorded(string(k)) })),

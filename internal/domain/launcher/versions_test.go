@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
-	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
 func scanSIMs(version, channel string) PublishParams {
@@ -66,7 +64,7 @@ func TestManifest(t *testing.T) {
 
 func TestPublishAndChannels(t *testing.T) {
 	repo := newMem()
-	svc := NewService(repo)
+	svc := NewService(repo, testConfig)
 	ctx, admin := context.Background(), uuid.New()
 
 	// The first publish, to Preview, gives the app its Stable too; publishing again is a no-op.
@@ -137,12 +135,12 @@ func TestPublishAndChannels(t *testing.T) {
 
 func TestChannelsForUsersAndResolve(t *testing.T) {
 	repo := newMem()
-	svc := NewService(repo)
+	svc := NewService(repo, testConfig)
 	ctx, user := context.Background(), uuid.New()
 	_, _ = svc.Publish(ctx, scanSIMs("2026.11.04-aaa", ""), nil)
 	_, _ = svc.Publish(ctx, scanSIMs("2026.11.05-bbb", ChannelBeta), nil)
-	manager := holding(role.SIMCardsManage, role.DashboardManager)
-	tester := holding(role.SIMCardsManage, role.DashboardManager, role.AppsPreview)
+	manager := holding(pSIMCardsManage, pDashboardManager)
+	tester := holding(pSIMCardsManage, pDashboardManager, pAppsPreview)
 
 	apps, _, _ := svc.ForUser(ctx, user, manager)
 	seen, _, _ := svc.ChannelsFor(ctx, user, apps, manager)
@@ -198,7 +196,7 @@ func TestReservedSlugs(t *testing.T) {
 	for _, slug := range []string{"assets", "files"} {
 		p := valid()
 		p.Slug = slug
-		if err := p.Validate(); !errors.Is(err, ErrInvalid) {
+		if err := p.Validate(testConfig); !errors.Is(err, ErrInvalid) {
 			t.Errorf("%s: %v", slug, err)
 		}
 	}
@@ -206,7 +204,7 @@ func TestReservedSlugs(t *testing.T) {
 
 func TestStableFollowsDeploys(t *testing.T) {
 	repo := newMem()
-	svc := NewService(repo)
+	svc := NewService(repo, testConfig)
 	ctx, admin := context.Background(), uuid.New()
 	if _, err := svc.Publish(ctx, scanSIMs("2026.11.04-aaa", ChannelPreview), nil); err != nil {
 		t.Fatal(err)
@@ -252,7 +250,7 @@ func TestStableFollowsDeploys(t *testing.T) {
 func TestStableBehind(t *testing.T) {
 	repo := newMem()
 	clock := time.Date(2026, 11, 1, 9, 0, 0, 0, time.UTC)
-	svc := NewService(repo, WithClock(func() time.Time { clock = clock.Add(24 * time.Hour); return clock }))
+	svc := NewService(repo, testConfig, WithClock(func() time.Time { clock = clock.Add(24 * time.Hour); return clock }))
 	ctx := context.Background()
 	if _, err := svc.Publish(ctx, scanSIMs("2026.11.02-aaa", ChannelPreview), nil); err != nil {
 		t.Fatal(err)
@@ -275,7 +273,7 @@ func TestStableBehind(t *testing.T) {
 
 func TestPrune(t *testing.T) {
 	repo := newMem()
-	svc := NewService(repo)
+	svc := NewService(repo, testConfig)
 	ctx := context.Background()
 	for i := 1; i <= 8; i++ {
 		if _, err := svc.Publish(ctx, scanSIMs(fmt.Sprintf("2026.11.%02d-v%d", i, i), ChannelPreview), nil); err != nil {

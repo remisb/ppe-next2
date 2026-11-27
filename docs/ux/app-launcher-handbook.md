@@ -123,12 +123,12 @@ not worth their code until a second published app needs them.
 
 | Table | Holds |
 |---|---|
-| `launcher_apps` | Tiles: slug, kind, parent, group, icon, colour, href, tier, stage, names, audience, position. Never deleted |
-| `launcher_pins` | Each user's pins, in order |
-| `launcher_feedback` | Ratings and notes per app |
-| `launcher_versions` | Published builds: `YYYY.MM.DD-<commit>`, profile, capabilities (older builds), commit, when, by whom |
-| `launcher_channels` | stable, beta or preview → a version |
-| `launcher_channel_choices` | Each user's chosen channel per app |
+| `launcher.apps` | Tiles: slug, kind, parent, group, icon, colour, href, tier, stage, names, audience, position. Never deleted |
+| `launcher.pins` | Each user's pins, in order |
+| `launcher.feedback` | Ratings and notes per app |
+| `launcher.versions` | Published builds: `YYYY.MM.DD-<commit>`, profile, capabilities (older builds), commit, when, by whom |
+| `launcher.channels` | stable, beta or preview → a version |
+| `launcher.channel_choices` | Each user's chosen channel per app |
 | `user_version_activity` | Who opened which version on which day (Trials) |
 | `user_version_activity` | Who opened which version on which day (Trials) |
 | `user_version_activity` | Who opened which version on which day (Trials) |
@@ -143,7 +143,7 @@ not worth their code until a second published app needs them.
 
 Every change is audited (`app.registered`, `app.changed`, `app.audience_changed`,
 `app.moved`, `app.version_published`, `app.channel_moved`, `app.channel_changed`).
-Default tiles live in code (`defaults.go`), and code owns each one until an administrator
+Default tiles live in code (`cmd/api/launcher-tiles.go`), and code owns each one until an administrator
 changes it: at start-up a missing default is inserted and an untouched one takes the code's
 fields (audited by no one); one an administrator edited is never overwritten.
 
@@ -212,7 +212,7 @@ another team or another feature.
    screen, words in EN, LT and RU, `csp.test.ts` and the Tailwind test; `vite.config.ts` and
    `public/ppe-app.json` (`{"slug", "profile": "standard", "devPort"}`, the next free port). The
    manifest is what makes it a published app: the build, the deploy, the dev proxy and e2e find it
-   there. It also adds the tile to `defaults.go` in POC (Testers only): a deploy and e2e publish only
+   there. It also adds the tile to `cmd/api/launcher-tiles.go` in POC (Testers only): a deploy and e2e publish only
    a registered app, and its dev server to `.claude/launch.json`. Set the tile's group, icon and
    colour there (it runs `pnpm install` for you).
 2. Change the profile only when needed: `device` widens the policy (then test that profile's

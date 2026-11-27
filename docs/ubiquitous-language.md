@@ -1175,7 +1175,7 @@ The front door of the company's apps (ADR 0006; rules in
 - **Code:** `launcher.Stage`, `AppStage`.
 
 ### Registry
-- **Brief:** App Launcher's list of tiles, kept by the API (`launcher_apps`).
+- **Brief:** App Launcher's list of tiles, kept by the API (`launcher.apps`).
 - **Detail:** phase 1's tiles are its defaults, put back at start-up when missing, never
   over a change. Managed on **Manage apps**.
 - **Code:** `internal/domain/launcher`, `GET /api/v1/launcher`.
@@ -1197,7 +1197,7 @@ The front door of the company's apps (ADR 0006; rules in
 - **Brief:** what someone says about an app from its tile: **Works well**, **Confusing** or
   **Something broke**, and what they were trying to do.
 - **Detail:** sent with the device and language; read on Manage apps. Not an audit event.
-- **Code:** `launcher_feedback`, `client.launcher.sendFeedback`.
+- **Code:** `launcher.feedback`, `client.launcher.sendFeedback`.
 
 ### Linked site
 - **Brief:** an app on another site with its own sign-in, such as PPE Crew; its tile shows ↗
@@ -1210,14 +1210,14 @@ The front door of the company's apps (ADR 0006; rules in
 - **Brief:** tiles a user pinned (**Pin** / **Unpin** in a tile's ⋯), shown first; and the
   last six opened.
 - **Detail:** pins are the user's, on every device (the API); recent apps per device.
-- **Code:** `launcher_pins`, `togglePin`, `noteOpened`.
+- **Code:** `launcher.pins`, `togglePin`, `noteOpened`.
 
 ### Published app
 - **Brief:** an app on this site whose builds are published as versions and opened under
   `/apps/<slug>/` through channels, rather than baked in at a fixed address. Scan SIMs is one.
 - **Detail:** not "deployed" (a deploy updates the whole site) nor "released". A deploy
   publishes its build to Preview; `make prod-publish` publishes one from a git ref.
-- **Code:** `launcher_versions`, `api -publish-app`, `PUBLISHED_APPS`. **UI:** *Published*
+- **Code:** `launcher.versions`, `api -publish-app`, `PUBLISHED_APPS`. **UI:** *Published*
   (a version's date).
 
 ### Version, Channel; Audience

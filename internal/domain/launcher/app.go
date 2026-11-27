@@ -16,8 +16,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
-
-	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
 // Kind is what a tile opens: an app, or one screen inside an app.
@@ -31,10 +29,6 @@ const (
 // Group is where a tile sits in the launcher.
 type Group string
 
-// Groups are the headings a tile may sit under (Workwear & PPE, Company
-// Assets, People & Crew, Administration).
-var Groups = []Group{"workwear", "assets", "people", "admin"}
-
 // Tier is where an app runs: here, on this origin with the user's sign-in, or
 // linked, another site with its own (ADR 0006's sandbox tier is phase 4).
 type Tier string
@@ -45,7 +39,7 @@ const (
 )
 
 // Stage is how far along an app is. POC and In development are seen only
-// with apps.preview; a retired tile by no one.
+// with Config.Preview; a retired tile by no one.
 type Stage string
 
 const (
@@ -59,20 +53,10 @@ const (
 // Stages is every stage.
 var Stages = []Stage{StageLive, StagePilot, StagePOC, StageDev, StageRetired}
 
-// Icons are the pictures a tile may show; the launcher draws each.
-var Icons = []string{
-	"shirt", "order", "orders", "employees", "dashboard", "sim", "equipment", "scan", "crew", "admin", "help",
-	"box", "flask", "pen", "check", "chart", "calendar", "truck", "wrench",
-}
+// Names is a tile's name in each of Config.Languages, by language code.
+type Names map[string]string
 
-// Names is a tile's name in each language the apps speak.
-type Names struct {
-	EN string `json:"en"`
-	LT string `json:"lt"`
-	RU string `json:"ru"`
-}
-
-// App is one tile of the registry (launcher_apps, migration 0042): an app or
+// App is one tile of the registry (launcher.apps): an app or
 // a shortcut. Tiles are never deleted; Retired takes one away from everyone.
 type App struct {
 	ID   uuid.UUID `json:"id"`
@@ -89,8 +73,9 @@ type App struct {
 	Tier  Tier   `json:"tier"`
 	Stage Stage  `json:"stage"`
 	Names Names  `json:"names"`
-	// AnyOf: seen by a user holding any of these; none, by every signed-in user.
-	AnyOf []role.Permission `json:"any_of"`
+	// AnyOf: seen by a user holding any of these host permissions; none, by
+	// every signed-in user.
+	AnyOf []string `json:"any_of"`
 	// Position orders the tiles; Move numbers them again in steps of positionStep.
 	Position int `json:"position"`
 	// StableFollowsDeploys: a deploy's publish to Preview moves Stable too
@@ -152,7 +137,11 @@ func (f *Fields) Normalize() {
 	f.Icon = strings.TrimSpace(f.Icon)
 	f.Color = strings.TrimSpace(strings.ToLower(f.Color))
 	f.Href = strings.TrimSpace(f.Href)
-	f.Names = Names{strings.TrimSpace(f.Names.EN), strings.TrimSpace(f.Names.LT), strings.TrimSpace(f.Names.RU)}
+	names := make(Names, len(f.Names))
+	for lang, n := range f.Names {
+		names[strings.TrimSpace(strings.ToLower(lang))] = strings.TrimSpace(n)
+	}
+	f.Names = names
 }
 
 // Normalize trims and lowercases the slug and normalizes the fields.
@@ -161,9 +150,9 @@ func (p *CreateParams) Normalize() {
 	p.Fields.Normalize()
 }
 
-// Validate checks f for a tile of kind k; that a shortcut's parent exists is
-// the service's to check.
-func (f Fields) Validate(k Kind) error {
+// Validate checks f for a tile of kind k in the host's c; that a shortcut's
+// parent exists is the service's to check.
+func (f Fields) Validate(k Kind, c Config) error {
 	switch k {
 	case KindApp:
 		if f.Parent != "" {
@@ -179,10 +168,10 @@ func (f Fields) Validate(k Kind) error {
 	default:
 		return fieldError("kind", "must be app or shortcut")
 	}
-	if !slices.Contains(Groups, f.Group) {
+	if !slices.Contains(c.Groups, f.Group) {
 		return fieldError("group", "is not a known group")
 	}
-	if !slices.Contains(Icons, f.Icon) {
+	if !slices.Contains(c.Icons, f.Icon) {
 		return fieldError("icon", "is not a known picture")
 	}
 	if !colorPattern.MatchString(f.Color) {
@@ -197,7 +186,27 @@ func (f Fields) Validate(k Kind) error {
 	if err := validHref(f.Tier, f.Href); err != nil {
 		return err
 	}
-	for lang, n := range map[string]string{"en": f.Names.EN, "lt": f.Names.LT, "ru": f.Names.RU} {
+	if err := validNames(f.Names, c.Languages); err != nil {
+		return err
+	}
+	for _, p := range f.AnyOf {
+		if !c.IsKnown(p) {
+			return fieldError("any_of", "names an unknown permission: "+p)
+		}
+	}
+	return nil
+}
+
+// validNames: a name in each language, none longer than maxName, and no
+// language the host does not speak.
+func validNames(names Names, languages []string) error {
+	for lang := range names {
+		if !slices.Contains(languages, lang) {
+			return fieldError("names."+lang, "is not a language of this site")
+		}
+	}
+	for _, lang := range languages {
+		n := names[lang]
 		if n == "" {
 			return fieldError("names."+lang, "is required")
 		}
@@ -205,24 +214,19 @@ func (f Fields) Validate(k Kind) error {
 			return fieldError("names."+lang, "is longer than "+strconv.Itoa(maxName)+" characters")
 		}
 	}
-	for _, p := range f.AnyOf {
-		if !role.IsKnown(p) {
-			return fieldError("any_of", "names an unknown permission: "+p)
-		}
-	}
 	return nil
 }
 
 // Validate checks the slug (the pattern, and none of ReservedSlugs) and the
-// fields for the tile's kind.
-func (p CreateParams) Validate() error {
+// fields for the tile's kind in the host's c.
+func (p CreateParams) Validate(c Config) error {
 	if !slugPattern.MatchString(p.Slug) {
 		return fieldError("slug", "must be 2 to 31 lowercase letters, digits or hyphens, starting with a letter")
 	}
 	if slices.Contains(ReservedSlugs, p.Slug) {
 		return fieldError("slug", "is taken by App Launcher's own addresses")
 	}
-	return p.Fields.Validate(p.Kind)
+	return p.Fields.Validate(p.Kind, c)
 }
 
 // validHref: a path on this origin for an app here (never //host, which would
@@ -265,18 +269,16 @@ func readableOnWhiteText(c string) bool {
 	return 1.05/(l+0.05) >= 4.5
 }
 
-// anyOf is f's audience as stored: known permissions, in catalogue order.
-func (f Fields) anyOf() []role.Permission { return role.Known(f.AnyOf) }
-
 // Visible keeps the tiles a user with these permissions sees, in order: not
-// retired; POC and In development only with apps.preview; the audience empty
-// or one of its permissions held; a shortcut only when its app is seen.
-func Visible(apps []App, can func(role.Permission) bool) []App {
+// retired; POC and In development only with the preview permission; the
+// audience empty or one of its permissions held; a shortcut only when its
+// app is seen.
+func Visible(apps []App, can func(string) bool, preview string) []App {
 	sees := func(a App) bool {
 		if a.Stage == StageRetired {
 			return false
 		}
-		if (a.Stage == StagePOC || a.Stage == StageDev) && !can(role.AppsPreview) {
+		if (a.Stage == StagePOC || a.Stage == StageDev) && !can(preview) {
 			return false
 		}
 		return len(a.AnyOf) == 0 || slices.ContainsFunc(a.AnyOf, can)

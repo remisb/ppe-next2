@@ -150,7 +150,7 @@ publish-app: ## Build an app and publish it to API_APPS_DIR (for Caddy locally):
 
 # A new published app from web/templates/published-app (@ppe/launcher's
 # new-app.ts): web/apps/<slug> with the next free dev port, and its tile in
-# internal/domain/launcher/defaults.go in POC, which lets a deploy publish it.
+# cmd/api/launcher-tiles.go in POC, which lets a deploy publish it.
 NEW_APP := node --experimental-strip-types --no-warnings=ExperimentalWarning packages/launcher/src/new-app.ts
 new-app: ## Start a published app, its tile in POC (Testers only): SLUG=<slug> NAME='<name in English>' [NAME_LT='…'] [NAME_RU='…']
 	@cd web && $(NEW_APP) --slug "$(SLUG)" --name "$(NAME)" $(if $(NAME_LT),--name-lt "$(NAME_LT)") $(if $(NAME_RU),--name-ru "$(NAME_RU)")

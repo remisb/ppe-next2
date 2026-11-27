@@ -11,9 +11,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
-	"github.com/remisb/ppe-next2/internal/audit"
-	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
 // memRepo keeps tiles in order, as the database does by position.
@@ -21,7 +18,7 @@ type memRepo struct {
 	apps     []App
 	pins     map[uuid.UUID][]uuid.UUID
 	feedback []Feedback
-	events   []audit.Event
+	events   []Event
 	versions []Version
 	channels []Channel
 	choices  map[[2]uuid.UUID]string
@@ -29,7 +26,7 @@ type memRepo struct {
 
 func newMem() *memRepo {
 	m := &memRepo{pins: map[uuid.UUID][]uuid.UUID{}, choices: map[[2]uuid.UUID]string{}}
-	for i, d := range Defaults {
+	for i, d := range testTiles {
 		d.ID, d.Position = uuid.New(), (i+1)*positionStep
 		m.apps = append(m.apps, d)
 	}
@@ -53,7 +50,7 @@ func (m *memRepo) Get(_ context.Context, slug string) (App, error) {
 	return App{}, ErrNotFound
 }
 
-func (m *memRepo) Create(_ context.Context, a App, ev audit.Event) (App, error) {
+func (m *memRepo) Create(_ context.Context, a App, ev Event) (App, error) {
 	if _, err := m.Get(context.Background(), a.Slug); err == nil {
 		return App{}, ErrSlugTaken
 	}
@@ -120,7 +117,7 @@ func (m *memRepo) Versions(_ context.Context, app uuid.UUID) ([]Version, error) 
 	return out, nil
 }
 
-func (m *memRepo) AddVersion(_ context.Context, v Version, ev audit.Event) error {
+func (m *memRepo) AddVersion(_ context.Context, v Version, ev Event) error {
 	for _, x := range m.versions {
 		if x.AppID == v.AppID && x.Version == v.Version {
 			return fieldError("version", "is published already")
@@ -211,8 +208,8 @@ func (m *memRepo) Feedback(_ context.Context, app uuid.UUID) ([]Feedback, error)
 	return out, nil
 }
 
-func holding(perms ...role.Permission) func(role.Permission) bool {
-	return func(p role.Permission) bool { return slices.Contains(perms, p) }
+func holding(perms ...string) func(string) bool {
+	return func(p string) bool { return slices.Contains(perms, p) }
 }
 
 func slugs(apps []App) []string {
@@ -227,23 +224,8 @@ func slugs(apps []App) []string {
 func valid() CreateParams {
 	return CreateParams{Slug: "size-helper", Kind: KindApp, Fields: Fields{
 		Group: "workwear", Icon: "flask", Color: "#a33a7c", Href: "/apps/size-helper/", Tier: TierHere, Stage: StagePOC,
-		Names: Names{"Size Helper", "Dydžių pagalbininkas", "Помощник по размерам"},
+		Names: Names{"en": "Size Helper", "lt": "Dydžių pagalbininkas", "ru": "Помощник по размерам"},
 	}}
-}
-
-func TestDefaultsAreValid(t *testing.T) {
-	for _, d := range Defaults {
-		f := Fields{Parent: d.Parent, Group: d.Group, Icon: d.Icon, Color: d.Color, Href: d.Href, Tier: d.Tier, Stage: d.Stage, Names: d.Names, AnyOf: role.Strings(d.AnyOf)}
-		if err := (CreateParams{Slug: d.Slug, Kind: d.Kind, Fields: f}).Validate(); err != nil {
-			t.Errorf("default %s: %v", d.Slug, err)
-		}
-	}
-	// Administration's tile follows every permission that opens one of its screens.
-	for _, p := range []role.Permission{role.UsersManage, role.AuditRead, role.AppsManage} {
-		if !slices.Contains(administration, p) {
-			t.Errorf("Administration's tile misses %s", p)
-		}
-	}
 }
 
 func TestValidate(t *testing.T) {
@@ -262,8 +244,8 @@ func TestValidate(t *testing.T) {
 		{"a site address on this site", func(p *CreateParams) { p.Href = "https://example.org/" }, "href"},
 		{"a linked path", func(p *CreateParams) { p.Tier, p.Href = TierLinked, "/apps/x/" }, "href"},
 		{"a linked http address", func(p *CreateParams) { p.Tier, p.Href = TierLinked, "http://example.org/" }, "href"},
-		{"no Lithuanian name", func(p *CreateParams) { p.Names.LT = " " }, "names.lt"},
-		{"a long name", func(p *CreateParams) { p.Names.EN = strings.Repeat("a", 61) }, "names.en"},
+		{"no Lithuanian name", func(p *CreateParams) { p.Names["lt"] = " " }, "names.lt"},
+		{"a long name", func(p *CreateParams) { p.Names["en"] = strings.Repeat("a", 61) }, "names.en"},
 		{"unknown permission", func(p *CreateParams) { p.AnyOf = []string{"apps.everything"} }, "any_of"},
 		{"an app with a parent", func(p *CreateParams) { p.Parent = "workwear" }, "parent"},
 		{"a shortcut without one", func(p *CreateParams) { p.Kind = KindShortcut }, "parent"},
@@ -275,7 +257,7 @@ func TestValidate(t *testing.T) {
 			p := valid()
 			c.edit(&p)
 			p.Normalize()
-			err := p.Validate()
+			err := p.Validate(testConfig)
 			if c.field == "" {
 				if err != nil {
 					t.Fatalf("Validate = %v, want it fixed by Normalize", err)
@@ -289,25 +271,25 @@ func TestValidate(t *testing.T) {
 	}
 	ok := valid()
 	ok.Tier, ok.Href = TierLinked, "https://crew.example.org/"
-	if err := ok.Validate(); err != nil {
+	if err := ok.Validate(testConfig); err != nil {
 		t.Errorf("linked https: %v", err)
 	}
 }
 
 func TestVisible(t *testing.T) {
 	all := newMem().sorted()
-	admin := holding(administration...)
+	admin := holding(testAdministration...)
 	// The employee role: Workwear and its shortcuts, no others.
-	employee := Visible(all, holding(role.ItemSetsRead, role.SIMCardsRead, role.DashboardEmployee))
+	employee := Visible(all, holding(pItemSetsRead, pSIMCardsRead, pDashboardEmployee), pAppsPreview)
 	if got := slugs(employee); !slices.Equal(got, []string{"workwear", "dashboard", "create-order", "orders", "employees", "help", "sim-cards"}) {
 		t.Errorf("employee sees %v", got)
 	}
 	// SIM Cards only with sim_cards.read.
-	if slices.Contains(slugs(Visible(all, holding(role.ItemSetsRead, role.DashboardEmployee))), "sim-cards") {
+	if slices.Contains(slugs(Visible(all, holding(pItemSetsRead, pDashboardEmployee), pAppsPreview)), "sim-cards") {
 		t.Error("SIM Cards seen without sim_cards.read")
 	}
-	if slices.Contains(slugs(Visible(all, admin)), "equipment") || !slices.Contains(slugs(Visible(all, admin)), "admin") {
-		t.Errorf("administrator sees %v", slugs(Visible(all, admin)))
+	if slices.Contains(slugs(Visible(all, admin, pAppsPreview)), "equipment") || !slices.Contains(slugs(Visible(all, admin, pAppsPreview)), "admin") {
+		t.Errorf("administrator sees %v", slugs(Visible(all, admin, pAppsPreview)))
 	}
 	// Retired: no one. POC: testers only. A shortcut follows its app.
 	for i := range all {
@@ -320,19 +302,19 @@ func TestVisible(t *testing.T) {
 			all[i].Stage = StageDev
 		}
 	}
-	manager := holding(role.SIMCardsManage, role.DashboardManager)
-	if got := slugs(Visible(all, manager)); len(got) != 0 {
+	manager := holding(pSIMCardsManage, pDashboardManager)
+	if got := slugs(Visible(all, manager, pAppsPreview)); len(got) != 0 {
 		t.Errorf("manager sees %v, want nothing: Workwear is in development and the rest follow it or are retired", got)
 	}
-	tester := holding(role.SIMCardsManage, role.DashboardManager, role.AppsPreview)
-	if got := slugs(Visible(all, tester)); !slices.Contains(got, "sim-scan") || !slices.Contains(got, "orders") || slices.Contains(got, "crew") {
+	tester := holding(pSIMCardsManage, pDashboardManager, pAppsPreview)
+	if got := slugs(Visible(all, tester, pAppsPreview)); !slices.Contains(got, "sim-scan") || !slices.Contains(got, "orders") || slices.Contains(got, "crew") {
 		t.Errorf("tester sees %v", got)
 	}
 }
 
 func TestCreateUpdateMove(t *testing.T) {
 	repo := newMem()
-	svc := NewService(repo, WithClock(func() time.Time { return time.Date(2026, 11, 4, 9, 0, 0, 0, time.UTC) }))
+	svc := NewService(repo, testConfig, WithClock(func() time.Time { return time.Date(2026, 11, 4, 9, 0, 0, 0, time.UTC) }))
 	ctx, actor := context.Background(), uuid.New()
 	if err := svc.Refresh(ctx); err != nil || !svc.IsApp("sim-scan") || svc.IsApp("orders") {
 		t.Fatalf("Refresh: %v, sim-scan %v, orders %v", err, svc.IsApp("sim-scan"), svc.IsApp("orders"))
@@ -342,7 +324,7 @@ func TestCreateUpdateMove(t *testing.T) {
 		t.Errorf("no actor: %v", err)
 	}
 	a, err := svc.Create(ctx, valid(), actor)
-	if err != nil || a.Position != (len(Defaults)+1)*positionStep || !svc.IsApp("size-helper") {
+	if err != nil || a.Position != (len(testTiles)+1)*positionStep || !svc.IsApp("size-helper") {
 		t.Fatalf("Create = %+v, %v", a, err)
 	}
 	if _, err := svc.Create(ctx, valid(), actor); !errors.Is(err, ErrSlugTaken) {
@@ -365,7 +347,7 @@ func TestCreateUpdateMove(t *testing.T) {
 	}
 	up.Stage, up.AnyOf = StagePilot, []string{"assets.manage"}
 	got, err := svc.Update(ctx, "size-helper", up, actor)
-	if err != nil || got.Stage != StagePilot || !slices.Equal(got.AnyOf, []role.Permission{role.AssetsManage}) {
+	if err != nil || got.Stage != StagePilot || !slices.Equal(got.AnyOf, []string{pAssetsManage}) {
 		t.Fatalf("Update = %+v, %v", got, err)
 	}
 	if evs := repo.events[n:]; len(evs) != 2 || evs[0].Event != EventChanged || evs[1].Event != EventAudienceChanged {
@@ -393,9 +375,9 @@ func TestCreateUpdateMove(t *testing.T) {
 
 func TestPinsAndFeedback(t *testing.T) {
 	repo := newMem()
-	svc := NewService(repo)
+	svc := NewService(repo, testConfig)
 	ctx, user := context.Background(), uuid.New()
-	manager := holding(role.SIMCardsManage, role.DashboardManager)
+	manager := holding(pSIMCardsManage, pDashboardManager)
 
 	if _, err := svc.SetPins(ctx, user, []string{"sim-scan", "orders"}, manager); err != nil {
 		t.Fatal(err)
@@ -411,7 +393,7 @@ func TestPinsAndFeedback(t *testing.T) {
 		t.Fatalf("pins %v, %v", pins, err)
 	}
 	// Pins of tiles no longer seen are left out.
-	if _, pins, _ = svc.ForUser(ctx, user, holding(role.DashboardManager)); !slices.Equal(pins, []string{"orders"}) {
+	if _, pins, _ = svc.ForUser(ctx, user, holding(pDashboardManager)); !slices.Equal(pins, []string{"orders"}) {
 		t.Errorf("pins without sim_cards.manage: %v", pins)
 	}
 
@@ -431,25 +413,6 @@ func TestPinsAndFeedback(t *testing.T) {
 	}
 	if list, err := svc.Feedback(ctx, "sim-scan"); err != nil || len(list) != 1 {
 		t.Errorf("Feedback = %v, %v", list, err)
-	}
-}
-
-// TestWebClientListsTheIcons: the web draws each picture the API accepts.
-func TestWebClientListsTheIcons(t *testing.T) {
-	src, err := os.ReadFile("../../../web/packages/api-client/src/app-icons.ts")
-	if err != nil {
-		t.Fatal(err)
-	}
-	list := regexp.MustCompile(`(?s)APP_ICONS = \[(.*?)\] as const`).FindSubmatch(src)
-	if list == nil {
-		t.Fatal("no APP_ICONS list in app-icons.ts")
-	}
-	var web []string
-	for _, m := range regexp.MustCompile(`'([^']+)'`).FindAllSubmatch(list[1], -1) {
-		web = append(web, string(m[1]))
-	}
-	if !slices.Equal(web, Icons) {
-		t.Errorf("app-icons.ts lists %v, the API %v", web, Icons)
 	}
 }
 

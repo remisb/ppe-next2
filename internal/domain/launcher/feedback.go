@@ -27,13 +27,12 @@ type Feedback struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// Ratings, Devices and Languages are the values feedback may carry: Works
-// well, Confusing or Something broke; the device by the window's width; the
-// language in use.
+// Ratings and Devices are the values feedback may carry: Works well,
+// Confusing or Something broke; the device by the window's width. Its
+// language is one of Config.Languages.
 var (
-	Ratings   = []string{"works", "confusing", "broken"}
-	Devices   = []string{"phone", "tablet", "desktop"}
-	Languages = []string{"en", "lt", "ru"}
+	Ratings = []string{"works", "confusing", "broken"}
+	Devices = []string{"phone", "tablet", "desktop"}
 )
 
 // maxFeedback limits the text, in characters.
@@ -56,8 +55,9 @@ func (p *FeedbackParams) Normalize() {
 }
 
 // Validate checks the rating, the text's length, the device and the
-// language; that the app is one the user sees is the service's to check.
-func (p FeedbackParams) Validate() error {
+// language (one of languages); that the app is one the user sees is the
+// service's to check.
+func (p FeedbackParams) Validate(languages []string) error {
 	if !slices.Contains(Ratings, p.Rating) {
 		return fieldError("rating", "must be works, confusing or broken")
 	}
@@ -67,8 +67,8 @@ func (p FeedbackParams) Validate() error {
 	if !slices.Contains(Devices, p.Device) {
 		return fieldError("device", "must be phone, tablet or desktop")
 	}
-	if !slices.Contains(Languages, p.Language) {
-		return fieldError("language", "must be en, lt or ru")
+	if !slices.Contains(languages, p.Language) {
+		return fieldError("language", "must be one of "+strings.Join(languages, ", "))
 	}
 	return nil
 }

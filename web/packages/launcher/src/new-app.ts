@@ -3,7 +3,7 @@
  * web/apps/<slug> from web/templates/published-app (a small app in
  * @ppe/launcher's frame, its manifest with the next free dev port, its words
  * in EN/LT/RU, its policy and Tailwind tests) and adds its tile to
- * internal/domain/launcher/defaults.go in POC, so only Testers see it until
+ * cmd/api/launcher-tiles.go in POC, so only Testers see it until
  * an administrator moves it on. The tile is what lets a deploy publish it:
  * the API publishes only a registered app. Nothing else outside its folder
  * changes: the build, the deploy, the dev proxy and e2e find it by its
@@ -38,7 +38,7 @@ export interface Paths {
   webDir: string
   /** web/templates/published-app by default. */
   templateDir?: string
-  /** internal/domain/launcher/defaults.go, or null for no tile. */
+  /** cmd/api/launcher-tiles.go, or null for no tile. */
   defaultsFile?: string | null
   /** .claude/launch.json, where the app's dev server is added, or null for none. */
   launchFile?: string | null
@@ -73,7 +73,7 @@ const escapes: Record<string, (s: string) => string> = {
 export function newApp(app: NewApp, paths: Paths): Started {
   const webDir = paths.webDir
   const templateDir = paths.templateDir ?? join(webDir, 'templates', 'published-app')
-  const defaultsFile = paths.defaultsFile === undefined ? join(webDir, '..', 'internal', 'domain', 'launcher', 'defaults.go') : paths.defaultsFile
+  const defaultsFile = paths.defaultsFile === undefined ? join(webDir, '..', 'cmd', 'api', 'launcher-tiles.go') : paths.defaultsFile
   const defaultLaunch = join(webDir, '..', '.claude', 'launch.json')
   const launchFile = paths.launchFile === undefined ? (existsSync(defaultLaunch) ? defaultLaunch : null) : paths.launchFile
   const slug = app.slug.trim()
@@ -116,8 +116,8 @@ export function newApp(app: NewApp, paths: Paths): Started {
 
   if (defaultsFile) {
     const tile =
-      `\t{Slug: ${JSON.stringify(slug)}, Kind: KindApp, Group: "workwear", Icon: "box", Color: "#3b4256", Href: "/apps/${slug}/", Tier: TierHere, Stage: StagePOC,\n` +
-      `\t\tNames: Names{${[name, nameLt, nameRu].map((n) => JSON.stringify(n)).join(', ')}}},\n`
+      `\t{Slug: ${JSON.stringify(slug)}, Kind: launcher.KindApp, Group: "workwear", Icon: "box", Color: "#3b4256", Href: "/apps/${slug}/", Tier: launcher.TierHere, Stage: launcher.StagePOC,\n` +
+      `\t\tNames: tileNames(${[name, nameLt, nameRu].map((n) => JSON.stringify(n)).join(', ')})},\n`
     const at = defaults.lastIndexOf('\n', defaults.indexOf(marker)) + 1
     writeFileSync(defaultsFile, defaults.slice(0, at) + tile + defaults.slice(at))
   }
@@ -190,8 +190,8 @@ function main(argv: string[]): void {
   const started = newApp({ slug, name, nameLt: arg('--name-lt'), nameRu: arg('--name-ru') }, { webDir })
   const repo = join(webDir, '..')
   console.log(`Started ${name} in ${relative(repo, started.dir)}: dev port ${started.devPort}, e2e ${started.devPort + 1}.`)
-  console.log(`Its tile is in internal/domain/launcher/defaults.go, in POC (Testers only), at /apps/${slug}/: set its group, icon and colour there.`)
-  if (started.untranslated) console.log('Its Lithuanian or Russian name is still English: translate it in src/i18n and defaults.go (its i18n test fails until then).')
+  console.log(`Its tile is in cmd/api/launcher-tiles.go, in POC (Testers only), at /apps/${slug}/: set its group, icon and colour there.`)
+  if (started.untranslated) console.log('Its Lithuanian or Russian name is still English: translate it in src/i18n and cmd/api/launcher-tiles.go (its i18n test fails until then).')
   console.log(`Run it: pnpm --dir web/apps/${slug} dev, and open http://localhost:5180/apps/${slug}/ through the staff app's dev server.`)
 }
 

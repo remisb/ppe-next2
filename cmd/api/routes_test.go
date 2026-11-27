@@ -751,16 +751,16 @@ func (stubTemplates) Update(_ context.Context, key string, m mailtemplate.Mutati
 // stubLauncher has the default tiles and no pins or feedback.
 type stubLauncher struct{}
 
-func (stubLauncher) List(context.Context) ([]launcher.App, error) { return launcher.Defaults, nil }
+func (stubLauncher) List(context.Context) ([]launcher.App, error) { return launcherTiles, nil }
 func (stubLauncher) Get(_ context.Context, slug string) (launcher.App, error) {
-	for _, a := range launcher.Defaults {
+	for _, a := range launcherTiles {
 		if a.Slug == slug {
 			return a, nil
 		}
 	}
 	return launcher.App{}, launcher.ErrNotFound
 }
-func (stubLauncher) Create(_ context.Context, a launcher.App, _ audit.Event) (launcher.App, error) {
+func (stubLauncher) Create(_ context.Context, a launcher.App, _ launcher.Event) (launcher.App, error) {
 	return a, nil
 }
 func (s stubLauncher) Update(ctx context.Context, slug string, m launcher.Mutation) (launcher.App, error) {
@@ -772,8 +772,8 @@ func (s stubLauncher) Update(ctx context.Context, slug string, m launcher.Mutati
 	return next, err
 }
 func (stubLauncher) Reorder(_ context.Context, m launcher.OrderMutation) ([]launcher.App, error) {
-	_, _, err := m(launcher.Defaults)
-	return launcher.Defaults, err
+	_, _, err := m(launcherTiles)
+	return launcherTiles, err
 }
 func (stubLauncher) Pins(context.Context, uuid.UUID) ([]string, error)     { return []string{}, nil }
 func (stubLauncher) SetPins(context.Context, uuid.UUID, []uuid.UUID) error { return nil }
@@ -781,7 +781,7 @@ func (stubLauncher) AddFeedback(context.Context, launcher.Feedback) error  { ret
 func (stubLauncher) Versions(context.Context, uuid.UUID) ([]launcher.Version, error) {
 	return []launcher.Version{}, nil
 }
-func (stubLauncher) AddVersion(context.Context, launcher.Version, audit.Event) error { return nil }
+func (stubLauncher) AddVersion(context.Context, launcher.Version, launcher.Event) error { return nil }
 func (stubLauncher) PruneVersions(context.Context, uuid.UUID, launcher.PruneMutation) ([]launcher.Version, error) {
 	return []launcher.Version{}, nil
 }
