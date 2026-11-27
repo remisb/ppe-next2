@@ -528,7 +528,7 @@ images and requests come from the app's own origin only. So:
   in `script-src` (its barcode and text readers are WebAssembly; still no `eval`) and
   `worker-src 'self'` (the text reader's worker, from its own file, `workerBlobURL: false`),
   and `Permissions-Policy: camera=(self)`. The API sends it with the page
-  (`cmd/api/published-app-routes.go`), Caddy with the files under `/apps/files/<profile>/`
+  (`internal/launcher/releases`, its policies from `cmd/api/published-app-routes.go`), Caddy with the files under `/apps/files/<profile>/`
   (`@devicepolicy`; the staff policy goes on `@staffpolicy`, everything but a published
   app's page), outside the global `header` block (whose `-Server` defers it, so it would
   overwrite a per-path policy). Keep the staff app's line first: the staff and

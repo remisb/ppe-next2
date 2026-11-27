@@ -215,11 +215,12 @@ prod-up: ## Start or update the deployment stack; migrations run before the API 
 		echo "caddy still runs the previous image: recreating it"; \
 		$(PROD) up -d --force-recreate --no-deps caddy || exit 1; \
 	fi
-	@# The Caddyfile is mounted from the checkout, so a change to it alone
-	@# (a security policy, say) changes no image: compare what Caddy runs with.
-	@# A single-file mount keeps the file it started with, so recreate, not reload.
-	@want=$$(sha256sum deploy/Caddyfile | cut -d' ' -f1); \
-	have=$$($(PROD) exec -T caddy sha256sum /etc/caddy/Caddyfile | cut -d' ' -f1); \
+	@# The Caddyfile and its snippets (deploy/caddy) are mounted from the
+	@# checkout, so a change to them alone (a security policy, say) changes no
+	@# image: compare what Caddy runs with. Caddy reads its config at start, and a
+	@# single-file mount keeps the file it started with, so recreate, not reload.
+	@want=$$(cd deploy && cat Caddyfile caddy/*.caddy | sha256sum | cut -d' ' -f1); \
+	have=$$($(PROD) exec -T caddy sh -c 'cd /etc/caddy && cat Caddyfile caddy/*.caddy' | sha256sum | cut -d' ' -f1); \
 	if [ "$$want" != "$$have" ]; then \
 		echo "caddy runs an older Caddyfile: recreating it"; \
 		$(PROD) up -d --force-recreate --no-deps caddy || exit 1; \

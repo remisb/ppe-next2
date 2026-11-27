@@ -24,6 +24,9 @@
 	}
 }
 
+# App Launcher's /apps/ addresses, as the snippet `launcher` (needs `api`).
+import caddy/launcher.caddy
+
 # Other sites this Caddy serves for applications sharing the host, one file
 # each in deploy/sites/ (mounted at /etc/caddy/sites). They belong to those
 # applications and are not committed here; with none present this imports
@@ -46,40 +49,8 @@ import sites/*.caddy
 	handle @probe {
 		import api
 	}
-	# App Launcher (ADR 0006), every app a user's roles open, on the same
-	# origin as the staff app, so they share the sign-in cookie: /apps/ and
-	# its files are the launcher's.
-	redir /apps /apps/ 308
-	@launcher path /apps/ /apps/index.html /apps/assets/*
-	handle @launcher {
-		# header runs before uri, so it matches the path as requested.
-		uri strip_prefix /apps
-		root * {$LAUNCHER_ROOT:/srv/launcher/dist}
-		@unhashed not path /apps/assets/*
-		header /apps/assets/* Cache-Control "public, max-age=31536000, immutable"
-		header @unhashed Cache-Control "no-cache"
-		file_server
-	}
-	# Published apps' files, by the profile their version declared (a closed
-	# list: launcher.Capabilities). A version's files never change. Nothing
-	# else under PUBLISHED_ROOT (the API's .incoming) is served.
-	@published path /apps/files/standard/* /apps/files/device/*
-	handle @published {
-		uri strip_prefix /apps/files
-		root * {$PUBLISHED_ROOT:/srv/published}
-		header Cache-Control "public, max-age=31536000, immutable"
-		file_server
-	}
-	handle /apps/files/* {
-		respond 404
-	}
-	# Every other address under /apps/ is a published app's page
-	# (/apps/<slug>/, /apps/<slug>/<channel>/, /apps/<slug>/@<version>/ and
-	# the app's own screens): the API answers its version's index.html with
-	# the profile's policy (cmd/api/published-app-routes.go).
-	handle /apps/* {
-		import api
-	}
+	# App Launcher and published apps under /apps/: deploy/caddy/launcher.caddy.
+	import launcher
 	# Administration: the same origin as the staff app, so the two share the
 	# sign-in cookie. handle_path strips /admin, so its built /admin/assets/*
 	# are the files under ADMIN_ROOT/assets.

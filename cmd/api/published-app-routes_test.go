@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -60,13 +61,10 @@ func TestWebImageRunsCIsCaddy(t *testing.T) {
 // Every profile has a page policy here and its files' handle in Caddy, and
 // Caddy serves no profile's files the API does not know.
 func TestEveryProfileHasAPolicy(t *testing.T) {
-	caddyfile, err := os.ReadFile("../../deploy/Caddyfile")
-	if err != nil {
-		t.Fatal(err)
-	}
+	caddyfile := caddyConfig(t)
 	matcher := regexp.MustCompile(`(?m)^\s*@published path (.+)$`).FindSubmatch(caddyfile)
 	if matcher == nil {
-		t.Fatal("no @published matcher in deploy/Caddyfile")
+		t.Fatal("no @published matcher in deploy/Caddyfile or its snippets")
 	}
 	var served []string
 	for _, m := range regexp.MustCompile(`/apps/files/([^/\s]+)/\*`).FindAllSubmatch(matcher[1], -1) {
@@ -75,7 +73,7 @@ func TestEveryProfileHasAPolicy(t *testing.T) {
 	var profiles []string
 	for _, p := range launcher.Profiles {
 		profiles = append(profiles, string(p))
-		if pol, ok := profilePolicies[p]; !ok || pol.csp == "" {
+		if pol, ok := profilePolicies[p]; !ok || pol.CSP == "" {
 			t.Errorf("profile %s has no page policy", p)
 		}
 	}
@@ -93,10 +91,7 @@ func TestEveryProfileHasAPolicy(t *testing.T) {
 // Caddy answers before handing /apps/* to the API: a slug Caddy took would
 // never reach its app, and a path the API did not reserve could be an app's.
 func TestReservedSlugsAreCaddys(t *testing.T) {
-	caddyfile, err := os.ReadFile("../../deploy/Caddyfile")
-	if err != nil {
-		t.Fatal(err)
-	}
+	caddyfile := caddyConfig(t)
 	taken := map[string]bool{}
 	for _, line := range strings.Split(string(caddyfile), "\n") {
 		line = strings.TrimSpace(line)
@@ -117,4 +112,30 @@ func TestReservedSlugsAreCaddys(t *testing.T) {
 	if !slices.Equal(caddy, reserved) {
 		t.Errorf("Caddy takes /apps/%v/, App Launcher reserves %v", caddy, reserved)
 	}
+}
+
+// caddyConfig is deploy/Caddyfile and the snippets it imports
+// (deploy/caddy/*.caddy), as one text.
+func caddyConfig(t *testing.T) []byte {
+	t.Helper()
+	files, err := filepath.Glob("../../deploy/caddy/*.caddy")
+	if err != nil || len(files) == 0 {
+		t.Fatalf("no snippets in deploy/caddy: %v", err)
+	}
+	main, err := os.ReadFile("../../deploy/Caddyfile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := append(main, '\n')
+	for _, f := range files {
+		if !strings.Contains(string(main), "import caddy/"+filepath.Base(f)) {
+			t.Errorf("deploy/Caddyfile does not import caddy/%s", filepath.Base(f))
+		}
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out = append(append(out, raw...), '\n')
+	}
+	return out
 }

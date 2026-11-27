@@ -9,7 +9,8 @@ domain) follows ADR 0006 and `docs/ux/app-launcher.md`.
 
 Code: the domain `internal/domain/launcher` (migrations 0042 to 0045 and 0047, routes
 `cmd/api/launcher-routes.go`; published apps `versions.go`, `service_versions.go`,
-`cmd/api/published-app-routes.go` and `publish-app.go`), the package `web/packages/launcher` (`@ppe/launcher`: the
+`internal/launcher/releases`: the pages, `Publish` and `Prune`, configured by `releasesConfig` in
+`cmd/api/published-app-routes.go`; Caddy's `/apps/` addresses `deploy/caddy/launcher.caddy`), the package `web/packages/launcher` (`@ppe/launcher`: the
 list loaded once per user and page, its rules, the words, the tile pictures, recent apps),
 the app `web/apps/launcher` (`@ppe/launcher-app`) and Administration's `routes/apps.tsx`.
 Terms: `docs/ubiquitous-language.md` §13. How people use it, how a new app is built for it, and a critique with proposed improvements: `docs/ux/app-launcher-handbook.md` (and `.html`).
@@ -206,7 +207,7 @@ tests and build, and is then removed.
   which are still read for an older git ref; a manifest with both must have them agree. A new
   capability or profile is a
   reviewed change to `launcher.Capabilities` and `launcher.Profiles`, `profilePolicies` in
-  `cmd/api/published-app-routes.go` and `deploy/Caddyfile` (`TestPublishedPoliciesMatchCaddy`,
+  `cmd/api/published-app-routes.go` (passed to `releases.Config`) and `deploy/Caddyfile` (`TestPublishedPoliciesMatchCaddy`,
   `TestEveryProfileHasAPolicy`); a version whose profile has no policy answers 500, never the
   staff policy.
 - **Addresses.** `/apps/<slug>/` opens Stable, `/apps/<slug>/<channel>/` a channel,
