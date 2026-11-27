@@ -13,12 +13,21 @@
 ARG CADDY_VERSION=2.11.4
 
 FROM node:22-alpine AS build
-RUN npm install -g pnpm@12.6.0
+RUN npm install -g pnpm@12.6.0 && apk add --no-cache git
 WORKDIR /web
 # The packages first, from the lockfile alone, so this layer is reused until a
 # dependency changes. pnpm-workspace.yaml holds settings the install obeys.
+# @remisb/launcher-core and -react come from the private repository
+# remisb/applauncher at a tag (ADR 0009), read with the github_token build
+# secret (.github-token, as the API image's Go modules): it exists only during
+# this RUN, in no layer and no image.
 COPY pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm fetch
+RUN --mount=type=secret,id=github_token \
+    TOKEN="$(cat /run/secrets/github_token 2>/dev/null)" && \
+    GIT_CONFIG_COUNT=1 \
+    GIT_CONFIG_KEY_0="url.https://x-access-token:${TOKEN}@github.com/remisb/applauncher.insteadOf" \
+    GIT_CONFIG_VALUE_0="https://github.com/remisb/applauncher" \
+    pnpm fetch
 COPY . .
 # Every app in apps/ and its workspace packages: not e2e, which pulls in
 # Playwright. Linked from the store fetched above, so offline and quick. vite

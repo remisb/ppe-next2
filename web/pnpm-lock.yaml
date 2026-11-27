@@ -406,6 +406,12 @@ importers:
       '@ppe/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@remisb/launcher-core':
+        specifier: git+https://github.com/remisb/applauncher.git#v0.2.0&path:/web/packages/launcher-core
+        version: git+https://github.com/remisb/applauncher.git#305a52e484526d4e2255dc1f065bbbdc4efd7b8e&path:/web/packages/launcher-core
+      '@remisb/launcher-react':
+        specifier: git+https://github.com/remisb/applauncher.git#v0.2.0&path:/web/packages/launcher-react
+        version: git+https://github.com/remisb/applauncher.git#305a52e484526d4e2255dc1f065bbbdc4efd7b8e&path:/web/packages/launcher-react(@remisb/launcher-core@git+https://github.com/remisb/applauncher.git#305a52e484526d4e2255dc1f065bbbdc4efd7b8e&path:/web/packages/launcher-core)(lucide-react@1.48.0(react@19.3.0))(react@19.3.0)
       lucide-react:
         specifier: ^1.48.0
         version: 1.48.0(react@19.3.0)
@@ -779,6 +785,12 @@ importers:
       '@ppe/ui':
         specifier: workspace:*
         version: link:../ui
+      '@remisb/launcher-core':
+        specifier: git+https://github.com/remisb/applauncher.git#v0.2.0&path:/web/packages/launcher-core
+        version: git+https://github.com/remisb/applauncher.git#305a52e484526d4e2255dc1f065bbbdc4efd7b8e&path:/web/packages/launcher-core
+      '@remisb/launcher-react':
+        specifier: git+https://github.com/remisb/applauncher.git#v0.2.0&path:/web/packages/launcher-react
+        version: git+https://github.com/remisb/applauncher.git#305a52e484526d4e2255dc1f065bbbdc4efd7b8e&path:/web/packages/launcher-react(@remisb/launcher-core@git+https://github.com/remisb/applauncher.git#305a52e484526d4e2255dc1f065bbbdc4efd7b8e&path:/web/packages/launcher-core)(lucide-react@1.48.0(react@19.3.0))(react@19.3.0)
       lucide-react:
         specifier: ^1.48.0
         version: 1.48.0(react@19.3.0)
@@ -1421,6 +1433,18 @@ packages:
     resolution: {integrity: sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ==}
     engines: {node: '>=20'}
     hasBin: true
+
+  '@remisb/launcher-core@git+https://github.com/remisb/applauncher.git#305a52e484526d4e2255dc1f065bbbdc4efd7b8e&path:/web/packages/launcher-core':
+    resolution: {commit: 305a52e484526d4e2255dc1f065bbbdc4efd7b8e, path: /web/packages/launcher-core, repo: https://github.com/remisb/applauncher.git, type: git}
+    version: 0.2.0
+
+  '@remisb/launcher-react@git+https://github.com/remisb/applauncher.git#305a52e484526d4e2255dc1f065bbbdc4efd7b8e&path:/web/packages/launcher-react':
+    resolution: {commit: 305a52e484526d4e2255dc1f065bbbdc4efd7b8e, path: /web/packages/launcher-react, repo: https://github.com/remisb/applauncher.git, type: git}
+    version: 0.2.0
+    peerDependencies:
+      '@remisb/launcher-core': '*'
+      lucide-react: '>=1.40.0'
+      react: '>=19.0.0'
 
   '@rolldown/binding-android-arm-eabi@1.2.10':
     resolution: {integrity: sha512-bp9svZb+QurZeh+8H4BhrZkifEB0YBNvTVzNSJnJQkj4NrRwmQoDUCGP0vSN7PbvLeM7l1tK6GXL8mrTiH2myg==}
@@ -3906,6 +3930,14 @@ snapshots:
   '@playwright/test@1.63.0':
     dependencies:
       playwright: 1.63.0
+
+  '@remisb/launcher-core@git+https://github.com/remisb/applauncher.git#305a52e484526d4e2255dc1f065bbbdc4efd7b8e&path:/web/packages/launcher-core': {}
+
+  '@remisb/launcher-react@git+https://github.com/remisb/applauncher.git#305a52e484526d4e2255dc1f065bbbdc4efd7b8e&path:/web/packages/launcher-react(@remisb/launcher-core@git+https://github.com/remisb/applauncher.git#305a52e484526d4e2255dc1f065bbbdc4efd7b8e&path:/web/packages/launcher-core)(lucide-react@1.48.0(react@19.3.0))(react@19.3.0)':
+    dependencies:
+      '@remisb/launcher-core': git+https://github.com/remisb/applauncher.git#305a52e484526d4e2255dc1f065bbbdc4efd7b8e&path:/web/packages/launcher-core
+      lucide-react: 1.48.0(react@19.3.0)
+      react: 19.3.0
 
   '@rolldown/binding-android-arm-eabi@1.2.10':
     optional: true

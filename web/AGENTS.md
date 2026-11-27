@@ -88,7 +88,7 @@ certificate. App Launcher is a fourth, at `/apps/` (`launcherHref`; port 5186,
 **Every app has a way back to App Launcher, and no app gains a row for it** (ADR 0006,
 `docs/specs/app-launcher.md`). For a user with several apps (`hasSeveralApps(apps)`
 from `@ppe/launcher`, over `useLauncher().list`: the API's list, loaded once per user and
-page), an **Apps** entry (`Grip` icon, `launcherText().apps`, `launcherHref('/')`) sits in the
+page; `@ppe/launcher` binds `@remisb/launcher-core` and `-react`, ADR 0009), an **Apps** entry (`Grip` icon, `launcherText().apps`, `launcherHref('/')`) sits in the
 app's own menu: the More panel on a phone and the rail's or sidebar's foot elsewhere, or an
 icon in the header of an app with no menu. A new tile is registered on Administration's
 **Manage apps** (or, for every installation, added to `cmd/api/launcher-tiles.go` `launcherTiles`).

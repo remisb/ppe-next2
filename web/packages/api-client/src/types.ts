@@ -1700,7 +1700,8 @@ export type AppGroup = 'workwear' | 'assets' | 'people' | 'admin'
 export type AppTier = 'here' | 'linked'
 export type AppStage = 'live' | 'pilot' | 'poc' | 'dev' | 'retired'
 
-export interface AppNames {
+/** A type, not an interface, so it reads as @remisb/launcher-core's names by language. */
+export type AppNames = {
   en: string
   lt: string
   ru: string

@@ -29,4 +29,4 @@ How the system is divided and why.
 | [0006](adr/0006-app-launcher.md) | App Launcher: hosting tiers by trust, a registry of apps, versions and channels | accepted (phases 1–2 built) |
 | [0007](adr/0007-personnel-files-identity-documents.md) | Personnel files: identity documents read in the browser, sealed per person, kept employment + 3 years; AI usage and the OpenAI key | accepted (being built) |
 | [0008](adr/0008-document-vault.md) | Document Vault: typed documents, sealed types with retention, templates made into locked PDFs, Postgres search, a worker on an outbox | accepted (built) |
-| [0009](adr/0009-app-launcher-as-a-reusable-module.md) | App Launcher as a reusable module (Go and npm, registry and releases) embedded in each client's application | accepted (steps 1–3 built: `remisb/applauncher` v0.1.0) |
+| [0009](adr/0009-app-launcher-as-a-reusable-module.md) | App Launcher as a reusable module (Go and npm, registry and releases) embedded in each client's application | accepted (steps 1–4 built: `remisb/applauncher` v0.2.0) |

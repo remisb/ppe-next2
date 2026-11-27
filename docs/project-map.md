@@ -266,9 +266,10 @@ adapted in `cmd/api/checkers.go`), updates, merges or adds them; kept scans gain
 a page route and a link to the saved document (migration 0056, built; `ppe_app` may update those three columns alone); its mockup is `docs/ux/mockups/docs-scan.html`. It replaces Import
 Documents after its trial, sharing `@ppe/id-docs`, and uses ui-sdk only through `@ppe/ui`.
 **App Launcher** (ADR 0006, accepted with every recommended decision; phases 1 to 3 built; spec
-`docs/specs/app-launcher.md`, guide `docs/ux/app-launcher.html`; ADR 0009, steps 1 to 3 built, makes
+`docs/specs/app-launcher.md`, guide `docs/ux/app-launcher.html`; ADR 0009, steps 1 to 4 built, makes
 App Launcher, registry and releases, a reusable Go module, `github.com/remisb/applauncher` (private,
-`../../remis-libs/applauncher`, required at a tag; npm packages are step 4), embedded through ports
+`../../remis-libs/applauncher`, required at a tag; its npm packages `@remisb/launcher-core` and `-react`
+installed from it at a tag, bound to this site by `@ppe/launcher`), embedded through ports
 (`Can`, `Auditor`, `UserNames`, `TrialStats`, `launcherConfig` and `releasesConfig` in `cmd/api`), its
 tables in schema `launcher`; to change it, `replace` the module with the checkout, run `make test-db`
 and e2e here, tag it, then require the tag): a fourth app at `/apps/`

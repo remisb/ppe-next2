@@ -238,6 +238,8 @@ services:
   caddy:
     build:
       context: web
+      # The apps' App Launcher packages are in a private repository (web/Dockerfile).
+      secrets: [github_token]
       args:
         # The commit the apps were built from (make prod-build), which
         # make prod-up checks before publishing them under its name.

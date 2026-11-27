@@ -127,7 +127,8 @@ the Caddy mode and the published apps: `.claude/rules/e2e.md`.
 - `docs/architecture/` — the context map and the ADRs (0001 HR and timesheets, proposed; 0002
   permissions; 0003 security log; 0004 Company Assets; 0005 SIM codes and Scan SIMs; 0006 App
   Launcher; 0007 Personnel files and AI usage; 0008 Document Vault; 0009 App Launcher as a reusable
-  module, `github.com/remisb/applauncher`, private, required at a tag; steps 1–3 built).
+  module, `github.com/remisb/applauncher`, private, required at a tag, and its npm packages
+  `@remisb/launcher-core`/`-react` installed from it at a tag; steps 1–4 built).
 - `docs/domain-service-contract.md` — binding rules for every Go domain service. Read it
   before touching `internal/domain/` or `cmd/api/`.
 - `docs/specs/<name>-service.md` — per-service requirements (`user-service.md` and

@@ -39,7 +39,8 @@ restore and the major-upgrade steps). The db volume is named by `POSTGRES_VOLUME
 (default `ppe-next2-prod_db-data`, the name compose gave it).
 dbbackup, pdf-mini (the assignment form's PDF, `internal/formpdf`) and applauncher (App Launcher,
 ADR 0009) are **private** repositories: the `api` and `backup` image builds read them with the
-`github_token` build secret, the gitignored file `.github-token` (a fine-grained token, read-only on
+`github_token` build secret (and the `caddy` web image too, for App Launcher's npm packages, git
+dependencies of remisb/applauncher at a tag), the gitignored file `.github-token` (a fine-grained token, read-only on
 remisb/dbbackup, remisb/pdf-mini and remisb/applauncher) beside `.env.prod`; CI uses the
 `DBBACKUP_READ_TOKEN` secret.
 Locally, Go fetches it over your own git credentials with `GOPRIVATE=github.com/remisb/*`.

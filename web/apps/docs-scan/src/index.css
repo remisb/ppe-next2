@@ -7,5 +7,7 @@
  */
 @source '../../../packages/app-shell/src';
 @source '../../../packages/launcher/src';
+/* @ppe/launcher's components are @remisb/launcher-react's (ADR 0009): its built files. */
+@source '../../../packages/launcher/node_modules/@remisb/launcher-react/dist';
 @source '../../../packages/scan-kit/src';
 @source '../../../packages/id-docs/src';

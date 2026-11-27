@@ -1,46 +1,6 @@
 import type { AppIcon } from '@ppe/api-client'
-import {
-  BookOpen,
-  Box,
-  CalendarDays,
-  CardSim,
-  ChartColumn,
-  ClipboardCheck,
-  ClipboardList,
-  ClipboardPlus,
-  FlaskConical,
-  Gauge,
-  HardHat,
-  type LucideIcon,
-  Package,
-  PenLine,
-  ScanBarcode,
-  ShieldCheck,
-  Shirt,
-  Truck,
-  Users,
-  Wrench,
-} from 'lucide-react'
+import { appIcons as pictures } from '@remisb/launcher-react'
+import type { LucideIcon } from 'lucide-react'
 
-/** The picture drawn for each of a tile's icons (the API's launcher.Icons). */
-export const appIcons: Record<AppIcon, LucideIcon> = {
-  shirt: Shirt,
-  order: ClipboardPlus,
-  orders: ClipboardList,
-  employees: Users,
-  dashboard: Gauge,
-  sim: CardSim,
-  equipment: Package,
-  scan: ScanBarcode,
-  crew: HardHat,
-  admin: ShieldCheck,
-  help: BookOpen,
-  box: Box,
-  flask: FlaskConical,
-  pen: PenLine,
-  check: ClipboardCheck,
-  chart: ChartColumn,
-  calendar: CalendarDays,
-  truck: Truck,
-  wrench: Wrench,
-}
+/** The picture drawn for each of a tile's icons (the API's launcherConfig.Icons, app-icons.ts). */
+export const appIcons = pictures as Record<AppIcon, LucideIcon>
