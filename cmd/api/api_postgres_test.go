@@ -86,7 +86,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 	if err := role.EnsureBuiltins(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
-	if err := launcher.EnsureDefaults(ctx, pool); err != nil {
+	if err := launcher.NewPostgresRepository(pool, launcherConfig, launcherAudit{}).EnsureDefaults(ctx, launcherTiles); err != nil {
 		t.Fatal(err)
 	}
 	owner := pool
@@ -113,7 +113,7 @@ func newPostgresAPI(t *testing.T) (*testAPI, *pgxpool.Pool) {
 		dashboard.NewPostgresRepository(pool),
 		settings.NewPostgresRepository(pool),
 		mailtemplate.NewPostgresRepository(pool),
-		launcher.NewPostgresRepository(pool),
+		launcher.NewPostgresRepository(pool, launcherConfig, launcherAudit{}),
 		backup.NewPostgresRepository(pool),
 		audit.NewPostgresStore(pool),
 		system.NewPostgresStore(pool),

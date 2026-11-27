@@ -272,9 +272,9 @@ embedded in each client's application through ports (`Can`, `Auditor`, `TrialSta
 schema `launcher`, cut loose inside this repository first): a fourth app at `/apps/`
 (`web/apps/launcher`) showing every app and shortcut a user sees as big tiles in groups, with pins
 (the user's, by the API) and recent apps (per device). Its list is the API's registry
-(`internal/domain/launcher`, migration 0042: `launcher_apps`, `launcher_pins`, `launcher_feedback`;
+(`internal/domain/launcher`, migration 0042: `launcher_apps`, `launcher_pins`, `launcher_feedback`, schema `launcher` since 0068;
 `GET /api/v1/launcher` filtered per user by permission), whose default tiles the API inserts at
-start-up (`launcher.EnsureDefaults`, also after a test empties the database); administrators manage it
+start-up (`EnsureDefaults` with `cmd/api/launcher-tiles.go`'s `launcherTiles`, also after a test empties the database); administrators manage it
 on Administration's **Manage apps** (`apps.manage`: register, edit, move, retire, feedback, Changes;
 events `app.*`). Apps in testing (POC, In development) are for the built-in **Testers** role
 (`apps.preview`), behind **Show apps in testing**. `@ppe/launcher` loads the list once per user and page
@@ -298,7 +298,7 @@ and the profile's CSP (`TestPublishedPoliciesMatchCaddy`). `api -publish-app` re
 stdin into `API_APPS_DIR`; a published app is any `web/apps/<slug>` with `public/ppe-app.json`
 (slug, profile, devPort), found from it by the Makefile, the web image, the dev proxy and e2e
 (`@ppe/launcher`'s `published-apps.ts`), and `make new-app` starts one from `web/templates/published-app`
-with its tile in `defaults.go` (POC; CI's `pnpm check:new-app` builds the template); `make prod-up` publishes `PUBLISHED_APPS` from the web image's
+with its tile in `cmd/api/launcher-tiles.go` (POC; CI's `pnpm check:new-app` builds the template); `make prod-up` publishes `PUBLISHED_APPS` from the web image's
 `/srv/build/<app>` to Preview (first time also Stable), `make prod-publish APP= REF= [CHANNEL=]`
 builds a git ref (`deploy/build-app.sh`). Manage apps has **Versions and channels** (Make Stable/Beta/
 Preview, **Stable follows deploys**: migration 0044, a deploy's new version then moves Stable too, a re-run

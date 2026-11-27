@@ -8,9 +8,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
-	"github.com/remisb/ppe-next2/internal/audit"
-	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
 // The audit events of published apps, on the app's tile (entity type app).
@@ -91,7 +88,7 @@ func (s *Service) Publish(ctx context.Context, p PublishParams, actor *uuid.UUID
 		if v.Capabilities == nil {
 			v.Capabilities = []string{}
 		}
-		ev, err := audit.New(s.newID(), actor, EventVersionPublished, auditEntity, a.ID, v.PublishedAt, nil,
+		ev, err := newEvent(s.newID(), actor, EventVersionPublished, auditEntity, a.ID, v.PublishedAt, nil,
 			published{v.Version, v.Profile, v.Capabilities, v.Commit})
 		if err != nil {
 			return Version{}, err
@@ -128,7 +125,7 @@ func (s *Service) SetStableFollowsDeploys(ctx context.Context, slug string, on b
 	if actor == uuid.Nil {
 		return App{}, fieldError("actor", "is required")
 	}
-	return s.repo.Update(ctx, slug, func(cur App) (App, []audit.Event, error) {
+	return s.repo.Update(ctx, slug, func(cur App) (App, []Event, error) {
 		if err := publishable(cur); err != nil {
 			return App{}, nil, err
 		}
@@ -136,13 +133,13 @@ func (s *Service) SetStableFollowsDeploys(ctx context.Context, slug string, on b
 			return cur, nil, nil
 		}
 		now := s.now()
-		ev, err := audit.New(s.newID(), &actor, EventChanged, auditEntity, cur.ID, now, follows{cur.StableFollowsDeploys}, follows{on})
+		ev, err := newEvent(s.newID(), &actor, EventChanged, auditEntity, cur.ID, now, follows{cur.StableFollowsDeploys}, follows{on})
 		if err != nil {
 			return App{}, nil, err
 		}
 		next := cur
 		next.StableFollowsDeploys, next.UpdatedAt, next.UpdatedByUserID = on, now, &actor
-		return next, []audit.Event{ev}, nil
+		return next, []Event{ev}, nil
 	})
 }
 
@@ -276,7 +273,7 @@ func (s *Service) Prune(ctx context.Context) ([]AppVersion, error) {
 		if a.Kind != KindApp {
 			continue
 		}
-		removed, err := s.repo.PruneVersions(ctx, a.ID, func(versions []Version, channels []Channel) ([]Version, *audit.Event, error) {
+		removed, err := s.repo.PruneVersions(ctx, a.ID, func(versions []Version, channels []Channel) ([]Version, *Event, error) {
 			var remove []Version
 			names := []string{}
 			for i, v := range versions {
@@ -289,7 +286,7 @@ func (s *Service) Prune(ctx context.Context) ([]AppVersion, error) {
 			if len(remove) == 0 {
 				return nil, nil, nil
 			}
-			ev, err := audit.New(s.newID(), nil, EventVersionsPruned, auditEntity, a.ID, s.now(), nil, pruned{names})
+			ev, err := newEvent(s.newID(), nil, EventVersionsPruned, auditEntity, a.ID, s.now(), nil, pruned{names})
 			return remove, &ev, err
 		})
 		if err != nil {
@@ -304,7 +301,7 @@ func (s *Service) Prune(ctx context.Context) ([]AppVersion, error) {
 
 // pointAt points a channel at v (app.channel_moved when it moves).
 func (s *Service) pointAt(a App, name string, v Version, actor *uuid.UUID) ChannelMutation {
-	return func(cur *Channel) (Channel, []audit.Event, error) {
+	return func(cur *Channel) (Channel, []Event, error) {
 		if cur != nil && cur.VersionID == v.ID {
 			return *cur, nil, nil
 		}
@@ -315,13 +312,13 @@ func (s *Service) pointAt(a App, name string, v Version, actor *uuid.UUID) Chann
 			next = *cur
 			before = channelAt{name, cur.Version}
 		}
-		ev, err := audit.New(s.newID(), actor, EventChannelMoved, auditEntity, a.ID, now, before, channelAt{name, v.Version})
+		ev, err := newEvent(s.newID(), actor, EventChannelMoved, auditEntity, a.ID, now, before, channelAt{name, v.Version})
 		if err != nil {
 			return Channel{}, nil, err
 		}
 		next.VersionID, next.Version, next.PublishedAt = v.ID, v.Version, v.PublishedAt
 		next.UpdatedAt, next.UpdatedByUserID = now, actor
-		return next, []audit.Event{ev}, nil
+		return next, []Event{ev}, nil
 	}
 }
 
@@ -375,7 +372,7 @@ func (s *Service) Releases(ctx context.Context, slug string) ([]Version, []Chann
 // ChannelsFor returns, for the apps a user sees, the channels they see (each
 // app's in the channels' order: Stable, Beta, Preview) and the one they
 // chose, by slug; an app with no channels is left out.
-func (s *Service) ChannelsFor(ctx context.Context, user uuid.UUID, apps []App, can func(role.Permission) bool) (map[string][]Channel, map[string]string, error) {
+func (s *Service) ChannelsFor(ctx context.Context, user uuid.UUID, apps []App, can func(string) bool) (map[string][]Channel, map[string]string, error) {
 	all, err := s.repo.Channels(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -388,7 +385,7 @@ func (s *Service) ChannelsFor(ctx context.Context, user uuid.UUID, apps []App, c
 	choices := map[string]string{}
 	for _, a := range apps {
 		for _, c := range all {
-			if c.AppID == a.ID && seesChannel(c, can) {
+			if c.AppID == a.ID && seesChannel(c, can, s.cfg.Preview) {
 				seen[a.Slug] = append(seen[a.Slug], c)
 			}
 		}
@@ -401,7 +398,7 @@ func (s *Service) ChannelsFor(ctx context.Context, user uuid.UUID, apps []App, c
 
 // ChooseChannel keeps the channel a user opens an app on, one they see;
 // Stable (or "") is the default and removes the choice.
-func (s *Service) ChooseChannel(ctx context.Context, user uuid.UUID, slug, name string, can func(role.Permission) bool) error {
+func (s *Service) ChooseChannel(ctx context.Context, user uuid.UUID, slug, name string, can func(string) bool) error {
 	if user == uuid.Nil {
 		return fieldError("user", "is required")
 	}
@@ -409,7 +406,7 @@ func (s *Service) ChooseChannel(ctx context.Context, user uuid.UUID, slug, name 
 	if err != nil {
 		return err
 	}
-	shown := Visible(all, can)
+	shown := Visible(all, can, s.cfg.Preview)
 	at := slices.IndexFunc(shown, func(a App) bool { return a.Slug == slug && a.Kind == KindApp })
 	if at < 0 {
 		return ErrNotFound
@@ -422,7 +419,7 @@ func (s *Service) ChooseChannel(ctx context.Context, user uuid.UUID, slug, name 
 	if err != nil {
 		return err
 	}
-	if !slices.ContainsFunc(channels, func(c Channel) bool { return c.Name == name && seesChannel(c, can) }) {
+	if !slices.ContainsFunc(channels, func(c Channel) bool { return c.Name == name && seesChannel(c, can, s.cfg.Preview) }) {
 		return fieldError("channel", "is not one of the app's channels you see")
 	}
 	return s.repo.SetChoice(ctx, user, a.ID, name)
@@ -491,7 +488,7 @@ func (s *Service) Trials(ctx context.Context, slug string) ([]Trial, error) {
 // openedVersion is the version a's tile opens for the user: their chosen
 // channel's, if they still see it, else Stable's; nil for an app with no
 // versions. Feedback is given on it.
-func (s *Service) openedVersion(ctx context.Context, user uuid.UUID, a App, can func(role.Permission) bool) (*string, error) {
+func (s *Service) openedVersion(ctx context.Context, user uuid.UUID, a App, can func(string) bool) (*string, error) {
 	seen, chosen, err := s.ChannelsFor(ctx, user, []App{a}, can)
 	if err != nil {
 		return nil, err

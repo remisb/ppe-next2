@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
-	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
 // Profile is the policy a published version's pages and files get, chosen by
@@ -161,6 +159,6 @@ func (p ChannelParams) Validate(name string) error {
 }
 
 // seesChannel: Stable is seen by whoever sees the tile, Beta and Preview by testers.
-func seesChannel(c Channel, can func(role.Permission) bool) bool {
-	return c.Name == ChannelStable || can(role.AppsPreview)
+func seesChannel(c Channel, can func(string) bool, preview string) bool {
+	return c.Name == ChannelStable || can(preview)
 }

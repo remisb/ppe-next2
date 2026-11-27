@@ -11,16 +11,16 @@ import { publishedApps } from './published-apps.ts'
 
 const web = fileURLToPath(new URL('../../..', import.meta.url))
 const templateDir = join(web, 'templates', 'published-app')
-const realDefaults = join(web, '..', 'internal', 'domain', 'launcher', 'defaults.go')
+const realDefaults = join(web, '..', 'cmd', 'api', 'launcher-tiles.go')
 
-/** A scratch workspace with Scan SIMs' manifest (and these others) and a copy of defaults.go. */
+/** A scratch workspace with Scan SIMs' manifest (and these others) and a copy of cmd/api/launcher-tiles.go. */
 function workspace(others: Record<string, number> = {}) {
   const webDir = mkdtempSync(join(tmpdir(), 'new-app-'))
   for (const [slug, devPort] of Object.entries({ 'sim-scan': 5184, ...others })) {
     mkdirSync(join(webDir, 'apps', slug, 'public'), { recursive: true })
     writeFileSync(join(webDir, 'apps', slug, 'public', 'ppe-app.json'), JSON.stringify({ slug, profile: 'standard', devPort }))
   }
-  const defaultsFile = join(webDir, 'defaults.go')
+  const defaultsFile = join(webDir, 'launcher-tiles.go')
   copyFileSync(realDefaults, defaultsFile)
   const launchFile = join(webDir, 'launch.json')
   copyFileSync(join(web, '..', '.claude', 'launch.json'), launchFile)
@@ -49,8 +49,8 @@ describe('make new-app', () => {
     expect(launch).toContain('    {\n      "name": "size-helper",\n      "runtimeExecutable": "pnpm",\n      "runtimeArgs": ["--dir", "web/apps/size-helper", "dev"],\n      "port": 5188\n    }\n  ]\n}')
     const defaults = readFileSync(paths.defaultsFile, 'utf8')
     expect(defaults).toContain(
-      '\t{Slug: "size-helper", Kind: KindApp, Group: "workwear", Icon: "box", Color: "#3b4256", Href: "/apps/size-helper/", Tier: TierHere, Stage: StagePOC,\n' +
-        '\t\tNames: Names{"Size Helper", "Dydžių pagalbininkas", "Помощник по размерам"}},\n\t// make new-app adds',
+      '\t{Slug: "size-helper", Kind: launcher.KindApp, Group: "workwear", Icon: "box", Color: "#3b4256", Href: "/apps/size-helper/", Tier: launcher.TierHere, Stage: launcher.StagePOC,\n' +
+        '\t\tNames: tileNames("Size Helper", "Dydžių pagalbininkas", "Помощник по размерам")},\n\t// make new-app adds',
     )
   })
 
@@ -61,7 +61,7 @@ describe('make new-app', () => {
     expect(read(started.dir, 'src/i18n/en/index.ts')).toContain(`appName: 'Kim\\'s <Tools> & "Co"'`)
     expect(read(started.dir, 'index.html')).toContain('<title>Kim\'s &lt;Tools&gt; &amp; &quot;Co&quot; · Workwear &amp; Equipment</title>')
     expect(JSON.parse(read(started.dir, 'package.json')).description).toMatch(/^Kim's <Tools> & "Co", a published app/)
-    expect(readFileSync(paths.defaultsFile, 'utf8')).toContain('Names: Names{"Kim\'s <Tools> & \\"Co\\""')
+    expect(readFileSync(paths.defaultsFile, 'utf8')).toContain('Names: tileNames("Kim\'s <Tools> & \\"Co\\""')
   })
 
   it('takes the next even port no app uses', () => {

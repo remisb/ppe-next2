@@ -3,15 +3,17 @@ package launcher
 import (
 	"context"
 	"errors"
+	"maps"
 	"slices"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/remisb/ppe-next2/internal/audit"
 	"github.com/remisb/ppe-next2/internal/db/dbtest"
-	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
 // newTestPool empties the database (which empties the registry, through its
@@ -34,7 +36,7 @@ func newTestPool(t *testing.T) (*pgxpool.Pool, uuid.UUID) {
 		created_by_user_id, updated_by_user_id) VALUES ($1, 'a@example.com', 'Ana', 'x', now(), now(), $1, $1)`, actor); err != nil {
 		t.Fatal(err)
 	}
-	if err := EnsureDefaults(ctx, pool); err != nil {
+	if err := NewPostgresRepository(pool, testConfig, testAudit{}).EnsureDefaults(ctx, testTiles); err != nil {
 		t.Fatal(err)
 	}
 	return pool, actor
@@ -43,27 +45,27 @@ func newTestPool(t *testing.T) (*pgxpool.Pool, uuid.UUID) {
 func TestPostgresRegistry(t *testing.T) {
 	pool, actor := newTestPool(t)
 	ctx := context.Background()
-	svc := NewService(NewPostgresRepository(pool))
+	svc := NewService(NewPostgresRepository(pool, testConfig, testAudit{}), testConfig, WithUserNames(testNames(pool)))
 
 	list, err := svc.List(ctx)
-	if err != nil || len(list) != len(Defaults) || list[0].Slug != "workwear" || list[0].UpdatedByUserID != nil {
+	if err != nil || len(list) != len(testTiles) || list[0].Slug != "workwear" || list[0].UpdatedByUserID != nil {
 		t.Fatalf("defaults: %v, %v", slugs(list), err)
 	}
 	admin, _ := svc.Get(ctx, "admin")
-	if !slices.Contains(admin.AnyOf, role.AppsManage) {
+	if !slices.Contains(admin.AnyOf, pAppsManage) {
 		t.Errorf("Administration's audience %v", admin.AnyOf)
 	}
 
 	// A change made on Manage apps survives EnsureDefaults; a missing default comes back last.
 	up := UpdateParams{Fields{Group: "people", Icon: "crew", Color: "#9a4f0a", Href: "https://crew.example.org/", Tier: TierLinked,
-		Stage: StageLive, Names: Names{"PPE Crew", "PPE Crew", "PPE Crew"}}}
+		Stage: StageLive, Names: Names{"en": "PPE Crew", "lt": "PPE Crew", "ru": "PPE Crew"}}}
 	if _, err := svc.Update(ctx, "crew", up, actor); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pool.Exec(ctx, `DELETE FROM launcher_apps WHERE slug = 'help'`); err != nil {
+	if _, err := pool.Exec(ctx, `DELETE FROM launcher.apps WHERE slug = 'help'`); err != nil {
 		t.Fatal(err)
 	}
-	if err := EnsureDefaults(ctx, pool); err != nil {
+	if err := NewPostgresRepository(pool, testConfig, testAudit{}).EnsureDefaults(ctx, testTiles); err != nil {
 		t.Fatal(err)
 	}
 	crew, _ := svc.Get(ctx, "crew")
@@ -74,15 +76,15 @@ func TestPostgresRegistry(t *testing.T) {
 
 	// A default no administrator touched follows the code (as an older release left it, here by hand),
 	// recorded by no one; crew, edited above, stays as the administrator left it.
-	if _, err := pool.Exec(ctx, `UPDATE launcher_apps SET name_en = 'Old name', any_of = '{users.manage}' WHERE slug = 'orders'`); err != nil {
+	if _, err := pool.Exec(ctx, `UPDATE launcher.apps SET names = names || '{"en": "Old name"}', any_of = '{users.manage}' WHERE slug = 'orders'`); err != nil {
 		t.Fatal(err)
 	}
-	if err := EnsureDefaults(ctx, pool); err != nil {
+	if err := NewPostgresRepository(pool, testConfig, testAudit{}).EnsureDefaults(ctx, testTiles); err != nil {
 		t.Fatal(err)
 	}
 	orders, _ := svc.Get(ctx, "orders")
-	want := Defaults[slices.IndexFunc(Defaults, func(d App) bool { return d.Slug == "orders" })]
-	if orders.Names != want.Names || !slices.Equal(orders.AnyOf, want.AnyOf) || orders.UpdatedByUserID != nil {
+	want := testTiles[slices.IndexFunc(testTiles, func(d App) bool { return d.Slug == "orders" })]
+	if !maps.Equal(orders.Names, want.Names) || !slices.Equal(orders.AnyOf, want.AnyOf) || orders.UpdatedByUserID != nil {
 		t.Errorf("orders after EnsureDefaults: %+v", orders)
 	}
 	var synced, byNoOne int
@@ -111,7 +113,7 @@ func TestPostgresRegistry(t *testing.T) {
 	}
 
 	// Pins: replaced, in order; a user's go with them.
-	tester := func(p role.Permission) bool { return p == role.AppsPreview || p == role.SIMCardsManage }
+	tester := func(p string) bool { return p == pAppsPreview || p == pSIMCardsManage }
 	if _, err := svc.SetPins(ctx, actor, []string{"size-helper", "workwear"}, tester); err != nil {
 		t.Fatal(err)
 	}
@@ -160,7 +162,7 @@ func TestPostgresRegistry(t *testing.T) {
 func TestPostgresVersions(t *testing.T) {
 	pool, actor := newTestPool(t)
 	ctx := context.Background()
-	svc := NewService(NewPostgresRepository(pool))
+	svc := NewService(NewPostgresRepository(pool, testConfig, testAudit{}), testConfig, WithUserNames(testNames(pool)))
 
 	if _, err := svc.Publish(ctx, scanSIMs("2026.11.04-aaa", ChannelPreview), nil); err != nil {
 		t.Fatal(err)
@@ -193,11 +195,11 @@ func TestPostgresVersions(t *testing.T) {
 		t.Errorf("app events = %d, %v", events, err)
 	}
 	// Migration 0047: only the three channels may be stored.
-	if _, err := pool.Exec(ctx, `UPDATE launcher_channels SET name = 'photos-first' WHERE name = 'beta'`); err == nil {
+	if _, err := pool.Exec(ctx, `UPDATE launcher.channels SET name = 'photos-first' WHERE name = 'beta'`); err == nil {
 		t.Error("a channel other than stable, beta or preview was stored")
 	}
 
-	tester := func(p role.Permission) bool { return p == role.AppsPreview || p == role.SIMCardsManage }
+	tester := func(p string) bool { return p == pAppsPreview || p == pSIMCardsManage }
 	if err := svc.ChooseChannel(ctx, actor, "sim-scan", ChannelBeta, tester); err != nil {
 		t.Fatal(err)
 	}
@@ -214,5 +216,39 @@ func TestPostgresVersions(t *testing.T) {
 	a, _ := svc.Get(ctx, "sim-scan")
 	if a.Href != "/apps/sim-scan/" {
 		t.Errorf("Scan SIMs' address %s", a.Href)
+	}
+}
+
+// testAudit writes the registry's events to this site's audit trail, as
+// cmd/api's adapter does.
+type testAudit struct{}
+
+func (testAudit) Record(ctx context.Context, tx pgx.Tx, evs []Event) error {
+	for _, ev := range evs {
+		if err := audit.Insert(ctx, tx, audit.Event(ev)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// testNames names users from this site's users table, as cmd/api's adapter does.
+func testNames(pool *pgxpool.Pool) UserNames {
+	return func(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error) {
+		rows, err := pool.Query(ctx, `SELECT id, name FROM users WHERE id = ANY($1)`, ids)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		out := map[uuid.UUID]string{}
+		for rows.Next() {
+			var id uuid.UUID
+			var name string
+			if err := rows.Scan(&id, &name); err != nil {
+				return nil, err
+			}
+			out[id] = name
+		}
+		return out, rows.Err()
 	}
 }

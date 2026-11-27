@@ -14,7 +14,7 @@ const container = document.getElementById('root')
 if (!container) throw new Error('#root is missing from index.html')
 
 // The app reports by its slug, registered in App Launcher (its tile in
-// internal/domain/launcher/defaults.go): the Audit log, System's errors and
+// cmd/api/launcher-tiles.go): the Audit log, System's errors and
 // Usage name it by its tile.
 createRoot(container).render(
   <StrictMode>

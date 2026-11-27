@@ -3,14 +3,12 @@ package launcher
 import (
 	"context"
 	"errors"
+	"maps"
 	"slices"
 	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
-
-	"github.com/remisb/ppe-next2/internal/audit"
-	"github.com/remisb/ppe-next2/internal/domain/role"
 )
 
 // The audit events of a tile (entity type app; the Audit log's Settings
@@ -33,6 +31,8 @@ const positionStep = 10
 // feedback, and published apps' versions and channels (service_versions.go).
 type Service struct {
 	repo  Repository
+	cfg   Config
+	names UserNames
 	now   func() time.Time
 	newID func() uuid.UUID
 	// slugs are the registered apps' slugs (shortcuts aside), for telling
@@ -46,15 +46,23 @@ type Option func(*Service)
 // WithClock replaces the clock (UTC, microseconds, as Postgres stores them).
 func WithClock(now func() time.Time) Option { return func(s *Service) { s.now = now } }
 
-// NewService is the registry over repo; IsApp knows no slug until Refresh.
-func NewService(repo Repository, opts ...Option) *Service {
-	s := &Service{repo: repo, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}
+// WithUserNames names feedback's senders on Manage apps; without it they
+// have no name.
+func WithUserNames(names UserNames) Option { return func(s *Service) { s.names = names } }
+
+// NewService is the registry over repo for the host's cfg; IsApp knows no
+// slug until Refresh.
+func NewService(repo Repository, cfg Config, opts ...Option) *Service {
+	s := &Service{repo: repo, cfg: cfg, now: func() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }, newID: uuid.New}
 	for _, o := range opts {
 		o(s)
 	}
 	s.slugs.Store(&map[string]bool{})
 	return s
 }
+
+// Config is the host's configuration the registry was built with.
+func (s *Service) Config() Config { return s.cfg }
 
 // Refresh reads the registered apps' slugs again.
 func (s *Service) Refresh(ctx context.Context) error {
@@ -99,12 +107,12 @@ func (s *Service) Get(ctx context.Context, slug string) (App, error) { return s.
 
 // ForUser returns the tiles a user with these permissions sees and their pins
 // among them, in the order pinned.
-func (s *Service) ForUser(ctx context.Context, user uuid.UUID, can func(role.Permission) bool) ([]App, []string, error) {
+func (s *Service) ForUser(ctx context.Context, user uuid.UUID, can func(string) bool) ([]App, []string, error) {
 	all, err := s.repo.List(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
-	shown := Visible(all, can)
+	shown := Visible(all, can, s.cfg.Preview)
 	pins, err := s.repo.Pins(ctx, user)
 	if err != nil {
 		return nil, nil, err
@@ -136,7 +144,7 @@ func (s *Service) Create(ctx context.Context, p CreateParams, actor uuid.UUID) (
 	if actor == uuid.Nil {
 		return App{}, fieldError("actor", "is required")
 	}
-	if err := p.Validate(); err != nil {
+	if err := p.Validate(s.cfg); err != nil {
 		return App{}, err
 	}
 	if err := s.checkParent(ctx, p.Kind, p.Parent); err != nil {
@@ -153,10 +161,10 @@ func (s *Service) Create(ctx context.Context, p CreateParams, actor uuid.UUID) (
 	now := s.now()
 	a := App{
 		ID: s.newID(), Slug: p.Slug, Kind: p.Kind, Parent: p.Parent, Group: p.Group, Icon: p.Icon, Color: p.Color,
-		Href: p.Href, Tier: p.Tier, Stage: p.Stage, Names: p.Names, AnyOf: p.anyOf(), Position: pos,
+		Href: p.Href, Tier: p.Tier, Stage: p.Stage, Names: p.Names, AnyOf: s.cfg.Known(p.AnyOf), Position: pos,
 		CreatedAt: now, UpdatedAt: now, UpdatedByUserID: &actor,
 	}
-	ev, err := audit.New(s.newID(), &actor, EventRegistered, auditEntity, a.ID, now, nil, registered(a))
+	ev, err := newEvent(s.newID(), &actor, EventRegistered, auditEntity, a.ID, now, nil, registered(a))
 	if err != nil {
 		return App{}, err
 	}
@@ -174,8 +182,8 @@ func (s *Service) Update(ctx context.Context, slug string, p UpdateParams, actor
 	if actor == uuid.Nil {
 		return App{}, fieldError("actor", "is required")
 	}
-	return s.repo.Update(ctx, slug, func(cur App) (App, []audit.Event, error) {
-		if err := p.Validate(cur.Kind); err != nil {
+	return s.repo.Update(ctx, slug, func(cur App) (App, []Event, error) {
+		if err := p.Validate(cur.Kind, s.cfg); err != nil {
 			return App{}, nil, err
 		}
 		if p.Parent != cur.Parent {
@@ -185,19 +193,19 @@ func (s *Service) Update(ctx context.Context, slug string, p UpdateParams, actor
 		}
 		next := cur
 		next.Parent, next.Group, next.Icon, next.Color = p.Parent, p.Group, p.Icon, p.Color
-		next.Href, next.Tier, next.Stage, next.Names, next.AnyOf = p.Href, p.Tier, p.Stage, p.Names, p.anyOf()
+		next.Href, next.Tier, next.Stage, next.Names, next.AnyOf = p.Href, p.Tier, p.Stage, p.Names, s.cfg.Known(p.AnyOf)
 		now := s.now()
-		var evs []audit.Event
-		if before, after := shown(cur), shown(next); before != after {
-			ev, err := audit.New(s.newID(), &actor, EventChanged, auditEntity, cur.ID, now, before, after)
+		var evs []Event
+		if before, after := shown(cur), shown(next); !maps.Equal(before, after) {
+			ev, err := newEvent(s.newID(), &actor, EventChanged, auditEntity, cur.ID, now, before, after)
 			if err != nil {
 				return App{}, nil, err
 			}
 			evs = append(evs, ev)
 		}
 		if !slices.Equal(cur.AnyOf, next.AnyOf) {
-			ev, err := audit.New(s.newID(), &actor, EventAudienceChanged, auditEntity, cur.ID, now,
-				audience{role.Strings(cur.AnyOf)}, audience{role.Strings(next.AnyOf)})
+			ev, err := newEvent(s.newID(), &actor, EventAudienceChanged, auditEntity, cur.ID, now,
+				audience{cur.AnyOf}, audience{next.AnyOf})
 			if err != nil {
 				return App{}, nil, err
 			}
@@ -220,7 +228,7 @@ func (s *Service) Move(ctx context.Context, slug, before string, actor uuid.UUID
 	if before == slug {
 		return nil, fieldError("before", "must be another tile")
 	}
-	return s.repo.Reorder(ctx, func(cur []App) ([]App, []audit.Event, error) {
+	return s.repo.Reorder(ctx, func(cur []App) ([]App, []Event, error) {
 		from := slices.IndexFunc(cur, func(a App) bool { return a.Slug == slug })
 		if from < 0 {
 			return nil, nil, ErrNotFound
@@ -248,17 +256,17 @@ func (s *Service) Move(ctx context.Context, slug, before string, actor uuid.UUID
 				changed = append(changed, a)
 			}
 		}
-		ev, err := audit.New(s.newID(), &actor, EventMoved, auditEntity, moved.ID, now, place{from + 1}, place{at + 1})
+		ev, err := newEvent(s.newID(), &actor, EventMoved, auditEntity, moved.ID, now, place{from + 1}, place{at + 1})
 		if err != nil {
 			return nil, nil, err
 		}
-		return changed, []audit.Event{ev}, nil
+		return changed, []Event{ev}, nil
 	})
 }
 
 // SetPins replaces a user's pins with these tiles, in order; each must be one
 // they see, at most once.
-func (s *Service) SetPins(ctx context.Context, user uuid.UUID, slugs []string, can func(role.Permission) bool) ([]string, error) {
+func (s *Service) SetPins(ctx context.Context, user uuid.UUID, slugs []string, can func(string) bool) ([]string, error) {
 	if user == uuid.Nil {
 		return nil, fieldError("user", "is required")
 	}
@@ -269,7 +277,7 @@ func (s *Service) SetPins(ctx context.Context, user uuid.UUID, slugs []string, c
 	if err != nil {
 		return nil, err
 	}
-	shown := Visible(all, can)
+	shown := Visible(all, can, s.cfg.Preview)
 	ids := make([]uuid.UUID, 0, len(slugs))
 	for i, slug := range slugs {
 		if slices.Contains(slugs[:i], slug) {
@@ -288,19 +296,19 @@ func (s *Service) SetPins(ctx context.Context, user uuid.UUID, slugs []string, c
 }
 
 // GiveFeedback stores feedback on an app the user sees.
-func (s *Service) GiveFeedback(ctx context.Context, user uuid.UUID, p FeedbackParams, can func(role.Permission) bool) (Feedback, error) {
+func (s *Service) GiveFeedback(ctx context.Context, user uuid.UUID, p FeedbackParams, can func(string) bool) (Feedback, error) {
 	p.Normalize()
 	if user == uuid.Nil {
 		return Feedback{}, fieldError("user", "is required")
 	}
-	if err := p.Validate(); err != nil {
+	if err := p.Validate(s.cfg.Languages); err != nil {
 		return Feedback{}, err
 	}
 	all, err := s.repo.List(ctx)
 	if err != nil {
 		return Feedback{}, err
 	}
-	shown := Visible(all, can)
+	shown := Visible(all, can, s.cfg.Preview)
 	at := slices.IndexFunc(shown, func(a App) bool { return a.Slug == p.App && a.Kind == KindApp })
 	if at < 0 {
 		return Feedback{}, ErrNotFound
@@ -316,32 +324,44 @@ func (s *Service) GiveFeedback(ctx context.Context, user uuid.UUID, p FeedbackPa
 	return f, s.repo.AddFeedback(ctx, f)
 }
 
-// Feedback returns the feedback on a tile, newest first.
+// Feedback returns the feedback on a tile, newest first, each with its
+// sender's name (WithUserNames).
 func (s *Service) Feedback(ctx context.Context, slug string) ([]Feedback, error) {
 	a, err := s.repo.Get(ctx, slug)
 	if err != nil {
 		return nil, err
 	}
-	return s.repo.Feedback(ctx, a.ID)
+	list, err := s.repo.Feedback(ctx, a.ID)
+	if err != nil || s.names == nil || len(list) == 0 {
+		return list, err
+	}
+	ids := make([]uuid.UUID, 0, len(list))
+	for _, f := range list {
+		if !slices.Contains(ids, f.UserID) {
+			ids = append(ids, f.UserID)
+		}
+	}
+	names, err := s.names(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	for i := range list {
+		list[i].UserName = names[list[i].UserID]
+	}
+	return list, nil
 }
 
-// shownFields is what app.changed records: how a tile looks and where it opens.
-type shownFields struct {
-	Parent string `json:"parent"`
-	Group  Group  `json:"group"`
-	Icon   string `json:"icon"`
-	Color  string `json:"color"`
-	Href   string `json:"href"`
-	Tier   Tier   `json:"tier"`
-	Stage  Stage  `json:"stage"`
-	NameEN string `json:"name_en"`
-	NameLT string `json:"name_lt"`
-	NameRU string `json:"name_ru"`
-}
-
-// shown is a's fields as app.changed records them.
-func shown(a App) shownFields {
-	return shownFields{a.Parent, a.Group, a.Icon, a.Color, a.Href, a.Tier, a.Stage, a.Names.EN, a.Names.LT, a.Names.RU}
+// shown is what app.changed records: how a tile looks and where it opens,
+// its name in each language as name_<language> (name_en, name_lt…).
+func shown(a App) map[string]string {
+	out := map[string]string{
+		"parent": a.Parent, "group": string(a.Group), "icon": a.Icon, "color": a.Color,
+		"href": a.Href, "tier": string(a.Tier), "stage": string(a.Stage),
+	}
+	for lang, n := range a.Names {
+		out["name_"+lang] = n
+	}
+	return out
 }
 
 // audience is who sees a tile, as app.audience_changed records it.
@@ -354,12 +374,12 @@ type place struct {
 	Place int `json:"place"`
 }
 
-// registered is a new tile as app.registered records it.
+// registered is a new tile as app.registered records it: its slug, kind,
+// shown fields and audience.
 func registered(a App) any {
-	return struct {
-		Slug string `json:"slug"`
-		Kind Kind   `json:"kind"`
-		shownFields
-		AnyOf []string `json:"any_of"`
-	}{a.Slug, a.Kind, shown(a), role.Strings(a.AnyOf)}
+	out := map[string]any{"slug": a.Slug, "kind": a.Kind, "any_of": a.AnyOf}
+	for k, v := range shown(a) {
+		out[k] = v
+	}
+	return out
 }

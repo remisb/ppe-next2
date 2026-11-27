@@ -110,15 +110,15 @@ WHERE method = 'ELECTRONIC' AND (confirmed_at IS NOT NULL OR abs(hashtext(id::te
  * published build is served, so only the registry's rows are made.
  */
 const demoReleases = `
-WITH app AS (SELECT id FROM launcher_apps WHERE slug = 'sim-scan'),
+WITH app AS (SELECT id FROM launcher.apps WHERE slug = 'sim-scan'),
 v AS (
-  INSERT INTO launcher_versions (id, app_id, version, profile, capabilities, commit, published_at)
+  INSERT INTO launcher.versions (id, app_id, version, profile, capabilities, commit, published_at)
   SELECT gen_random_uuid(), app.id, to_char(now() - x.ago::interval, 'YYYY.MM.DD') || '-' || x.commit, 'device',
          ARRAY['wasm', 'workers', 'camera'], x.commit, now() - x.ago::interval
   FROM app, (VALUES ('7d26056a1c3e', '6 days'), ('a5e143a0b2d1', '2 hours')) x(commit, ago)
   RETURNING id, app_id, commit, published_at
 )
-INSERT INTO launcher_channels (id, app_id, name, version_id, updated_at)
+INSERT INTO launcher.channels (id, app_id, name, version_id, updated_at)
 SELECT gen_random_uuid(), v.app_id, c.name, v.id, v.published_at
 FROM v JOIN (VALUES ('stable', '7d26056a1c3e'), ('preview', 'a5e143a0b2d1')) c(name, commit) ON c.commit = v.commit;
 `

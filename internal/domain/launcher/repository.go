@@ -4,32 +4,28 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-
-	"github.com/remisb/ppe-next2/internal/audit"
 )
 
 // Mutation computes a tile's new state from its current, locked one and the
 // events to record (none when nothing changed). A returned error aborts.
-type Mutation func(cur App) (App, []audit.Event, error)
+type Mutation func(cur App) (App, []Event, error)
 
 // OrderMutation computes, from every tile in order (locked), the tiles whose
 // position changes and the events to record.
-type OrderMutation func(cur []App) (changed []App, evs []audit.Event, err error)
+type OrderMutation func(cur []App) (changed []App, evs []Event, err error)
 
 // ChannelMutation computes a channel's new state from its current, locked one
 // (nil when the app has no channel by that name yet) and the events to record.
-type ChannelMutation func(cur *Channel) (Channel, []audit.Event, error)
+type ChannelMutation func(cur *Channel) (Channel, []Event, error)
 
 // PruneMutation picks, from an app's versions (newest first) and its
 // channels, read under the app's lock, the versions to remove and the event
 // that records it (nil when none go).
-type PruneMutation func(versions []Version, channels []Channel) (remove []Version, ev *audit.Event, err error)
+type PruneMutation func(versions []Version, channels []Channel) (remove []Version, ev *Event, err error)
 
-// Repository stores tiles in launcher_apps, pins in launcher_pins and
-// feedback in launcher_feedback (migration 0042), versions, channels and
-// channel choices (0043; Stable follows deploys 0044, feedback's version
-// 0045). Implementations translate storage errors to this package's
-// sentinels and never validate.
+// Repository stores tiles, pins, feedback, versions, channels and channel
+// choices (schema launcher). Implementations translate storage errors to
+// this package's sentinels and never validate.
 type Repository interface {
 	// List returns every tile, retired ones included, by position.
 	List(ctx context.Context) ([]App, error)
@@ -37,7 +33,7 @@ type Repository interface {
 	Get(ctx context.Context, slug string) (App, error)
 	// Create inserts the tile with its event, last in the order (after any
 	// registered meanwhile), and returns it as stored.
-	Create(ctx context.Context, a App, ev audit.Event) (App, error)
+	Create(ctx context.Context, a App, ev Event) (App, error)
 	// Update locks the tile, applies m and writes it with its events.
 	Update(ctx context.Context, slug string, m Mutation) (App, error)
 	// Reorder locks every tile, applies m and writes the changed positions
@@ -52,7 +48,7 @@ type Repository interface {
 	// Versions returns an app's published versions, newest first.
 	Versions(ctx context.Context, app uuid.UUID) ([]Version, error)
 	// AddVersion stores a newly published version with its event.
-	AddVersion(ctx context.Context, v Version, ev audit.Event) error
+	AddVersion(ctx context.Context, v Version, ev Event) error
 	// PruneVersions locks the app (as PutChannel does), applies m and deletes
 	// the versions it picks with its event, returning them.
 	PruneVersions(ctx context.Context, app uuid.UUID, m PruneMutation) ([]Version, error)
@@ -70,6 +66,6 @@ type Repository interface {
 
 	// AddFeedback stores feedback.
 	AddFeedback(ctx context.Context, f Feedback) error
-	// Feedback returns an app's feedback, newest first, with each sender's name.
+	// Feedback returns an app's feedback, newest first (UserName empty).
 	Feedback(ctx context.Context, app uuid.UUID) ([]Feedback, error)
 }
