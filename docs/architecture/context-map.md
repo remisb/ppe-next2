@@ -8,7 +8,7 @@ Status: **proposed**. Workwear and the platform modules exist today (as flat
 `internal/domain/<name>` packages); Company Assets is specified
 ([ADR 0004](adr/0004-company-assets.md)); Personnel files is decided and being built
 ([ADR 0007](adr/0007-personnel-files-identity-documents.md)); Document Vault and Events & jobs are
-decided ([ADR 0008](adr/0008-document-vault.md)); People, Competence, Projects & crew,
+built ([ADR 0008](adr/0008-document-vault.md)); People, Competence, Projects & crew,
 Timesheets and Reporting are planned. Each new context gets its product contract and
 `docs/specs/<name>-service.md` before code, and its terms in
 [ubiquitous-language.md](../ubiquitous-language.md) before they are used.
@@ -81,7 +81,7 @@ state, expiry) through a port over Personnel files' service, never storing or op
 | Audit log | append-only change (and, for Personnel files, read) events | `internal/platform/audit` | `audit` | metadata only | exists (`internal/audit`) |
 | Files | encrypted blobs in object storage, their metadata and keys | `internal/platform/files` (the first part, a store and upload checks, is `internal/files`) | `files` | inherits the owner's | started: signed copies (ADR 0004) |
 | Mail templates | the templates of the emails the app prepares, one per use case, rendered to a recipient, subject and body; nothing is sent | `internal/domain/mailtemplate` (target `internal/platform/mail`) | `public` | none | exists ([spec](../specs/mail-template-service.md)) |
-| Events & jobs | transactional outbox (jobs and their state), the worker (`api -worker`, the docworker image) and its heartbeat, reminders, purges | `internal/outbox` (target `internal/platform/outbox`) | `outbox` | none | decided ([ADR 0008](adr/0008-document-vault.md), [spec](../specs/outbox-service.md)) |
+| Events & jobs | transactional outbox (jobs and their state), the worker (`api -worker`, the docworker image) and its heartbeat, reminders, purges | `internal/outbox` (target `internal/platform/outbox`) | `outbox` | none | built ([ADR 0008](adr/0008-document-vault.md), [spec](../specs/outbox-service.md)) |
 | AI usage | every call to an AI model: operation, model, tokens, cost, who and when; the price table and monthly budget; the OpenAI key (sealed) | `internal/aiusage` | `public` | metadata only | decided ([ADR 0007](adr/0007-personnel-files-identity-documents.md), [spec](../specs/ai-usage-service.md)) |
 | Settings, Backups | organisation settings; dbbackup runs (read-only) | `internal/platform/{settings,backup}` | `public` | none | exists |
 | People | a person's identity and employment: name, code, language, employment status and dates, link to a user | `internal/people` | `people` | personal | planned (split from `employee`) |
@@ -89,7 +89,7 @@ state, expiry) through a port over Personnel files' service, never storing or op
 | Company Assets | SIM cards, equipment and furniture as individual assets; their assignments, connection status, assignment forms and signed copies | `internal/domain/asset` (target `internal/assets`) | `assets` | low (names, signed forms) | built ([spec](../specs/asset-service.md)); go-live tools to come |
 | Competence | certificate and qualification types, certificates held, validity and expiry, the evidence file | `internal/competence` | `competence` | personal | planned |
 | Personnel files | identity documents and ID numbers, their copies and portraits, the end of employment, retention and legal holds (contracts live in Document Vault as sealed Employment documents, ADR 0008) | `internal/personnel` | `personnel` | **special care** | decided, being built ([ADR 0007](adr/0007-personnel-files-identity-documents.md), [spec](../specs/personnel-service.md); `internal/personnel/mrz` built) |
-| Document Vault | typed documents, their versions, files and links to subjects; document templates and generation; text read from files and search; sealed types (Employment documents) with their keys, retention, Legal Hold and shredding; archived assignment forms and Items Given Records, and signed copies' storage | `internal/vault` | `vault` | personal; **special care** for sealed types | decided ([ADR 0008](adr/0008-document-vault.md), [spec](../specs/vault-service.md), [templates](../specs/document-template-service.md)) |
+| Document Vault | typed documents, their versions, files and links to subjects; document templates and generation; text read from files and search; sealed types (Employment documents) with their keys, retention, Legal Hold and shredding; archived assignment forms and Items Given Records, and signed copies' storage | `internal/vault` | `vault` | personal; **special care** for sealed types | built ([ADR 0008](adr/0008-document-vault.md), [spec](../specs/vault-service.md), [templates](../specs/document-template-service.md)) |
 | Projects & crew | clients, sites, projects and their requirements (qualifications, item sets), teams, crew assignments, eligibility | `internal/projects` | `projects` | low | planned |
 | Timesheets | entries, periods, approval, locking, corrections, export | `internal/time` | `time` | personal | planned |
 | Reporting | dashboards and read models across contexts; writes nothing | `internal/reporting` | none (views) | as read | exists as `dashboard` |

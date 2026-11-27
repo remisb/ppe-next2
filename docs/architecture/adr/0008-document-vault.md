@@ -1,7 +1,8 @@
 # ADR 0008: Document Vault, typed documents, templates and search
 
-- **Status:** accepted (decisions made 2026-11-24); not built. Phase 0 (this record, the specs and
-  the terms) is done; phases 1 to 8 follow, one pull request each
+- **Status:** accepted (decisions made 2026-11-24); built: phase 0 (this record, the specs and the
+  terms) and phases 1 to 3 on 2026-11-24, phases 4 to 8 on 2026-11-25, one pull request each
+  (remisb/PPE-next2#61 to #69; WARE-27)
 - **Date:** 2026-11-24
 - **Scope:** backend (Go API, Postgres, files store, a worker), frontend (the staff app's Document
   Vault and the employee page, Administration's Document Templates), deployment (`.env.prod`, a
